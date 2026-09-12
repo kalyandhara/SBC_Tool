@@ -1,0 +1,300 @@
+{
+  "center_date": "2026-09-05",
+  "range_start": "2021-09-05",
+  "range_end": "2031-09-05",
+  "method": "Weekly Lahiri/Moshier scan; five years before and after the selected date; score >= 4; nearby flags grouped within 21 days.",
+  "disclaimer": "Research risk windows, not crash predictions or financial advice.",
+  "windows": [
+    {
+      "start": "2023-04-23",
+      "end": "2023-06-18",
+      "peak_score": 6,
+      "reasons": [
+        "Jupiter in Ketu nakshatra",
+        "Jupiter on Rahu-Ketu axis",
+        "eclipse near Rahu-Ketu axis"
+      ],
+      "level": "HIGH"
+    },
+    {
+      "start": "2023-09-03",
+      "end": "2023-10-01",
+      "peak_score": 6,
+      "reasons": [
+        "Jupiter Shashtashtak with Mars",
+        "Jupiter Shashtashtak with Sun",
+        "eclipse near Rahu-Ketu axis"
+      ],
+      "level": "HIGH"
+    },
+    {
+      "start": "2023-11-19",
+      "end": "2023-12-24",
+      "peak_score": 6,
+      "reasons": [
+        "Jupiter Shashtashtak with Mars",
+        "Jupiter Shashtashtak with Sun",
+        "Jupiter in Ketu nakshatra"
+      ],
+      "level": "HIGH"
+    },
+    {
+      "start": "2025-01-05",
+      "end": "2025-01-05",
+      "peak_score": 4,
+      "reasons": [
+        "Jupiter Shashtashtak with Sun",
+        "eclipse near Rahu-Ketu axis"
+      ],
+      "level": "HIGH"
+    },
+    {
+      "start": "2025-03-09",
+      "end": "2025-03-23",
+      "peak_score": 4,
+      "reasons": [
+        "Saturn-Rahu close aggravation",
+        "eclipse near Rahu-Ketu axis"
+      ],
+      "level": "HIGH"
+    },
+    {
+      "start": "2025-12-07",
+      "end": "2025-12-07",
+      "peak_score": 4,
+      "reasons": [
+        "Jupiter Shashtashtak with Sun",
+        "Jupiter Shashtashtak with Mars"
+      ],
+      "level": "HIGH"
+    },
+    {
+      "start": "2026-01-18",
+      "end": "2026-02-22",
+      "peak_score": 4,
+      "reasons": [
+        "Jupiter Shashtashtak with Mars",
+        "Jupiter Shashtashtak with Sun",
+        "eclipse near Rahu-Ketu axis"
+      ],
+      "level": "HIGH"
+    },
+    {
+      "start": "2026-11-01",
+      "end": "2027-02-14",
+      "peak_score": 6,
+      "reasons": [
+        "Jupiter Shashtashtak with Saturn",
+        "Jupiter Shashtashtak with Sun",
+        "Jupiter in Cancer",
+        "Jupiter in Ketu nakshatra",
+        "eclipse near Rahu-Ketu axis"
+      ],
+      "level": "HIGH"
+    },
+    {
+      "start": "2027-08-15",
+      "end": "2027-08-15",
+      "peak_score": 4,
+      "reasons": [
+        "Jupiter in Ketu nakshatra",
+        "eclipse near Rahu-Ketu axis"
+      ],
+      "level": "HIGH"
+    },
+    {
+      "start": "2028-02-20",
+      "end": "2028-04-16",
+      "peak_score": 6,
+      "reasons": [
+        "Jupiter Shashtashtak with Mars",
+        "Jupiter Shashtashtak with Saturn",
+        "Jupiter Shashtashtak with Sun",
+        "eclipse near Rahu-Ketu axis"
+      ],
+      "level": "HIGH"
+    },
+    {
+      "start": "2028-12-17",
+      "end": "2028-12-24",
+      "peak_score": 4,
+      "reasons": [
+        "Jupiter Shashtashtak with Saturn",
+        "eclipse near Rahu-Ketu axis"
+      ],
+      "level": "HIGH"
+    },
+    {
+      "start": "2029-04-15",
+      "end": "2029-05-13",
+      "peak_score": 4,
+      "reasons": [
+        "Jupiter Shashtashtak with Saturn",
+        "Jupiter Shashtashtak with Sun"
+      ],
+      "level": "HIGH"
+    },
+    {
+      "start": "2029-09-16",
+      "end": "2029-09-16",
+      "peak_score": 4,
+      "reasons": [
+        "Jupiter Shashtashtak with Saturn",
+        "eclipse near Rahu-Ketu axis"
+      ],
+      "level": "HIGH"
+    },
+    {
+      "start": "2030-04-07",
+      "end": "2030-06-16",
+      "peak_score": 8,
+      "reasons": [
+        "Jupiter Shashtashtak with Mars",
+        "Jupiter Shashtashtak with Saturn",
+        "Jupiter Shashtashtak with Sun",
+        "eclipse near Rahu-Ketu axis"
+      ],
+      "level": "EXTREME"
+    },
+    {
+      "start": "2030-11-24",
+      "end": "2030-12-22",
+      "peak_score": 4,
+      "reasons": [
+        "Jupiter on Rahu-Ketu axis",
+        "eclipse near Rahu-Ketu axis"
+      ],
+      "level": "HIGH"
+    },
+    {
+      "start": "2031-02-23",
+      "end": "2031-06-08",
+      "peak_score": 6,
+      "reasons": [
+        "Jupiter Shashtashtak with Saturn",
+        "Jupiter Shashtashtak with Sun",
+        "Jupiter in Ketu nakshatra"
+      ],
+      "level": "HIGH"
+    }
+  ],
+  "timeline_windows": [
+    {
+      "start": "2023-11-19",
+      "end": "2023-12-24",
+      "peak_score": 6,
+      "reasons": [
+        "Jupiter Shashtashtak with Mars",
+        "Jupiter Shashtashtak with Sun",
+        "Jupiter in Ketu nakshatra"
+      ],
+      "level": "HIGH",
+      "timeline": "past"
+    },
+    {
+      "start": "2025-01-05",
+      "end": "2025-01-05",
+      "peak_score": 4,
+      "reasons": [
+        "Jupiter Shashtashtak with Sun",
+        "eclipse near Rahu-Ketu axis"
+      ],
+      "level": "HIGH",
+      "timeline": "past"
+    },
+    {
+      "start": "2025-03-09",
+      "end": "2025-03-23",
+      "peak_score": 4,
+      "reasons": [
+        "Saturn-Rahu close aggravation",
+        "eclipse near Rahu-Ketu axis"
+      ],
+      "level": "HIGH",
+      "timeline": "past"
+    },
+    {
+      "start": "2025-12-07",
+      "end": "2025-12-07",
+      "peak_score": 4,
+      "reasons": [
+        "Jupiter Shashtashtak with Sun",
+        "Jupiter Shashtashtak with Mars"
+      ],
+      "level": "HIGH",
+      "timeline": "past"
+    },
+    {
+      "start": "2026-01-18",
+      "end": "2026-02-22",
+      "peak_score": 4,
+      "reasons": [
+        "Jupiter Shashtashtak with Mars",
+        "Jupiter Shashtashtak with Sun",
+        "eclipse near Rahu-Ketu axis"
+      ],
+      "level": "HIGH",
+      "timeline": "past"
+    },
+    {
+      "start": "2026-11-01",
+      "end": "2027-02-14",
+      "peak_score": 6,
+      "reasons": [
+        "Jupiter Shashtashtak with Saturn",
+        "Jupiter Shashtashtak with Sun",
+        "Jupiter in Cancer",
+        "Jupiter in Ketu nakshatra",
+        "eclipse near Rahu-Ketu axis"
+      ],
+      "level": "HIGH",
+      "timeline": "upcoming"
+    },
+    {
+      "start": "2027-08-15",
+      "end": "2027-08-15",
+      "peak_score": 4,
+      "reasons": [
+        "Jupiter in Ketu nakshatra",
+        "eclipse near Rahu-Ketu axis"
+      ],
+      "level": "HIGH",
+      "timeline": "upcoming"
+    },
+    {
+      "start": "2028-02-20",
+      "end": "2028-04-16",
+      "peak_score": 6,
+      "reasons": [
+        "Jupiter Shashtashtak with Mars",
+        "Jupiter Shashtashtak with Saturn",
+        "Jupiter Shashtashtak with Sun",
+        "eclipse near Rahu-Ketu axis"
+      ],
+      "level": "HIGH",
+      "timeline": "upcoming"
+    },
+    {
+      "start": "2028-12-17",
+      "end": "2028-12-24",
+      "peak_score": 4,
+      "reasons": [
+        "Jupiter Shashtashtak with Saturn",
+        "eclipse near Rahu-Ketu axis"
+      ],
+      "level": "HIGH",
+      "timeline": "upcoming"
+    },
+    {
+      "start": "2029-04-15",
+      "end": "2029-05-13",
+      "peak_score": 4,
+      "reasons": [
+        "Jupiter Shashtashtak with Saturn",
+        "Jupiter Shashtashtak with Sun"
+      ],
+      "level": "HIGH",
+      "timeline": "upcoming"
+    }
+  ]
+}

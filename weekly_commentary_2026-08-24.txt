@@ -1,0 +1,110 @@
+======================================================================
+WEEKLY ASTRO-MARKET CONFLUENCE COMMENTARY
+Week of Aug 24 - Aug 30, 2026
+======================================================================
+
+>>> MOST IMPORTANT CYCLE THIS WEEK: Jupiter-Saturn Trine <<<
+    120° aspect (applying)
+    Intensity: EXTREME
+    Sign: N/A (N/A)
+    
+    Expected: High volatility, sudden moves, possible trend changes
+
+----------------------------------------------------------------------
+KEY PLANETARY CONFIGURATIONS THIS WEEK:
+----------------------------------------------------------------------
+  [!!] Mercury-Ketu-Sun Triangle in Leo: Sun-Mercury 3.5°, Sun-Ketu 1.4°, Mercury-Ketu 2.1°
+  [!!!] Jupiter-Saturn Trine: 120° aspect (applying)
+  [!!] Saturn in Pisces: Dissolution of structures, institutional weakening
+  [!!!] Jupiter in Cancer (Exalted): Maximum expansion, liquidity, growth support
+  [+] Venus in Virgo (Debilitated): Deflationary, credit tightening, consumption drop
+
+----------------------------------------------------------------------
+PLANETARY POSITIONS (Monday noon IST, Lahiri Ayanamsa):
+----------------------------------------------------------------------
+  Sun in Leo 6.90° (Magha)
+  Moon in Sagittarius 22.42° (P.Ashadha)
+  Mars in Gemini 14.22° (Ardra)
+  Mercury in Leo 3.39° (Magha)
+  Jupiter in Cancer 17.83° (Ashlesha)
+  Venus in Virgo 22.42° (Hasta)
+  Saturn in Pisces 19.84° (Revati) (R)
+  Rahu in Aquarius 5.48° (Dhanishta) (R)
+  Ketu in Leo 5.48° (Magha) (R)
+
+----------------------------------------------------------------------
+MOON NAKSHATRA TRANSITS (Daily Sentiment Drivers):
+----------------------------------------------------------------------
+  Monday Aug 24: Moon in Sagittarius 22.4° - P.Ashadha (invincibility) (Lord: Venus)
+  Tuesday Aug 25: Moon in Capricorn 4.5° - U.Ashadha (victory) (Lord: Sun)
+  Wednesday Aug 26: Moon in Capricorn 16.7° - Shravana (learning) (Lord: Moon)
+  Thursday Aug 27: Moon in Capricorn 29.2° - Dhanishta (rhythm/wealth) (Lord: Mars)
+  Friday Aug 28: Moon in Aquarius 11.8° - Shatabhisha (healing) (Lord: Rahu)
+  Saturday Aug 29: Moon in Aquarius 24.8° - P.Bhadrapada (spiritual fire) (Lord: Jupiter)
+  Sunday Aug 30: Moon in Pisces 7.9° - U.Bhadrapada (universal love) (Lord: Saturn)
+
+----------------------------------------------------------------------
+ACTIVE REVERSAL WINDOWS:
+----------------------------------------------------------------------
+  [ACTIVE] Cluster B: Saturn retrograde and double-eclipse pressure
+     Level: EXTREME | Bias: STRONGLY BEARISH | 2026-07-26 to 2026-08-28
+     Sectors: Nifty 50, Nifty Bank, Real Estate, FMCG
+  [ACTIVE] Ketu in Magha (authority) — Ketu bullish nakshatra transit
+     Level: MODERATE-HIGH | Bias: BULLISH REVERSAL POTENTIAL | 2026-08-24 to 2026-08-24
+     Sectors: Pharma, Shipping, Healthcare, Spiritual, Large Caps
+  [ACTIVE] Jupiter trine Saturn (120° applying) — stable expansion, multi-year bull run foundation
+     Level: EXTREME | Bias: BULLISH REVERSAL | 2026-08-24 to 2026-09-23
+     Sectors: Large Caps, Banking, Infrastructure, FMCG, Financial Services, Real Estate
+
+----------------------------------------------------------------------
+MAJOR PLANETARY TRANSITS:
+----------------------------------------------------------------------
+  Jupiter in Cancer 17.83° Ashlesha
+     Bias: MAJOR BULLISH | Exalted Jupiter supports expansion and liquidity
+     Sectors: Large Caps, Banking, FMCG, Real Estate
+  Saturn in Pisces 19.84° Revati (R)
+     Bias: BEARISH / RETROGRADE | Saturn in Pisces — dissolution of structures, institutional weakening, policy confusion; retrograde motion increases review and volatility
+     Sectors: Pharma, Shipping, Healthcare, Large Caps
+
+----------------------------------------------------------------------
+CONFLUENCE ANALYSIS (Multi-factor Synthesis):
+----------------------------------------------------------------------
+  Overall Signal: BEARISH (Net: -2.25)
+  Bullish Weight: 5.25 | Bearish Weight: 7.50
+  [GREEN] Bullish Confluence: Infrastructure, Financial Services, IT
+  [RED] Bearish Confluence: Large Caps, Gold/MCX, Banking, PSU
+  [CONFLICT] Conflicted: Nifty Bank
+
+  Component Breakdown:
+    reversal_windows: Bullish=3.8, Bearish=2.5, Signal=BULLISH
+    transits: Bullish=1.5, Bearish=1.0, Signal=BULLISH
+    jupiter: Bullish=0.0, Bearish=0.0, Signal=NEUTRAL
+    lunar: Bullish=0.0, Bearish=0.0, Signal=NEUTRAL
+
+----------------------------------------------------------------------
+FUTURECAST SIGNALS (Next 30 Days):
+----------------------------------------------------------------------
+  [BULLISH] BULLISH WINDOWS:
+  [BEARISH] BEARISH WINDOWS:
+
+======================================================================
+WEEKLY MARKET BIAS: BEARISH
+======================================================================
+  [+] BULLISH FACTORS:
+    • Bullish sectors: Infrastructure, Financial Services, IT
+    • Mercury-Ketu-Sun Triangle in Leo: Potential trend change/reversal window
+    • Jupiter-Saturn Trine: 120° aspect (applying)
+    • Jupiter in Cancer (Exalted): Maximum expansion, liquidity, growth support
+    • Bullish futurecast: 7/16 (Jupiter Ending Combustion, Jupiter Friendly Sign, Mercury Jupiter Trine)
+
+  [-] BEARISH FACTORS:
+    • Confluence: Net bearish (-2.25)
+    • Bearish sectors: Large Caps, Gold/MCX, Banking
+    • Mercury-Ketu-Sun Triangle in Leo: High volatility, sudden moves likely
+    • Saturn in Pisces: Dissolution of structures, institutional weakening
+    • Venus in Virgo (Debilitated): Deflationary, credit tightening, consumption drop
+
+======================================================================
+DISCLAIMER: Research commentary only. Not financial advice.
+Use technical, fundamental and risk management before trading.
+======================================================================

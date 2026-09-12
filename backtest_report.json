@@ -1,0 +1,265 @@
+{
+  "method": "Noon IST anchor; Swiss Ephemeris Lahiri positions; Jupiter heuristic only.",
+  "disclaimer": "Historical labels and outcomes are user-supplied research inputs, not independently verified here.",
+  "total": 7,
+  "matches": 3,
+  "accuracy": 42.9,
+  "results": [
+    {
+      "anchor": "1929-10-24",
+      "category": "crash",
+      "period": "1929",
+      "event": "Black Thursday",
+      "reported_outcome": "crash",
+      "calculated": {
+        "sign": "Taurus",
+        "degree": 22.94,
+        "nakshatra": "Rohini",
+        "nakshatra_lord": "Moon",
+        "ayanamsa": 22.8768
+      },
+      "heuristic": {
+        "active": true,
+        "title": "Jupiter market-crash heuristic",
+        "level": "MODERATE",
+        "bias": "BEARISH RISK",
+        "jupiter": {
+          "sign": "Taurus",
+          "degree": 22.94,
+          "nakshatra": "Rohini",
+          "nakshatra_lord": "Moon"
+        },
+        "reasons": [
+          "Shashtashtak (6/8 sign axis) with Sun, Mars, Saturn"
+        ],
+        "sectors": [
+          "Large Caps",
+          "Banking",
+          "FMCG",
+          "Financial Services"
+        ],
+        "method": "Research heuristic only; not a causal or predictive market model."
+      },
+      "result": "match"
+    },
+    {
+      "anchor": "1987-10-19",
+      "category": "crash",
+      "period": "1987",
+      "event": "Black Monday",
+      "reported_outcome": "crash",
+      "calculated": {
+        "sign": "Aries",
+        "degree": 0.9,
+        "nakshatra": "Ashwini",
+        "nakshatra_lord": "Ketu",
+        "ayanamsa": 23.6866
+      },
+      "heuristic": {
+        "active": true,
+        "title": "Jupiter market-crash heuristic",
+        "level": "HIGH",
+        "bias": "BEARISH RISK",
+        "jupiter": {
+          "sign": "Aries",
+          "degree": 0.9,
+          "nakshatra": "Ashwini",
+          "nakshatra_lord": "Ketu"
+        },
+        "reasons": [
+          "Jupiter in Ketu-ruled Ashwini",
+          "Shashtashtak (6/8 sign axis) with Mars, Saturn"
+        ],
+        "sectors": [
+          "Large Caps",
+          "Banking",
+          "FMCG",
+          "Financial Services"
+        ],
+        "method": "Research heuristic only; not a causal or predictive market model."
+      },
+      "result": "match"
+    },
+    {
+      "anchor": "2000-03-10",
+      "category": "negative",
+      "period": "2000",
+      "event": "Dot-com peak",
+      "reported_outcome": "negative",
+      "calculated": {
+        "sign": "Aries",
+        "degree": 10.64,
+        "nakshatra": "Ashwini",
+        "nakshatra_lord": "Ketu",
+        "ayanamsa": 23.8597
+      },
+      "heuristic": {
+        "active": true,
+        "title": "Jupiter market-crash heuristic",
+        "level": "MODERATE",
+        "bias": "BEARISH RISK",
+        "jupiter": {
+          "sign": "Aries",
+          "degree": 10.64,
+          "nakshatra": "Ashwini",
+          "nakshatra_lord": "Ketu"
+        },
+        "reasons": [
+          "Jupiter in Ketu-ruled Ashwini"
+        ],
+        "sectors": [
+          "Large Caps",
+          "Banking",
+          "FMCG",
+          "Financial Services"
+        ],
+        "method": "Research heuristic only; not a causal or predictive market model."
+      },
+      "result": "match"
+    },
+    {
+      "anchor": "2008-09-15",
+      "category": "crash",
+      "period": "2008",
+      "event": "Lehman collapse",
+      "reported_outcome": "crash",
+      "calculated": {
+        "sign": "Sagittarius",
+        "degree": 18.63,
+        "nakshatra": "P.Ashadha",
+        "nakshatra_lord": "Venus",
+        "ayanamsa": 23.9787
+      },
+      "heuristic": {
+        "active": false,
+        "title": "Jupiter market-crash heuristic",
+        "level": "MODERATE",
+        "bias": "NO JUPITER CRASH FLAG",
+        "jupiter": {
+          "sign": "Sagittarius",
+          "degree": 18.63,
+          "nakshatra": "P.Ashadha",
+          "nakshatra_lord": "Venus"
+        },
+        "reasons": [],
+        "sectors": [
+          "Large Caps",
+          "Banking",
+          "FMCG",
+          "Financial Services"
+        ],
+        "method": "Research heuristic only; not a causal or predictive market model."
+      },
+      "result": "miss"
+    },
+    {
+      "anchor": "2020-02-19",
+      "category": "crash",
+      "period": "2020",
+      "event": "COVID peak",
+      "reported_outcome": "crash",
+      "calculated": {
+        "sign": "Sagittarius",
+        "degree": 23.35,
+        "nakshatra": "P.Ashadha",
+        "nakshatra_lord": "Venus",
+        "ayanamsa": 24.1383
+      },
+      "heuristic": {
+        "active": false,
+        "title": "Jupiter market-crash heuristic",
+        "level": "MODERATE",
+        "bias": "NO JUPITER CRASH FLAG",
+        "jupiter": {
+          "sign": "Sagittarius",
+          "degree": 23.35,
+          "nakshatra": "P.Ashadha",
+          "nakshatra_lord": "Venus"
+        },
+        "reasons": [],
+        "sectors": [
+          "Large Caps",
+          "Banking",
+          "FMCG",
+          "Financial Services"
+        ],
+        "method": "Research heuristic only; not a causal or predictive market model."
+      },
+      "result": "miss"
+    },
+    {
+      "anchor": "2003-03-12",
+      "category": "positive",
+      "period": "2003",
+      "event": "Bull market start",
+      "reported_outcome": "positive",
+      "calculated": {
+        "sign": "Cancer",
+        "degree": 14.99,
+        "nakshatra": "Pushya",
+        "nakshatra_lord": "Saturn",
+        "ayanamsa": 23.9017
+      },
+      "heuristic": {
+        "active": true,
+        "title": "Jupiter market-crash heuristic",
+        "level": "MODERATE",
+        "bias": "BEARISH RISK",
+        "jupiter": {
+          "sign": "Cancer",
+          "degree": 14.99,
+          "nakshatra": "Pushya",
+          "nakshatra_lord": "Saturn"
+        },
+        "reasons": [
+          "Shashtashtak (6/8 sign axis) with Sun, Mars"
+        ],
+        "sectors": [
+          "Large Caps",
+          "Banking",
+          "FMCG",
+          "Financial Services"
+        ],
+        "method": "Research heuristic only; not a causal or predictive market model."
+      },
+      "result": "miss"
+    },
+    {
+      "anchor": "2009-03-09",
+      "category": "positive",
+      "period": "2009",
+      "event": "GFC bottom",
+      "reported_outcome": "positive",
+      "calculated": {
+        "sign": "Capricorn",
+        "degree": 20.5,
+        "nakshatra": "Shravana",
+        "nakshatra_lord": "Moon",
+        "ayanamsa": 23.9854
+      },
+      "heuristic": {
+        "active": true,
+        "title": "Jupiter market-crash heuristic",
+        "level": "MODERATE",
+        "bias": "BEARISH RISK",
+        "jupiter": {
+          "sign": "Capricorn",
+          "degree": 20.5,
+          "nakshatra": "Shravana",
+          "nakshatra_lord": "Moon"
+        },
+        "reasons": [
+          "Shashtashtak (6/8 sign axis) with Saturn"
+        ],
+        "sectors": [
+          "Large Caps",
+          "Banking",
+          "FMCG",
+          "Financial Services"
+        ],
+        "method": "Research heuristic only; not a causal or predictive market model."
+      },
+      "result": "miss"
+    }
+  ]
+}

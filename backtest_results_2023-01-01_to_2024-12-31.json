@@ -1,0 +1,148 @@
+{
+  "backtest_period": "2023-01-01 to 2024-12-31",
+  "run_date": "2026-08-26",
+  "triggers": {
+    "1": {
+      "name": "Full Moon in Bullish Nakshatra",
+      "total_events": 8,
+      "horizons": {
+        "1d": {
+          "count": 8,
+          "win_rate": 12.5,
+          "avg_return": -0.6087499999999999,
+          "median_return": -0.43,
+          "std_return": 0.7942518098814758,
+          "sharpe": -12.16693061751473,
+          "max_win": 0.32,
+          "max_loss": -2.42,
+          "avg_win": 0.32,
+          "avg_loss": -0.7414285714285713,
+          "profit_factor": 0.06165703275529866
+        },
+        "3d": {
+          "count": 8,
+          "win_rate": 75.0,
+          "avg_return": 0.6025,
+          "median_return": 0.76,
+          "std_return": 1.5384793628775135,
+          "sharpe": 3.589260828363431,
+          "max_win": 2.36,
+          "max_loss": -2.83,
+          "avg_win": 1.2999999999999998,
+          "avg_loss": -1.49,
+          "profit_factor": 2.6174496644295298
+        },
+        "5d": {
+          "count": 8,
+          "win_rate": 62.5,
+          "avg_return": 1.0075,
+          "median_return": 1.52,
+          "std_return": 3.4525162925031943,
+          "sharpe": 2.071689125203692,
+          "max_win": 5.58,
+          "max_loss": -6.24,
+          "avg_win": 3.076,
+          "avg_loss": -2.44,
+          "profit_factor": 2.1010928961748636
+        },
+        "10d": {
+          "count": 8,
+          "win_rate": 50.0,
+          "avg_return": 1.4062500000000002,
+          "median_return": -0.40499999999999997,
+          "std_return": 6.203793068558944,
+          "sharpe": 1.1379036818068862,
+          "max_win": 13.91,
+          "max_loss": -7.27,
+          "avg_win": 5.8100000000000005,
+          "avg_loss": -2.9974999999999996,
+          "profit_factor": 1.9382819015846542
+        },
+        "20d": {
+          "count": 8,
+          "win_rate": 87.5,
+          "avg_return": 2.96625,
+          "median_return": 1.335,
+          "std_return": 3.635522443542331,
+          "sharpe": 2.896184291936952,
+          "max_win": 10.67,
+          "max_loss": -0.33,
+          "avg_win": 3.4371428571428573,
+          "avg_loss": -0.33,
+          "profit_factor": 72.9090909090909
+        }
+      }
+    },
+    "6": {
+      "name": "Venus in Taurus in Venus Pada + Full Moon",
+      "total_events": 2,
+      "horizons": {
+        "1d": {
+          "count": 2,
+          "win_rate": 50.0,
+          "avg_return": -0.025000000000000022,
+          "median_return": -0.025000000000000022,
+          "std_return": 0.535,
+          "sharpe": -0.7417994330087644,
+          "max_win": 0.51,
+          "max_loss": -0.56,
+          "avg_win": 0.51,
+          "avg_loss": -0.56,
+          "profit_factor": 0.9107142857142857
+        },
+        "3d": {
+          "count": 2,
+          "win_rate": 50.0,
+          "avg_return": -0.16999999999999998,
+          "median_return": -0.16999999999999998,
+          "std_return": 0.73,
+          "sharpe": -2.134350323678062,
+          "max_win": 0.56,
+          "max_loss": -0.9,
+          "avg_win": 0.56,
+          "avg_loss": -0.9,
+          "profit_factor": 0.6222222222222222
+        },
+        "5d": {
+          "count": 2,
+          "win_rate": 0.0,
+          "avg_return": -1.955,
+          "median_return": -1.955,
+          "std_return": 0.645,
+          "sharpe": -21.518020420390233,
+          "max_win": -1.31,
+          "max_loss": -2.6,
+          "avg_win": 0,
+          "avg_loss": -1.955,
+          "profit_factor": 0.0
+        },
+        "10d": {
+          "count": 2,
+          "win_rate": 50.0,
+          "avg_return": 2.495,
+          "median_return": 2.495,
+          "std_return": 4.515000000000001,
+          "sharpe": 2.7740422142226158,
+          "max_win": 7.01,
+          "max_loss": -2.02,
+          "avg_win": 7.01,
+          "avg_loss": -2.02,
+          "profit_factor": 3.4702970297029703
+        },
+        "20d": {
+          "count": 2,
+          "win_rate": 50.0,
+          "avg_return": -1.5999999999999999,
+          "median_return": -1.5999999999999999,
+          "std_return": 4.07,
+          "sharpe": -1.3954389660382385,
+          "max_win": 2.47,
+          "max_loss": -5.67,
+          "avg_win": 2.47,
+          "avg_loss": -5.67,
+          "profit_factor": 0.435626102292769
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,96 @@
+ayanamsha:
+  default: KP
+  options: [KP, Lahiri]
+
+ephemeris:
+  default: skyfield_de440
+  options: [skyfield_de440, pyswisseph]
+
+market_hours:
+  timezone: Asia/Kolkata
+  open: "09:15"
+  close: "15:30"
+  holidays: []
+
+granularity:
+  default: 1m
+  options: [1m, 5m, 1h]
+
+weights:
+  hora_weight: 0.3
+  house_set_weight: 0.4
+  moon_sub_weight: 0.2
+  asc_sub_weight: 0.1
+
+thresholds:
+  tier1_min_score: 5.0
+  tier2_min_score: 3.0
+  pure_set_min_score: 7.0
+  regime_shift_min_strength: 1.5
+  confirmation_points: 15
+  confirmation_candles: 5
+
+rules:
+  A-11:
+    id: A-11
+    description: "Sub-lord transition with hora aspect confirmation"
+    inputs: [sub_lord_change, hora_lord, aspects]
+    outputs: [signal_grade, direction]
+    parameters:
+      min_strength: 1.0
+    default_values: {}
+  A-12:
+    id: A-12
+    description: "House set strength change"
+    inputs: [house_set_strength]
+    outputs: [signal_grade]
+    parameters: {}
+  A-13:
+    id: A-13
+    description: "Pure set alarm"
+    inputs: [sub_lord, star_lord]
+    outputs: [signal_grade]
+    parameters: {}
+  A-14:
+    id: A-14
+    description: "Regime shift detection"
+    inputs: [regime_shift]
+    outputs: [signal_grade, direction]
+    parameters: {}
+  v12.2:
+    id: v12.2
+    description: "Hora weighting rule"
+    inputs: [hora_lord, hora_quality]
+    outputs: [score_contribution]
+    parameters:
+      weight: 0.3
+  v14:
+    id: v14
+    description: "Nadi multiplier"
+    inputs: [nadi]
+    outputs: [multiplier]
+    parameters:
+      Neer: 1.05
+  DL_flags:
+    id: DL_flags
+    description: "Day Lord flags"
+    inputs: [day_lord, moon_sign]
+    outputs: [bias]
+  pure_set_alarm:
+    id: pure_set_alarm
+    description: "Pure set alarm definition"
+    inputs: [sub_lord_chain]
+    outputs: [alarm]
+  hora_weighting:
+    id: hora_weighting
+    description: "Hora contributes 0.3 to slot scores"
+    weight: 0.3
+  rahu_window:
+    id: rahu_window
+    description: "Rahu window half-size rule"
+    inputs: [rahu_activity]
+    outputs: [risk_flag]
+  confirmation:
+    rule: first5_candle
+    points_threshold: 15
+    candles: 5
