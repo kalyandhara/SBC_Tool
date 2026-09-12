@@ -98,32 +98,6 @@ function persistCurrentSettings() {
 // ============================================================================
 // Toast Notification System
 // ============================================================================
-function showToast(message, type = "info", duration = 3000) {
-  const container = getOrCreateToastContainer();
-  const toast = document.createElement("div");
-  toast.className = `toast toast-${type}`;
-  toast.setAttribute("role", "alert");
-  toast.setAttribute("aria-live", "polite");
-  toast.innerHTML = `
-    <span class="toast-message">${message}</span>
-    <button class="toast-close" aria-label="Dismiss">&times;</button>
-  `;
-
-  toast.querySelector(".toast-close").addEventListener("click", () => {
-    toast.remove();
-  });
-
-  container.appendChild(toast);
-
-  // Trigger animation
-  requestAnimationFrame(() => toast.classList.add("toast-show"));
-
-  setTimeout(() => {
-    toast.classList.remove("toast-show");
-    toast.addEventListener("transitionend", () => toast.remove());
-  }, duration);
-}
-
 function getOrCreateToastContainer() {
   let container = $("#toast-container");
   if (!container) {
@@ -153,26 +127,6 @@ const SECTOR_CATEGORIES = [
   { key: "telecom", label: "Telecom", sectors: ["Telecom", "Towers"] },
   { key: "leisure", label: "Leisure & Hospitality", sectors: ["Hotels", "Travel", "Entertainment", "Media"] },
 ];
-
-function initSectorFilters() {
-  const pillContainer = $("#sector-filter-pills");
-  if (!pillContainer) return;
-
-  // Clear existing
-  pillContainer.innerHTML = "";
-
-  SECTOR_CATEGORIES.forEach((cat, idx) => {
-    const btn = document.createElement("button");
-    btn.type = "button";
-    btn.className = "pill" + (idx === 0 ? " active" : "");
-    btn.dataset.filter = cat.key;
-    btn.textContent = cat.label;
-    btn.setAttribute("role", "tab");
-    btn.setAttribute("aria-selected", idx === 0 ? "true" : "false");
-    btn.addEventListener("click", () => handleSectorFilterClick(cat.key, btn));
-    pillContainer.appendChild(btn);
-  });
-}
 
 function handleSectorFilterClick(filterKey, clickedBtn) {
   // Update pill states

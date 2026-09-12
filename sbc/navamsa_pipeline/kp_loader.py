@@ -9,7 +9,7 @@ import pytz
 IST = pytz.timezone("Asia/Kolkata")
 
 def find_kp_file(month_date):
-    base = Path("D:/SBC_Tool - Copy/data/kp")
+    base = Path(__file__).resolve().parents[2] / "data" / "kp"
     # Try file naming KP_Data_MMMYYYY.csv
     month_name = month_date.strftime("%b").capitalize()
     year = month_date.year

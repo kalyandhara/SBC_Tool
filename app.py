@@ -1,5 +1,7 @@
 """Sarvatobhadra Chakra market prediction - Flask app."""
 
+import os
+import hmac
 import datetime
 import time
 import sqlite3
@@ -34,6 +36,8 @@ from sbc.weekly_commentary import generate_weekly_commentary, format_commentary_
 from sbc.market_data import get_nifty_ohlc, moon_rashi
 from sbc.metrics import _bias_scale, _western_bias
 from sbc.config import RASHI_TREND, SECTOR_NAME_MAP
+from sbc import series_cache
+from werkzeug.exceptions import HTTPException
 from sbc.sector_keywords import keywords_for
 from sbc.bullion_vedha import scan_bullion_vedha_matrix, scan_bullion_vedha_week, format_bullion_vedha_for_ui
 from sbc.transit_vedha import scan_transit_vedha_matrix, scan_transit_vedha_week, format_transit_vedha_for_ui
@@ -76,14 +80,58 @@ app.jinja_env.cache = {}
 _request_times = defaultdict(list)
 
 
+# A page load fires ~30 requests, so the old 60/min ceiling throttled the
+# second refresh in a minute. nginx.conf enforces the real limit in production.
+_RATE_LIMIT_PER_MIN = 240
+
+
 @app.before_request
 def _rate_limit():
+    if app.testing:
+        return None
     ip = request.remote_addr
     now = time.time()
     _request_times[ip] = [t for t in _request_times[ip] if now - t < 60]
-    if len(_request_times[ip]) > 60:
+    if len(_request_times[ip]) > _RATE_LIMIT_PER_MIN:
         return jsonify({"error": "rate limit"}), 429
     _request_times[ip].append(now)
+
+
+_API_TOKEN = os.environ.get("SBC_API_TOKEN", "").strip()
+_LOCAL_ADDRS = {"127.0.0.1", "::1", "::ffff:127.0.0.1"}
+
+
+@app.before_request
+def _require_write_token():
+    """Every non-GET route mutates state (profiles, habits, the webhook file).
+
+    With SBC_API_TOKEN set, writes need a matching X-API-Token header.
+    Without it, writes are accepted from this machine only, so binding to
+    0.0.0.0 for a phone on the LAN no longer lets that phone rewrite data.
+    """
+    if request.method in ("GET", "HEAD", "OPTIONS"):
+        return None
+    if _API_TOKEN:
+        supplied = request.headers.get("X-API-Token", "")
+        if supplied and hmac.compare_digest(supplied, _API_TOKEN):
+            return None
+        return jsonify({"error": "write endpoints require a valid X-API-Token header"}), 401
+    if request.remote_addr in _LOCAL_ADDRS:
+        return None
+    return jsonify({"error": "write endpoints are local-only until SBC_API_TOKEN is set"}), 403
+
+
+@app.errorhandler(Exception)
+def _unhandled(exc):
+    """Log the traceback and answer JSON, instead of Flask's HTML 500 page.
+
+    Routes that catch their own exceptions are unaffected; this is the net
+    under the ones that don't (contra_signals returned bare 500s for weeks).
+    """
+    if isinstance(exc, HTTPException):
+        return exc
+    app.logger.exception("Unhandled error on %s %s", request.method, request.path)
+    return jsonify({"error": "internal error", "type": type(exc).__name__}), 500
 
 
 @app.after_request
@@ -838,7 +886,18 @@ def prediction_series():
     if (end_d - start_d).days > 950:
         return jsonify({"error": "range too large (max 950 days)"}), 400
 
+    # L2: rows already computed by a previous process / worker
+    wanted = []
+    d = start_d
+    while d <= end_d:
+        if (d.isoformat(), anchor_key, school) not in _series_cache:
+            wanted.append(d.isoformat())
+        d += datetime.timedelta(days=1)
+    for ds, payload in series_cache.get_many(wanted, anchor_key, school).items():
+        _series_cache[(ds, anchor_key, school)] = payload
+
     out = []
+    fresh = {}
     d = start_d
     while d <= end_d:
         ds = d.isoformat()
@@ -933,10 +992,13 @@ def prediction_series():
                     "confluence": confluence,
                     "lunar_phase": lunar_phase,
                 }
+                fresh[ds] = _series_cache[key]
             except Exception as exc:
                 _series_cache[key] = {"date": ds, "error": str(exc)}
         out.append(_series_cache[key])
         d += datetime.timedelta(days=1)
+    if fresh:
+        series_cache.put_many(fresh, anchor_key, school)
     return jsonify({"series": out, "anchor": anchor_key})
 
 
@@ -1897,7 +1959,11 @@ def api_habits_summary():
 @app.route("/webhook/sbc", methods=["POST"])
 def webhook_sbc():
     try:
-        data = request.get_json() or {}
+        if request.content_length and request.content_length > 64 * 1024:
+            return jsonify({"error": "payload too large (64 KB max)"}), 413
+        data = request.get_json(silent=True)
+        if not isinstance(data, dict):
+            return jsonify({"error": "body must be a JSON object"}), 400
         import json, os
         os.makedirs("data", exist_ok=True)
         with open("data/latest_sbc_signal.json", "w") as f:

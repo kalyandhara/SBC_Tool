@@ -5,7 +5,7 @@ import sqlite3
 from pathlib import Path
 from datetime import datetime
 
-DB_PATH = Path("D:/SBC_Tool - Copy/sbc/navamsa_pipeline/navamsa.db")
+DB_PATH = Path(__file__).resolve().parent / "navamsa.db"
 
 def load_day(date_str):
     conn = sqlite3.connect(DB_PATH)

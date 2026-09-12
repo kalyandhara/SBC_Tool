@@ -1,7 +1,26 @@
+from pathlib import Path
+import os
 """Engine API blueprint."""
 
 from flask import Blueprint, jsonify, request
 import datetime
+
+_KOTA_DIR = Path(__file__).resolve().parents[2] / "data" / "kota"
+
+
+def _kota_excel_path():
+    """Locate the Kota Chakra workbook.
+
+    SBC_KOTA_XLSX overrides; otherwise the newest Prediction_Kota_Chakra*.xlsx
+    under data/kota/. Returns a Path that may not exist (callers 404 on that).
+    """
+    override = os.environ.get("SBC_KOTA_XLSX")
+    if override:
+        return Path(override)
+    candidates = sorted(_KOTA_DIR.glob("Prediction_Kota_Chakra*.xlsx"),
+                        key=lambda p: p.stat().st_mtime)
+    return candidates[-1] if candidates else _KOTA_DIR / "Prediction_Kota_Chakra.xlsx"
+
 
 engine_bp = Blueprint("engine", __name__, url_prefix="/api/engine")
 
@@ -406,7 +425,7 @@ def kota_daily():
         if now_ts - ts < _KOTA_TTL_SECONDS:
             return jsonify(data), 200
     # Default path
-    excel_path = Path(r"C:\Users\Owner\Downloads\Telegram Desktop\Prediction_Kota_Chakra_01.09.2026 till 15.09.2026.xlsx")
+    excel_path = _kota_excel_path()
     if not excel_path.exists():
         return jsonify({"error": "Kota Excel not found"}), 404
     sheets = parse_kota_excel(excel_path)
@@ -434,7 +453,9 @@ def kota_weekly():
     from pathlib import Path
     from sbc.kota_chakra import parse_kota_excel
     week_start = request.args.get("week_start")
-    excel_path = Path(r"C:\Users\Owner\Downloads\Telegram Desktop\Prediction_Kota_Chakra_01.09.2026 till 15.09.2026.xlsx")
+    if not week_start:
+        return jsonify({"error": "week_start is required"}), 400
+    excel_path = _kota_excel_path()
     if not excel_path.exists():
         return jsonify({"error": "Kota Excel not found"}), 404
     sheets = parse_kota_excel(excel_path)
@@ -459,7 +480,9 @@ def kota_monthly():
     from pathlib import Path
     from sbc.kota_chakra import parse_kota_excel
     month = request.args.get("month")
-    excel_path = Path(r"C:\Users\Owner\Downloads\Telegram Desktop\Prediction_Kota_Chakra_01.09.2026 till 15.09.2026.xlsx")
+    if not month:
+        return jsonify({"error": "month is required"}), 400
+    excel_path = _kota_excel_path()
     if not excel_path.exists():
         return jsonify({"error": "Kota Excel not found"}), 404
     sheets = parse_kota_excel(excel_path)

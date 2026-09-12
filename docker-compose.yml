@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   app:
     build:
@@ -7,39 +5,22 @@ services:
       dockerfile: Dockerfile
     container_name: sbc-tool
     ports:
-      - "5000:5000"
+      - "8000:8000"
     volumes:
       - ./data:/app/data
-      - ./logs:/app/logs
     environment:
       - FLASK_ENV=production
       - FLASK_APP=app.py
-      - SECRET_KEY=${SECRET_KEY:-change-me-in-production}
-      - DATABASE_URL=sqlite:///data/profiles.db
-      - REDIS_URL=redis://redis:6379/0
-    depends_on:
-      - redis
+      # Required for any non-GET request that does not come from localhost.
+      # Generate one with:  python -c "import secrets; print(secrets.token_urlsafe(32))"
+      - SBC_API_TOKEN=${SBC_API_TOKEN:?set SBC_API_TOKEN before starting}
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:5000/healthz"]
+      test: ["CMD", "curl", "-f", "http://localhost:8000/healthz"]
       interval: 30s
       timeout: 10s
       retries: 3
       start_period: 10s
-
-  redis:
-    image: redis:7-alpine
-    container_name: sbc-redis
-    ports:
-      - "6379:6379"
-    volumes:
-      - redis_data:/data
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
-      interval: 10s
-      timeout: 5s
-      retries: 3
 
   nginx:
     image: nginx:alpine
@@ -53,7 +34,3 @@ services:
     depends_on:
       - app
     restart: unless-stopped
-
-volumes:
-  redis_data:
-    driver: local

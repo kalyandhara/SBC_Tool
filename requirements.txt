@@ -1,17 +1,15 @@
 # SBC Tool - Vedic Market Timing Workstation
 # Core dependencies
 flask>=3.0.0,<4.0.0
-swisseph>=2.10.0,<3.0.0
+pyswisseph>=2.10.0,<3.0.0  # import name: swisseph
 pandas>=2.1.0,<3.0.0
 numpy>=1.26.0,<2.0.0
 yfinance>=0.2.40,<1.0.0
 requests>=2.31.0,<3.0.0
 
 # Database
-sqlite3  # stdlib
 
 # Timezone handling
-zoneinfo  # stdlib (Python 3.9+)
 timezonefinder>=6.4.0,<7.0.0
 
 # Data processing

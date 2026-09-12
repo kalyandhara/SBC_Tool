@@ -199,10 +199,15 @@ class TestErrorHandling:
                 assert "error" in data
 
     def test_missing_required_params(self, client):
-        """Missing required params should return 400."""
-        # lunar_forecast requires date
-        resp = client.get("/api/lunar_forecast")
-        assert resp.status_code in (400, 429)
+        """Missing required params should return 400.
+
+        /api/lunar_forecast deliberately defaults to today, so it is not a
+        valid probe here (the old assertion only passed because the rate
+        limiter answered 429). prediction_series has genuinely required params.
+        """
+        resp = client.get("/api/prediction_series")
+        assert resp.status_code == 400
+        assert "error" in resp.get_json()
 
     def test_unknown_endpoint(self, client):
         """Unknown endpoint should return 404."""

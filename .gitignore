@@ -183,3 +183,6 @@ data/latest_sbc_signal.json
 data/series_cache.db
 sbc/navamsa_pipeline/navamsa.db
 .playwright-mcp/
+
+# Kota Chakra workbooks are user data, not source
+data/kota/*.xlsx

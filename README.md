@@ -65,10 +65,30 @@ export FLASK_DEBUG=1
 python app.py
 
 # Or with gunicorn (production-like)
-gunicorn -w 4 -b 0.0.0.0:5000 app:app
+gunicorn -w 4 -b 0.0.0.0:8000 app:app
 ```
 
-Open http://localhost:5000 in your browser.
+### Write access (profiles, habits, webhook)
+
+Every non-GET endpoint mutates state. By default writes are accepted from
+**localhost only**, so binding to `0.0.0.0` for a phone on the LAN does not
+let that phone rewrite data. To allow remote writes, set a shared secret:
+
+```bash
+export SBC_API_TOKEN="$(python -c 'import secrets; print(secrets.token_urlsafe(32))')"
+```
+
+Clients then send it as `X-API-Token`. In the browser, store it once and the
+UI attaches it to every write automatically:
+
+```js
+localStorage.setItem('sbcApiToken', '<token>')
+```
+
+The Kota Chakra workbook is read from `data/kota/Prediction_Kota_Chakra*.xlsx`
+(newest wins) or the path in `SBC_KOTA_XLSX`.
+
+Open http://localhost:8000 in your browser.
 
 ## Architecture
 
@@ -318,13 +338,13 @@ WORKDIR /app
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 COPY . .
-EXPOSE 5000
-CMD ["gunicorn", "-w", "4", "-b", "0.0.0.0:5000", "app:app"]
+EXPOSE 8000
+CMD ["gunicorn", "-w", "4", "-b", "0.0.0.0:8000", "app:app"]
 ```
 
 ```bash
 docker build -t sbc-tool .
-docker run -p 5000:5000 sbc-tool
+docker run -p 8000:8000 sbc-tool
 ```
 
 ### Docker Compose
@@ -336,7 +356,7 @@ services:
   app:
     build: .
     ports:
-      - "5000:5000"
+      - "8000:8000"
     volumes:
       - ./data:/app/data
     environment:

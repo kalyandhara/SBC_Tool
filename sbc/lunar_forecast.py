@@ -7,13 +7,14 @@ and planetary nakshatra confluence to generate sector bullish/bearish forecasts.
 from .nakshatra import tithi_of, paksha_of, nakshatra_of, sign_of, moon_nature
 from .planets import positions, all_planets_with_natures
 from .cgsp_framework import angular_distance, get_planet
-from .prediction import sector_read, compute_vedhas, place_planets
+from .prediction import sector_read, compute_vedhas, place_planets, sentiment_of
 from .chakra import GRID
 from .sector_keywords import (
     NAKSHATRA_SECTOR_KEYWORDS,
     canonical_sector,
     canonical_sectors_for,
     classify,
+    normalize_sectors,
 )
 
 # =============================================================================
@@ -237,19 +238,34 @@ def get_sbc_sector_vedha(planets):
         vedha_map, _ = compute_vedhas(planets, school="allthree")
         sector_projections = sector_read(vedha_map, planets)
         
+        # sector_read() scores each *rashi*; the forecast below looks sectors up
+        # by *sector name*. Until this mapping existed the lookup never matched
+        # and the SBC term of every lunar score was silently zero. Each rashi's
+        # net is credited to every canonical sector that rashi signifies.
+        rashi_vedha = {}
         sector_vedha = {}
         for proj in sector_projections:
             rashi = proj["rashi"]
             net = proj["net"]
-            verdict = proj["verdict"]
             hits = proj["hits"]
-            
-            sector_vedha[rashi] = {
+            benefic = sum(1 for h in hits if h["nature"] == "benefic")
+            malefic = sum(1 for h in hits if h["nature"] == "malefic")
+            rashi_vedha[rashi] = {
                 "net": net,
-                "verdict": verdict,
-                "benefic_hits": sum(1 for h in hits if h["nature"] == "benefic"),
-                "malefic_hits": sum(1 for h in hits if h["nature"] == "malefic"),
+                "verdict": proj["verdict"],
+                "benefic_hits": benefic,
+                "malefic_hits": malefic,
             }
+            for sector in normalize_sectors(proj.get("sectors", [])):
+                agg = sector_vedha.setdefault(
+                    sector, {"net": 0.0, "benefic_hits": 0, "malefic_hits": 0, "rashis": []})
+                agg["net"] += net
+                agg["benefic_hits"] += benefic
+                agg["malefic_hits"] += malefic
+                agg["rashis"].append(rashi)
+        for agg in sector_vedha.values():
+            agg["net"] = round(agg["net"], 3)
+            agg["verdict"] = sentiment_of(agg["net"])[0]
         
         # Overall SBC bias
         total_net = sum(p["net"] for p in sector_projections)
@@ -258,6 +274,7 @@ def get_sbc_sector_vedha(planets):
         
         return {
             "sector_vedha": sector_vedha,
+            "rashi_vedha": rashi_vedha,
             "total_net": round(total_net, 2),
             "bullish_rashis": bullish_rashis,
             "bearish_rashis": bearish_rashis,

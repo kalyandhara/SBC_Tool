@@ -39,11 +39,11 @@ USER appuser
 ENV PATH=/home/appuser/.local/bin:$PATH
 
 # Expose port
-EXPOSE 5000
+EXPOSE 8000
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-    CMD curl -f http://localhost:5000/healthz || exit 1
+    CMD curl -f http://localhost:8000/healthz || exit 1
 
 # Run with gunicorn
-CMD ["gunicorn", "-w", "4", "-b", "0.0.0.0:5000", "app:app"]
+CMD ["gunicorn", "-w", "4", "-b", "0.0.0.0:8000", "app:app"]

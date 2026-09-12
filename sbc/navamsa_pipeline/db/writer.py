@@ -4,7 +4,7 @@ Simple SQLite writer for pipeline outputs.
 import sqlite3
 from pathlib import Path
 
-DB_PATH = Path("D:/SBC_Tool - Copy/sbc/navamsa_pipeline/navamsa.db")
+DB_PATH = Path(__file__).resolve().parents[1] / "navamsa.db"
 
 def init_db():
     conn = sqlite3.connect(DB_PATH)

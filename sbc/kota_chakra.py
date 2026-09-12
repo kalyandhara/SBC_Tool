@@ -32,13 +32,17 @@ def parse_kota_excel(path: Path) -> Dict[str, pd.DataFrame]:
     sheets = {}
     for name in xl.sheet_names:
         if "Kota Chakra Dashboard" in name:
-            df = pd.read_excel(path, sheet_name=name, header=5)
-        elif "Monthly Summary" in name:
-            df = pd.read_excel(path, sheet_name=name, header=3)
-        elif "Scoring Rules" in name:
-            df = pd.read_excel(path, sheet_name=name, header=3)
+            header = 5
+        elif "Monthly Summary" in name or "Scoring Rules" in name:
+            header = 3
         else:
-            df = pd.read_excel(path, sheet_name=name)
+            header = 0
+        try:
+            df = pd.read_excel(path, sheet_name=name, header=header)
+        except ValueError:
+            # Sheet has fewer rows than the expected header offset (a summary
+            # tab with 3 lines, say). Read it flat rather than failing the file.
+            df = pd.read_excel(path, sheet_name=name, header=None)
         df.columns = [str(c).strip() for c in df.columns]
         sheets[name] = df
     return sheets

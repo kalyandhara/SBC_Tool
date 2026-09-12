@@ -21,7 +21,7 @@ classifiers = [
 requires-python = ">=3.11"
 dependencies = [
     "flask>=3.0.0,<4.0.0",
-    "swisseph>=2.10.0,<3.0.0",
+    "pyswisseph>=2.10.0,<3.0.0",
     "pandas>=2.1.0,<3.0.0",
     "numpy>=1.26.0,<2.0.0",
     "yfinance>=0.2.40,<1.0.0",
@@ -57,7 +57,7 @@ testpaths = ["tests"]
 python_files = "test_*.py"
 python_classes = "Test*"
 python_functions = "test_*"
-addopts = "-v --tb=short --cov=sbc --cov-report=term-missing --cov-report=xml"
+addopts = "-v --tb=short"
 filterwarnings = [
     "ignore::DeprecationWarning",
     "ignore::PendingDeprecationWarning",
