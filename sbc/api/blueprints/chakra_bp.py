@@ -116,6 +116,48 @@ def bhadra_overlap_result(date_str, tz_name, offset):
 
     return result
 
+def _tithi_summary(tithi):
+    """Name + paksha + Moon nature for build_response()['tithi']."""
+    from sbc.panchang_signals import TITHI_NAMES
+    n = tithi.get("tithi")
+    if not isinstance(n, int) or not 1 <= n <= 30:
+        return None
+    return {
+        "number": n,
+        "name": TITHI_NAMES[n - 1],
+        "paksha": tithi.get("paksha"),
+        "group": tithi.get("group"),
+        "group_weekdays": tithi.get("group_weekdays"),
+        "moon_note": tithi.get("moon_note"),
+        "moon_benefic": (tithi.get("moon_note") or "").startswith("shubha"),
+    }
+
+
+def _bhadra_for_day(date_str, tz_name):
+    """Bhadra (Vishti karana) windows touching the given local day, plus the next one."""
+    from zoneinfo import ZoneInfo
+    from sbc.bhadra import bhadra_windows
+    try:
+        tz = ZoneInfo(tz_name)
+        day = datetime.date.fromisoformat(date_str)
+        day_start = datetime.datetime(day.year, day.month, day.day, tzinfo=tz)
+        day_end = day_start + datetime.timedelta(days=1)
+        nxt_month = (day.replace(day=1) + datetime.timedelta(days=32)).replace(day=1)
+        windows = bhadra_windows(day_start.replace(day=1), tz)
+        windows += bhadra_windows(datetime.datetime(nxt_month.year, nxt_month.month, 1, tzinfo=tz), tz)
+    except Exception:
+        return None
+    fmt = lambda w: {"begin": w["begin"].isoformat(timespec="minutes"),
+                     "end": w["end"].isoformat(timespec="minutes")}
+    today = [fmt(w) for w in windows if w["begin"] < day_end and w["end"] > day_start]
+    upcoming = [w for w in windows if w["begin"] >= day_end]
+    return {
+        "active_today": bool(today),
+        "windows_today": today,
+        "next": fmt(upcoming[0]) if upcoming else None,
+    }
+
+
 @chakra_bp.route('/api/astro/personal')
 def api_astro_personal():
     from app import _utc_from_local, _julday, build_response
@@ -159,11 +201,22 @@ def api_astro_personal():
             idx = int((lon % 360) // 30)
             return signs[idx]
 
+        tithi = market_confluence.get("tithi") or {}
+        alert = market_confluence.get("market_alert") or {}
+
         return jsonify({
             "date": date_str,
             "time": time_str,
             "timezone": tz_name,
             "ayanamsa": round(ayanamsa, 4),
+            "tithi": _tithi_summary(tithi),
+            "weekday": market_confluence.get("weekday"),
+            "bhadra": _bhadra_for_day(date_str, tz_name),
+            "reversal_windows": [{
+                "title": w.get("title", ""),
+                "level": w.get("level", ""),
+                "bias": w.get("bias", ""),
+            } for w in (alert.get("windows") or [])[:4]],
             "sun": {"longitude": sun.get("longitude"), "sign": sign_from_lon(sun.get("longitude")), "nakshatra": sun.get("nakshatra")},
             "moon": {"longitude": moon.get("longitude"), "sign": sign_from_lon(moon.get("longitude")), "nakshatra": moon.get("nakshatra")},
             "rahu": {"longitude": rahu.get("longitude"), "sign": sign_from_lon(rahu.get("longitude"))},

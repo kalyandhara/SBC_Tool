@@ -485,6 +485,57 @@
         </div>
         <div id="yoga-alerts" class="yoga-alerts"></div>
       </section>
+      <!-- Trading Signals - Astro Technical -->
+      <section id="trading-signals-astro" class="panel">
+
+        <div class="panel-head">
+          <h2>TRADING SIGNALS</h2>
+          <span class="panel-sub">Astro-Technical &middot; live panchanga, Bhadra and reversal windows</span>
+          <button class="btn btn-sm btn-secondary" id="toggle-trading-details">Show Details</button>
+        </div>
+        <div id="trading-signals-details" class="hidden">
+          <div id="astro-score" class="panel-sub" style="text-align:center;margin:20px 0"></div>
+          <div class="monthly-heatmap-controls" style="margin:12px 0">
+            <label>Sector
+              <select id="nakshatra-sector-select" class="form-control">
+                <option>Nifty Bank</option>
+                <option>Nifty IT</option>
+                <option>Nifty Auto</option>
+                <option>Nifty Metal</option>
+                <option>Nifty FMCG</option>
+                <option>Nifty Pharma</option>
+                <option>Nifty Energy</option>
+                <option>Nifty Realty</option>
+              </select>
+            </label>
+            <label>Gann Start
+              <input type="date" id="gann-start-date" style="width:150px">
+            </label>
+            <label style="margin-left:8px"><input type="checkbox" id="gann-toggle"> Gann Fan</label>
+            <button id="trading-predicted-actual-load" class="btn" style="margin-left:8px">Load Predicted vs Actual</button>
+          </div>
+          <div id="trading-signals-predicted-actual" style="height:650px;margin-top:24px">
+            <div style="display:flex;gap:12px;margin-bottom:8px;font-size:12px;color:#94a3b8">
+              <span>Top: Predictive intraday path (cumulative KP composite score)</span>
+              <span>Bottom: Actual price candles</span>
+            </div>
+            <div id="predicted-actual-top" style="height:300px;border:1px solid #1e293b;border-radius:6px"></div>
+            <div style="height:8px"></div>
+            <div id="predicted-actual-bottom" style="height:340px;border:1px solid #1e293b;border-radius:6px"></div>
+          </div>
+          <h1 id="astro-score-label">&mdash;</h1>
+          <div id="astro-score-sub">Loading live panchanga&hellip;</div>
+          <div id="astro-signals-list"></div>
+          <div id="reversal-zone" class="alert alert-danger hidden">
+            <div><b>⚡ REVERSAL WINDOWS ACTIVE TODAY</b></div>
+            <div id="reversal-details"></div>
+          </div>
+          <div id="sector-map" style="margin-top:20px">
+            <h3>Today's Sector Map <span id="sector-map-overall" style="float:right"></span></h3>
+            <div id="sector-map-items"></div>
+          </div>
+        </div>
+      </section>
     </div>
 
     <!-- ============================================================== -->
@@ -862,6 +913,30 @@
         <div id="lunar-forecast-content" class="lunar-forecast-content"></div>
         <div id="lunar-forecast-toast" class="toast hidden"></div>
       </section>
+      <!-- Daily Nakshatra Sector Dashboard -->
+      <section id="daily-nakshatra-dashboard" class="panel">
+        <div class="panel-head">
+          <h2>Daily Nakshatra + SBC Sector Confluence</h2>
+          <span class="panel-sub">Moon Nakshatra bias + SBC vedha direction for sector selection</span>
+        </div>
+        <div class="monthly-heatmap-controls">
+          <label>Date <input type="date" id="nakshatra-date"></label>
+          <button id="nakshatra-run" class="btn">Generate</button>
+          <label>Chart range
+            <select id="nakshatra-chart-range">
+              <option value="1">1 month</option>
+              <option value="3" selected>3 months</option>
+              <option value="6">6 months</option>
+              <option value="12">12 months</option>
+            </select>
+          </label>
+          <button id="nakshatra-chart-run" class="btn btn-secondary" type="button">Plot NIFTY Chart</button>
+        </div>
+        <div id="nakshatra-status" class="nifty-chart-status"></div>
+        <div id="nakshatra-content" class="lunar-forecast-content"></div>
+        <div id="nakshatra-chart-status" class="nifty-chart-status"></div>
+        <img id="nakshatra-chart" class="nakshatra-chart hidden" alt="Native Python NIFTY chart with Nakshatra and SBC confluence">
+      </section>
     </div>
 
     <!-- ============================================================== -->
@@ -1059,88 +1134,6 @@
     </div>
 
 
-
-    <!-- Trading Signals - Astro Technical -->
-    <section id="trading-signals-astro" class="panel">
-
-      <div class="panel-head">
-        <h2>TRADING SIGNALS</h2>
-        <span class="panel-sub">Astro-Technical</span>
-        <button class="btn btn-sm btn-secondary" id="toggle-trading-details">Show Details</button>
-      </div>
-      <div class="monthly-heatmap-controls trading-signals-tabs">
-        <button class="btn btn-sm tab active" data-scope="INTRADAY">INTRADAY</button>
-        <button class="btn btn-sm tab" data-scope="SWING">SWING</button>
-        <button class="btn btn-sm tab" data-scope="POSITIONAL">POSITIONAL</button>
-      </div>
-      <div id="trading-signals-details" class="hidden">
-        <div id="astro-score" class="panel-sub" style="text-align:center;margin:20px 0"></div>
-        <div class="monthly-heatmap-controls" style="margin:12px 0">
-          <label>Sector
-            <select id="nakshatra-sector-select" class="form-control">
-              <option>Nifty Bank</option>
-              <option>Nifty IT</option>
-              <option>Nifty Auto</option>
-              <option>Nifty Metal</option>
-              <option>Nifty FMCG</option>
-              <option>Nifty Pharma</option>
-              <option>Nifty Energy</option>
-              <option>Nifty Realty</option>
-            </select>
-          </label>
-          <label>Gann Start
-            <input type="date" id="gann-start-date" style="width:150px">
-          </label>
-          <label style="margin-left:8px"><input type="checkbox" id="gann-toggle"> Gann Fan</label>
-          <button id="trading-predicted-actual-load" class="btn" style="margin-left:8px">Load Predicted vs Actual</button>
-        </div>
-        <div id="trading-signals-predicted-actual" style="height:650px;margin-top:24px">
-          <div style="display:flex;gap:12px;margin-bottom:8px;font-size:12px;color:#94a3b8">
-            <span>Top: Predictive intraday path (cumulative KP composite score)</span>
-            <span>Bottom: Actual price candles</span>
-          </div>
-          <div id="predicted-actual-top" style="height:300px;border:1px solid #1e293b;border-radius:6px"></div>
-          <div style="height:8px"></div>
-          <div id="predicted-actual-bottom" style="height:340px;border:1px solid #1e293b;border-radius:6px"></div>
-        </div>
-        <h1 id="astro-score-label">NEUTRAL</h1>
-        <div id="astro-score-sub">Astro Score: 0 - Wednesday - Krishna Ashtami - Mula Nak</div>
-        <div id="astro-signals-list"></div>
-        <div id="reversal-zone" class="alert alert-danger">
-          <div><b>⚡ REVERSAL ZONE — Possible bias shift approaching</b></div>
-          <div id="reversal-details">Next Reversal Window<br>23:15 - 23:35<br>Probability: High</div>
-        </div>
-        <div id="sector-map" style="margin-top:20px">
-          <h3>Today's Sector Map <span style="float:right">NEUTRAL</span></h3>
-          <div id="sector-map-items"></div>
-        </div>
-      </div>
-    </section>
-
-    <!-- Daily Nakshatra Sector Dashboard -->
-    <section id="daily-nakshatra-dashboard" class="panel">
-      <div class="panel-head">
-        <h2>Daily Nakshatra + SBC Sector Confluence</h2>
-        <span class="panel-sub">Moon Nakshatra bias + SBC vedha direction for sector selection</span>
-      </div>
-      <div class="monthly-heatmap-controls">
-        <label>Date <input type="date" id="nakshatra-date"></label>
-        <button id="nakshatra-run" class="btn">Generate</button>
-        <label>Chart range
-          <select id="nakshatra-chart-range">
-            <option value="1">1 month</option>
-            <option value="3" selected>3 months</option>
-            <option value="6">6 months</option>
-            <option value="12">12 months</option>
-          </select>
-        </label>
-        <button id="nakshatra-chart-run" class="btn btn-secondary" type="button">Plot NIFTY Chart</button>
-      </div>
-      <div id="nakshatra-status" class="nifty-chart-status"></div>
-      <div id="nakshatra-content" class="lunar-forecast-content"></div>
-      <div id="nakshatra-chart-status" class="nifty-chart-status"></div>
-      <img id="nakshatra-chart" class="nakshatra-chart hidden" alt="Native Python NIFTY chart with Nakshatra and SBC confluence">
-    </section>
 
     <!-- Global Disclaimer -->
     <p class="disclaimer">For study and research. Not financial advice. Financial markets involve substantial risk of loss. Trade on your own analysis.</p>
@@ -1773,42 +1766,78 @@ Colour streak: ${colourData.streak} days, last: ${colourData.last||'never'}`);
 
 // Trading Signals Astro Technical
 document.addEventListener('DOMContentLoaded', async ()=>{
-  // Try live data first
+  // Every row below comes from /api/astro/personal (build_response + Bhadra
+  // calendar). Nothing is defaulted: a missing field shows as unavailable.
   const today = localTodayISO();
-  let astro = {};
+  let astro = null;
   try {
     const res = await fetch(`/api/astro/personal?date=${today}`);
     if(res.ok) astro = await res.json();
   } catch(e){}
-  const moonNak = astro.moon?.nakshatra || 'Mula';
-  const vedhaNet = astro.vedha_net || 0;
-  const tithi = astro.tithi || 'Krishna Ashtami';
-  const weekday = new Date().toLocaleDateString('en-US',{weekday:'long'});
-  // Populate trading signals demo
-  const signals = [
-    {icon: vedhaNet>0?'green':'red', title:`SBC VEDHA NET ${vedhaNet.toFixed(2)}`, sub: vedhaNet>0?'bullish undercurrent':'bearish undercurrent'},
-    {icon:'red', title:tithi.toUpperCase(), sub:'inauspicious tithi, exercise caution'},
-    {icon:'green', title:weekday.toUpperCase(), sub:'favorable market day'},
-    {icon:'red', title:moonNak.toUpperCase(), sub:'caution, volatile nakshatra'},
-    {icon:'red', title:'BADRA ACTIVE', sub:'avoid major positions, high risk period'}
-  ];
-  // Update score header
   const scoreLabel = document.getElementById('astro-score-label');
   const scoreSub = document.getElementById('astro-score-sub');
-  if(scoreLabel){
-    const score = vedhaNet>0?'BULLISH':vedhaNet<0?'BEARISH':'NEUTRAL';
-    scoreLabel.textContent = score;
-    scoreSub.textContent = `Astro Score: ${vedhaNet.toFixed(0)} - ${weekday} - ${tithi} - ${moonNak} Nak`;
-    scoreLabel.insertAdjacentHTML('afterend', '<hr style="border:none;border-top:1px solid var(--border);margin:12px 0">');
-  }
   const list = document.getElementById('astro-signals-list');
-  if(list){
-    list.innerHTML = signals.map(s=>`
-      <div class="signal-row" style="display:flex;align-items:flex-start;gap:12px;padding:12px 0;border-bottom:1px solid var(--border)">
-        <div class="signal-dot ${s.icon}" style="width:24px;height:24px;border-radius:50%;background:var(--dot-bg);display:flex;align-items:center;justify-content:center">●</div>
-        <div><b>${s.title}</b><div style="opacity:.7;font-size:13px">${s.sub}</div></div>
-      </div>
-    `).join('');
+  const fmtTime = iso => iso ? iso.slice(11,16) : '?';
+  const fmtDay = iso => iso ? iso.slice(5,10) : '?';
+  if(!astro || astro.error){
+    if(scoreLabel) scoreLabel.textContent = 'UNAVAILABLE';
+    if(scoreSub) scoreSub.textContent = 'Live panchanga could not be loaded.';
+  } else {
+    const vedhaNet = typeof astro.vedha_net === 'number' ? astro.vedha_net : null;
+    const t = astro.tithi;
+    const weekday = astro.weekday || '';
+    const moonNak = astro.moon?.nakshatra || null;
+    const tithiLabel = t ? `${t.paksha} ${t.name}` : 'tithi n/a';
+    const signals = [];
+    if(vedhaNet !== null){
+      signals.push({icon: vedhaNet>0?'green':vedhaNet<0?'red':'grey',
+        title:`SBC VEDHA NET ${vedhaNet.toFixed(2)}`,
+        sub: vedhaNet>0?'benefic vedhas dominate':vedhaNet<0?'malefic vedhas dominate':'balanced'});
+    }
+    if(t){
+      signals.push({icon: t.moon_benefic?'green':'red', title: tithiLabel.toUpperCase(), sub: t.moon_note || ''});
+      if(weekday){
+        const match = (t.group_weekdays||[]).includes(weekday);
+        signals.push({icon: match?'green':'grey', title: weekday.toUpperCase(),
+          sub: match ? `matches ${t.group} tithi weekdays` : `${t.group} tithi favours ${(t.group_weekdays||[]).join('/')||'—'}`});
+      }
+    }
+    if(moonNak){
+      signals.push({icon:'grey', title:`MOON IN ${moonNak.toUpperCase()}`, sub: astro.moon?.sign ? `${astro.moon.sign} (sidereal)` : ''});
+    }
+    const b = astro.bhadra;
+    if(b){
+      if(b.active_today){
+        const spans = b.windows_today.map(w=>`${fmtDay(w.begin)} ${fmtTime(w.begin)}–${fmtDay(w.end)} ${fmtTime(w.end)}`).join(', ');
+        signals.push({icon:'red', title:'BHADRA (VISHTI) TODAY', sub:`${spans} IST · avoid initiating major positions inside the window`});
+      } else {
+        signals.push({icon:'green', title:'NO BHADRA TODAY',
+          sub: b.next ? `next: ${fmtDay(b.next.begin)} ${fmtTime(b.next.begin)}–${fmtDay(b.next.end)} ${fmtTime(b.next.end)} IST` : ''});
+      }
+    }
+    if(scoreLabel){
+      scoreLabel.textContent = vedhaNet===null ? '—' : vedhaNet>0?'BULLISH':vedhaNet<0?'BEARISH':'NEUTRAL';
+      scoreLabel.insertAdjacentHTML('afterend', '<hr style="border:none;border-top:1px solid var(--border);margin:12px 0">');
+    }
+    if(scoreSub){
+      scoreSub.textContent = [vedhaNet!==null?`Vedha net ${vedhaNet.toFixed(2)}`:null, weekday, tithiLabel, moonNak?`${moonNak} Nak`:null]
+        .filter(Boolean).join(' · ');
+    }
+    if(list){
+      list.innerHTML = signals.map(s=>`
+        <div class="signal-row" style="display:flex;align-items:flex-start;gap:12px;padding:12px 0;border-bottom:1px solid var(--border)">
+          <div class="signal-dot ${s.icon}" style="width:24px;height:24px;border-radius:50%;background:var(--dot-bg);display:flex;align-items:center;justify-content:center">●</div>
+          <div><b>${esc(s.title)}</b><div style="opacity:.7;font-size:13px">${esc(s.sub)}</div></div>
+        </div>
+      `).join('');
+    }
+    const rz = document.getElementById('reversal-zone');
+    const rd = document.getElementById('reversal-details');
+    const wins = astro.reversal_windows || [];
+    if(rz && rd){
+      rz.classList.toggle('hidden', wins.length === 0);
+      rd.innerHTML = wins.map(w=>`<div>${esc(w.level)} · ${esc(w.bias)} — ${esc(w.title)}</div>`).join('');
+    }
   }
   // Hide details toggle with aria
   const toggleBtn = document.getElementById('toggle-trading-details');
@@ -1823,17 +1852,6 @@ document.addEventListener('DOMContentLoaded', async ()=>{
     });
   }
 
-  // Tabs
-  document.querySelectorAll('.trading-signals-tabs .tab').forEach(btn=>{
-    btn.addEventListener('click', ()=>{
-      document.querySelectorAll('.trading-signals-tabs .tab').forEach(b=>b.classList.remove('active'));
-      btn.classList.add('active');
-      // Optionally filter signals by scope
-      const scope = btn.dataset.scope;
-      document.getElementById('astro-score-sub').textContent += ` [${scope}]`;
-    });
-  });
-
   // Integrate backtest accuracy into Astro Score display
   const astroScoreSub = document.getElementById('astro-score-sub');
   async function refreshAstroAccuracy(){
@@ -1842,7 +1860,9 @@ document.addEventListener('DOMContentLoaded', async ()=>{
       const res = await fetch(`/api/backtest/moon?ticker=^NSEI&multi_tf=true&regime=true&volume=true&vedha=false`);
       const data = await res.json();
       if(!data.error && data.samples>0){
-        astroScoreSub.textContent += ` | Moon Backtest Accuracy ${(data.accuracy*100).toFixed(1)}%`;
+        let acc = document.getElementById('astro-score-accuracy');
+        if(!acc){ acc = document.createElement('div'); acc.id = 'astro-score-accuracy'; acc.style.opacity = '.7'; astroScoreSub.after(acc); }
+        acc.textContent = `Moon backtest accuracy ${(data.accuracy*100).toFixed(1)}% (${data.samples} samples)`;
       }
     }catch(e){}
   }
@@ -2311,6 +2331,11 @@ document.addEventListener('DOMContentLoaded', async ()=>{
         const dir = v>=0?'up':'down';
         sectors.push({name: sector, score:`${score}/10`, dir});
       });
+      const overall = document.getElementById('sector-map-overall');
+      if(overall && sectors.length){
+        const up = sectors.filter(x=>x.dir==='up').length, down = sectors.length - up;
+        overall.textContent = up>down ? `BULLISH ${up}/${sectors.length}` : down>up ? `BEARISH ${down}/${sectors.length}` : 'MIXED';
+      }
       const sm = document.getElementById('sector-map-items');
       if(sm){
         sm.innerHTML = sectors.slice(0,12).map(sec=>`

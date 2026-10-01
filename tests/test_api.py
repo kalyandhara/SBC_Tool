@@ -456,3 +456,32 @@ class TestRateLimiting:
         for _ in range(10):
             response = client.get("/healthz")
             assert response.status_code == 200
+
+class TestTradingSignalsPanel:
+    """The overview Trading Signals panel must show live data, never demo text."""
+
+    def test_astro_personal_exposes_tithi_bhadra_and_windows(self, client):
+        # 2026-10-02 has a Bhadra window 10:15-21:07 IST; 2026-10-01 has none.
+        on = json.loads(client.get("/api/astro/personal?date=2026-10-02").data)
+        off = json.loads(client.get("/api/astro/personal?date=2026-10-01").data)
+        assert on["bhadra"]["active_today"] is True
+        assert on["bhadra"]["windows_today"][0]["begin"].startswith("2026-10-02T10:")
+        assert off["bhadra"]["active_today"] is False
+        assert off["bhadra"]["next"]["begin"].startswith("2026-10-02")
+        assert off["tithi"]["name"] == "Panchami" and off["tithi"]["paksha"] == "Krishna"
+        assert off["weekday"] == "Thursday"
+        assert isinstance(off["reversal_windows"], list)
+
+    def test_template_has_no_demo_literals(self, client):
+        html = client.get("/").get_data(as_text=True)
+        for literal in ("BADRA ACTIVE", "23:15 - 23:35", "Krishna Ashtami",
+                        "inauspicious tithi", "favorable market day",
+                        "trading-signals-tabs"):
+            assert literal not in html, literal
+
+    def test_panels_live_inside_tabs(self, client):
+        html = client.get("/").get_data(as_text=True)
+        assert html.index('id="tab-overview"') < html.index('id="trading-signals-astro"') \
+            < html.index('id="tab-chart"')
+        assert html.index('id="tab-sectors"') < html.index('id="daily-nakshatra-dashboard"') \
+            < html.index('id="tab-kp"')
