@@ -32,7 +32,7 @@ def kp_intraday_report():
         return jsonify({
             "error": (
                 f"KP data unavailable for {trading_day.strftime('%B %Y')}. "
-                "Use 'Generate Sample Data' to create it explicitly."
+                "Use 'Generate KP Data' (Swiss Ephemeris) to create it."
             )
         }), 404
     config = get_config()

@@ -202,7 +202,7 @@ def intraday_path():
         return jsonify({
             "error": (
                 f"KP data unavailable for {trading_day.strftime('%B %Y')}. "
-                "Generate sample data explicitly to create it."
+                "Use 'Generate KP Data' (Swiss Ephemeris) to create it."
             )
         }), 404
 
@@ -220,10 +220,19 @@ def intraday_path():
     series = []
     cumulative = 0.0
     # Map hora slots by time
-    hora_map = {}
-    for slot in report.day_signature.hora_slots:
-        t = slot.start.strftime("%H:%M")
-        hora_map[t] = slot
+    hora_slots = list(report.day_signature.hora_slots)
+
+    def hora_slot_at(clock):
+        # Horas start at real (sunrise-based) times, not on series ticks:
+        # pick the slot whose [start, end) contains the clock time.
+        try:
+            t = datetime.datetime.strptime(clock, "%H:%M").time()
+        except ValueError:
+            return None
+        for slot in hora_slots:
+            if slot.start <= t < slot.end or (slot.end <= slot.start and t >= slot.start):
+                return slot
+        return None
 
     from sbc.planets import positioned_planets
     # Nadi mapping for 27 nakshatras – simplified
@@ -284,8 +293,8 @@ def intraday_path():
         hora_quality = 0.0
         hora_lord = None
         hora_aspect_mod = 0.0
-        if time_str in hora_map:
-            slot = hora_map[time_str]
+        slot = hora_slot_at(time_str)
+        if slot is not None:
             q = slot.quality.name if hasattr(slot.quality, "name") else str(slot.quality)
             q_map = {"SLUGGISH": -0.5, "NEUTRAL": 0.0, "FRUITFUL": 0.5, "AGGRESSIVE": 0.8, "VOLATILE": 0.0}
             hora_quality = q_map.get(q, 0.0)

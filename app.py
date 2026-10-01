@@ -38,7 +38,6 @@ from sbc.sector_keywords import keywords_for
 from sbc.bullion_vedha import scan_bullion_vedha_matrix, scan_bullion_vedha_week, format_bullion_vedha_for_ui
 from sbc.transit_vedha import scan_transit_vedha_matrix, scan_transit_vedha_week, format_transit_vedha_for_ui
 from sbc.cgsp_framework import generate_cgsp_report
-from sbc.kp_intraday import generate_sample_kp_csv
 from sbc.market_events import lunar_phase_event, planetary_aspect_events, planetary_ingress_events
 from research.astro_research import (
     solar_lunar_cycle_explorer,
@@ -1225,36 +1224,39 @@ def astro_plot():
 
 @app.route("/api/kp_intraday_sample", methods=["POST"])
 def kp_intraday_sample():
-    """Generate sample KP data CSV for testing (explicit user request only)."""
+    """Generate the month's KP data from Swiss Ephemeris (sbc.kp_ephemeris).
+
+    The route name is kept for the UI button; it no longer writes random
+    sample data. An existing file is only replaced when it fails the KP
+    sanity check (i.e. it is an old random sample) or force=true.
+    """
+    import csv as _csv
+    from sbc.kp_ephemeris import generate_kp_month, month_file
+    from sbc.kp_intraday import assess_kp_data
+
     data = request.get_json() or {}
     date_str = data.get("date") or datetime.date.today().isoformat()
-    days = data.get("days", 31)
     force = bool(data.get("force", False))
-
     try:
-        start_date = datetime.date.fromisoformat(date_str)
+        day = datetime.date.fromisoformat(date_str)
     except ValueError:
         return jsonify({"error": "invalid date"}), 400
 
     kp_data_dir = Path(__file__).resolve().parent / "data" / "kp"
-    kp_data_dir.mkdir(parents=True, exist_ok=True)
-
-    output_path = kp_data_dir / f"KP_Data_{start_date.strftime('%b%Y')}.csv"
-    if output_path.exists() and not force:
-        return jsonify({
-            "error": (
-                f"{output_path.name} already exists and may hold real KP data. "
-                "Pass force=true to overwrite it deliberately."
-            )
-        }), 409
-    generate_sample_kp_csv(output_path, start_date, days)
-
-    return jsonify({
-        "file": str(output_path),
-        "days_generated": days,
-        "start_date": start_date.isoformat(),
-        "sample": True,
-    })
+    output_path = month_file(kp_data_dir, day.year, day.month)
+    replaced = None
+    if output_path.exists():
+        with open(output_path, encoding="utf-8") as f:
+            existing = assess_kp_data(list(_csv.DictReader(f)))
+        if not existing["synthetic"] and not force:
+            return jsonify({
+                "error": f"{output_path.name} already holds ephemeris KP data. "
+                         "Pass force=true to regenerate it.",
+            }), 409
+        replaced = "synthetic" if existing["synthetic"] else "ephemeris"
+    info = generate_kp_month(day.year, day.month, output_path)
+    return jsonify({**info, "month": day.strftime("%Y-%m"),
+                    "source": "swiss_ephemeris", "replaced": replaced})
 
 
 @app.route("/api/habits/log", methods=["POST"])

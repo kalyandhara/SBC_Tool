@@ -200,5 +200,3 @@ data/output/
 package.json
 package-lock.json
 
-# Random sample KP file, not ephemeris data (backlog B-33); never commit it
-data/kp/KP_Data_Nov2026.csv

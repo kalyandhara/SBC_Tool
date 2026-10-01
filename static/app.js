@@ -3739,23 +3739,25 @@ async function loadKPIntradayReport(date, instrument, format) {
   }
 }
 
-async function generateKPSampleData(date, days) {
+// Computes the month's KP data from Swiss Ephemeris on the server, then loads
+// the report. 409 means real data already exists, which is fine: just load it.
+async function generateKPSampleData(date) {
+  const content = $("kp-intraday-content");
   try {
+    if (content) { content.className = "kp-intraday-content panel-loading"; content.textContent = "Computing KP data from Swiss Ephemeris…"; }
     const response = await fetchWithTimeout("/api/kp_intraday_sample", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ date, days })
+      body: JSON.stringify({ date })
     });
     const data = await response.json();
-    if (data.error) throw new Error(data.error);
-    // Auto-load the report
+    if (data.error && response.status !== 409) throw new Error(data.error);
     loadKPIntradayReport(date, $("kp-intraday-instrument").value, $("kp-intraday-format").value);
   } catch (e) {
-    console.error("KP sample generation failed:", e);
-    const content = $("kp-intraday-content");
+    console.error("KP data generation failed:", e);
     if (content) {
       content.className = "kp-intraday-content panel-error";
-      content.textContent = "Sample data could not be generated. Try again.";
+      content.textContent = `KP data could not be generated: ${e.message}`;
     }
   }
 }
@@ -3773,7 +3775,7 @@ if ($("kp-intraday-run")) {
 if ($("kp-intraday-sample")) {
   $("kp-intraday-sample").addEventListener("click", () => {
     const date = ($("kp-intraday-date") && $("kp-intraday-date").value) || ($("date") && $("date").value);
-    if (date) generateKPSampleData(date, 31);
+    if (date) generateKPSampleData(date);
   });
 }
 

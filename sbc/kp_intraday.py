@@ -405,20 +405,32 @@ class KPDataParser:
         moon_sign = moon_rows[0].get('sign', '') if moon_rows else ''
         moon_star = moon_rows[0].get('star', '') if moon_rows else ''
         moon_speed = float(moon_rows[0].get('moon_speed', 0)) if moon_rows else 0.0
+        moon_aspects = moon_rows[0].get('aspects', '') if moon_rows else ''
 
         asc_rows = [r for r in day_rows if r.get('planet') == 'Ascendant']
         opening_sublord = asc_rows[0].get('sublord', '') if asc_rows else ''
 
-        hora_rows = [r for r in day_rows if r.get('hora_lord')]
+        # One slot per hora: a new slot starts where the lord changes. Ephemeris
+        # files carry hora_lord on every row; older files only at slot starts.
+        # Aspects are those received by the hora lord (its own planet row).
+        rows_by_ts: dict[str, dict[str, dict]] = {}
+        for r in day_rows:
+            rows_by_ts.setdefault(r.get('timestamp', ''), {})[r.get('planet', '')] = r
         hora_slots = []
-        for hr in hora_rows:
-            ts = self._parse_time(hr.get('timestamp', ''))
-            if ts:
-                hora_slots.append({
-                    'time': ts,
-                    'lord': hr.get('hora_lord', ''),
-                    'aspects': hr.get('aspects', '')
-                })
+        prev_lord = None
+        for ts_str in sorted(rows_by_ts):
+            by_planet = rows_by_ts[ts_str]
+            lord = next((r.get('hora_lord') for r in by_planet.values() if r.get('hora_lord')), '')
+            ts = self._parse_time(ts_str)
+            if not lord or not ts or lord == prev_lord:
+                continue
+            prev_lord = lord
+            lord_row = by_planet.get(lord) or next(iter(by_planet.values()))
+            hora_slots.append({'time': ts, 'lord': lord, 'aspects': lord_row.get('aspects', '')})
+        # A lord change on the closing row would be a zero-length slot.
+        hora_slots = [hs for hs in hora_slots if hs['time'] < time(15, 30)] or hora_slots
+        for i, hs in enumerate(hora_slots):
+            hs['end'] = hora_slots[i + 1]['time'] if i + 1 < len(hora_slots) else time(15, 30)
 
         return {
             'day_lord': day_lord,
@@ -426,6 +438,7 @@ class KPDataParser:
             'moon_star': moon_star,
             'opening_sublord': opening_sublord,
             'moon_speed': moon_speed,
+            'moon_aspects': moon_aspects,
             'hora_slots': hora_slots,
             'all_rows': day_rows
         }
@@ -1093,15 +1106,17 @@ def generate_kp_intraday_report(
     data_quality = assess_kp_data(rows)
     day_data = parser.parse_day_data(rows, trading_day)
 
+    # compute_day_bias wants the Moon's star LORD; the CSV holds the star name.
+    from sbc.kp_ephemeris import STAR_LORD
     day_bias_score, day_bias_label = engine.compute_day_bias(
         day_data['day_lord'],
-        day_data['moon_star']
+        STAR_LORD.get(day_data['moon_star'], day_data['moon_star'])
     )
 
     moon_affliction = engine.evaluate_moon_affliction_gate(
         day_data['moon_sign'],
         day_data['moon_star'],
-        day_data['all_rows'][0].get('aspects', '') if day_data['all_rows'] else ''
+        day_data['moon_aspects']
     )
 
     hora_slots = []
@@ -1109,7 +1124,7 @@ def generate_kp_intraday_report(
         quality, base_q, asp_rec, interp, notes = engine.evaluate_hora_quality(hs['lord'], hs['aspects'])
         hora_slots.append(HoraSlot(
             start=hs['time'],
-            end=(datetime.combine(date.today(), hs['time']) + timedelta(minutes=60)).time(),
+            end=hs.get('end') or (datetime.combine(date.today(), hs['time']) + timedelta(minutes=60)).time(),
             lord=hs['lord'],
             quality=quality,
             base_quality=base_q,
