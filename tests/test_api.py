@@ -504,3 +504,39 @@ class TestIntradayPathExperimentalLabel:
         assert "Predictive intraday path (cumulative KP composite score)" not in html
         btn = html[html.index('id="trading-predicted-actual-load"'):]
         assert "experimental-badge" in btn[:300]
+
+
+class TestKPReportExperimentalLabel:
+    """KP report signals share the intraday path's no-edge result."""
+
+    URL = "/api/kp_intraday_report?date=2026-10-01&instrument=NIFTY"
+
+    def test_json_report_marked_experimental(self, client):
+        from sbc.kp_intraday import EXPERIMENTAL_VALIDATION
+        data = json.loads(client.get(self.URL).data)
+        assert data["status"] == "experimental"
+        assert data["validation"] == EXPERIMENTAL_VALIDATION
+        assert data["experimental_notice"].startswith("No validated edge")
+
+    def test_html_report_carries_notice(self, client):
+        html = client.get(self.URL + "&format=html").get_data(as_text=True)
+        assert "experimental-badge" in html and "No validated edge" in html
+
+    def test_docx_report_carries_notice(self, client):
+        import io
+        from docx import Document
+        resp = client.get(self.URL + "&format=docx")
+        assert resp.status_code == 200
+        text = "\n".join(p.text for p in Document(io.BytesIO(resp.data)).paragraphs[:8])
+        assert "EXPERIMENTAL — No validated edge" in text
+
+    def test_path_and_report_share_validation(self, client):
+        path = json.loads(client.get(
+            "/api/engine/intraday_path?date=2026-10-01&instrument=NIFTY").data)
+        report = json.loads(client.get(self.URL).data)
+        assert path["validation"] == report["validation"]
+
+    def test_kp_panel_heading_badged(self, client):
+        html = client.get("/").get_data(as_text=True)
+        head = html[html.index('id="kp-intraday"'):html.index('class="kp-intraday-controls"')]
+        assert "experimental-badge" in head and "no edge over chance" in head

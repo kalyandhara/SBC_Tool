@@ -3532,6 +3532,7 @@ function renderKPIntradayReport(data) {
     <div class="kp-meta-line"><strong>Trading Day:</strong> ${data.trading_day}</div>
     <div class="kp-meta-line"><strong>${data.instrument}</strong> &bull; ${data.market} &bull; ${data.ayanamsa}</div>
     <div class="kp-brand">${data.brand || 'Astro Quant Research Initiative | Trading Bramha Consulting'}</div>
+    ${data.status === 'experimental' ? `<p class="experimental-note"><span class="experimental-badge">Experimental</span> ${esc(data.experimental_notice || 'No validated edge; research only.')}</p>` : ''}
   `;
   report.appendChild(header);
 
@@ -3722,6 +3723,7 @@ async function loadKPIntradayReport(date, instrument, format) {
     if (format === 'html') {
       if (!response.ok) throw new Error("unavailable (HTTP " + response.status + ")");
       const html = await response.text();
+      $("kp-intraday-content").className = "kp-intraday-content";
       $("kp-intraday-content").innerHTML = html;
       $("kp-intraday-content").dataset.reportDate = date;
     } else {

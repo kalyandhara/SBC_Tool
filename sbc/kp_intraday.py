@@ -6,6 +6,7 @@ trend change prediction reports for NIFTY/BANK NIFTY.
 
 import csv
 import json
+from html import escape as html_escape
 from dataclasses import dataclass, field
 from datetime import date, datetime, time, timedelta
 from enum import Enum
@@ -133,6 +134,28 @@ class KPIntradayReport:
 
     config: dict[str, Any] = field(default_factory=dict)
     data_quality: dict[str, Any] = field(default_factory=dict)
+
+
+# The KP report's signals (regime shifts, trend-change windows) and the
+# intraday path built from them showed no edge when back-tested on Swiss
+# Ephemeris KP data (scripts/validate_intraday_path.py). Every surface that
+# shows them (JSON, HTML, DOCX, /api/engine/intraday_path) carries this notice.
+# Update the numbers here when the validation is re-run.
+EXPERIMENTAL_VALIDATION = {
+    "period": "2026-08-04..2026-09-30",
+    "days": 41,
+    "direction_hit_rate": 0.508,
+    "regime_shift_hit_rate": 0.497,
+    "pooled_corr": 0.004,
+    "verdict": "no edge over chance",
+}
+EXPERIMENTAL_NOTICE = (
+    "No validated edge. Back-test on Swiss-Ephemeris KP data, "
+    "4 Aug–30 Sep 2026 (41 days): hourly direction hit 50.8%, regime-shift hit "
+    "49.7%, correlation with returns +0.004 — indistinguishable from chance. "
+    "For research only; do not trade on these signals. "
+    "Details: docs/INTRADAY_PATH_VALIDATION.md."
+)
 
 
 # NSE session bounds used by the cumulative path builder.
@@ -312,6 +335,9 @@ def report_to_dict(report: KPIntradayReport) -> dict[str, Any]:
         "exhaustion_warnings": list(report.exhaustion_warnings),
         "source_file": report.source_file,
         "data_quality": report.data_quality,
+        "status": "experimental",
+        "validation": dict(EXPERIMENTAL_VALIDATION),
+        "experimental_notice": EXPERIMENTAL_NOTICE,
     }
 
 
@@ -913,6 +939,8 @@ class KPReportGenerator:
         lines.append(f'<div class="kp-meta-line"><strong>Trading Day:</strong> {report.trading_day.isoformat()}</div>')
         lines.append(f'<div class="kp-meta-line"><strong>{report.instrument}</strong> &bull; {report.market} &bull; {report.ayanamsa}</div>')
         lines.append("<div class=\"kp-brand\">" + report.brand + "</div>")
+        lines.append('<p class="experimental-note"><span class="experimental-badge">Experimental</span> '
+                     + html_escape(EXPERIMENTAL_NOTICE) + '</p>')
         lines.append('</div>')
         lines.append('<hr class="kp-divider">')
         return '\n'.join(lines)

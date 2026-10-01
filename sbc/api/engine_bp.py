@@ -193,7 +193,9 @@ def intraday_path():
     from pathlib import Path
 
     from sbc.kp_config import get_config, get_instrument_config
-    from sbc.kp_intraday import generate_kp_intraday_report
+    from sbc.kp_intraday import (
+        EXPERIMENTAL_NOTICE, EXPERIMENTAL_VALIDATION, generate_kp_intraday_report,
+    )
 
     kp_data_dir = Path(__file__).resolve().parents[2] / "data" / "kp"
     kp_data_dir.mkdir(parents=True, exist_ok=True)
@@ -417,14 +419,8 @@ def intraday_path():
         "data_quality": report.data_quality,
         # No validated edge: see docs/INTRADAY_PATH_VALIDATION.md.
         "status": "experimental",
-        "validation": {
-            "period": "2026-08-04..2026-09-30",
-            "days": 41,
-            "direction_hit_rate": 0.508,
-            "regime_shift_hit_rate": 0.497,
-            "pooled_corr": 0.004,
-            "verdict": "no edge over chance",
-        },
+        "validation": dict(EXPERIMENTAL_VALIDATION),
+        "experimental_notice": EXPERIMENTAL_NOTICE,
         "report_summary": {
             "day_lord": getattr(report.day_signature, "day_lord", None),
             "moon_sign": getattr(report.day_signature, "moon_sign", None),

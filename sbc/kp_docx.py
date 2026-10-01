@@ -83,6 +83,8 @@ def render_docx(report) -> bytes:
     _meta(doc, f"Source: {report.source_file}   |   Generated: "
                f"{report.generated_at.strftime('%d-%b-%Y %H:%M')}")
     _meta(doc, report.brand)
+    from sbc.kp_intraday import EXPERIMENTAL_NOTICE
+    _para(doc, "EXPERIMENTAL — " + EXPERIMENTAL_NOTICE, size=9.5)
 
     # --- 1. Day chart signature ------------------------------------------
     _h(doc, "1. Day Chart Signature")
