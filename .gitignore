@@ -186,3 +186,4 @@ sbc/navamsa_pipeline/navamsa.db
 
 # Kota Chakra workbooks are user data, not source
 data/kota/*.xlsx
+data/profiles.db.*

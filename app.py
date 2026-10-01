@@ -51,6 +51,7 @@ from research.astro_research import (
 from sbc.api.engine_bp import engine_bp
 from sbc.api.sector_bp import sector_bp
 from sbc.app_boot import boot
+from sbc import db as profiles_db
 
 app = Flask(__name__)
 
@@ -1266,8 +1267,7 @@ def api_habits_log():
         if not habit_type or not log_date:
             return jsonify({"error":"habit_type and date required"}),400
         import sqlite3, datetime
-        db_path = Path("data/profiles.db")
-        conn = sqlite3.connect(str(db_path))
+        conn = profiles_db.connect()
         cur = conn.cursor()
         cur.execute("INSERT INTO habit_logs(user_key, habit_type, log_date, created_at) VALUES(?,?,?,?)",
                     (user_key, habit_type, log_date, datetime.datetime.utcnow().isoformat()))
@@ -1283,8 +1283,7 @@ def api_habits_streaks():
     try:
         user_key = request.args.get("user_key","default")
         import sqlite3, datetime as dt
-        db_path = Path("data/profiles.db")
-        conn = sqlite3.connect(str(db_path))
+        conn = profiles_db.connect()
         cur = conn.cursor()
         cur.execute("SELECT habit_type, log_date FROM habit_logs WHERE user_key=?", (user_key,))
         rows = cur.fetchall()
@@ -1339,8 +1338,7 @@ def api_habits_history():
         user_key = request.args.get("user_key","default")
         days = int(request.args.get("days","7"))
         import sqlite3, datetime as dt
-        db_path = Path("data/profiles.db")
-        conn = sqlite3.connect(str(db_path))
+        conn = profiles_db.connect()
         cur = conn.cursor()
         # Get logs for last N days
         start_date = (dt.date.today() - dt.timedelta(days=days-1)).isoformat()
@@ -1360,8 +1358,7 @@ def api_habits_summary():
     try:
         user_key = request.args.get("user_key","default")
         import sqlite3
-        db_path = Path("data/profiles.db")
-        conn = sqlite3.connect(str(db_path))
+        conn = profiles_db.connect()
         cur = conn.cursor()
         cur.execute("SELECT habit_type, COUNT(DISTINCT log_date) as days FROM habit_logs WHERE user_key=? GROUP BY habit_type", (user_key,))
         rows = cur.fetchall()
@@ -1578,8 +1575,7 @@ def api_astro_profile_export():
     try:
         user_key = request.args.get("user_key", "default")
         import sqlite3
-        db_path = Path("data/profiles.db")
-        conn = sqlite3.connect(str(db_path))
+        conn = profiles_db.connect()
         cur = conn.cursor()
         cur.execute("SELECT id, data, created_at, name, is_default FROM profiles WHERE user_key=?", (user_key,))
         rows = cur.fetchall()
@@ -1596,8 +1592,7 @@ def api_astro_profile_import():
         user_key = request.headers.get("X-User-Key", "default")
         incoming = request.get_json() or []
         import sqlite3
-        db_path = Path("data/profiles.db")
-        conn = sqlite3.connect(str(db_path))
+        conn = profiles_db.connect()
         cur = conn.cursor()
         imported = 0
         for p in incoming:
@@ -1622,8 +1617,7 @@ def api_astro_profile_save():
         data = request.get_json() or {}
         user_key = request.headers.get("X-User-Key", "default")
         import sqlite3, datetime
-        db_path = Path("data/profiles.db")
-        conn = sqlite3.connect(str(db_path))
+        conn = profiles_db.connect()
         cur = conn.cursor()
         cur.execute("INSERT INTO profiles(user_key, data, created_at) VALUES(?,?,?)",
                     (user_key, json.dumps(data), datetime.datetime.utcnow().isoformat()))
@@ -1641,8 +1635,7 @@ def api_astro_profile_update(pid):
         data = request.get_json() or {}
         name = data.get("name")
         import sqlite3
-        db_path = Path("data/profiles.db")
-        conn = sqlite3.connect(str(db_path))
+        conn = profiles_db.connect()
         cur = conn.cursor()
         if name is not None:
             cur.execute("UPDATE profiles SET name=? WHERE id=?", (name, pid))
@@ -1657,8 +1650,7 @@ def api_astro_profile_update(pid):
 def api_astro_profile_set_default(pid):
     try:
         import sqlite3
-        db_path = Path("data/profiles.db")
-        conn = sqlite3.connect(str(db_path))
+        conn = profiles_db.connect()
         cur = conn.cursor()
         cur.execute("UPDATE profiles SET is_default=0 WHERE is_default=1")
         cur.execute("UPDATE profiles SET is_default=1 WHERE id=?", (pid,))
@@ -1673,8 +1665,7 @@ def api_astro_profile_set_default(pid):
 def api_astro_profile_delete(pid):
     try:
         import sqlite3
-        db_path = Path("data/profiles.db")
-        conn = sqlite3.connect(str(db_path))
+        conn = profiles_db.connect()
         cur = conn.cursor()
         cur.execute("DELETE FROM profiles WHERE id=?", (pid,))
         conn.commit()
@@ -1689,10 +1680,7 @@ def api_astro_profile_load():
     try:
         user_key = request.args.get("user_key", "default")
         import sqlite3
-        db_path = Path("data/profiles.db")
-        if not db_path.exists():
-            return jsonify([])
-        conn = sqlite3.connect(str(db_path))
+        conn = profiles_db.connect()
         cur = conn.cursor()
         cur.execute("SELECT id, data, created_at, name, is_default FROM profiles WHERE user_key=? ORDER BY is_default DESC, id DESC", (user_key,))
         rows = cur.fetchall()

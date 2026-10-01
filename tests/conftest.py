@@ -11,6 +11,9 @@ import os, tempfile
 # Keep test runs out of the real on-disk series cache.
 os.environ.setdefault("SBC_SERIES_CACHE_DB",
                       os.path.join(tempfile.gettempdir(), "sbc_test_series_cache.db"))
+# ...and out of the real birth-data profiles (fresh file per session).
+_PROFILES_DB = os.path.join(tempfile.gettempdir(), f"sbc_test_profiles_{os.getpid()}.db")
+os.environ["SBC_PROFILES_DB"] = _PROFILES_DB
 
 from app import app as flask_app
 
