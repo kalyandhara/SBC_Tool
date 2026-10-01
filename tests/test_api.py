@@ -89,6 +89,20 @@ class TestPredictionSeriesEndpoint:
         assert "anchor" in data
         assert len(data["series"]) == 10
 
+    def test_prediction_series_rebuilds_trimmed_cache_rows(self, client):
+        """A trimmed L2 row (old boot warm-up shape) must be rebuilt in full."""
+        from sbc import series_cache
+        from sbc.api.blueprints import chart_bp
+        day = "2026-02-03"
+        series_cache.put_many({day: {"date": day, "score": 1, "net": 0.5}},
+                              "nifty", "classical")
+        chart_bp._series_cache.pop((day, "nifty", "classical"), None)
+        resp = client.get(f"/api/prediction_series?start={day}&end={day}&anchor=nifty")
+        row = json.loads(resp.data)["series"][0]
+        assert chart_bp.SERIES_KEYS <= row.keys()
+        stored = series_cache.get_many([day], "nifty", "classical")[day]
+        assert chart_bp.SERIES_KEYS <= stored.keys()
+
     def test_prediction_series_invalid_range(self, client):
         """Too large range should return 400."""
         response = client.get(

@@ -11,6 +11,14 @@ chart_bp = Blueprint('chart', __name__, url_prefix='')
 # (SQLite lock, ephemeris hiccup) is retried on the next request.
 _series_cache = {}
 
+# Every key a /api/prediction_series row carries; the chart's risk bands and
+# hover cards read all of them.
+SERIES_KEYS = frozenset({
+    "date", "score", "net", "verdict", "strength", "rec", "alert",
+    "alert_level", "risk_rank", "risk_label", "alerts_total", "drivers",
+    "windows", "confluence", "lunar_phase",
+})
+
 _LEVEL_RANK = {"LOW": 1, "MODERATE": 2, "MODERATE-HIGH": 3,
                "HIGH": 4, "VERY HIGH": 5, "EXTREME": 6,
                "CRITICAL": 7}
@@ -79,7 +87,10 @@ def prediction_series():
             wanted.append(d.isoformat())
         d += datetime.timedelta(days=1)
     for ds, payload in series_cache.get_many(wanted, anchor_key, school).items():
-        _series_cache[(ds, anchor_key, school)] = payload
+        # Rows missing the full shape (an old boot warm-up wrote trimmed ones)
+        # count as misses, so they get rebuilt and overwritten below.
+        if SERIES_KEYS <= payload.keys():
+            _series_cache[(ds, anchor_key, school)] = payload
 
     out = []
     fresh = {}
