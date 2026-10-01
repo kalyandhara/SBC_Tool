@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <link rel="icon" type="image/svg+xml" href="/static/favicon.svg">
   <title>Sarvatobhadra Chakra - Market Prediction</title>
-  <link rel="stylesheet" href="/static/style.css?v=19">
+  <link rel="stylesheet" href="/static/style.css?v=20">
   <script src="/static/chart.umd.min.js"></script>
   <script src="/static/js/api-token.js"></script>
 </head>
@@ -512,11 +512,11 @@
               <input type="date" id="gann-start-date" style="width:150px">
             </label>
             <label style="margin-left:8px"><input type="checkbox" id="gann-toggle"> Gann Fan</label>
-            <button id="trading-predicted-actual-load" class="btn" style="margin-left:8px">Load Predicted vs Actual</button>
+            <button id="trading-predicted-actual-load" class="btn" style="margin-left:8px" title="Experimental: not validated">Load Projection vs Actual <span class="experimental-badge">Experimental</span></button>
           </div>
           <div id="trading-signals-predicted-actual" style="height:650px;margin-top:24px">
             <div style="display:flex;gap:12px;margin-bottom:8px;font-size:12px;color:#94a3b8">
-              <span>Top: Predictive intraday path (cumulative KP composite score)</span>
+              <span>Top: SBC intraday projection (/api/intraday_projection) &mdash; <strong style="color:var(--accent)">experimental, not validated</strong></span>
               <span>Bottom: Actual price candles</span>
             </div>
             <div id="predicted-actual-top" style="height:300px;border:1px solid #1e293b;border-radius:6px"></div>
@@ -971,10 +971,11 @@
           </label>
           <button id="kp-intraday-run" class="btn">⚡ Generate Report</button>
           <button id="kp-intraday-sample" class="btn btn-secondary" title="Compute this month's KP data from Swiss Ephemeris">Generate KP Data</button>
-          <button id="kp-intraday-path" class="btn btn-secondary">📈 Predictive Intraday Path</button>
+          <button id="kp-intraday-path" class="btn btn-secondary" title="Experimental: no validated edge">📈 Intraday Path (experimental)</button>
         </div>
         <div id="kp-intraday-path-chart" class="kp-intraday-chart" style="display:none;">
-          <h3>Predictive Intraday Path (cumulative KP composite score)</h3>
+          <h3>Intraday Path (cumulative KP composite score) <span class="experimental-badge">Experimental</span></h3>
+          <p class="experimental-note"><strong>Experimental &mdash; no validated edge.</strong> Back-test on Swiss-Ephemeris KP data, 4 Aug&ndash;30 Sep 2026 (41 days): hourly direction hit 50.8%, regime-shift hit 49.7%, correlation with returns +0.004 &mdash; indistinguishable from chance. Shown for research only; do not trade on it. Details: <code>docs/INTRADAY_PATH_VALIDATION.md</code>.</p>
           <div id="kp-path-container" style="height: 320px; width: 100%;"></div>
           <div id="kp-nifty-intraday-wrap" style="margin-top:24px; display:none;">
             <h4>NIFTY Intraday Chart (3-min)</h4>

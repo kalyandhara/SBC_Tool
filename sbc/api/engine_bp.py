@@ -415,6 +415,16 @@ def intraday_path():
         "strongest_bullish": strongest_bullish,
         "strongest_bearish": strongest_bearish,
         "data_quality": report.data_quality,
+        # No validated edge: see docs/INTRADAY_PATH_VALIDATION.md.
+        "status": "experimental",
+        "validation": {
+            "period": "2026-08-04..2026-09-30",
+            "days": 41,
+            "direction_hit_rate": 0.508,
+            "regime_shift_hit_rate": 0.497,
+            "pooled_corr": 0.004,
+            "verdict": "no edge over chance",
+        },
         "report_summary": {
             "day_lord": getattr(report.day_signature, "day_lord", None),
             "moon_sign": getattr(report.day_signature, "moon_sign", None),

@@ -3166,3 +3166,16 @@ a:focus-visible,
   top: 16px;
 }
 
+
+/* Experimental-feature labelling (models with no validated edge) */
+.experimental-badge {
+  display: inline-block; margin-left: 8px; padding: 2px 8px; border-radius: 999px;
+  font-size: 11px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase;
+  vertical-align: middle; color: var(--accent);
+  border: 1px solid var(--accent); background: color-mix(in srgb, var(--accent) 12%, transparent);
+}
+.experimental-note {
+  margin: 6px 0 12px; padding: 8px 12px; border-left: 3px solid var(--accent);
+  background: var(--panel2); color: var(--muted); font-size: 12px; line-height: 1.5;
+}
+.experimental-note strong { color: var(--text); }

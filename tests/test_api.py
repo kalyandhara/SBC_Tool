@@ -485,3 +485,22 @@ class TestTradingSignalsPanel:
             < html.index('id="tab-chart"')
         assert html.index('id="tab-sectors"') < html.index('id="daily-nakshatra-dashboard"') \
             < html.index('id="tab-kp"')
+
+
+class TestIntradayPathExperimentalLabel:
+    """The intraday path has no validated edge; UI and API must say so."""
+
+    def test_api_marks_path_experimental(self, client):
+        data = json.loads(client.get(
+            "/api/engine/intraday_path?date=2026-09-15&instrument=NIFTY").data)
+        assert data["status"] == "experimental"
+        assert data["validation"]["verdict"] == "no edge over chance"
+
+    def test_ui_labels_path_and_projection_experimental(self, client):
+        html = client.get("/").get_data(as_text=True)
+        path_panel = html[html.index('id="kp-intraday-path-chart"'):html.index('id="kp-path-container"')]
+        assert "experimental-badge" in path_panel and "no validated edge" in path_panel
+        assert "Intraday Path (experimental)" in html
+        assert "Predictive intraday path (cumulative KP composite score)" not in html
+        btn = html[html.index('id="trading-predicted-actual-load"'):]
+        assert "experimental-badge" in btn[:300]
