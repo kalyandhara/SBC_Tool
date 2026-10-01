@@ -3,6 +3,7 @@ const TOL = 0.5;
 const FETCH_TIMEOUT = 8000;
 
 const $ = (id) => document.getElementById(id);
+function esc(s){ return String(s ?? '').replace(/[&<>"']/g, m=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[m])); }
 
 async function fetchWithTimeout(url, options = {}) {
   const controller = new AbortController();
@@ -12,6 +13,20 @@ async function fetchWithTimeout(url, options = {}) {
   } finally {
     clearTimeout(id);
   }
+}
+
+// Local (IST-aware) calendar date, not the UTC date — new Date().toISOString()
+// returns the previous day for UTC+5:30 between 00:00 and 05:30.
+function localTodayISO(tz) {
+  return new Intl.DateTimeFormat('en-CA', {
+    timeZone: tz || 'Asia/Kolkata', year: 'numeric', month: '2-digit', day: '2-digit',
+  }).format(new Date());
+}
+
+// Format a local Date object as YYYY-MM-DD without converting through UTC
+// (toISOString() shifts the date back one day for UTC+ timezones).
+function isoDateOf(d) {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }
 
 const NATURE = {
@@ -241,6 +256,27 @@ function setExecutiveLoading() {
 function showPredictionError() {
   const errorBox = $("prediction-error");
   if (errorBox) errorBox.classList.remove("hidden");
+  // Reset any badges still stuck on "Loading..." (no successful result yet);
+  // previously loaded results are left untouched.
+  const resetBadge = (badgeId, placeholder) => {
+    const el = $(badgeId);
+    if (el && el.textContent.trim() === "Loading...") el.innerHTML = placeholder;
+  };
+  resetBadge("exec-bias-badge", '<span class="dir-badge dir-neutral">Awaiting prediction</span>');
+  resetBadge("exec-risk-badge", '<span class="dir-badge dir-neutral">Awaiting prediction</span>');
+  resetBadge("exec-reversal-badge", '<span class="reversal-date">Not calculated</span>');
+  resetBadge("exec-leaders", '<span class="exec-empty">No sector ranking yet</span>');
+  const subs = [
+    ["exec-bias-badge", "exec-bias-sub", "Run a prediction to calculate market bias."],
+    ["exec-risk-badge", "exec-risk-sub", "Risk is shown after the forecast is ready."],
+    ["exec-reversal-badge", "exec-reversal-sub", "Reversal windows appear after the forecast is ready."],
+  ];
+  for (const [badgeId, subId, subText] of subs) {
+    const badge = $(badgeId);
+    if (badge && badge.textContent.includes("Awaiting")) {
+      if ($(subId)) $(subId).textContent = subText;
+    }
+  }
   if ($("exec-data-status")) $("exec-data-status").textContent = "Forecast status: unavailable; last successful result is unchanged.";
 }
 
@@ -252,7 +288,8 @@ let state = null;
 
 function setTodayAsDefault() {
   const dateInput = $("date");
-  if (dateInput.value) return;
+  if (!dateInput) return;
+  // Always start from today's date, even if a previous session persisted one
   const now = new Date();
   const month = String(now.getMonth() + 1).padStart(2, "0");
   const day = String(now.getDate()).padStart(2, "0");
@@ -554,6 +591,12 @@ function renderYogaAlerts(d) {
     date.className = "yoga-date";
     date.textContent = alert.date;
     item.appendChild(date);
+    if (alert.start_time && alert.end_time) {
+      const timeSpan = document.createElement("span");
+      timeSpan.className = "yoga-time";
+      timeSpan.textContent = `${alert.start_time} – ${alert.end_time}`;
+      item.appendChild(timeSpan);
+    }
     const basis = document.createElement("small");
     basis.textContent = alert.basis;
     item.appendChild(basis);
@@ -1908,6 +1951,275 @@ function renderVedhas(d) {
     item.appendChild(rays);
     box.appendChild(item);
   }
+
+  renderVedhaWheel(d);
+  renderVedhaSankey(d);
+  renderVedhaStrength(d);
+
+  const fold = $("vedha-dashboard");
+  if (fold && !fold.dataset.wired) {
+    fold.dataset.wired = "1";
+    fold.addEventListener("toggle", function () {
+      if (fold.open && window.vedhaStrengthChart) window.vedhaStrengthChart.resize();
+    });
+  }
+}
+
+// ---- Combined Dashboard: three vedha layers ----
+
+// 28-star ring in chakra (clockwise) order, starting Krittika on the East side.
+const WHEEL_RING = ["Krittika", "Rohini", "Mrigashira", "Ardra", "Punarvasu",
+  "Pushya", "Ashlesha", "Magha", "P.Phalguni", "U.Phalguni", "Hasta", "Chitra",
+  "Swati", "Vishakha", "Anuradha", "Jyeshtha", "Mula", "P.Ashadha",
+  "U.Ashadha", "Abhijit", "Shravana", "Dhanishta", "Shatabhisha",
+  "P.Bhadrapada", "U.Bhadrapada", "Revati", "Ashwini", "Bharani"];
+// Corner cells sit in the slot between the two adjacent sides (half-index).
+const WHEEL_CORNERS = { "1,9": 27.5, "9,9": 6.5, "9,1": 13.5, "1,1": 20.5 };
+
+function renderVedhaWheel(d) {
+  const host = $("vedha-wheel");
+  if (!host) return;
+  const W = 460, C = W / 2, R_OUT = 178, R_IN = 138, R_MID = (R_IN + R_OUT) / 2;
+  const ringIdx = {};
+  WHEEL_RING.forEach((n, i) => { ringIdx[n] = i; });
+
+  const cellLabel = {};
+  (d.grid || []).forEach((rowArr) => (rowArr || []).forEach((c) => {
+    cellLabel[c.row + "," + c.col] = c.label;
+  }));
+
+  function pos(slot, r) {
+    const a = (slot / 28) * 2 * Math.PI;
+    return [C + r * Math.cos(a), C + r * Math.sin(a)];
+  }
+  function slotOfCell(row, col) {
+    const label = cellLabel[row + "," + col];
+    if (label && ringIdx[label] !== undefined) return ringIdx[label];
+    return WHEEL_CORNERS[row + "," + col];
+  }
+
+  let svg = `<svg viewBox="0 0 ${W} ${W}" xmlns="http://www.w3.org/2000/svg">`;
+  svg += `<circle cx="${C}" cy="${C}" r="${R_OUT}" fill="none" stroke="rgba(148,163,184,0.35)" stroke-width="1"/>`;
+  svg += `<circle cx="${C}" cy="${C}" r="${R_IN}" fill="none" stroke="rgba(148,163,184,0.35)" stroke-width="1"/>`;
+  svg += `<circle cx="${C}" cy="${C}" r="${R_MID}" fill="none" stroke="rgba(148,163,184,0.15)" stroke-width="1" stroke-dasharray="2,4"/>`;
+
+  // Ring ticks (28 stars + 4 corner slots)
+  for (let i = 0; i < 28; i++) {
+    const [x1, y1] = pos(i, R_IN), [x2, y2] = pos(i, R_OUT);
+    svg += `<line x1="${x1.toFixed(1)}" y1="${y1.toFixed(1)}" x2="${x2.toFixed(1)}" y2="${y2.toFixed(1)}" stroke="rgba(148,163,184,0.35)" stroke-width="1"/>`;
+  }
+  [27.5, 6.5, 13.5, 20.5].forEach((s) => {
+    const [x1, y1] = pos(s, R_IN), [x2, y2] = pos(s, R_OUT);
+    svg += `<line x1="${x1.toFixed(1)}" y1="${y1.toFixed(1)}" x2="${x2.toFixed(1)}" y2="${y2.toFixed(1)}" stroke="rgba(148,163,184,0.2)" stroke-width="1" stroke-dasharray="2,3"/>`;
+  });
+
+  // Nakshatra labels around the ring
+  WHEEL_RING.forEach((n, i) => {
+    const a = (i / 28) * 2 * Math.PI;
+    const [x, y] = pos(i, R_OUT + 13);
+    const cosA = Math.cos(a);
+    const anchor = cosA > 0.35 ? "start" : (cosA < -0.35 ? "end" : "middle");
+    svg += `<text x="${x.toFixed(1)}" y="${y.toFixed(1)}" font-size="9" fill="#9fb3c8" text-anchor="${anchor}" dominant-baseline="middle">${n}</text>`;
+  });
+
+  // Vedha rays: chord from the graha's star to the far end of each ray
+  for (const p of (d.planets || [])) {
+    if (!p.rays || !p.rays.length || ringIdx[p.nakshatra] === undefined) continue;
+    const color = p.nature === "benefic" ? "#22c55e" : "#ef4444";
+    for (const grp of p.rays) {
+      if (!grp.cells || !grp.cells.length) continue;
+      const lastCell = grp.cells[grp.cells.length - 1];
+      const endSlot = slotOfCell(lastCell[0], lastCell[1]);
+      if (endSlot === undefined) continue;
+      const [x1, y1] = pos(ringIdx[p.nakshatra], R_MID);
+      const [x2, y2] = pos(endSlot, R_MID);
+      const style = grp.ray === "front" ? "" : (grp.ray === "left" ? ' stroke-dasharray="6,3"' : ' stroke-dasharray="2,3"');
+      svg += `<line x1="${x1.toFixed(1)}" y1="${y1.toFixed(1)}" x2="${x2.toFixed(1)}" y2="${y2.toFixed(1)}" stroke="${color}" stroke-width="1.6" opacity="0.7"${style}><title>${p.name} ${grp.ray} ray to ${cellLabel[lastCell[0] + "," + lastCell[1]] || "border"}</title></line>`;
+    }
+  }
+
+  // Sensitive-star piercing highlights
+  for (const hit of (d.point_hits || [])) {
+    if (ringIdx[hit.nakshatra] === undefined) continue;
+    const [x, y] = pos(ringIdx[hit.nakshatra], R_MID);
+    svg += `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="10" fill="none" stroke="#fbbf24" stroke-width="1.5"><title>${hit.point} pierced by ${hit.planet} (${hit.ray} ray)</title></circle>`;
+  }
+
+  // Graha dots on their stars
+  for (const p of (d.planets || [])) {
+    if (ringIdx[p.nakshatra] === undefined) continue;
+    const [x, y] = pos(ringIdx[p.nakshatra], R_MID);
+    const fill = p.nature === "benefic" ? "#22c55e" : "#ef4444";
+    svg += `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="8" fill="${fill}" stroke="#0d1420" stroke-width="1.5"><title>${p.name} in ${p.nakshatra} (strength ${p.signed_strength})</title></circle>`;
+    svg += `<text x="${x.toFixed(1)}" y="${(y + 2.5).toFixed(1)}" font-size="7.5" fill="#0d1420" font-weight="bold" text-anchor="middle">${p.symbol}</text>`;
+  }
+  svg += "</svg>";
+  host.innerHTML = svg;
+
+  const legend = $("vedha-wheel-legend");
+  if (legend) {
+    legend.innerHTML =
+      '<span><i class="mk" style="background:#22c55e"></i> Benefic graha / ray</span>' +
+      '<span><i class="mk" style="background:#ef4444"></i> Malefic graha / ray</span>' +
+      '<span><i class="mk" style="background:#94a3b8"></i> Solid = front ray</span>' +
+      '<span><i class="mk" style="background:repeating-linear-gradient(90deg,#94a3b8 0 4px,transparent 4px 6px)"></i> Long dash = left ray</span>' +
+      '<span><i class="mk" style="background:repeating-linear-gradient(90deg,#94a3b8 0 2px,transparent 2px 4px)"></i> Short dash = right ray</span>' +
+      '<span><i class="mk" style="background:none;border:2px solid #fbbf24;border-radius:50%"></i> Sensitive star pierced</span>';
+  }
+}
+
+function renderVedhaSankey(d) {
+  const host = $("vedha-sankey");
+  if (!host) return;
+
+  const flows = [];
+  (d.vedhas || []).forEach((v) => {
+    const perTarget = {};
+    v.rays.forEach((r) => (r.cells || []).forEach((c) => {
+      const t = perTarget[c.label] || (perTarget[c.label] = { impact: 0, point: false });
+      t.impact += 1;
+      if (c.point) t.point = true;
+    }));
+    Object.keys(perTarget).forEach((t) => {
+      flows.push({ source: v.planet, nature: v.nature, target: t, impact: perTarget[t].impact, point: perTarget[t].point });
+    });
+  });
+  if (!flows.length) {
+    host.innerHTML = '<div class="exec-empty">No vedha rays active today.</div>';
+    return;
+  }
+
+  const byTarget = {};
+  flows.forEach((f) => { byTarget[f.target] = (byTarget[f.target] || 0) + f.impact; });
+  const targets = Object.keys(byTarget).sort((a, b) => byTarget[b] - byTarget[a]).slice(0, 14);
+  const tFlows = flows.filter((f) => targets.includes(f.target));
+  if (!tFlows.length) {
+    host.innerHTML = '<div class="exec-empty">No vedha rays active today.</div>';
+    return;
+  }
+  // Only grahas whose flows survived the top-14 cut get a node
+  const sources = [...new Set(tFlows.map((f) => f.source))];
+
+  const W = 780, nodeW = 118, gap = 8;
+  const totalFlow = tFlows.reduce((n, f) => n + f.impact, 0);
+  const maxCount = Math.max(sources.length, targets.length);
+  const H = Math.max(240, maxCount * 30 + 30);
+  const usable = H - 24;
+  const k = (usable - (maxCount - 1) * gap) / totalFlow;
+
+  const srcTotals = {}, tgtTotals = {};
+  tFlows.forEach((f) => {
+    srcTotals[f.source] = (srcTotals[f.source] || 0) + f.impact;
+    tgtTotals[f.target] = (tgtTotals[f.target] || 0) + f.impact;
+  });
+
+  // Node y positions (precomputed)
+  const srcY = {}, tgtY = {};
+  let acc = 12;
+  sources.forEach((s) => { srcY[s] = acc; acc += srcTotals[s] * k + gap; });
+  acc = 12;
+  targets.forEach((t) => { tgtY[t] = acc; acc += tgtTotals[t] * k + gap; });
+
+  // Stack ribbons within nodes: by target order, then source order
+  const tgtOrder = {};
+  targets.forEach((t, i) => { tgtOrder[t] = i; });
+  const sortedFlows = tFlows.slice().sort((a, b) =>
+    (tgtOrder[a.target] - tgtOrder[b.target]) ||
+    (sources.indexOf(a.source) - sources.indexOf(b.source)));
+  const srcOff = {}, tgtOff = {};
+  sources.forEach((s) => { srcOff[s] = 0; });
+  targets.forEach((t) => { tgtOff[t] = 0; });
+
+  let svg = `<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" style="background:transparent">`;
+
+  // Links first (under nodes)
+  for (const f of sortedFlows) {
+    const sy = srcY[f.source] + srcOff[f.source];
+    const ty = tgtY[f.target] + tgtOff[f.target];
+    srcOff[f.source] += f.impact * k;
+    tgtOff[f.target] += f.impact * k;
+    const x1 = nodeW, x2 = W - nodeW;
+    const mid = (x1 + x2) / 2;
+    const color = f.nature === "benefic" ? "rgba(34,197,94,0.45)" : "rgba(239,68,68,0.45)";
+    const bw = Math.max(2, f.impact * k);
+    svg += `<path d="M ${x1} ${sy.toFixed(1)} C ${mid} ${sy.toFixed(1)}, ${mid} ${ty.toFixed(1)}, ${x2} ${ty.toFixed(1)}" fill="none" stroke="${color}" stroke-width="${bw.toFixed(1)}"><title>${f.source} → ${f.target}: ${f.impact} cell(s)${f.point ? " · sensitive star" : ""}</title></path>`;
+  }
+
+  // Source nodes
+  sources.forEach((s) => {
+    const h = srcTotals[s] * k;
+    const y = srcY[s];
+    const nature = tFlows.find((f) => f.source === s).nature;
+    const fill = nature === "benefic" ? "rgba(34,197,94,0.85)" : "rgba(239,68,68,0.85)";
+    svg += `<rect x="0" y="${y.toFixed(1)}" width="${nodeW}" height="${h.toFixed(1)}" rx="3" fill="${fill}"><title>${s}: ${srcTotals[s]} pierced cell(s)</title></rect>`;
+    svg += `<text x="${nodeW / 2}" y="${(y + h / 2 + 3).toFixed(1)}" font-size="10" fill="#0d1420" font-weight="bold" text-anchor="middle">${s} (${srcTotals[s]})</text>`;
+  });
+
+  // Target nodes
+  for (const t of targets) {
+    const h = tgtTotals[t] * k;
+    const y = tgtY[t];
+    const gold = tFlows.some((f) => f.target === t && f.point);
+    svg += `<rect x="${W - nodeW}" y="${y.toFixed(1)}" width="${nodeW}" height="${h.toFixed(1)}" rx="3" fill="#334155"${gold ? ' stroke="#fbbf24" stroke-width="1.5"' : ""}><title>${t}: hit ${tgtTotals[t]} time(s)${gold ? " · anchor sensitive star" : ""}</title></rect>`;
+    svg += `<text x="${W - nodeW / 2}" y="${(y + h / 2 + 3).toFixed(1)}" font-size="10" fill="#e2e8f0" text-anchor="middle">${t} (${tgtTotals[t]})</text>`;
+  }
+  svg += "</svg>";
+  host.innerHTML = svg;
+
+  const note = document.createElement("div");
+  note.className = "backtest-note";
+  note.textContent = "Link width = pierced-cell count · green = benefic flow, red = malefic flow · gold outline = anchor sensitive star · targets sorted by total hits (top 14).";
+  host.appendChild(note);
+}
+
+function renderVedhaStrength(d) {
+  const host = $("vedha-strength");
+  if (!host) return;
+  const planets = (d.planets || [])
+    .filter((p) => p.signed_strength !== undefined)
+    .sort((a, b) => b.signed_strength - a.signed_strength);
+  if (!planets.length) {
+    host.innerHTML = '<div class="exec-empty">No strength data.</div>';
+    return;
+  }
+  host.innerHTML = "";
+  const canvas = document.createElement("canvas");
+  host.appendChild(canvas);
+  if (window.vedhaStrengthChart) { try { window.vedhaStrengthChart.destroy(); } catch (e) {} }
+  window.vedhaStrengthChart = new Chart(canvas.getContext("2d"), {
+    type: "bar",
+    data: {
+      labels: planets.map((p) => p.name + (p.retrograde ? " (R)" : "")),
+      datasets: [{
+        label: "Signed strength",
+        data: planets.map((p) => p.signed_strength),
+        backgroundColor: planets.map((p) =>
+          p.nature === "benefic" ? "rgba(34,197,94,0.8)" : "rgba(239,68,68,0.8)"),
+        borderRadius: 3
+      }]
+    },
+    options: {
+      indexAxis: "y",
+      responsive: true,
+      maintainAspectRatio: false,
+      scales: {
+        x: { grid: { color: "rgba(29,42,61,0.6)" }, ticks: { color: "#c8d3e0", font: { size: 10 } } },
+        y: { grid: { display: false }, ticks: { color: "#c8d3e0", font: { size: 10 } } }
+      },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            label: function (item) {
+              const p = planets[item.dataIndex];
+              const reasons = (p.dignity_reasons || []).join(", ");
+              return `Signed strength ${p.signed_strength} (${p.nature}${reasons ? " · " + reasons : ""})`;
+            }
+          }
+        }
+      }
+    }
+  });
 }
 
 function renderSectors(d) {
@@ -2050,6 +2362,30 @@ function renderReading(d) {
     const p = document.createElement("p");
     p.textContent = rec.text[i];
     box.appendChild(p);
+  }
+
+  if (rec.actionable) {
+    const a = rec.actionable;
+    const hdr = document.createElement("h3");
+    hdr.textContent = "Actionable Investment Directive";
+    hdr.style.marginTop = "16px";
+    hdr.style.color = "var(--accent)";
+    box.appendChild(hdr);
+
+    const items = [
+      `Bias: ${a.bias}`,
+      `Sizing: ${a.sizing}`,
+      `Risk: ${a.risk}`,
+      `Action: ${a.action}`,
+      `Timing Note: ${a.tithi_note}`
+    ];
+    for (const t of items) {
+      const p = document.createElement("p");
+      p.style.fontWeight = "500";
+      p.style.margin = "6px 0";
+      p.textContent = t;
+      box.appendChild(p);
+    }
   }
 }
 
@@ -2849,6 +3185,8 @@ async function run() {
     // await loadChemicalSignals(data.date);
     // await loadAlcoholSignals(data.date);
     await loadLunarForecast(data.date);
+    // SBC Sector Dashboard reuses the prediction payload (no extra API call)
+    if ($("sd-status")) loadSectorDashboard(data.date, data).catch(() => {});
     // await loadBullionVedha(data.date, true);  // weekly view
     // await loadTransitVedha(data.date, true);  // weekly view
     const kpInst = $("kp-intraday-instrument") ? $("kp-intraday-instrument").value : "NIFTY";
@@ -2921,7 +3259,7 @@ function initDateCalendar(inputId, dropdownId, onSelect) {
 
     let d = new Date(startDate);
     while (d <= endDate) {
-      const dayStr = d.toISOString().split("T")[0];
+      const dayStr = isoDateOf(d);
       const label = d.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric", year: "numeric" });
       const isToday = (d.getDate() === today.getDate() && d.getMonth() === today.getMonth() && d.getFullYear() === today.getFullYear());
       days.push({ dayStr, label, isToday, date: new Date(d) });
@@ -3345,13 +3683,20 @@ function renderKPIntradayReport(data) {
   `;
   report.appendChild(sec6);
 
-  content.appendChild(report);  content.appendChild(report);
+  content.appendChild(report);
   // Render KP Intraday Price Chart with lightweight-charts.js
   renderKPIntradayPriceChart(data);
   $("kp-intraday").classList.remove("hidden");
 }
 
 async function loadKPIntradayReport(date, instrument, format) {
+  if (format === 'docx') {
+    // Word export is a file download, not something to render in the panel.
+    window.open('/api/kp_intraday_report?date=' + encodeURIComponent(date) +
+      '&instrument=' + encodeURIComponent(instrument) + '&format=docx', '_blank');
+    return;
+  }
+
   const content = $("kp-intraday-content");
   if (content) {
     content.className = "kp-intraday-content panel-loading";
@@ -3361,12 +3706,15 @@ async function loadKPIntradayReport(date, instrument, format) {
     const url = `/api/kp_intraday_report?date=${encodeURIComponent(date)}&instrument=${encodeURIComponent(instrument)}&format=${encodeURIComponent(format)}`;
     const response = await fetchWithTimeout(url);
     if (format === 'html') {
+      if (!response.ok) throw new Error("unavailable (HTTP " + response.status + ")");
       const html = await response.text();
       $("kp-intraday-content").innerHTML = html;
+      $("kp-intraday-content").dataset.reportDate = date;
     } else {
       const data = await response.json();
       if (data.error) throw new Error(data.error);
       renderKPIntradayReport(data);
+      content.dataset.reportDate = date;
     }
   } catch (e) {
     console.error("KP Intraday report failed:", e);
@@ -3420,15 +3768,19 @@ if ($("kp-intraday-path")) {
     const date = ($("kp-intraday-date") && $("kp-intraday-date").value) || ($("date") && $("date").value);
     const instrument = $("kp-intraday-instrument") ? $("kp-intraday-instrument").value : "NIFTY";
     if (!date) { alert("Select a date"); return; }
-    const res = await fetch(`/api/engine/intraday_path?date=${encodeURIComponent(date)}&instrument=${encodeURIComponent(instrument)}`);
-    const data = await res.json();
-    const panel = $("kp-intraday-path-chart");
-    if (panel) panel.style.display = "";
-    const pre = $("kp-path-data");
-    if (pre) {
-      pre.textContent = JSON.stringify(data.series, null, 2);
-      pre.style.display = "none"; // hide raw JSON by default, keep for debug
-    }
+    const btn = $("kp-intraday-path");
+    btn.disabled = true;
+    try {
+      const res = await fetchWithTimeout(`/api/engine/intraday_path?date=${encodeURIComponent(date)}&instrument=${encodeURIComponent(instrument)}`);
+      if (!res.ok) throw new Error("unavailable (HTTP " + res.status + ")");
+      const data = await res.json();
+      const panel = $("kp-intraday-path-chart");
+      if (panel) panel.style.display = "";
+      const pre = $("kp-path-data");
+      if (pre) {
+        pre.textContent = data.series ? JSON.stringify(data.series, null, 2) : "No path series returned.";
+        pre.style.display = "none"; // hide raw JSON by default, keep for debug
+      }
     const container = $("kp-path-container");
     if (container) {
       // Render Chart.js line chart
@@ -3565,6 +3917,18 @@ if ($("kp-intraday-path")) {
         note.textContent = `Intraday chart for ${date}. Open TradingView for 3-min candles.`;
       }
     }
+    } catch (e) {
+      console.error("KP intraday path failed:", e);
+      const panel = $("kp-intraday-path-chart");
+      if (panel) panel.style.display = "";
+      const pre = $("kp-path-data");
+      if (pre) {
+        pre.style.display = "";
+        pre.textContent = "Predictive path is unavailable: " + (e.message || e);
+      }
+    } finally {
+      btn.disabled = false;
+    }
   });
 }
 
@@ -3605,6 +3969,10 @@ function initWorkspaceTabs() {
   const panes = document.querySelectorAll(".tab-pane");
 
   function switchTab(targetId) {
+    // SBC is now hosted inline on the overview tab; remap stale deep links
+    if (targetId === "tab-chakra") {
+      targetId = "tab-overview";
+    }
     tabs.forEach((t) => {
       const isTarget = t.getAttribute("data-tab") === targetId;
       t.classList.toggle("active", isTarget);
@@ -3628,7 +3996,7 @@ function initWorkspaceTabs() {
       }).catch(()=>{});
     }
 
-    // When switching to KP Intraday tab, auto-load if empty or error
+    // When switching to KP Intraday tab, auto-load if empty, error, or stale
     if (targetId === "tab-kp") {
       const dateEl = $("kp-intraday-date");
       const globalDate = $("date") ? $("date").value : "";
@@ -3637,22 +4005,26 @@ function initWorkspaceTabs() {
       }
       const targetDate = (dateEl && dateEl.value) || globalDate;
       const content = $("kp-intraday-content");
-      if (content && (!content.innerHTML.trim() || content.querySelector(".kp-error"))) {
+      const kpStale = content && targetDate && content.dataset.reportDate &&
+                      content.dataset.reportDate !== targetDate;
+      if (content && (kpStale || !content.innerHTML.trim() || content.querySelector(".kp-error"))) {
         const inst = $("kp-intraday-instrument") ? $("kp-intraday-instrument").value : "NIFTY";
         const fmt = $("kp-intraday-format") ? $("kp-intraday-format").value : "html";
         if (targetDate) loadKPIntradayReport(targetDate, inst, fmt);
       }
     }
 
-    // When switching to Daily Balance tab, auto-load if chart is empty
+    // When switching to Daily Balance tab, auto-load if empty or stale
     if (targetId === "tab-balance") {
       const dateEl = $("daily-balance-date");
       const globalDate = $("date") ? $("date").value : "";
       if (dateEl && globalDate && dateEl.value !== globalDate) {
         dateEl.value = globalDate;
       }
-      const targetDate = (dateEl && dateEl.value) || globalDate || new Date().toISOString().slice(0, 10);
-      if (targetDate && !window.dailyBalanceChart) {
+      const targetDate = (dateEl && dateEl.value) || globalDate || localTodayISO();
+      const balanceStale = targetDate && window.dailyBalanceLoadedFor &&
+                           window.dailyBalanceLoadedFor !== targetDate;
+      if (targetDate && (balanceStale || !window.dailyBalanceChart)) {
         loadDailyIndicationBalance(targetDate);
       }
     }
@@ -3680,12 +4052,18 @@ function initWorkspaceTabs() {
 // Initialize KP Intraday Chart
 function initKPIntradayChart() {
   const chartContainer = document.getElementById('kp-chart-container');
-  if (!chartContainer) return;
+  if (!chartContainer) return null;
 
-  // Lightweight Charts setup
+  // Dispose any prior chart (theme/size changes, re-renders)
+  if (window.kpChart) {
+    try { window.kpChart.remove(); } catch (e) {}
+    window.kpChart = null;
+  }
+
+  // Lightweight Charts setup (numeric sizes + autoSize; strings are invalid)
   const chart = LightweightCharts.createChart(chartContainer, {
-    width: '100%',
-    height: '400px',
+    autoSize: true,
+    height: 400,
     layout: {
       background: { type: 'solid', color: '#1e1e1e' },
       textColor: '#d1d4dc',
@@ -3710,6 +4088,61 @@ function initKPIntradayChart() {
 
   // Store chart object for updates
   window.kpChart = chart;
+  return chart;
+}
+
+// Render the KP Intraday Price Chart panel: cumulative signal-score path for
+// the generated report, with Tier-1 / regime-shift markers matching the legend.
+function renderKPIntradayPriceChart(data) {
+  const chart = initKPIntradayChart();
+  if (!chart) return;
+
+  // Drop any previous score series
+  if (window.kpScoreSeries) {
+    try { chart.removeSeries(window.kpScoreSeries); } catch (e) {}
+    window.kpScoreSeries = null;
+  }
+
+  const day = String(data.trading_day || "");
+  const [y, m, d] = day.split("-").map(Number);
+  const tsOf = (hm) => {
+    const [hh, mm] = String(hm).split(":").map(Number);
+    return Date.UTC(y, (m || 1) - 1, d || 1, hh || 0, mm || 0) / 1000;
+  };
+
+  const changes = (data.trend_changes || []).slice().sort((a, b) => String(a.time).localeCompare(String(b.time)));
+  const points = [];
+  const markers = [];
+  let cum = 0;
+  for (const tc of changes) {
+    const score = Number(tc.score) || 0;
+    const step = tc.direction === "Bullish" ? score : tc.direction === "Bearish" ? -score : 0;
+    cum += step;
+    const t = tsOf(tc.time);
+    points.push({ time: t, value: Number(cum.toFixed(2)) });
+    const grade = String(tc.grade || "");
+    if (grade.includes("REGIME SHIFT")) {
+      markers.push({ time: t, position: "inBar", color: "#f59e0b", shape: "circle", text: "Regime" });
+    } else if (grade.includes("TIER-1")) {
+      markers.push({
+        time: t, position: "aboveBar",
+        color: tc.direction === "Bearish" ? "#ef4444" : "#22c55e",
+        shape: tc.direction === "Bearish" ? "arrowDown" : "arrowUp", text: "T1",
+      });
+    }
+  }
+  // Flat baseline so the first change starts from zero
+  if (points.length) points.unshift({ time: tsOf("09:15"), value: 0 });
+
+  const series = chart.addLineSeries({
+    color: "#38bdf8",
+    lineWidth: 2,
+    priceLineVisible: false,
+  });
+  series.setData(points);
+  try { series.setMarkers(markers); } catch (e) {}
+  window.kpScoreSeries = series;
+  chart.timeScale().fit();
 }
 
 // ---------------------------------------------------------------
@@ -3831,6 +4264,7 @@ function renderDailyIndicationBalance(data) {
 async function loadDailyIndicationBalance(date) {
   const chartContainer = $("daily-balance-chart-container");
   if (!chartContainer) return;
+  window.dailyBalanceLoadedFor = date;
   try {
     // This endpoint computes 30 days x 2 predictions and can exceed the
     // default 8s fetch timeout on a cold cache, so use a longer timeout.
@@ -3866,7 +4300,7 @@ const bhadraState = { date: null, offset: 0, tz: "Asia/Kolkata" };
 
 function bhadraBaseDate() {
   const d = $("date") && $("date").value;
-  return (d && /\d{4}-\d{2}-\d{2}/.test(d)) ? d : new Date().toISOString().slice(0, 10);
+  return (d && /\d{4}-\d{2}-\d{2}/.test(d)) ? d : localTodayISO();
 }
 
 function fmtBhadraDate(iso) {
@@ -3951,8 +4385,7 @@ function renderBhadraBacktest(data) {
   }
   const head = document.createElement("div");
   head.className = "bhadra-bt-head";
-  head.innerHTML = `<span class="bhadra-note-title">Reversal-Calendar Cross-Reference</span>
-    <span class="bhadra-bt-stats">${overlap.overlap_count} of ${overlap.total_reversal_days} reversal days overlap a Bhadra window</span>`;
+  head.innerHTML = `<span class="bhadra-bt-stats">${overlap.overlap_count} of ${overlap.total_reversal_days} reversal days overlap a Bhadra window</span>`;
   box.appendChild(head);
 
   if (overlap.reversal_days.length === 0) {
@@ -3996,6 +4429,141 @@ function fmtBhadraMuhurt(iso, time) {
 // ---------------------------------------------------------------
 // Monthly Sector Confluence Heatmap
 // ---------------------------------------------------------------
+// ---- Confluence Calendar Matrix (year view, day-of-month) ----
+
+function initConfluenceMatrix() {
+  const yearSel = $("cm-year");
+  if (!yearSel) return;
+  const now = new Date();
+  [now.getFullYear(), now.getFullYear() + 1,
+   now.getFullYear() - 1, now.getFullYear() - 2].forEach((y) => {
+    const opt = document.createElement("option");
+    opt.value = y;
+    opt.textContent = y;
+    if (y === now.getFullYear()) opt.selected = true;
+    yearSel.appendChild(opt);
+  });
+  $("cm-run").addEventListener("click", loadConfluenceMatrix);
+  loadConfluenceMatrix();
+}
+
+async function loadConfluenceMatrix() {
+  const year = $("cm-year").value || String(new Date().getFullYear());
+  const statusEl = $("cm-status");
+  if (!statusEl) return;
+  statusEl.textContent = `Computing daily confluence verdicts for ${year}...`;
+  statusEl.className = "nifty-chart-status";
+  $("cm-matrix").innerHTML = '<div class="exec-empty">Loading...</div>';
+  try {
+    // Month-by-month: keeps each request short so one slow stretch (fresh
+    // future dates, server busy) can't abort the whole load; each month
+    // paints as it arrives. One retry per month rides out transient
+    // contention (e.g. a background cache warm holding the server).
+    const series = [];
+    for (let m = 1; m <= 12; m++) {
+      const last = new Date(year, m, 0).getDate();
+      const mm = String(m).padStart(2, "0");
+      const anchor = document.getElementById('anchor')?.value || 'nifty';
+      const school = document.getElementById('school')?.value || 'classical';
+      const url = `/api/prediction_series?start=${year}-${mm}-01&end=${year}-${mm}-${last}&anchor=${encodeURIComponent(anchor)}&school=${encodeURIComponent(school)}`;
+      let data = null;
+      for (let attempt = 0; attempt < 2 && !data; attempt++) {
+        try {
+          const resp = await fetchWithTimeout(url, 300000);
+          const j = await resp.json();
+          if (!resp.ok || j.error) throw new Error(j.error || ("HTTP " + resp.status));
+          data = j.series || [];
+        } catch (e) {
+          if (attempt === 1) throw e;
+          statusEl.textContent = `Server busy — retrying ${year}-${mm}...`;
+          await new Promise((res) => setTimeout(res, 1500));
+        }
+      }
+      series.push(...data);
+      statusEl.textContent = `Computed ${series.length} days for ${year} (month ${m}/12)...`;
+      if (m < 12) renderConfluenceMatrix(series, year, true);
+    }
+    renderConfluenceMatrix(series, year);
+  } catch (e) {
+    statusEl.textContent = "Confluence matrix failed: " + e.message;
+    statusEl.className = "nifty-chart-status error";
+  }
+}
+
+function renderConfluenceMatrix(series, year, partial) {
+  const host = $("cm-matrix");
+  const summaryEl = $("cm-summary");
+  const statusEl = $("cm-status");
+  if (!host) return;
+  host.innerHTML = "";
+
+  const byDate = {};
+  series.forEach((r) => { if (!r.error) byDate[r.date] = r; });
+
+  const now = new Date();
+  const todayStr = now.getFullYear() + "-" + String(now.getMonth() + 1).padStart(2, "0") + "-" + String(now.getDate()).padStart(2, "0");
+  const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun",
+                      "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+  const counts = { BULLISH: 0, BEARISH: 0, NEUTRAL: 0 };
+  let missing = 0;
+
+  let html = '<div class="cm-row">';
+  html += '<div class="cm-month-label"></div>';
+  for (let d = 1; d <= 31; d++) html += `<div class="cm-day-head">${d}</div>`;
+  html += "</div>";
+
+  for (let m = 0; m < 12; m++) {
+    html += '<div class="cm-row">';
+    html += `<div class="cm-month-label">${monthNames[m]} ${year}</div>`;
+    const daysInMonth = new Date(year, m + 1, 0).getDate();
+    for (let d = 1; d <= 31; d++) {
+      if (d > daysInMonth) { html += '<div class="cm-cell empty"></div>'; continue; }
+      const ds = `${year}-${String(m + 1).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
+      const r = byDate[ds];
+      let cls = "cm-cell neut";
+      let verdict = "NEUTRAL";
+      if (r && r.verdict) {
+        verdict = r.verdict;
+        if (r.verdict === "BULLISH") { cls = "cm-cell bull"; counts.BULLISH++; }
+        else if (r.verdict === "BEARISH") { cls = "cm-cell bear"; counts.BEARISH++; }
+        else { counts.NEUTRAL++; }
+      } else {
+        missing++;
+      }
+      const tip = `${ds} · ${verdict}` +
+        (r && r.net !== undefined && r.net !== null ? ` (net ${r.net})` : "") +
+        (r && r.rec ? ` · ${r.rec}` : "") +
+        (r && r.risk_label ? ` · risk: ${r.risk_label}` : "") +
+        (r && r.lunar_phase ? ` · ${r.lunar_phase}` : "");
+      const todayCls = ds === todayStr ? " today" : "";
+      const tipAttr = tip.split(String.fromCharCode(34)).join("");
+      html += `<div class="${cls}${todayCls}" data-date="${ds}" title="${tipAttr}"></div>`;
+    }
+    html += "</div>";
+  }
+  host.innerHTML = html;
+
+  const total = counts.BULLISH + counts.BEARISH + counts.NEUTRAL;
+  const anchor = document.getElementById('anchor')?.value || 'nifty';
+  const school = document.getElementById('school')?.value || 'classical';
+  if (summaryEl) {
+    summaryEl.textContent =
+      `${year} [${anchor}/${school}]: ${counts.BULLISH} bullish · ${counts.BEARISH} bearish · ${counts.NEUTRAL} neutral` +
+      (missing ? ` · ${missing} days unavailable` : "") +
+      (partial ? " · loading..." : " · click any day to load its Daily Indication Balance");
+  }
+  if (statusEl && !partial) statusEl.textContent = `Matrix ready for ${year} (${total} days).`;
+
+  host.querySelectorAll(".cm-cell[data-date]").forEach((cell) => {
+    cell.addEventListener("click", function () {
+      const d = this.dataset.date;
+      const balDate = $("daily-balance-date");
+      if (balDate) balDate.value = d;
+      if (typeof loadDailyIndicationBalance === "function") loadDailyIndicationBalance(d);
+    });
+  });
+}
+
 function initMonthlyHeatmap() {
   const run = $("monthly-heatmap-run");
   const dateEl = $("monthly-heatmap-date");
@@ -4196,11 +4764,11 @@ function initResearchLab() {
   const end = $("research-end");
   const start = $("research-start");
   const today = new Date();
-  const iso = today.toISOString().slice(0, 10);
+  const iso = isoDateOf(today);
   const tenYearsAgo = new Date(today);
   tenYearsAgo.setFullYear(today.getFullYear() - 10);
   if (end && !end.value) end.value = iso;
-  if (start && !start.value) start.value = tenYearsAgo.toISOString().slice(0, 10);
+  if (start && !start.value) start.value = isoDateOf(tenYearsAgo);
 
   const formatPct = (value) => `${Number(value || 0).toFixed(2)}%`;
   run.addEventListener("click", async () => {
@@ -4366,6 +4934,357 @@ function initResearchLab() {
 }
 
 // ---------------------------------------------------------------
+// SBC Sector Dashboard: 3-layer visual structure
+// ---------------------------------------------------------------
+const SD_COLORS = { bull: "#00C853", bear: "#D50000", neutral: "#9E9E9E" };
+const SD_BADGE_COLORS = { benefic: "#2196F3", malefic: "#FF9800", node: "#9C27B0" };
+const SD_INTENSITY = { strong: 1.0, moderate: 0.7, mild: 0.4, flat: 0.4 };
+
+function sdTrendOf(confluence) {
+  const signal = (confluence.signal || "NEUTRAL").toUpperCase();
+  const net = confluence.net || 0;
+  const magnitude = Math.abs(net);
+  const label = magnitude >= 2 ? (signal === "BEARISH" ? "strongly bearish" : signal === "BULLISH" ? "strongly bullish" : "neutral")
+    : magnitude >= 0.5 ? (signal === "BEARISH" ? "mildly bearish" : signal === "BULLISH" ? "mildly bullish" : "neutral")
+    : "neutral";
+  return label;
+}
+
+function renderSdSummary(d) {
+  const bar = $("sd-summary-bar");
+  if (!bar) return;
+  const list = d.sectors || [];
+  const bull = list.filter((s) => s.verdict === "BULLISH").length;
+  const bear = list.filter((s) => s.verdict === "BEARISH").length;
+  const neutral = list.filter((s) => s.verdict === "NEUTRAL").length;
+  const conf = ((d.market_alert || {}).confluence || {}).overall || {};
+  const net = conf.net != null ? conf.net : (d.net || 0);
+  const trend = sdTrendOf(conf);
+  const trendClass = net <= -0.5 ? "bear" : net >= 0.5 ? "bull" : "neut";
+  bar.innerHTML =
+    "<span class='sd-stat'><span class='sd-dot' style='background:" + SD_COLORS.bull + "'></span>Bullish sectors: <b>" + bull + "</b></span>" +
+    "<span class='sd-stat'><span class='sd-dot' style='background:" + SD_COLORS.bear + "'></span>Bearish sectors: <b>" + bear + "</b></span>" +
+    "<span class='sd-stat'><span class='sd-dot' style='background:" + SD_COLORS.neutral + "'></span>Neutral sectors: <b>" + neutral + "</b></span>" +
+    "<span class='sd-stat'>Net confluence: <b class='sd-net " + trendClass + "'>" + (net >= 0 ? "+" : "") + net.toFixed(1) + "</b></span>" +
+    "<span class='sd-stat'>Trend: <b class='sd-net " + trendClass + "'>" + trend + "</b></span>";
+}
+
+function sdHitBadge(h) {
+  const nature = (h.nature || "benefic").toLowerCase();
+  const color = SD_BADGE_COLORS[nature] || SD_BADGE_COLORS.benefic;
+  const initial = (h.symbol || h.planet || "?").charAt(0);
+  const ray = (h.ray || "right").toLowerCase();
+  const posClass = "sd-vpos-" + ray;
+  const val = (h.strength >= 0 ? "+" : "") + (h.strength || 0).toFixed(1);
+  return "<span class='sd-badge " + posClass + "' style='background:" + color + "' title='" +
+    (h.planet || "") + " → " + ray + " ray, strength " + val + "'>" + initial +
+    " <span class='sd-badge-val'>" + val + "</span></span>";
+}
+
+function renderSdHeatmap(d) {
+  const grid = $("sd-heatmap");
+  if (!grid) return;
+  const list = d.sectors || [];
+  grid.innerHTML = "";
+  for (const s of list) {
+    const verdict = (s.verdict || "NEUTRAL").toLowerCase();
+    const colorKey = verdict === "bullish" ? "bull" : verdict === "bearish" ? "bear" : "neutral";
+    const intensity = SD_INTENSITY[(s.strength || "flat").toLowerCase()] || 0.4;
+    const box = document.createElement("div");
+    box.className = "sd-box sd-" + colorKey;
+    box.style.setProperty("--sd-alpha", intensity);
+
+    const head = document.createElement("div");
+    head.className = "sd-box-head";
+    head.innerHTML = "<span class='sd-abbr'>" + (s.abbr || "") + "</span>" +
+      "<span class='sd-signal sd-" + colorKey + "-text'>" +
+      (verdict === "neutral" ? "no signal" : verdict) + "</span>";
+    box.appendChild(head);
+
+    const strength = document.createElement("div");
+    strength.className = "sd-strength " + (s.net >= 0 ? "pos" : "neg");
+    strength.textContent = (s.net >= 0 ? "+" : "") + (s.net || 0).toFixed(1);
+    strength.title = "net vedha strength on this rashi";
+    box.appendChild(strength);
+
+    const badges = document.createElement("div");
+    badges.className = "sd-badges";
+    (s.hits || []).forEach((h) => { badges.innerHTML += sdHitBadge(h); });
+    box.appendChild(badges);
+
+    const tags = document.createElement("div");
+    tags.className = "sd-chips";
+    (s.sectors || []).slice(0, 5).forEach((t) => {
+      const chip = document.createElement("span");
+      chip.className = "sd-chip";
+      chip.textContent = t;
+      tags.appendChild(chip);
+    });
+    if ((s.sectors || []).length > 5) {
+      const more = document.createElement("span");
+      more.className = "sd-chip sd-chip-more";
+      more.textContent = "+" + (s.sectors.length - 5);
+      more.title = s.sectors.slice(5).join(", ");
+      tags.appendChild(more);
+    }
+    box.appendChild(tags);
+    grid.appendChild(box);
+  }
+}
+
+function renderSdTrendRibbon(hours) {
+  const ribbon = $("sd-trend-ribbon");
+  if (!ribbon) return;
+  const buckets = [
+    { label: "Morning", from: 555, to: 720 },   // 09:15-12:00
+    { label: "Midday", from: 720, to: 840 },    // 12:00-14:00
+    { label: "Closing", from: 840, to: 930 },   // 14:00-15:30
+  ];
+  ribbon.innerHTML = "";
+  buckets.forEach((b) => {
+    const inBucket = (hours || []).filter((h) => {
+      const m = h.minute != null ? h.minute : null;
+      return m != null && m >= b.from && m < b.to;
+    });
+    let avg = 0;
+    if (inBucket.length) {
+      avg = inBucket.reduce((sum, h) => sum + (h.projection || 0), 0) / inBucket.length;
+    }
+    const colorKey = avg < -0.2 ? "bear" : avg > 0.2 ? "bull" : "neutral";
+    const seg = document.createElement("div");
+    seg.className = "sd-ribbon-seg sd-ribbon-" + colorKey;
+    seg.innerHTML = "<span class='sd-ribbon-label'>" + b.label + "</span>" +
+      "<span class='sd-ribbon-val'>" + (inBucket.length ? (avg >= 0 ? "+" : "") + avg.toFixed(1) : "-") + "</span>";
+    ribbon.appendChild(seg);
+  });
+}
+
+function renderSdRadar(secs) {
+  const el = $("sd-radar");
+  if (!el) return;
+  const list = secs || [];
+  const size = 260, cx = size / 2, cy = size / 2, rMax = size / 2 - 30;
+  const n = list.length || 12;
+
+  const maxAbs = Math.max(1, ...list.map((s) => Math.abs(s.net || 0)));
+  const pointOf = (i, value) => {
+    const angle = (Math.PI * 2 * i) / n - Math.PI / 2;
+    const r = (Math.abs(value) / maxAbs) * rMax;
+    return [cx + r * Math.cos(angle), cy + r * Math.sin(angle)];
+  };
+
+  let svg = "<svg viewBox='0 0 " + size + " " + size + "' class='sd-radar-svg' role='img' aria-label='Rashi strength radar'>";
+  // rings at 25/50/75/100%
+  [0.25, 0.5, 0.75, 1.0].forEach((f) => {
+    const r = rMax * f;
+    svg += "<circle cx='" + cx + "' cy='" + cy + "' r='" + r + "' fill='none' stroke='#1d2a3d' stroke-width='1'/>";
+  });
+  // axes + labels + polygon points
+  let poly = "";
+  list.forEach((s, i) => {
+    const angle = (Math.PI * 2 * i) / n - Math.PI / 2;
+    const [x, y] = [cx + rMax * Math.cos(angle), cy + rMax * Math.sin(angle)];
+    svg += "<line x1='" + cx + "' y1='" + cy + "' x2='" + x + "' y2='" + y + "' stroke='#1d2a3d' stroke-width='1'/>";
+    const lx = cx + (rMax + 14) * Math.cos(angle);
+    const ly = cy + (rMax + 14) * Math.sin(angle);
+    const colorKey = (s.verdict || "").toLowerCase() === "bullish" ? "bull" :
+      (s.verdict || "").toLowerCase() === "bearish" ? "bear" : "neutral";
+    svg += "<text x='" + lx + "' y='" + ly + "' text-anchor='middle' dominant-baseline='middle' font-size='9' fill='#9fb3c8'>" +
+      (s.abbr || s.rashi || "") + "</text>";
+    const [px, py] = pointOf(i, s.net || 0);
+    poly += px.toFixed(1) + "," + py.toFixed(1) + " ";
+    svg += "<circle cx='" + px.toFixed(1) + "' cy='" + py.toFixed(1) + "' r='3.5' fill='" + SD_COLORS[colorKey] + "' stroke='#0d1420' stroke-width='1'/>";
+  });
+  svg += "<polygon points='" + poly.trim() + "' fill='rgba(56,189,248,0.12)' stroke='#38bdf8' stroke-width='1.2'/>";
+  svg += "</svg>";
+  el.innerHTML = svg;
+}
+
+function renderSdWheel(secs) {
+  const wheel = $("sd-wheel");
+  const legend = $("sd-wheel-legend");
+  if (!wheel) return;
+  const list = secs || [];
+  const bull = list.filter((s) => s.verdict === "BULLISH").length;
+  const bear = list.filter((s) => s.verdict === "BEARISH").length;
+  const neutral = list.length - bull - bear;
+  const total = list.length || 1;
+  const fBull = bull / total, fBear = bear / total, fNeutral = neutral / total;
+
+  const stops = [
+    SD_COLORS.bull + " 0%",
+    SD_COLORS.bull + " " + (fBull * 100).toFixed(1) + "%",
+    SD_COLORS.bear + " " + (fBull * 100).toFixed(1) + "%",
+    SD_COLORS.bear + " " + ((fBull + fBear) * 100).toFixed(1) + "%",
+    SD_COLORS.neutral + " " + ((fBull + fBear) * 100).toFixed(1) + "%",
+    SD_COLORS.neutral + " 100%",
+  ];
+  wheel.style.background = "conic-gradient(" + stops.join(",") + ")";
+
+  if (legend) {
+    legend.innerHTML =
+      "<span><i class='sd-dot' style='background:" + SD_COLORS.bull + "'></i>Bullish " + bull + "</span>" +
+      "<span><i class='sd-dot' style='background:" + SD_COLORS.bear + "'></i>Bearish " + bear + "</span>" +
+      "<span><i class='sd-dot' style='background:" + SD_COLORS.neutral + "'></i>Neutral " + neutral + "</span>";
+  }
+}
+
+async function loadSectorDashboard(dateOverride, predData) {
+  const statusEl = $("sd-status");
+  if (!statusEl) return;
+  const date = dateOverride || localTodayISO();
+
+  statusEl.textContent = "Loading sector dashboard...";
+  statusEl.className = "nifty-chart-status";
+  try {
+    let d = predData;
+    if (!d) {
+      const resp = await fetchWithTimeout("/api/prediction?date=" + encodeURIComponent(date) +
+        "&time=09:15&tz=Asia/Kolkata&anchor=nse&school=classical", 120000);
+      d = await resp.json();
+      if (!resp.ok || d.error) throw new Error(d.error || resp.status);
+    }
+
+    renderSdSummary(d);
+    renderSdHeatmap(d);
+    renderSdRadar(d.sectors || []);
+    renderSdWheel(d.sectors || []);
+
+    // Trend ribbon from the hourly astro-projection
+    try {
+      const pResp = await fetchWithTimeout("/api/intraday_projection?date=" + encodeURIComponent(date) +
+        "&days=1&anchor=nse", 120000);
+      const pData = await pResp.json();
+      if (pResp.ok && !pData.error) renderSdTrendRibbon(pData.hours || []);
+    } catch (e) { /* ribbon is optional */ }
+
+    statusEl.textContent = "Sector dashboard loaded for " + date + ".";
+  } catch (e) {
+    statusEl.textContent = "Sector dashboard failed: " + e.message;
+    statusEl.className = "nifty-chart-status error";
+  }
+}
+
+// ---------------------------------------------------------------
+// AstroCycle Pro: Mercury/Moon cycle time bars
+// ---------------------------------------------------------------
+async function loadAstroCycles(dateOverride) {
+  const statusEl = $("astrocycle-status");
+  const resultsEl = $("astrocycle-results");
+  if (!statusEl || !resultsEl) return;
+  const date = dateOverride || ($("astrocycle-date") ? $("astrocycle-date").value : "") ||
+    new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Kolkata", year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date());
+  if ($("astrocycle-date") && !$("astrocycle-date").value) $("astrocycle-date").value = date;
+
+  statusEl.textContent = "Loading AstroCycle time bars...";
+  statusEl.className = "nifty-chart-status";
+  try {
+    const res = await fetchWithTimeout(`/api/astro/cycles?date=${encodeURIComponent(date)}&ticker=^NSEI`, 120000);
+    const data = await res.json();
+    if (!res.ok || data.error) throw new Error(data.error || res.status);
+
+    const bars = data.bars || [];
+    const ingresses = data.moon_ingresses || [];
+    let html = "";
+    if (data.ref_price != null) {
+      html += `<p class="backtest-note">Reference price: <b>${data.ref_price}</b> · SL distance ${data.sl_points} pts (targets at 2x)</p>`;
+    } else {
+      html += `<p class="backtest-note">Reference price unavailable (offline) — levels shown at 0. Add ticker data for real levels.</p>`;
+    }
+
+    if (!bars.length && !ingresses.length) {
+      html += `<p class="backtest-note">No Mercury/Moon horas or Moon ingresses fall within market hours on ${date}.</p>`;
+    } else {
+      if (bars.length) {
+        html += `<table class="astrocycle-table"><thead><tr>
+          <th>Time</th><th>Cycle</th><th>Entry Above</th><th>Entry Below</th><th>SL</th><th>Target</th><th>Rule</th>
+        </tr></thead><tbody>`;
+        bars.forEach((b) => {
+          html += `<tr>
+            <td><b>${b.time}&ndash;${b.end}</b></td>
+            <td><span class="astrocycle-badge astrocycle-${b.type}">${b.lord}</span></td>
+            <td>${b.entry_above}</td>
+            <td>${b.entry_below}</td>
+            <td>${b.stop_loss}</td>
+            <td>${b.target_above} / ${b.target_below}</td>
+            <td class="astrocycle-rule">${b.entry_rule}</td>
+          </tr>`;
+        });
+        html += `</tbody></table>`;
+      }
+      if (ingresses.length) {
+        html += `<h4 style="margin-top:10px">Moon Nakshatra Ingresses</h4>`;
+        ingresses.forEach((g) => {
+          html += `<div class="astrocycle-ingress">${g.time} &mdash; Moon enters <b>${g.into_nakshatra}</b> (from ${g.from_nakshatra}): ${g.entry_rule}</div>`;
+        });
+      }
+    }
+    resultsEl.innerHTML = html;
+    statusEl.textContent = `Loaded ${bars.length} cycle bars, ${ingresses.length} Moon ingresses for ${date}.`;
+  } catch (e) {
+    statusEl.textContent = "AstroCycle load failed: " + e.message;
+    statusEl.className = "nifty-chart-status error";
+  }
+}
+
+// ---------------------------------------------------------------
+// Expiry Range Indicator: expiry-day S/R forecast + backtest
+// ---------------------------------------------------------------
+async function loadExpiryForecast(mode) {
+  const statusEl = $("expiry-status");
+  const resultsEl = $("expiry-results");
+  if (!statusEl || !resultsEl) return;
+  const instrument = $("expiry-instrument") ? $("expiry-instrument").value : "NIFTY";
+
+  statusEl.textContent = mode === "backtest" ? "Running expiry backtest..." : "Loading expiry forecast...";
+  statusEl.className = "nifty-chart-status";
+  try {
+    if (mode === "backtest") {
+      const res = await fetchWithTimeout(`/api/expiry/backtest?instrument=${encodeURIComponent(instrument)}&months=3`, 300000);
+      const data = await res.json();
+      if (!res.ok || data.error) throw new Error(data.error || res.status);
+      let html = `<table class="expiry-table"><thead><tr>
+        <th>Expiry</th><th>Contained</th><th>Breakout Up</th><th>Breakout Down</th><th>False Up</th><th>False Down</th>
+      </tr></thead><tbody>`;
+      (data.results || []).forEach((r) => {
+        html += `<tr>
+          <td><b>${r.expiry}</b></td>
+          <td class="${r.contained ? "exp-ok" : "exp-warn"}">${r.contained ? "Yes" : "No"}</td>
+          <td>${r.breakout_up ? (r.false_breakout_up ? "False" : "Yes") : "-"}</td>
+          <td>${r.breakout_down ? (r.false_breakout_down ? "False" : "Yes") : "-"}</td>
+          <td>${r.false_breakout_up ? "Yes" : "-"}</td>
+          <td>${r.false_breakout_down ? "Yes" : "-"}</td>
+        </tr>`;
+      });
+      html += `</tbody></table>`;
+      html += `<p class="backtest-note">${data.expiry_days_evaluated} expiry days · containment ${data.containment_rate != null ? (data.containment_rate * 100).toFixed(1) + "%" : "-"} · false-breakout rate ${data.false_breakout_rate != null ? (data.false_breakout_rate * 100).toFixed(1) + "%" : "-"} (buffer ${(data.buffer_pct * 100).toFixed(2)}%)</p>`;
+      resultsEl.innerHTML = html;
+      statusEl.textContent = `Expiry backtest loaded: ${data.expiry_days_evaluated} days for ${data.instrument}.`;
+    } else {
+      const res = await fetchWithTimeout(`/api/expiry/range?instrument=${encodeURIComponent(instrument)}`, 300000);
+      const data = await res.json();
+      if (!res.ok || data.error) throw new Error(data.error || res.status);
+      const lv = data.levels || {};
+      let html = `<p class="backtest-note">Next expiry: <b>${data.expiry}</b> · pivot <b>${lv.pivot}</b> · buffer ${(lv.buffer_pct * 100).toFixed(2)}%</p>`;
+      html += `<table class="expiry-table"><thead><tr><th>Level</th><th>Price</th><th>Breakout Valid</th></tr></thead><tbody>`;
+      (lv.resistances || []).slice().reverse().forEach((l) => {
+        html += `<tr><td class="exp-res"><b>${l.level}</b></td><td>${l.price}</td><td>above ${l.valid_above}</td></tr>`;
+      });
+      html += `<tr><td class="exp-piv"><b>PP</b></td><td>${lv.pivot}</td><td>-</td></tr>`;
+      (lv.supports || []).forEach((l) => {
+        html += `<tr><td class="exp-sup"><b>${l.level}</b></td><td>${l.price}</td><td>below ${l.valid_below}</td></tr>`;
+      });
+      html += `</tbody></table>`;
+      resultsEl.innerHTML = html;
+      statusEl.textContent = `Expiry forecast loaded for ${data.instrument} (${data.expiry}).`;
+    }
+  } catch (e) {
+    statusEl.textContent = "Expiry load failed: " + e.message;
+    statusEl.className = "nifty-chart-status error";
+  }
+}
+
+// ---------------------------------------------------------------
 // Bootstrap: wire up all initialisers once the DOM is ready
 // ---------------------------------------------------------------
 document.addEventListener("DOMContentLoaded", () => {
@@ -4380,9 +5299,28 @@ document.addEventListener("DOMContentLoaded", () => {
   initWorkspaceTabs();
   initKPIntradayChart();
   initMonthlyHeatmap();
+  initConfluenceMatrix();
   initResearchLab();
   initKeyboardNavigation();
   initThemeToggle();
+
+  // Auto-run the prediction with today's date so the page (including the
+  // hosted SBC chakra) renders without clicking Predict
+  run().catch(() => {});
+
+  // AstroCycle Pro panel
+  if ($("astrocycle-run")) {
+    $("astrocycle-run").addEventListener("click", () => loadAstroCycles());
+    loadAstroCycles().catch(() => {});
+  }
+
+  // Expiry Range Indicator panel
+  if ($("expiry-run")) {
+    $("expiry-run").addEventListener("click", () => loadExpiryForecast("forecast"));
+  }
+  if ($("expiry-backtest")) {
+    $("expiry-backtest").addEventListener("click", () => loadExpiryForecast("backtest"));
+  }
 
   // Persist settings on input changes
   ["date", "time", "tz", "anchor", "school"].forEach((id) => {
@@ -4431,31 +5369,43 @@ document.addEventListener("DOMContentLoaded", () => {
       for (let i = 0; i < 15; i++) {
         const d = new Date(today); d.setDate(today.getDate() - i);
         const opt = document.createElement("option");
-        opt.value = d.toISOString().slice(0,10);
-        opt.textContent = d.toISOString().slice(0,10);
+        opt.value = isoDateOf(d);
+        opt.textContent = isoDateOf(d);
         kotaDateSel.appendChild(opt);
       }
     }
     $("kota-load-daily").addEventListener("click", async () => {
       const date = kotaDateSel.value;
       const instrument = $("kota-instrument").value;
-      const res = await fetch(`/api/engine/kota/daily?date=${encodeURIComponent(date)}&instrument=${instrument}`);
-      const data = await res.json();
-      renderKotaTable(data.records);
+      await loadKotaData(`/api/engine/kota/daily?date=${encodeURIComponent(date)}&instrument=${encodeURIComponent(instrument)}`);
     });
     $("kota-load-weekly").addEventListener("click", async () => {
       const date = kotaDateSel.value;
-      const res = await fetch(`/api/engine/kota/weekly?week_start=${encodeURIComponent(date)}`);
-      const data = await res.json();
-      renderKotaTable(data.records);
+      await loadKotaData(`/api/engine/kota/weekly?week_start=${encodeURIComponent(date)}`);
     });
     $("kota-load-monthly").addEventListener("click", async () => {
       const date = kotaDateSel.value;
       const month = date.slice(0,7);
-      const res = await fetch(`/api/engine/kota/monthly?month=${encodeURIComponent(month)}`);
-      const data = await res.json();
-      renderKotaTable(data.summary);
+      await loadKotaData(`/api/engine/kota/monthly?month=${encodeURIComponent(month)}`);
     });
+
+    async function loadKotaData(url) {
+      const btns = [$("kota-load-daily"), $("kota-load-weekly"), $("kota-load-monthly")];
+      btns.forEach((b) => { if (b) b.disabled = true; });
+      const wrap = $("kota-table-wrap");
+      if (wrap) wrap.innerHTML = '<div class="exec-empty">Loading Kota Chakra data...</div>';
+      try {
+        const res = await fetchWithTimeout(url);
+        const data = await res.json();
+        if (data.error) throw new Error(data.error);
+        renderKotaTable(data.records || data.summary);
+      } catch (e) {
+        console.error("Kota Chakra load failed:", e);
+        if (wrap) wrap.innerHTML = '<div class="kp-error" style="color:var(--red);padding:12px;">Kota Chakra data unavailable: ' + (e.message || e) + '</div>';
+      } finally {
+        btns.forEach((b) => { if (b) b.disabled = false; });
+      }
+    }
 
     function renderKotaTable(records) {
       const wrap = $("kota-table-wrap");

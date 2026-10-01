@@ -13,12 +13,26 @@
   var predByDate = {};
   var crashLineSeries = null;
   var crashByDate = {};
+  var gannPriceLines = [];
   var statusEl, tipEl;
 
   function fetchWithTimeout(url, ms) {
     var ctrl = new AbortController();
     var t = setTimeout(function () { ctrl.abort(); }, ms || 150000);
     return fetch(url, { signal: ctrl.signal }).finally(function () { clearTimeout(t); });
+  }
+
+  // Format a local Date as YYYY-MM-DD without converting through UTC
+  // (toISOString() shifts the date back one day for UTC+ timezones like IST).
+  function isoDateOf(d) {
+    return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
+  }
+
+  // Local (IST-aware) calendar date for "today"
+  function localTodayISO() {
+    return new Intl.DateTimeFormat('en-CA', {
+      timeZone: 'Asia/Kolkata', year: 'numeric', month: '2-digit', day: '2-digit',
+    }).format(new Date());
   }
 
   function setStatus(msg, isErr) {
@@ -226,6 +240,7 @@ function bizDay(iso) { return iso; } // lightweight-charts accepts YYYY-MM-DD
     tradingDays = candles.map(function (c) { return c.time; });
     predByDate = {};
     bandSeriesList = [];
+    gannPriceLines = [];
 
     // hover tooltip: bullish/bearish + reversal confluence details
     chart.subscribeCrosshairMove(function (param) {
@@ -283,7 +298,7 @@ function bizDay(iso) { return iso; } // lightweight-charts accepts YYYY-MM-DD
     var histAlertState = buildMarkers.lastAlertState;
 
     // Future forecast: extend bands + markers on business days after last candle
-    var todayIso = new Date().toISOString().slice(0, 10);
+    var todayIso = localTodayISO();
     var futureDays = series
       .map(function (p) { return p.date; })
       .filter(function (d) {
@@ -472,6 +487,76 @@ function bizDay(iso) { return iso; } // lightweight-charts accepts YYYY-MM-DD
     }
   }
 
+  async function loadGannZones() {
+    var on = $("nifty-chart-gannzones").checked;
+    try { localStorage.setItem("sbc-gannzones", on ? "1" : "0"); } catch (e) {}
+    if (!on) {
+      if (chart && candleSeries) {
+        gannPriceLines.forEach(function (pl) { try { candleSeries.removePriceLine(pl); } catch (e) {} });
+      }
+      gannPriceLines = [];
+      return;
+    }
+    if (!chart || !candleSeries) return;
+    setStatus("Loading Gann precision zones...");
+    try {
+      var resp = await fetchWithTimeout("/api/gann/precision?ticker=^NSEI&days=90&asset_type=indices", 120000);
+      var data = await resp.json();
+      if (!resp.ok || data.error) throw new Error(data.error || resp.status);
+      var z = data.zones || {};
+      var defs = [];
+      (z.initiation || []).forEach(function (l) {
+        defs.push({
+          price: l.price,
+          color: "#a855f7",
+          title: "Init",
+          lineStyle: LightweightCharts.LineStyle.Solid,
+          lineWidth: 1
+        });
+      });
+      (z.target || []).forEach(function (l) {
+        defs.push({
+          price: l.price,
+          color: "#ef4444",
+          title: l.label === "swing high" ? "SwingH" : "Tgt",
+          lineStyle: LightweightCharts.LineStyle.Dotted,
+          lineWidth: 1
+        });
+      });
+      (z.stop_loss || []).forEach(function (l) {
+        defs.push({
+          price: l.price,
+          color: "#000000",
+          title: "SL",
+          lineStyle: LightweightCharts.LineStyle.Solid,
+          lineWidth: 2
+        });
+      });
+      (z.trailing_stop || []).forEach(function (l) {
+        defs.push({
+          price: l.price,
+          color: "#000000",
+          title: "Trail",
+          lineStyle: LightweightCharts.LineStyle.Dashed,
+          lineWidth: 1
+        });
+      });
+      gannPriceLines = defs.map(function (d) {
+        return candleSeries.createPriceLine({
+          price: d.price,
+          color: d.color,
+          lineWidth: d.lineWidth,
+          lineStyle: d.lineStyle,
+          axisLabelVisible: true,
+          title: d.title
+        });
+      });
+      setStatus("Gann zones loaded (" + (z.trend || "?") + " trend, " + defs.length + " levels).");
+    } catch (e) {
+      setStatus("Gann zones overlay failed: " + e.message, true);
+    }
+  }
+
   async function loadChart() {
     var from = $("nifty-chart-start").value;
     var to = $("nifty-chart-to").value;
@@ -482,7 +567,7 @@ function bizDay(iso) { return iso; } // lightweight-charts accepts YYYY-MM-DD
     if (spanDays > 730) {
       var fc = new Date(to);
       fc.setDate(fc.getDate() - 730);
-      from = fc.toISOString().slice(0, 10);
+      from = isoDateOf(fc);
       $("nifty-chart-start").value = from;
     }
 
@@ -523,7 +608,7 @@ function bizDay(iso) { return iso; } // lightweight-charts accepts YYYY-MM-DD
     // Extend prediction end date by ~6 months (180 calendar days) for forward forecast
       var predEnd = new Date(to);
       predEnd.setDate(predEnd.getDate() + 180);
-      var predEndStr = predEnd.toISOString().slice(0, 10);
+      var predEndStr = isoDateOf(predEnd);
       try {
       var pResp = await fetchWithTimeout("/api/prediction_series?start=" +
         cData.candles[0].time + "&end=" + predEndStr + "&anchor=nifty", 300000);
@@ -533,7 +618,7 @@ function bizDay(iso) { return iso; } // lightweight-charts accepts YYYY-MM-DD
         return;
       }
       applyOverlay(pData.series || []);
-      var today = new Date().toISOString().slice(0, 10);
+      var today = localTodayISO();
       var nFuture = (pData.series || []).filter(function (p) { return p.date > today; }).length;
       setStatus("Loaded " + cData.candles.length + " candles; " +
         (pData.series || []).length + " prediction days (" + nFuture + " future days forecast).");
@@ -544,6 +629,9 @@ function bizDay(iso) { return iso; } // lightweight-charts accepts YYYY-MM-DD
     }
     if ($("nifty-chart-crashscore").checked) {
       loadCrashScore().catch(function (e) { setStatus("Error: " + e.message, true); });
+    }
+    if ($("nifty-chart-gannzones").checked) {
+      loadGannZones().catch(function (e) { setStatus("Error: " + e.message, true); });
     }
   }
 
@@ -556,20 +644,26 @@ function bizDay(iso) { return iso; } // lightweight-charts accepts YYYY-MM-DD
       setStatus("JS error: " + e.message + " (line " + e.lineno + ")", true);
     });
     var def = defaultDates();
-    $("nifty-chart-start").value = def[0].toISOString().slice(0, 10);
-    $("nifty-chart-to").value = def[1].toISOString().slice(0, 10);
+    $("nifty-chart-start").value = isoDateOf(def[0]);
+    $("nifty-chart-to").value = isoDateOf(def[1]);
 
     $("nifty-chart-range").addEventListener("change", function () {
       var months = parseInt(this.value, 10);
       var from = new Date();
       from.setMonth(from.getMonth() - months);
-      $("nifty-chart-start").value = from.toISOString().slice(0, 10);
+      $("nifty-chart-start").value = isoDateOf(from);
+      loadChart().catch(function (e) { setStatus("Error: " + e.message, true); });
     });
     $("nifty-chart-run").addEventListener("click", function () {
       loadChart().catch(function (e) { setStatus("Error: " + e.message, true); });
     });
     $("nifty-chart-crashscore").addEventListener("change", function () {
       loadCrashScore().catch(function (e) { setStatus("Error: " + e.message, true); });
+    });
+    // Restore persisted Gann Zones toggle, then wire change handler
+    try { $("nifty-chart-gannzones").checked = localStorage.getItem("sbc-gannzones") === "1"; } catch (e) {}
+    $("nifty-chart-gannzones").addEventListener("change", function () {
+      loadGannZones().catch(function (e) { setStatus("Error: " + e.message, true); });
     });
 
     loadChart().catch(function (e) { setStatus("Error: " + e.message, true); });
