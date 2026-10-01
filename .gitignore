@@ -187,3 +187,18 @@ sbc/navamsa_pipeline/navamsa.db
 # Kota Chakra workbooks are user data, not source
 data/kota/*.xlsx
 data/profiles.db.*
+
+# Personal Obsidian vaults kept beside the code (notes, book extracts)
+Financial_Astrology/
+SBC-Tool/
+
+# Generated study/backtest output and text dumps. Files committed here
+# before this rule stay tracked; new output is ignored.
+data/output/
+
+# Unrelated Node tooling (opencode-models-discovery), not used by the app
+package.json
+package-lock.json
+
+# Random sample KP file, not ephemeris data (backlog B-33); never commit it
+data/kp/KP_Data_Nov2026.csv
