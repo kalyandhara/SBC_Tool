@@ -72,15 +72,6 @@ app.register_blueprint(kp_bp)
 app.register_blueprint(balance_bp)
 app.register_blueprint(chakra_bp)
 
-API_TOKEN = os.getenv("SBC_API_TOKEN", "")
-
-@app.before_request
-def require_token_for_writes():
-    if request.method in ("POST", "PUT", "PATCH", "DELETE"):
-        token = request.headers.get("X-API-Token") or request.args.get("token")
-        if API_TOKEN and not hmac.compare_digest(token or "", API_TOKEN):
-            return jsonify({"error": "Unauthorized"}), 401
-
 @app.errorhandler(Exception)
 def handle_exception(e):
     app.logger.exception("Unhandled error")
