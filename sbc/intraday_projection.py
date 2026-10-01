@@ -135,7 +135,25 @@ def intraday_projection(start_date, tz_name="Asia/Kolkata", days=5, anchor_key="
         names, glyphs = daily_yoga_glyphs(
             day, sun, moon, tithi)
 
-        # Hourly projection points across market hours.
+        # Bhadra (Vishti Karana) windows overlapping today's session, clipped
+        # to market hours — drives the Dahan (muted) momentum bars.
+        month_start = datetime.datetime(day.year, day.month, 1, tzinfo=tz)
+        day_bhadra = []
+        for w in bhadra_windows(month_start, tz):
+            if w["end"].date() < day or w["begin"].date() > day:
+                continue
+            bmin = (w["begin"].hour * 60 + w["begin"].minute
+                    if w["begin"].date() == day else MARKET_OPEN_MIN)
+            emin = (w["end"].hour * 60 + w["end"].minute
+                    if w["end"].date() == day else MARKET_CLOSE_MIN)
+            bmin = max(bmin, MARKET_OPEN_MIN)
+            emin = min(emin, MARKET_CLOSE_MIN)
+            if bmin < emin:
+                day_bhadra.append((bmin, emin))
+
+        # Intraday projection points across market hours (15-min steps for a
+        # smooth cumulative path).
+        cum = 0.0
         minute = MARKET_OPEN_MIN
         while minute <= MARKET_CLOSE_MIN:
             jd = _jd_at(date_str, minute, tz)
@@ -158,8 +176,12 @@ def intraday_projection(start_date, tz_name="Asia/Kolkata", days=5, anchor_key="
             if tithi in (15, 30):
                 yoga_active.append("Purnima" if tithi == 15 else "Amavasya")
                 yoga_bias += 0.5 if tithi == 15 else -0.5
+            dahan = any(bmin <= minute <= emin for bmin, emin in day_bhadra)
+            if dahan:
+                yoga_active.append("Bhadra (Dahan)")
 
             projection = day_net + hora_score * 2.0 + yoga_bias
+            cum += projection
 
             local = _local_aware(date_str, minute, tz)
             unix_ts = int(local.astimezone(datetime.timezone.utc).timestamp())
@@ -170,14 +192,17 @@ def intraday_projection(start_date, tz_name="Asia/Kolkata", days=5, anchor_key="
                 "minute": minute,
                 "clock": local.strftime("%H:%M"),
                 "projection": round(projection, 2),
+                "cumulative": round(cum, 2),
+                "momentum": round(hora_score * 2.0 + yoga_bias, 2),
                 "day_net": round(day_net, 2),
                 "hora_lord": hora_lord,
                 "hora_score": round(hora_score, 2),
                 "yoga_bias": round(yoga_bias, 2),
                 "yoga_active": sorted(yoga_active),
+                "dahan": dahan,
                 "is_future": True,
             })
-            minute += 60
+            minute += 15
 
         # Yoga events for the day.
         if names:
@@ -243,6 +268,6 @@ def intraday_projection(start_date, tz_name="Asia/Kolkata", days=5, anchor_key="
         "days": days,
         "hours": hours,
         "yogas": yogas,
-        "method": "Hourly SBC chakra net-vedha + hora + yoga windows; market hours 09:15-15:30 IST; Swiss Ephemeris Lahiri.",
+        "method": "15-min SBC chakra net-vedha + hora + yoga windows with cumulative path and momentum; market hours 09:15-15:30 IST; Swiss Ephemeris Lahiri.",
         "disclaimer": "Research astro-projection, not price data or investment advice.",
     }

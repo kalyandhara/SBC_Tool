@@ -1,20 +1,34 @@
-"""NIFTY 50 OHLC data via yfinance with local CSV cache.
+"""OHLC data via yfinance with local CSV cache.
 
+Covers the study assets NIFTY (^NSEI), Gold (GC=F) and Silver (SI=F).
 Falls back to the cached file when the network/yfinance is unavailable,
 so the chart still works offline.
 """
 
 import datetime
 import os
-import swisseph as swe
 from zoneinfo import ZoneInfo
 
-from .planets import positions
-from .config import RASHI_TREND
+import swisseph as swe
 
-_CACHE_PATH = os.path.join(os.path.dirname(os.path.dirname(__file__)),
-                          "data", "nifty_ohlc.csv")
+from .config import RASHI_TREND
+from .planets import positions
+
+_DATA_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)),
+                         "data")
+_CACHE_PATH = os.path.join(_DATA_DIR, "nifty_ohlc.csv")
 _TICKER = "^NSEI"
+
+# Study assets: key -> (yfinance ticker, cache filename).  Gold and
+# Silver use the COMEX front-month futures (GC=F / SI=F), which have
+# continuous daily history back to 2000 — deep enough for the
+# 2002-2024 transit studies.  Weekend/holiday gaps are handled by the
+# studies as "first available trading day on or after".
+_ASSETS = {
+    "nifty": ("^NSEI", "nifty_ohlc.csv"),
+    "gold": ("GC=F", "gold_ohlc.csv"),
+    "silver": ("SI=F", "silver_ohlc.csv"),
+}
 
 
 def moon_rashi(dt):
@@ -28,23 +42,25 @@ def moon_rashi(dt):
     return next(p for p in planets if p["name"] == "Moon")["sign"]
 
 
-def _load_cache():
+def _load_cache(cache_path):
     import pandas as pd
-    if not os.path.exists(_CACHE_PATH):
+    if not os.path.exists(cache_path):
         return None
-    df = pd.read_csv(_CACHE_PATH, parse_dates=["Date"])
+    df = pd.read_csv(cache_path, parse_dates=["Date"])
     return df
 
 
-def _save_cache(df):
-    os.makedirs(os.path.dirname(_CACHE_PATH), exist_ok=True)
-    df.to_csv(_CACHE_PATH, index=False)
+def _save_cache(df, cache_path):
+    os.makedirs(os.path.dirname(cache_path), exist_ok=True)
+    df.to_csv(cache_path, index=False)
 
 
-def get_nifty_ohlc(start=None, end=None):
+def _get_ohlc_cached(ticker, cache_path, start=None, end=None):
     """Return list of {time:'YYYY-MM-DD', open, high, low, close, volume}.
 
     start/end: 'YYYY-MM-DD' strings or None (defaults: last 3 years).
+    Uses and extends the local CSV cache; falls back to whatever cache
+    we have when the network is unavailable.
     """
     import pandas as pd
 
@@ -52,7 +68,7 @@ def get_nifty_ohlc(start=None, end=None):
     start_d = datetime.date.fromisoformat(start) if start else today - datetime.timedelta(days=3 * 365)
     end_d = datetime.date.fromisoformat(end) if end else today
 
-    df = _load_cache()
+    df = _load_cache(cache_path)
     need_cols = ["Date", "Open", "High", "Low", "Close", "Volume"]
 
     cache_ok = (
@@ -72,7 +88,7 @@ def get_nifty_ohlc(start=None, end=None):
                 # only fetch the missing tail
                 fetch_start = df["Date"].max().date() + datetime.timedelta(days=1)
             if fetch_start <= dl_end:
-                new = yf.download(_TICKER, start=fetch_start.isoformat(),
+                new = yf.download(ticker, start=fetch_start.isoformat(),
                                   end=(dl_end + datetime.timedelta(days=1)).isoformat(),
                                   progress=False, auto_adjust=False)
                 if new is not None and not new.empty:
@@ -84,7 +100,7 @@ def get_nifty_ohlc(start=None, end=None):
                     df = new if df is None or df.empty else (
                         pd.concat([df, new]).drop_duplicates("Date").sort_values("Date")
                     )
-                    _save_cache(df)
+                    _save_cache(df, cache_path)
         except Exception:
             pass  # fall through to whatever cache we have
 
@@ -104,3 +120,25 @@ def get_nifty_ohlc(start=None, end=None):
             "volume": int(r["Volume"]) if r["Volume"] == r["Volume"] else 0,
         })
     return out
+
+
+def get_ohlc(asset="nifty", start=None, end=None):
+    """Return cached OHLC rows for a study asset key (nifty/gold/silver)."""
+    try:
+        ticker, cache_path = _ASSETS[asset]
+    except KeyError:
+        raise ValueError(f"unknown asset {asset!r}; "
+                         f"expected one of {sorted(_ASSETS)}") from None
+    return _get_ohlc_cached(ticker, cache_path, start, end)
+
+
+def get_nifty_ohlc(start=None, end=None):
+    return get_ohlc("nifty", start, end)
+
+
+def get_gold_ohlc(start=None, end=None):
+    return get_ohlc("gold", start, end)
+
+
+def get_silver_ohlc(start=None, end=None):
+    return get_ohlc("silver", start, end)

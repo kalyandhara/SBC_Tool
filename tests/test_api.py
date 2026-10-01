@@ -349,12 +349,89 @@ class TestUtilitiesEndpoints:
         assert "zones" in data
 
     def test_gann_precision(self, client):
-        """Gann precision should return levels."""
+        """Gann precision should return levels and classified zones."""
         response = client.get("/api/gann/precision?ticker=^NSEI&days=90")
         assert response.status_code == 200
         data = json.loads(response.data)
         assert "ticker" in data
         assert "levels" in data
+        zones = data["zones"]
+        assert zones["trend"] in ("bullish", "bearish")
+        assert zones["initiation"] and zones["target"]
+        assert zones["stop_loss"] and zones["trailing_stop"]
+        for zone_key in ("initiation", "target", "stop_loss", "trailing_stop"):
+            for lvl in zones[zone_key]:
+                assert "price" in lvl
+                assert isinstance(lvl["price"], (int, float))
+
+    def test_gann_precision_asset_types(self, client):
+        """Asset type controls tick-size rounding; unknown type returns 400."""
+        response = client.get("/api/gann/precision?ticker=^NSEI&days=90&asset_type=commodities")
+        assert response.status_code == 200
+        data = json.loads(response.data)
+        assert data["asset_type"] == "commodities"
+
+        bad = client.get("/api/gann/precision?ticker=^NSEI&days=90&asset_type=crypto")
+        assert bad.status_code == 400
+        assert "error" in json.loads(bad.data)
+
+    def test_astro_cycles(self, client):
+        """AstroCycle Pro should return cycle bars and Moon ingresses."""
+        response = client.get("/api/astro/cycles?date=2026-09-11&ticker=^NSEI")
+        assert response.status_code == 200
+        data = json.loads(response.data)
+        assert data["date"] == "2026-09-11"
+        assert isinstance(data["bars"], list)
+        assert isinstance(data["moon_ingresses"], list)
+        for bar in data["bars"]:
+            assert bar["type"] in ("mercury", "moon")
+            for key in ("time", "end", "entry_above", "entry_below",
+                        "stop_loss", "target_above", "target_below", "entry_rule"):
+                assert key in bar
+
+    def test_astro_cycles_invalid_date(self, client):
+        """Invalid date should return 400."""
+        response = client.get("/api/astro/cycles?date=invalid")
+        assert response.status_code == 400
+        assert "error" in json.loads(response.data)
+
+    def test_expiry_range(self, client):
+        """Expiry Range forecast should return levels for the next expiry."""
+        response = client.get("/api/expiry/range?instrument=NIFTY&date=2026-09-11")
+        assert response.status_code == 200
+        data = json.loads(response.data)
+        assert data["instrument"] == "NIFTY"
+        assert "expiry" in data
+        levels = data["levels"]
+        assert "pivot" in levels
+        assert levels["resistances"] and levels["supports"]
+        for lvl in levels["resistances"] + levels["supports"]:
+            assert "price" in lvl
+            assert "valid_above" in lvl or "valid_below" in lvl
+
+    def test_expiry_backtest(self, client):
+        """Expiry backtest should return containment metrics."""
+        response = client.get("/api/expiry/backtest?instrument=NIFTY&months=2")
+        assert response.status_code == 200
+        data = json.loads(response.data)
+        assert data["instrument"] == "NIFTY"
+        assert "expiry_days_evaluated" in data
+        assert "containment_rate" in data
+        assert isinstance(data["results"], list)
+
+    def test_gann_indicators(self, client):
+        """Gann toolkit should run each kind and reject unknown kinds."""
+        for kind in ("momentum", "apex_reversal", "harmonic_opens",
+                     "harmonic_vibrations", "wave_levels", "lightning_scalper",
+                     "mega_trend"):
+            response = client.get(f"/api/gann/indicators?kind={kind}&ticker=^NSEI&days=120")
+            assert response.status_code == 200, kind
+            data = json.loads(response.data)
+            assert data["kind"] == kind
+
+        bad = client.get("/api/gann/indicators?kind=nope&ticker=^NSEI&days=120")
+        assert bad.status_code == 400
+        assert "error" in json.loads(bad.data)
 
 
 class TestRateLimiting:

@@ -70,22 +70,31 @@ class TestKPIntradayWorkflow:
     """Test KP intraday workflow."""
 
     def test_kp_report_generation(self, client):
-        """Generate KP report with sample data."""
-        # First generate sample data
+        """Generate KP report with sample data (in an isolated month, then clean up)."""
+        # Use a month with no real KP file so the sample never overwrites real data.
         sample_resp = client.post(
             "/api/kp_intraday_sample",
-            json={"date": "2026-09-11", "days": 5}
+            json={"date": "2026-06-11", "days": 5}
         )
         assert sample_resp.status_code == 200
 
         # Then generate report
         report_resp = client.get(
-            "/api/kp_intraday_report?date=2026-09-11&instrument=NIFTY&format=json"
+            "/api/kp_intraday_report?date=2026-06-11&instrument=NIFTY&format=json"
         )
         assert report_resp.status_code == 200
         data = json.loads(report_resp.data)
         assert "trend_changes" in data
         assert "regime_shifts" in data
+
+        # Clean up the generated sample file
+        from pathlib import Path
+        sample_file = Path(__file__).resolve().parent.parent / "data" / "kp" / "KP_Data_Jun2026.csv"
+        try:
+            if sample_file.exists():
+                sample_file.unlink()
+        except OSError:
+            pass
 
     def test_kp_intraday_path(self, client):
         """Get predictive intraday path."""

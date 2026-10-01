@@ -24,9 +24,6 @@ from sbc.prediction import (
     recommendation, sector_read, summarize_vedhas,
 )
 from sbc.market_calendar import reversal_alert, upcoming_yoga_alerts
-from sbc.bhadra import bhadra_calendar
-from sbc.intraday_projection import intraday_projection
-from sbc.monthly_heatmap import monthly_heatmap
 from sbc.backtest import run_backtest, run_futurecast, run_bullish_futurecast, run_bearish_futurecast
 from sbc.backtest import _bearish_future_score, _julian_at_noon, run_saturn_macro_analysis
 from sbc.trade_setups import TRADE_SETUPS
@@ -36,25 +33,14 @@ from sbc.weekly_commentary import generate_weekly_commentary, format_commentary_
 from sbc.market_data import get_nifty_ohlc, moon_rashi
 from sbc.metrics import _bias_scale, _western_bias
 from sbc.config import RASHI_TREND, SECTOR_NAME_MAP
-from sbc import series_cache
 from werkzeug.exceptions import HTTPException
 from sbc.sector_keywords import keywords_for
 from sbc.bullion_vedha import scan_bullion_vedha_matrix, scan_bullion_vedha_week, format_bullion_vedha_for_ui
 from sbc.transit_vedha import scan_transit_vedha_matrix, scan_transit_vedha_week, format_transit_vedha_for_ui
-from sbc.sector_signals import scan_sector_vedhas
 from sbc.cgsp_framework import generate_cgsp_report
-from sbc.kp_intraday import (
-    generate_kp_intraday_report, generate_sample_kp_csv,
-    KPIntradayReport, KPDataParser, KPRuleEngine, KPReportGenerator
-)
-from sbc.kp_config import get_config, get_instrument_config
-from sbc.market_events import lunar_phase_event, planetary_aspect_events
+from sbc.kp_intraday import generate_sample_kp_csv
+from sbc.market_events import lunar_phase_event, planetary_aspect_events, planetary_ingress_events
 from research.astro_research import (
-    astro_lab,
-    walk_forward_validation,
-    canonical_market_event_model,
-    new_moon_efficiency_study,
-    planetary_aspect_grid,
     solar_lunar_cycle_explorer,
     bradley_barometer_overlay,
     regime_aware_reports,
@@ -62,14 +48,46 @@ from research.astro_research import (
     unified_daily_forecast_contract,
 )
 
-from sbc.db import _bootstrap
 from sbc.api.engine_bp import engine_bp
 from sbc.api.sector_bp import sector_bp
+from sbc.app_boot import boot
 
 app = Flask(__name__)
-_bootstrap()  # Ensure DB schema exists
+
 app.register_blueprint(engine_bp)
 app.register_blueprint(sector_bp)
+from sbc.api.blueprints.overview_bp import overview_bp
+from sbc.api.blueprints.chart_bp import chart_bp
+from sbc.api.blueprints.sectors_bp import sectors_bp
+from sbc.api.blueprints.research_bp import research_bp
+from sbc.api.blueprints.kp_bp import kp_bp
+from sbc.api.blueprints.balance_bp import balance_bp
+from sbc.api.blueprints.chakra_bp import chakra_bp
+
+app.register_blueprint(overview_bp)
+app.register_blueprint(chart_bp)
+app.register_blueprint(sectors_bp)
+app.register_blueprint(research_bp)
+app.register_blueprint(kp_bp)
+app.register_blueprint(balance_bp)
+app.register_blueprint(chakra_bp)
+
+API_TOKEN = os.getenv("SBC_API_TOKEN", "")
+
+@app.before_request
+def require_token_for_writes():
+    if request.method in ("POST", "PUT", "PATCH", "DELETE"):
+        token = request.headers.get("X-API-Token") or request.args.get("token")
+        if API_TOKEN and not hmac.compare_digest(token or "", API_TOKEN):
+            return jsonify({"error": "Unauthorized"}), 401
+
+@app.errorhandler(Exception)
+def handle_exception(e):
+    app.logger.exception("Unhandled error")
+    if isinstance(e, HTTPException):
+        return jsonify({"error": e.description}), e.code
+    return jsonify({"error": "Internal server error"}), 500
+
 _daily_confluence_cache = {}
 # Always render the current template from disk (avoids stale HTML during dev iteration)
 app.config["TEMPLATES_AUTO_RELOAD"] = True
@@ -373,21 +391,15 @@ def build_response(date_str, time_str, tz_name, anchor_key, school):
         "trade_setups": trade_setups_data,
     }
 
+# Boot the app: DB schema, Jinja reload, series warm-up
+boot(app, build_response)
 
 @app.route("/")
 def index():
     return render_template("index.html")
 
 
-@app.route("/api/presets")
-def presets():
-    return jsonify({
-        "anchors": [
-            {"key": k, **{kk: vv for kk, vv in v.items() if kk != "date"}}
-            for k, v in ANCHORS.items()
-        ],
-        "nakshatras": NAKSHATRAS_27,
-    })
+
 
 
 @app.route("/api/backtest")
@@ -447,201 +459,7 @@ def saturn_macro():
         return jsonify({"error": "invalid date"}), 400
 
 
-@app.route("/api/weekly_commentary")
-def weekly_commentary():
-    date_str = request.args.get("date") or datetime.date.today().isoformat()
-    try:
-        date = datetime.date.fromisoformat(date_str)
-        start = date - datetime.timedelta(days=date.weekday())
-        commentary = generate_weekly_commentary(start)
-        return jsonify({
-            "week": commentary["week"],
-            "start_date": commentary["start_date"],
-            "end_date": commentary["end_date"],
-            "text": format_commentary_text(commentary),
-            "data": {
-                "main_cycle": commentary["main_cycle"],
-                "configurations": commentary["all_configurations"],
-                "planetary_positions": commentary["planetary_positions"],
-                "moon_transits": [
-                    {
-                        "date": mt["date"].isoformat(),
-                        "weekday": mt["weekday"],
-                        "nakshatra": mt["nakshatra"],
-                        "sign": mt["sign"],
-                        "degree": mt["degree"],
-                        "meaning": mt["meaning"],
-                        "lord": mt["lord"],
-                    } for mt in commentary["moon_transits"]
-                ],
-                "active_windows": commentary["active_windows"],
-                "upcoming_windows": commentary["upcoming_windows"],
-                "transits": commentary["transits"],
-                "lunar_phase": commentary["lunar_phase"],
-                "jupiter_analysis": commentary["jupiter_analysis"],
-                "confluence": commentary["confluence"],
-                "bullish_futurecast": commentary["bullish_futurecast"],
-                "bearish_futurecast": commentary["bearish_futurecast"],
-                "market_bias": commentary["market_bias"],
-                "bullish_factors": commentary["bullish_factors"],
-                "bearish_factors": commentary["bearish_factors"],
-                "sector_outlook": commentary.get("sector_outlook", []),
-                "general_strategy": commentary.get("general_strategy", ""),
-                "nifty_levels": commentary.get("nifty_levels", ""),
-            }
-        })
-    except ValueError:
-        return jsonify({"error": "invalid date"}), 400
 
-
-@app.route("/api/intraday_projection")
-def intraday_projection_endpoint():
-    """Hourly NIFTY astro-projection with yoga windows for N days forward."""
-    date_str = request.args.get("date") or datetime.date.today().isoformat()
-    tz_name = request.args.get("tz") or "Asia/Kolkata"
-    anchor_key = request.args.get("anchor") or "nse"
-    try:
-        days = int(request.args.get("days", "5"))
-    except ValueError:
-        days = 5
-    days = max(1, min(10, days))
-    try:
-        datetime.date.fromisoformat(date_str)
-    except ValueError:
-        return jsonify({"error": "invalid date"}), 400
-    return jsonify(intraday_projection(date_str, tz_name, days, anchor_key))
-
-
-@app.route("/api/bhadra_calendar")
-def bhadra_calendar_endpoint():
-    """Bhadra (Vishti Karana) calendar for a month, with reversal-watch overlap."""
-    date_str = request.args.get("date") or datetime.date.today().isoformat()
-    tz_name = request.args.get("tz") or "Asia/Kolkata"
-    try:
-        offset = int(request.args.get("offset", "0"))
-    except ValueError:
-        offset = 0
-    # Allow only a bounded window of navigation.
-    offset = max(-12, min(12, offset))
-
-    try:
-        datetime.date.fromisoformat(date_str)
-    except ValueError:
-        return jsonify({"error": "invalid date"}), 400
-
-    result = bhadra_calendar(date_str, tz_name, offset)
-
-    # Compute reversal-watch overlap for the same month so the Bhadra
-    # windows can be cross-referenced against the reversal calendar.
-    windows = result["windows"]
-    if windows:
-        try:
-            from sbc.market_calendar import reversal_alert
-            from sbc.planets import positions
-            from sbc.backtest import _julian_at_noon
-            from sbc.nakshatra import tithi_of
-
-            # Days covered by this month's Bhadra windows, plus the muhurt
-            # (begin/end local time) details for each overlapping window so
-            # the reversal-day cross-reference can show the exact Bhadra
-            # inauspicious span.
-            covered_days = set()
-            day_windows = {}  # date_str -> list of Bhadra window details
-            for w in windows:
-                b = datetime.date.fromisoformat(w["begin_iso"][:10])
-                e = datetime.date.fromisoformat(w["end_iso"][:10])
-                d = b
-                while d <= e:
-                    covered_days.add(d.isoformat())
-                    # Determine the clipped in-window begin/end for this day.
-                    day_begin = w["begin_iso"]
-                    day_end = w["end_iso"]
-                    day_str = d.isoformat()
-                    if day_str > w["begin_iso"][:10]:
-                        day_begin = f"{day_str}T00:00:00"
-                    if day_str < w["end_iso"][:10]:
-                        day_end = f"{day_str}T23:59:59"
-                    day_windows.setdefault(day_str, []).append({
-                        "begin_iso": day_begin,
-                        "end_iso": day_end,
-                        "begin_time": w["begin_time"],
-                        "end_time": w["end_time"],
-                        "begin_date": w["begin_date"],
-                        "end_date": w["end_date"],
-                        "spans_midnight": w.get("spans_midnight", False),
-                        # Actual full-window start/end of the muhurt that
-                        # overlaps this day.
-                        "muhurt_begin_iso": w["begin_iso"],
-                        "muhurt_end_iso": w["end_iso"],
-                        "muhurt_begin_time": w["begin_time"],
-                        "muhurt_end_time": w["end_time"],
-                    })
-                    d += datetime.timedelta(days=1)
-
-            # Reversal windows for the first day of the month.
-            month_first = f"{result['month_start']}"
-            planets, _ = positions(_julian_at_noon(month_first))
-            sun = next(p for p in planets if p["name"] == "Sun")
-            moon = next(p for p in planets if p["name"] == "Moon")
-            tithi = tithi_of(sun["longitude"], moon["longitude"])
-            rev = reversal_alert(month_first, planets, tithi)
-
-            month_end = datetime.date.fromisoformat(month_first).replace(
-                day=28) + datetime.timedelta(days=4)
-            month_end = month_end.replace(day=1) - datetime.timedelta(days=1)
-
-            overlap = {
-                "reversal_days": [],
-            }
-            for wd in rev.get("watch_days", []):
-                if month_first <= wd["date"] <= month_end.isoformat() and wd["windows"]:
-                    bhadra_overlap = wd["date"] in covered_days
-                    entry = {
-                        "date": wd["date"],
-                        "bhadra_overlap": bhadra_overlap,
-                        "reversal_count": len(wd["windows"]),
-                        "titles": [x["title"] for x in wd["windows"]],
-                    }
-                    if bhadra_overlap:
-                        # Attach the exact Bhadra muhurt span(s) for this day.
-                        entry["bhadra_windows"] = day_windows.get(wd["date"], [])
-                    overlap["reversal_days"].append(entry)
-            overlap["bhadra_overlap_days"] = sorted(
-                d for d in covered_days if month_first <= d <= month_end.isoformat())
-            overlap["total_reversal_days"] = len(overlap["reversal_days"])
-            overlap["overlap_count"] = sum(
-                1 for d in overlap["reversal_days"] if d["bhadra_overlap"])
-            result["reversal_overlap"] = overlap
-        except Exception as exc:
-            result["reversal_overlap"] = {"error": str(exc)}
-
-    return jsonify(result)
-
-
-@app.route("/api/monthly_heatmap")
-def monthly_heatmap_endpoint():
-    """Sector x day confluence heatmap + lunar timing strip."""
-    date_str = request.args.get("date") or datetime.date.today().isoformat()
-    tz_name = request.args.get("tz") or "Asia/Kolkata"
-    anchor = request.args.get("anchor") or "nse"
-    try:
-        days = int(request.args.get("days", "30"))
-    except ValueError:
-        days = 30
-    days = max(7, min(90, days))
-
-    try:
-        datetime.date.fromisoformat(date_str)
-    except ValueError:
-        return jsonify({"error": "invalid date"}), 400
-
-    try:
-        from sbc.monthly_heatmap import monthly_heatmap as _mh
-        result = _mh(start_date=date_str, days=days, tz_name=tz_name, anchor_key=anchor)
-    except Exception as exc:
-        return jsonify({"error": str(exc)}), 500
-
-    return jsonify(result)
 
 
 @app.route("/api/bullion_vedha")
@@ -767,38 +585,7 @@ def trade_setups():
     })
 
 
-@app.route("/api/prediction")
-def prediction():
-    date_str = request.args.get("date") or datetime.date.today().isoformat()
-    time_str = request.args.get("time", "09:15")
-    tz_name = request.args.get("tz", "Asia/Kolkata")
-    anchor_key = request.args.get("anchor") or "nse"
-    school = request.args.get("school", "classical")
-    try:
-        if anchor_key not in ANCHORS:
-            return jsonify({"error": "unknown anchor"}), 400
-        if school not in ("classical", "allthree"):
-            return jsonify({"error": "unknown school"}), 400
-        datetime.datetime.strptime(date_str, "%Y-%m-%d")
-        datetime.datetime.strptime(time_str, "%H:%M")
-    except ValueError:
-        return jsonify({"error": "invalid date/time"}), 400
-    resp = build_response(date_str, time_str, tz_name, anchor_key, school)
-    return jsonify(resp)
 
-
-@app.route("/api/nifty_chart")
-def nifty_chart():
-    """NIFTY 50 daily OHLC candles for the chart (yfinance + local cache)."""
-    start = request.args.get("start")
-    end = request.args.get("end")
-    try:
-        for d in (start, end):
-            if d:
-                datetime.datetime.strptime(d, "%Y-%m-%d")
-    except ValueError:
-        return jsonify({"error": "invalid date"}), 400
-    return jsonify({"candles": get_nifty_ohlc(start, end), "symbol": "^NSEI"})
 
 
 @app.route("/api/nakshatra_chart")
@@ -861,219 +648,6 @@ def nakshatra_chart():
         return jsonify({"error": "native chart generation failed"}), 500
 
 
-_series_cache = {}
-
-
-@app.route("/api/prediction_series")
-def prediction_series():
-    """Compact per-day astro prediction scores over a date range.
-
-    Used to overlay bullish/bearish markers + sentiment bands on the
-    NIFTY price chart. Works for past and future dates alike.
-    """
-    start = request.args.get("start")
-    end = request.args.get("end")
-    anchor_key = request.args.get("anchor") or "nifty"
-    school = request.args.get("school", "classical")
-    try:
-        start_d = datetime.date.fromisoformat(start)
-        end_d = datetime.date.fromisoformat(end)
-    except (TypeError, ValueError):
-        return jsonify({"error": "invalid start/end date"}), 400
-    if anchor_key not in ANCHORS:
-        return jsonify({"error": "unknown anchor"}), 400
-    # Allow up to ~31 months (950 days) to cover 24m history + 6m forecast + buffer
-    if (end_d - start_d).days > 950:
-        return jsonify({"error": "range too large (max 950 days)"}), 400
-
-    # L2: rows already computed by a previous process / worker
-    wanted = []
-    d = start_d
-    while d <= end_d:
-        if (d.isoformat(), anchor_key, school) not in _series_cache:
-            wanted.append(d.isoformat())
-        d += datetime.timedelta(days=1)
-    for ds, payload in series_cache.get_many(wanted, anchor_key, school).items():
-        _series_cache[(ds, anchor_key, school)] = payload
-
-    out = []
-    fresh = {}
-    d = start_d
-    while d <= end_d:
-        ds = d.isoformat()
-        key = (ds, anchor_key, school)
-        if key not in _series_cache:
-            try:
-                r = build_response(ds, "09:15", "Asia/Kolkata", anchor_key, school)
-                alert = r.get("market_alert") or {}
-                level = None
-                for w in (alert.get("windows") or []):
-                    level = w.get("level") or level
-
-                # Crash-calendar severity: highest active window level this day
-                _LEVEL_RANK = {"LOW": 1, "MODERATE": 2, "MODERATE-HIGH": 3,
-                               "HIGH": 4, "VERY HIGH": 5, "EXTREME": 6,
-                               "CRITICAL": 7}
-                rank = 0
-                risk_label = None
-                for w in (alert.get("windows") or []):
-                    wl = (w.get("level") or "").upper()
-                    wr = _LEVEL_RANK.get(wl, 0)
-                    if wr > rank:
-                        rank = wr
-                        risk_label = w.get("level")
-
-                # Compact vedha drivers for the NIFTY chart hover card
-                hits = r.get("point_hits") or []
-                benefics = sorted(
-                    (h for h in hits if h["nature"] == "benefic"),
-                    key=lambda x: -x["strength"])[:3]
-                malefics = sorted(
-                    (h for h in hits if h["nature"] == "malefic"),
-                    key=lambda x: x["strength"])[:3]
-                drivers = {
-                    "benefic": [{
-                        "planet": h["planet"], "symbol": h["symbol"],
-                        "point": h["point"], "ray": h["ray"],
-                        "strength": h["strength"],
-                    } for h in benefics],
-                    "malefic": [{
-                        "planet": h["planet"], "symbol": h["symbol"],
-                        "point": h["point"], "ray": h["ray"],
-                        "strength": h["strength"],
-                    } for h in malefics],
-                }
-
-                # Active reversal windows (compact) for the hover card
-                windows = [{
-                    "title": w.get("title", ""),
-                    "level": w.get("level", ""),
-                    "bias": w.get("bias", ""),
-                } for w in (alert.get("windows") or [])[:4]]
-
-                # Confluence snapshot (overall signal + agreeing sectors)
-                conf = alert.get("confluence") or {}
-                conf_overall = conf.get("overall") or {}
-                conf_hl = conf.get("highlights") or {}
-                confluence = {
-                    "signal": conf_overall.get("signal"),
-                    "bull": conf_overall.get("bullish_weight"),
-                    "bear": conf_overall.get("bearish_weight"),
-                    "net": conf_overall.get("net"),
-                    "bull_sectors": conf_hl.get("bullish_confluence_sectors") or [],
-                    "bear_sectors": conf_hl.get("bearish_confluence_sectors") or [],
-                }
-
-                # Add lunar phase info
-                tithi_val = r.get("tithi", {}).get("tithi") if isinstance(r.get("tithi"), dict) else r.get("tithi")
-                lunar_phase = None
-                if tithi_val:
-                    if tithi_val == 15:
-                        lunar_phase = "PURNIMA"
-                    elif tithi_val == 30:
-                        lunar_phase = "AMAVASYA"
-                    elif tithi_val in (14, 29):
-                        lunar_phase = "PRE_PURNIMA" if tithi_val == 14 else "PRE_AMAVASYA"
-
-                _series_cache[key] = {
-                    "date": ds,
-                    "score": r.get("score"),
-                    "net": r.get("net"),
-                    "verdict": r.get("sentiment", {}).get("verdict"),
-                    "strength": r.get("sentiment", {}).get("strength"),
-                    "rec": (r.get("recommendation") or {}).get("summary"),
-                    "alert": bool(alert.get("active")),
-                    "alert_level": level,
-                    "risk_rank": rank,
-                    "risk_label": risk_label,
-                    "alerts_total": alert.get("total_alerts", 0),
-                    "drivers": drivers,
-                    "windows": windows,
-                    "confluence": confluence,
-                    "lunar_phase": lunar_phase,
-                }
-                fresh[ds] = _series_cache[key]
-            except Exception as exc:
-                _series_cache[key] = {"date": ds, "error": str(exc)}
-        out.append(_series_cache[key])
-        d += datetime.timedelta(days=1)
-    if fresh:
-        series_cache.put_many(fresh, anchor_key, school)
-    return jsonify({"series": out, "anchor": anchor_key})
-
-
-_balance_cache = {}
-
-
-@app.route("/api/daily_indication_balance")
-def daily_indication_balance():
-    """30-day daily indication balance: blended bias bars + three school lines.
-
-    Schools: Jyotish (classical single-ray), KP (all-three Narasimha Rao rays)
-    and Western (zodiac-dignity synthetic line). Each day is scored on the
-    Vedic net, mapped to a 0..6 bias scale.
-    """
-    start = request.args.get("start")
-    try:
-        start_d = datetime.date.fromisoformat(start) if start else datetime.date.today()
-    except ValueError:
-        return jsonify({"error": "invalid start date"}), 400
-
-    anchor_key = request.args.get("anchor") or "nifty"
-    if anchor_key not in ANCHORS:
-        return jsonify({"error": "unknown anchor"}), 400
-
-    key = (start_d.isoformat(), anchor_key)
-    if key in _balance_cache:
-        return jsonify(_balance_cache[key])
-
-    days = []
-    jyotish = []
-    kp = []
-    western = []
-    blend = []
-    dates = []
-
-    d = start_d
-    for _ in range(30):
-        ds = d.isoformat()
-        dates.append(ds)
-        try:
-            # Jyotish (classical) and KP (allthree) both reuse build_response.
-            rj = build_response(ds, "09:15", "Asia/Kolkata", anchor_key, "classical")
-            rk = build_response(ds, "09:15", "Asia/Kolkata", anchor_key, "allthree")
-
-            jyotish_net = rj.get("net", 0.0)
-            kp_net = rk.get("net", 0.0)
-            western_net = _western_bias(rj.get("planets", []))
-
-            jb = _bias_scale(jyotish_net)
-            kb = _bias_scale(kp_net)
-            wb = _bias_scale(western_net)
-        except Exception:
-            jb = kb = wb = 3.0
-
-        jyotish.append(jb)
-        kp.append(kb)
-        western.append(wb)
-        blend.append(round((jb + kb + wb) / 3.0, 4))
-        d += datetime.timedelta(days=1)
-
-    out = {
-        "days": list(range(1, 31)),
-        "dates": dates,
-        "blend_bias": blend,
-        "jyotish_line": jyotish,
-        "kp_line": kp,
-        "western_line": western,
-        "bullish_threshold": 4.0,
-        "bearish_threshold": 2.0,
-        "neutral_range": [2.0, 4.0],
-        "anchor": anchor_key,
-        "start": start_d.isoformat(),
-    }
-    _balance_cache[key] = out
-    return jsonify(out)
 
 
 # ---------------------------------------------------------------
@@ -1083,6 +657,10 @@ def daily_indication_balance():
 # and synthesises the three layers from confluence, drivers, and
 # planetary dignity.
 # ---------------------------------------------------------------
+
+
+# Contra signals: (start_iso, anchor) -> payload (own namespace)
+_contra_cache = {}
 
 
 @app.route("/api/contra_signals")
@@ -1108,122 +686,133 @@ def contra_signals():
         return jsonify({"error": "unknown anchor"}), 400
 
     key = (start_d.isoformat(), anchor_key)
-    # Simple in‑process cache (same pattern as _series_cache / _balance_cache)
-    if key in _balance_cache:
-        out = _balance_cache[key]
+    # Simple in-process cache (own namespace; never shared with other routes)
+    if key in _contra_cache:
+        return jsonify(_contra_cache[key])
+
+    # Jyotish (classical) pass; KP (allthree) pass — two ephemeris passes total.
+    rj = build_response(start_d.isoformat(), "09:15", "Asia/Kolkata", anchor_key, "classical")
+    rk = build_response(start_d.isoformat(), "09:15", "Asia/Kolkata", anchor_key, "allthree")
+
+    # --- Layer 1: Market Structure ---
+    # build_response nests the confluence snapshot under market_alert.confluence,
+    # with weights in the "overall" sub-dict.
+    alert = rj.get("market_alert") or {}
+    confluence = alert.get("confluence") or {}
+    conf_overall = confluence.get("overall") or {}
+    confl_signal = conf_overall.get("signal") or ""
+    bull_w = conf_overall.get("bullish_weight", 0) or 0
+    bear_w = conf_overall.get("bearish_weight", 0) or 0
+    net_c = bull_w - bear_w
+    # POC trap: extreme net + many bull/bear sectors
+    poc_trap = abs(net_c) >= 3 and (bull_w >= 3 or bear_w >= 3)
+    # Distribution/Accumulation
+    dist_accum = "accumulation" if bull_w > bear_w else "distribution"
+    # Exhaustion: 3+ weak drivers of a nature among the point hits
+    hits = rj.get("point_hits") or []
+    benefic_drivers = sorted(
+        (h for h in hits if h["nature"] == "benefic"),
+        key=lambda x: -x["strength"])[:3]
+    malefic_drivers = sorted(
+        (h for h in hits if h["nature"] == "malefic"),
+        key=lambda x: x["strength"])[:3]
+    selling_exhaustion = len(malefic_drivers) >= 3 and all(
+        h.get("strength", 0) < 1.5 for h in malefic_drivers[:3])
+    buying_exhaustion = len(benefic_drivers) >= 3 and all(
+        h.get("strength", 0) < 1.5 for h in benefic_drivers[:3])
+
+    # --- Layer 2: Astro Timing ---
+    # Jyotish = classical single-ray, KP = allthree, Western = synthetic dignity
+    jyotish_net = rj.get("net", 0.0)
+    kp_net = rk.get("net", 0.0)
+    western_net = _western_bias(rj.get("planets", []))
+
+    jyotish_bias = _bias_scale(jyotish_net)
+    kp_bias = _bias_scale(kp_net)
+    western_bias = _bias_scale(western_net)
+
+    # Reversal window flags
+    jyotish_reversal = jyotish_net <= -2.0  # bearish net → possible reversal short
+    kp_reversal = kp_net <= -2.0
+    western_reversal = western_net <= 2.0  # western bearish‑ish → reversal candidate
+
+    # --- Layer 3: Price Confirmation (synthetic from blend bias) ---
+    # Same 3-school blend the daily_indication_balance endpoint serves:
+    # confirmation from crossing the bull/bear thresholds.
+    blend = round((jyotish_bias + kp_bias + western_bias) / 3.0, 4)
+    bullish_threshold = 4.0
+    bearish_threshold = 2.0
+    blend_buy = blend > bullish_threshold
+    blend_sell = blend < bearish_threshold
+    blend_neutral = bearish_threshold <= blend <= bullish_threshold
+
+    # -------------------------------------------------------------------------
+    # Cheat‑Sheet generation (ultra‑short format per the spec)
+    # -------------------------------------------------------------------------
+    buy_signals = []
+    sell_signals = []
+
+    # Layer 1
+    if poc_trap:
+        buy_signals.append("POC trap holds")
+    if selling_exhaustion:
+        buy_signals.append("Selling exhaustion")
+    if buying_exhaustion:
+        sell_signals.append("Buying exhaustion")
+    if dist_accum == "accumulation":
+        buy_signals.append("Accumulation detected")
     else:
-        r = build_response(start_d.isoformat(), "09:15", "Asia/Kolkata", anchor_key, "classical")
-        # --- Layer 1: Market Structure ---
-        confluence = r.get("confluence") or {}
-        drivers_data = r.get("drivers") or {}
-        confl_signal = confluence.get("signal") or ""
-        bull_w = confluence.get("bull", 0) or 0
-        bear_w = confluence.get("bear", 0) or 0
-        net_c = confluence.get("net", 0) or 0
-        # POC trap: extreme net + many bull/bear sectors
-        poc_trap = abs(net_c) >= 3 and (bull_w >= 3 or bear_w >= 3)
-        # Distribution/Accumulation
-        dist_accum = "accumulation" if bull_w > bear_w else "distribution"
-        # Selling exhaustion: many malefic drivers, low strength
-        benefic_drivers = drivers_data.get("benefic", []) if isinstance(drivers_data, dict) else []
-        malefic_drivers = drivers_data.get("malefic", []) if isinstance(drivers_data, dict) else []
-        selling_exhaustion = len(malefic_drivers) >= 3 and all(h.get("strength", 0) < 1.5 for h in malefic_drivers[:3])
-        buying_exhaustion = len(benefic_drivers) >= 3 and all(h.get("strength", 0) < 1.5 for h in benefic_drivers[:3])
+        sell_signals.append("Distribution detected")
 
-        # --- Layer 2: Astro Timing ---
-        # Jyotish = classical single‑ray, KP = allthree, Western = synthetic dignity
-        rj = build_response(start_d.isoformat(), "09:15", "Asia/Kolkata", anchor_key, "classical")
-        rk = build_response(start_d.isoformat(), "09:15", "Asia/Kolkata", anchor_key, "allthree")
-        jyotish_net = rj.get("net", 0.0)
-        kp_net = rk.get("net", 0.0)
-        western_net = _western_bias(rj.get("planets", []))
+    # Layer 2
+    if jyotish_reversal:
+        buy_signals.append("SBC benefic vedha on bearish day")
+    if kp_reversal:
+        buy_signals.append("KP reversal window")
+    if western_reversal:
+        buy_signals.append("Western bearish bias")
+    if not jyotish_reversal and not kp_reversal and not western_reversal:
+        # If none of the reversal flags fire, the contra‑sell conditions apply
+        sell_signals.append("KP/SRC bullish window holds")
 
-        jyotish_bias = _bias_scale(jyotish_net)
-        kp_bias = _bias_scale(kp_net)
-        western_bias = _western_bias(rj.get("planets", []))
+    # Layer 3
+    if blend_buy:
+        buy_signals.append("Blend > bullish threshold")
+    if blend_sell:
+        sell_signals.append("Blend < bearish threshold")
 
-        # Reversal window flags
-        jyotish_reversal = jyotish_net <= -2.0  # bearish net → possible reversal short
-        kp_reversal = kp_net <= -2.0
-        western_reversal = western_net <= 2.0  # western bearish‑ish → reversal candidate
+    # Deduplicate & limit
+    buy_signals = list(dict.fromkeys(buy_signals))[:5]
+    sell_signals = list(dict.fromkeys(sell_signals))[:5]
 
-        # --- Layer 3: Price Confirmation (synthetic from blend bias) ---
-        # The daily_indication_balance endpoint provides blend_bias;
-        # here we derive confirmation from crossing the bull/bear thresholds.
-        blend = r.get("blend_bias", 0) if isinstance(r, dict) else 0
-        bullish_threshold = 4.0
-        bearish_threshold = 2.0
-        blend_buy = blend > bullish_threshold
-        blend_sell = blend < bearish_threshold
-        blend_neutral = bearish_threshold <= blend <= bullish_threshold
-
-        # -------------------------------------------------------------------------
-        # Cheat‑Sheet generation (ultra‑short format per the spec)
-        # -------------------------------------------------------------------------
-        buy_signals = []
-        sell_signals = []
-
-        # Layer 1
-        if poc_trap:
-            buy_signals.append("POC trap holds")
-        if selling_exhaustion:
-            buy_signals.append("Selling exhaustion")
-        if buying_exhaustion:
-            sell_signals.append("Buying exhaustion")
-        if dist_accum == "accumulation":
-            buy_signals.append("Accumulation detected")
-        else:
-            sell_signals.append("Distribution detected")
-
-        # Layer 2
-        if jyotish_reversal:
-            buy_signals.append("SBC benefic vedha on bearish day")
-        if kp_reversal:
-            buy_signals.append("KP reversal window")
-        if western_reversal:
-            buy_signals.append("Western bearish bias")
-        if not jyotish_reversal and not kp_reversal and not western_reversal:
-            # If none of the reversal flags fire, the contra‑sell conditions apply
-            sell_signals.append("KP/SRC bullish window holds")
-
-        # Layer 3
-        if blend_buy:
-            buy_signals.append("Blend > bullish threshold")
-        if blend_sell:
-            sell_signals.append("Blend < bearish threshold")
-
-        # Deduplicate & limit
-        buy_signals = list(dict.fromkeys(buy_signals))[:5]
-        sell_signals = list(dict.fromkeys(sell_signals))[:5]
-
-        out = {
-            "layer1": {
-                "poc_trap": poc_trap,
-                "dist_accum": dist_accum,
-                "selling_exhaustion": selling_exhaustion,
-                "buying_exhaustion": buying_exhaustion,
-            },
-            "layer2": {
-                "jyotish_bias": jyotish_bias,
-                "kp_bias": kp_bias,
-                "western_bias": western_bias,
-                "jyotish_reversal": jyotish_reversal,
-                "kp_reversal": kp_reversal,
-                "western_reversal": western_reversal,
-            },
-            "layer3": {
-                "blend_buy": blend_buy,
-                "blend_sell": blend_sell,
-                "blend_neutral": blend_neutral,
-            },
-            "cheat_sheet": {
-                "buy": buy_signals,
-                "sell": sell_signals,
-            },
-            "anchor": anchor_key,
-            "date": start_d.isoformat(),
-        }
-        _balance_cache[key] = out
+    out = {
+        "layer1": {
+            "poc_trap": poc_trap,
+            "dist_accum": dist_accum,
+            "selling_exhaustion": selling_exhaustion,
+            "buying_exhaustion": buying_exhaustion,
+        },
+        "layer2": {
+            "jyotish_bias": jyotish_bias,
+            "kp_bias": kp_bias,
+            "western_bias": western_bias,
+            "jyotish_reversal": jyotish_reversal,
+            "kp_reversal": kp_reversal,
+            "western_reversal": western_reversal,
+        },
+        "layer3": {
+            "blend_buy": blend_buy,
+            "blend_sell": blend_sell,
+            "blend_neutral": blend_neutral,
+        },
+        "cheat_sheet": {
+            "buy": buy_signals,
+            "sell": sell_signals,
+        },
+        "anchor": anchor_key,
+        "date": start_d.isoformat(),
+    }
+    _contra_cache[key] = out
     return jsonify(out)
 
 
@@ -1264,15 +853,27 @@ def crash_score_series():
     return jsonify({"series": out})
 
 
-@app.route("/api/sector_vedha")
-def sector_vedha():
-    """Backtest-informed plantation/fertilizer vedha signals for a date."""
-    date_str = request.args.get("date") or datetime.date.today().isoformat()
+
+
+@app.route("/api/rahu_ketu_trap_calendar")
+def rahu_ketu_trap_calendar():
+    """Industry-wise daily Rahu/Ketu trap calendar."""
+    start = request.args.get("start")
+    end = request.args.get("end")
+    industries = request.args.get("industries")
     try:
-        datetime.datetime.strptime(date_str, "%Y-%m-%d")
+        if not start or not end:
+            return jsonify({"error": "start and end required"}), 400
+        datetime.date.fromisoformat(start)
+        datetime.date.fromisoformat(end)
     except ValueError:
         return jsonify({"error": "invalid date"}), 400
-    return jsonify(scan_sector_vedhas(date_str))
+    industries_list = None
+    if industries:
+        industries_list = [i.strip() for i in industries.split(",")]
+    from sbc.rahu_ketu_trap import generate_calendar
+    result = generate_calendar(start, end, industries_list)
+    return jsonify(result)
 
 
 @app.route("/api/crash_analysis")
@@ -1547,33 +1148,6 @@ def alcohol_signals():
     return jsonify(result)
 
 
-@app.route("/api/lunar_forecast")
-def lunar_forecast():
-    """Lunar cycle sector forecast with SBC vedha and planetary nakshatra confluence."""
-    date_str = request.args.get("date") or datetime.date.today().isoformat()
-    try:
-        datetime.datetime.strptime(date_str, "%Y-%m-%d")
-    except ValueError:
-        return jsonify({"error": "invalid date"}), 400
-
-    # Get positioned planets + tithi
-    from sbc.planets import positioned_planets
-
-    planets, ayanamsa, sun, moon, tithi = positioned_planets(date_str)
-
-    from sbc.lunar_forecast import generate_lunar_sector_forecast, generate_infographic_card, format_card_for_clipboard, format_card_for_social_media
-    
-    forecast = generate_lunar_sector_forecast(date_str, planets, tithi, sun, moon)
-    card = generate_infographic_card(forecast)
-    clipboard_text = format_card_for_clipboard(card)
-    social_text = format_card_for_social_media(card)
-    
-    return jsonify({
-        "forecast": forecast,
-        "card": card,
-        "clipboard_text": format_card_for_clipboard(card),
-        "social_text": format_card_for_social_media(card),
-    })
 
 
 @app.route("/api/fmcg_signals")
@@ -1656,168 +1230,38 @@ def astro_plot():
 # KP INTRADAY TREND CHANGE PREDICTION ENDPOINTS
 # =============================================================================
 
-@app.route("/api/kp_intraday_report")
-def kp_intraday_report():
-    """Generate KP Intraday Trend Change Prediction Report."""
-    date_str = request.args.get("date") or datetime.date.today().isoformat()
-    instrument = request.args.get("instrument", "NIFTY")
-    format_type = request.args.get("format", "json")
-
-    try:
-        trading_day = datetime.date.fromisoformat(date_str)
-    except ValueError:
-        return jsonify({"error": "invalid date"}), 400
-
-    if instrument not in ("NIFTY", "BANK NIFTY", "FINNIFTY"):
-        return jsonify({"error": "invalid instrument"}), 400
-
-    # Find or generate KP data file for the requested month
-    kp_data_dir = Path("data/kp")
-    kp_data_dir.mkdir(parents=True, exist_ok=True)
-    
-    month_file = kp_data_dir / f"KP_Data_{trading_day.strftime('%b%Y')}.csv"
-    if not month_file.exists():
-        try:
-            generate_sample_kp_csv(month_file, trading_day.replace(day=1), 31)
-        except Exception as e:
-            pass
-
-    if month_file.exists():
-        csv_path = month_file
-    else:
-        csv_files = list(kp_data_dir.glob("*.csv"))
-        if not csv_files:
-            try:
-                generate_sample_kp_csv(month_file, trading_day.replace(day=1), 31)
-                csv_path = month_file
-            except Exception as e:
-                return jsonify({"error": f"No KP data file found and failed to generate sample: {e}"}), 404
-        else:
-            csv_path = csv_files[0]
-
-    try:
-        config = get_config()
-        instrument_cfg = get_instrument_config(instrument, config)
-
-        report = generate_kp_intraday_report(csv_path, trading_day, instrument, instrument_cfg)
-
-        if format_type == "html":
-            generator = KPReportGenerator(instrument_cfg)
-            html = generator.generate_html(report)
-            from flask import Response
-            return Response(html, mimetype='text/html')
-
-        # JSON response with structured data
-        return jsonify({
-            "trading_day": report.trading_day.isoformat(),
-            "instrument": report.instrument,
-            "market": report.market,
-            "ayanamsa": report.ayanamsa,
-            "source_file": report.source_file,
-            "generated_at": report.generated_at.isoformat(),
-            "brand": report.brand,
-            "day_signature": {
-                "day_lord": report.day_signature.day_lord,
-                "moon_sign": report.day_signature.moon_sign,
-                "moon_star": report.day_signature.moon_star,
-                "opening_sublord": report.day_signature.opening_sublord,
-                "moon_speed": report.day_signature.moon_speed,
-                "day_bias_score": report.day_signature.day_bias_score,
-                "day_bias_label": report.day_signature.day_bias_label,
-                "moon_affliction_gate": report.day_signature.moon_affliction_gate,
-                "hora_slots": [
-                    {
-                        "time_range": hs.time_range_str(),
-                        "lord": hs.lord,
-                        "quality": hs.quality.value,
-                        "base_quality": getattr(hs, 'base_quality', hs.quality.value),
-                        "aspects_received": getattr(hs, 'aspects_received', 'None'),
-                        "interpretation": getattr(hs, 'interpretation', hs.aspect_notes),
-                        "aspect_notes": hs.aspect_notes
-                    } for hs in report.day_signature.hora_slots
-                ]
-            },
-            "regime_shifts": [
-                {
-                    "time": rs.time_str(),
-                    "planet": rs.planet,
-                    "old_sublord": rs.old_sublord,
-                    "new_sublord": rs.new_sublord,
-                    "house_set_strength": rs.house_set_strength,
-                    "regime_label": rs.regime_label,
-                    "direction": rs.direction.value
-                } for rs in report.regime_shifts
-            ],
-            "trend_changes": [
-                {
-                    "time": tc.time_str(),
-                    "grade": tc.grade.value,
-                    "direction": tc.direction.value,
-                    "trigger": tc.trigger,
-                    "asc_sub_house_set": tc.asc_sub_house_set,
-                    "hora_lord": tc.hora_lord,
-                    "score": tc.score,
-                    "notes": tc.notes
-                } for tc in report.trend_changes
-            ],
-            "bullish_windows": [
-                {
-                    "time_range": w.time_range_str(),
-                    "score": w.score,
-                    "signal_count": len(w.signals)
-                } for w in report.bullish_windows
-            ],
-            "bearish_windows": [
-                {
-                    "time_range": w.time_range_str(),
-                    "score": w.score,
-                    "signal_count": len(w.signals)
-                } for w in report.bearish_windows
-            ],
-            "strongest_bullish": {
-                "time_range": report.strongest_bullish.time_range_str(),
-                "score": report.strongest_bullish.score
-            } if report.strongest_bullish else None,
-            "strongest_bearish": {
-                "time_range": report.strongest_bearish.time_range_str(),
-                "score": report.strongest_bearish.score
-            } if report.strongest_bearish else None,
-            "exhaustion_warnings": report.exhaustion_warnings
-        })
-
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
-
-
-@app.route("/api/kp_intraday_config")
-def kp_intraday_config():
-    """Get current KP Intraday configuration."""
-    config = get_config()
-    return jsonify(config.to_dict())
-
 
 @app.route("/api/kp_intraday_sample", methods=["POST"])
 def kp_intraday_sample():
-    """Generate sample KP data CSV for testing."""
+    """Generate sample KP data CSV for testing (explicit user request only)."""
     data = request.get_json() or {}
     date_str = data.get("date") or datetime.date.today().isoformat()
     days = data.get("days", 31)
+    force = bool(data.get("force", False))
 
     try:
         start_date = datetime.date.fromisoformat(date_str)
     except ValueError:
         return jsonify({"error": "invalid date"}), 400
 
-    kp_data_dir = Path("data/kp")
+    kp_data_dir = Path(__file__).resolve().parent / "data" / "kp"
     kp_data_dir.mkdir(parents=True, exist_ok=True)
 
     output_path = kp_data_dir / f"KP_Data_{start_date.strftime('%b%Y')}.csv"
+    if output_path.exists() and not force:
+        return jsonify({
+            "error": (
+                f"{output_path.name} already exists and may hold real KP data. "
+                "Pass force=true to overwrite it deliberately."
+            )
+        }), 409
     generate_sample_kp_csv(output_path, start_date, days)
 
     return jsonify({
         "file": str(output_path),
         "days_generated": days,
-        "start_date": start_date.isoformat()
+        "start_date": start_date.isoformat(),
+        "sample": True,
     })
 
 
@@ -1876,25 +1320,6 @@ def api_habits_streaks():
 
 # Astro Research Lab API endpoints
 
-@app.route("/api/research/astro_lab")
-def api_astro_lab():
-    return jsonify(astro_lab())
-
-@app.route("/api/research/walk_forward_validation")
-def api_walk_forward_validation():
-    return jsonify(walk_forward_validation())
-
-@app.route("/api/research/canonical_market_event_model")
-def api_canonical_market_event_model():
-    return jsonify(canonical_market_event_model())
-
-@app.route("/api/research/new_moon_efficiency_study")
-def api_new_moon_efficiency_study():
-    return jsonify(new_moon_efficiency_study())
-
-@app.route("/api/research/planetary_aspect_grid")
-def api_planetary_aspect_grid():
-    return jsonify(planetary_aspect_grid())
 
 @app.route("/api/research/solar_lunar_cycle_explorer")
 def api_solar_lunar_cycle_explorer():
@@ -2087,6 +1512,7 @@ def api_price():
         days = request.args.get("days")
         start_str = request.args.get("start")
         end_str = request.args.get("end")
+        interval = request.args.get("interval","1d")
         if start_str and end_str:
             start = datetime.date.fromisoformat(start_str)
             end = datetime.date.fromisoformat(end_str) + datetime.timedelta(days=1)
@@ -2099,15 +1525,15 @@ def api_price():
             start = end - datetime.timedelta(days=180)
         # Server-side fallback map
         fallback_map = {
-            '^CNXIT':'^NSEIT',
-            '^CNXAUTO':'^NSEAUTO',
-            '^CNXMETAL':'^NSEMETAL',
-            '^CNXFMCG':'^NSEFMCG',
-            '^CNXPHARMA':'^NSEPHARMA',
+            '^CNXIT':None,
+            '^CNXAUTO':None,
+            '^CNXMETAL':None,
+            '^CNXFMCG':None,
+            '^CNXPHARMA':None,
             '^CNXENERGY':None,
-            '^CNXREALTY':'^NSEREALTY'
+            '^CNXREALTY':None
         }
-        df = yf.download(ticker, start=start, end=end, interval='1d', auto_adjust=True, progress=False)
+        df = yf.download(ticker, start=start, end=end, interval=interval, auto_adjust=True, progress=False)
         if df.empty:
             fb = fallback_map.get(ticker)
             if fb:
@@ -2325,59 +1751,6 @@ def api_tz_from_coords():
         return jsonify({"error": str(e)}), 500
 
 
-@app.route("/api/astro/personal", methods=["GET"])
-def api_astro_personal():
-    date_str = request.args.get("date")
-    time_str = request.args.get("time") or "09:15"
-    tz_name = request.args.get("tz", "Asia/Kolkata")
-    tz_hours = request.args.get("tz_hours")
-    tz_mins = request.args.get("tz_mins")
-    if not date_str:
-        return jsonify({"error": "date required"}), 400
-    try:
-        if tz_hours is not None and tz_mins is not None:
-            # Build UTC from local using offset
-            from datetime import datetime, timezone, timedelta
-            y,m,d = (int(x) for x in date_str.split("-"))
-            hh,mm = (int(x) for x in time_str.split(":"))
-            local_dt = datetime(y,m,d,hh,mm)
-            offset = timedelta(hours=int(tz_hours), minutes=int(tz_mins))
-            # Local time is UTC + offset
-            utc = (local_dt - offset).replace(tzinfo=timezone.utc).replace(tzinfo=None)
-        else:
-            utc = _utc_from_local(date_str, time_str, tz_name)
-        jul = _julday(utc)
-        planets, ayanamsa = positions(jul)
-        def find(name):
-            return next((p for p in planets if p["name"] == name), {})
-        moon = find("Moon")
-        sun = find("Sun")
-        rahu = find("Rahu")
-        ketu = find("Ketu")
-        market_confluence = build_response(date_str, time_str, tz_name, "nifty", "allthree")
-        signs = ["Aries","Taurus","Gemini","Cancer","Leo","Virgo","Libra","Scorpio","Sagittarius","Capricorn","Aquarius","Pisces"]
-        def sign_from_lon(lon):
-            if lon is None: return None
-            idx = int((lon % 360)//30)
-            return signs[idx]
-        result = {
-            "date": date_str,
-            "time": time_str,
-            "timezone": tz_name,
-            "ayanamsa": round(ayanamsa,4),
-            "sun": {"longitude": sun.get("longitude"), "sign": sign_from_lon(sun.get("longitude")), "nakshatra": sun.get("nakshatra")},
-            "moon": {"longitude": moon.get("longitude"), "sign": sign_from_lon(moon.get("longitude")), "nakshatra": moon.get("nakshatra")},
-            "rahu": {"longitude": rahu.get("longitude"), "sign": sign_from_lon(rahu.get("longitude"))},
-            "ketu": {"longitude": ketu.get("longitude"), "sign": sign_from_lon(ketu.get("longitude"))},
-            "vedha_net": market_confluence["net"],
-            "sector_reads": market_confluence["sectors"],
-            "planets": planets
-        }
-        return jsonify(result)
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
-
-
 @app.route("/api/daily_confluence", methods=["GET"])
 def api_daily_confluence():
     """Return one compact daily confluence result and its forward forecast."""
@@ -2510,6 +1883,10 @@ def api_gann_precision():
     try:
         ticker = request.args.get("ticker","^NSEI")
         days = int(request.args.get("days","90"))
+        asset_type = request.args.get("asset_type","indices")
+        from sbc.gann_zones import GANN_ASSET_TICKS, classify_gann_zones
+        if asset_type not in GANN_ASSET_TICKS:
+            return jsonify({"error":"unknown asset_type (stocks/indices/commodities)"}),400
         end = datetime.date.today()
         start = end - datetime.timedelta(days=days)
         import pandas as pd, yfinance as yf
@@ -2519,15 +1896,183 @@ def api_gann_precision():
         df.columns = [c[0] if isinstance(c,tuple) else c for c in df.columns]
         high = float(df['High'].max())
         low = float(df['Low'].min())
+        close = float(df['Close'].iloc[-1])
         range_ = high - low
-        # Gann precision levels: 0.618, 0.5, 0.382 etc
-        levels = []
-        for frac in [0.236,0.382,0.5,0.618,0.786]:
-            price = low + range_*frac
-            levels.append({"frac":frac,"price":price})
-        return jsonify({"ticker":ticker,"high":high,"low":low,"range":range_,"levels":levels})
+        zones, levels, _ = classify_gann_zones(high, low, close, asset_type)
+        return jsonify({
+            "ticker":ticker,
+            "asset_type":asset_type,
+            "high":high,
+            "low":low,
+            "close":close,
+            "range":range_,
+            "levels":levels,
+            "zones":zones,
+        })
     except Exception as e:
         return jsonify({"error":str(e)}),500
+
+
+@app.route("/api/astro/cycles", methods=["GET"])
+def api_astro_cycles():
+    """AstroCycle Pro: Mercury/Moon cycle time bars + Moon nakshatra ingresses."""
+    try:
+        date_str = request.args.get("date") or datetime.date.today().isoformat()
+        datetime.date.fromisoformat(date_str)
+        tz_name = request.args.get("tz", "Asia/Kolkata")
+        ticker = request.args.get("ticker", "^NSEI")
+        try:
+            sl_points = float(request.args.get("sl_points", "15"))
+        except ValueError:
+            return jsonify({"error": "invalid sl_points"}), 400
+
+        ref_price = None
+        try:
+            import yfinance as yf
+            df = yf.download(ticker, period="5d", interval="1d", auto_adjust=True, progress=False)
+            if not df.empty:
+                df.columns = [c[0] if isinstance(c, tuple) else c for c in df.columns]
+                ref_price = float(df["Close"].iloc[-1])
+        except Exception:
+            ref_price = None
+
+        from sbc.astro_cycles import cycle_bars, moon_ingress_bars
+        bars = cycle_bars(date_str, tz_name, ref_price=ref_price, sl_points=sl_points)
+        ingresses = moon_ingress_bars(date_str, tz_name)
+        return jsonify({
+            "date": date_str,
+            "tz": tz_name,
+            "ticker": ticker,
+            "ref_price": ref_price,
+            "sl_points": sl_points,
+            "bars": bars,
+            "moon_ingresses": ingresses,
+            "method": "Mercury/Moon planetary horas (Chaldean weekday sequence) + Moon nakshatra ingresses; market hours 09:15-15:30 IST.",
+            "disclaimer": "Research astro-timing, not investment advice.",
+        })
+    except ValueError as e:
+        return jsonify({"error": str(e)}), 400
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/expiry/range", methods=["GET"])
+def api_expiry_range():
+    """Expiry Range Indicator: forecast expiry-day support/resistance."""
+    try:
+        instrument = request.args.get("instrument", "NIFTY")
+        date_str = request.args.get("date") or datetime.date.today().isoformat()
+        datetime.date.fromisoformat(date_str)
+        try:
+            buffer_pct = float(request.args.get("buffer_pct", "0.0025"))
+        except ValueError:
+            return jsonify({"error": "invalid buffer_pct"}), 400
+        from_date = datetime.date.fromisoformat(date_str)
+        from sbc.expiry_range import next_expiry, expiry_range_levels
+        expiry = next_expiry(instrument, from_date)
+        ticker = "^NSEI" if instrument.upper().replace(" ", "") == "NIFTY" else "^NSEBANK"
+        import yfinance as yf
+        start = expiry - datetime.timedelta(days=10)
+        df = yf.download(ticker, start=start, end=expiry + datetime.timedelta(days=1),
+                         interval="1d", auto_adjust=True, progress=False)
+        if df.empty:
+            return jsonify({"error": "no price data"}), 400
+        df.columns = [c[0] if isinstance(c, tuple) else c for c in df.columns]
+        dates = [idx.date() if hasattr(idx, "date") else None for idx in df.index]
+        ref_idx = next((i for i, d in enumerate(dates) if d and d >= expiry), None)
+        prev_idx = ref_idx - 1 if ref_idx is not None else len(dates) - 2
+        if prev_idx is None or prev_idx < 0:
+            return jsonify({"error": "no reference day before expiry"}), 400
+        ref = df.iloc[prev_idx]
+        ohlc = {"open": float(ref["Open"]), "high": float(ref["High"]),
+                "low": float(ref["Low"]), "close": float(ref["Close"])}
+        levels = expiry_range_levels(ohlc, buffer_pct)
+        return jsonify({
+            "instrument": instrument.upper().replace(" ", ""),
+            "expiry": expiry.isoformat(),
+            "levels": levels,
+            "method": "Floor-trader pivots from previous trading day OHLC with 0.25% false-breakout buffer.",
+            "disclaimer": "Research forecast, not investment advice.",
+        })
+    except ValueError as e:
+        return jsonify({"error": str(e)}), 400
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/expiry/backtest", methods=["GET"])
+def api_expiry_backtest():
+    """Expiry Range Indicator backtest: containment and false-breakout rates."""
+    try:
+        instrument = request.args.get("instrument", "NIFTY")
+        try:
+            months = int(request.args.get("months", "3"))
+        except ValueError:
+            return jsonify({"error": "invalid months"}), 400
+        try:
+            buffer_pct = float(request.args.get("buffer_pct", "0.0025"))
+        except ValueError:
+            return jsonify({"error": "invalid buffer_pct"}), 400
+        from sbc.expiry_range import backtest_expiry
+        result = backtest_expiry(instrument, months, buffer_pct)
+        return jsonify(result), 200
+    except ValueError as e:
+        return jsonify({"error": str(e)}), 400
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/gann/indicators", methods=["GET"])
+def api_gann_indicators():
+    """Gann indicator toolkit: momentum, apex reversal, harmonic opens,
+    harmonic vibrations, wave levels, lightning scalper, mega trend."""
+    try:
+        kind = request.args.get("kind", "momentum")
+        ticker = request.args.get("ticker", "^NSEI")
+        try:
+            days = int(request.args.get("days", "120"))
+        except ValueError:
+            return jsonify({"error": "invalid days"}), 400
+        days = max(5, min(730, days))
+        import yfinance as yf
+        end = datetime.date.today()
+        start = end - datetime.timedelta(days=days)
+        df = yf.download(ticker, start=start, end=end, interval="1d", auto_adjust=True, progress=False)
+        if df.empty:
+            return jsonify({"error": "no data"}), 400
+        df.columns = [c[0] if isinstance(c, tuple) else c for c in df.columns]
+        bars = [{"date": (idx.isoformat() if hasattr(idx, "isoformat") else str(idx))[:10],
+                 "open": float(r["Open"]), "high": float(r["High"]),
+                 "low": float(r["Low"]), "close": float(r["Close"])}
+                for idx, r in df.iterrows()]
+        from sbc.gann_indicators import run_indicator
+        result = run_indicator(kind, bars)
+        return jsonify({"kind": kind, "ticker": ticker, "days": days, **result}), 200
+    except ValueError as e:
+        return jsonify({"error": str(e)}), 400
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/astrogann/signal", methods=["GET"])
+def api_astrogann_signal():
+    """Unified AstroGann Pro signal: SBC astro bias + Gann zone confluence."""
+    try:
+        date_str = request.args.get("date") or datetime.date.today().isoformat()
+        datetime.date.fromisoformat(date_str)
+        instrument = request.args.get("instrument", "NIFTY")
+        try:
+            astro_weight = float(request.args.get("astro_weight", "0.6"))
+            gann_weight = float(request.args.get("gann_weight", "0.4"))
+        except ValueError:
+            return jsonify({"error": "invalid weights"}), 400
+        from sbc.astrogann import astrogann_signal
+        result = astrogann_signal(date_str, instrument, astro_weight=astro_weight, gann_weight=gann_weight)
+        return jsonify(result), 200
+    except ValueError as e:
+        return jsonify({"error": str(e)}), 400
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
 
 @app.route("/api/signal/moon", methods=["GET"])
@@ -2636,6 +2181,10 @@ def _research_lunar_rows(ticker, start, end, horizon):
         moon = next(planet for planet in planets if planet["name"] == "Moon")
         tithi = tithi_of(sun["longitude"], moon["longitude"])
         event_record = lunar_phase_event(day, tithi, sun["longitude"], moon["longitude"])
+        # Sign ingresses: planets that changed sign vs the previous snapshot
+        prev_utc = _utc_from_local((day - datetime.timedelta(days=1)).isoformat(), "09:15", "Asia/Kolkata")
+        prev_planets, _ = positions(_julday(prev_utc))
+        ingress_records = planetary_ingress_events(day, planets, prev_planets)
         base = float(frame["Close"].iloc[index])
         future = float(frame["Close"].iloc[index + horizon])
         forward = frame.iloc[index + 1:index + horizon + 1]
@@ -2646,8 +2195,9 @@ def _research_lunar_rows(ticker, start, end, horizon):
         rows.append({
             "date": day, "weekday": day.weekday(), "base": base,
             "return_pct": (future / base - 1) * 100,
-            "event": event_record is not None,
+            "event": event_record is not None or bool(ingress_records),
             "event_record": event_record.to_dict() if event_record else None,
+            "ingress_record": ingress_records[0].to_dict() if ingress_records else None,
             "volatility_pct": float(daily_returns.std() * 100) if len(daily_returns) > 1 else 0.0,
             "mae_pct": float((forward["Low"].min() / base - 1) * 100) if not forward.empty else 0.0,
             "regime": regime,
@@ -2657,20 +2207,25 @@ def _research_lunar_rows(ticker, start, end, horizon):
 
 @app.route("/api/research/event-study", methods=["GET"])
 def api_research_event_study():
-    """Measure forward returns around lunar phase events against all days."""
+    """Measure forward returns around lunar phase / ingress events vs all days."""
     ticker = request.args.get("ticker", "^NSEI")
     event = request.args.get("event", "new_moon")
     horizon = min(max(int(request.args.get("horizon", "5")), 1), 20)
     end = datetime.date.fromisoformat(request.args.get("end") or datetime.date.today().isoformat())
     start = datetime.date.fromisoformat(request.args.get("start") or (end - datetime.timedelta(days=3650)).isoformat())
-    if event not in {"new_moon", "full_moon"} or start >= end:
+    if event not in {"new_moon", "full_moon", "ingress"} or start >= end:
         return jsonify({"error": "invalid event or date range"}), 400
 
     try:
         rows = _research_lunar_rows(ticker, start, end, horizon)
         if not rows:
             return jsonify({"error": "no market data available"}), 404
-        event_rows = [row for row in rows if row["event"] and row["event_record"]["event_type"] == event]
+        if event == "ingress":
+            event_rows = [row for row in rows if row.get("ingress_record")]
+        else:
+            event_rows = [row for row in rows
+                          if row["event"] and row.get("event_record")
+                          and row["event_record"]["event_type"] == event]
         baseline = [row["return_pct"] for row in rows]
         event_returns = [row["return_pct"] for row in event_rows]
         available_controls = [row for row in rows if not row["event"]]
@@ -2719,24 +2274,55 @@ def api_research_event_study():
             "net_event_mean_return_pct": mean(net_returns),
             "equity_curve": equity,
         }
+
+        # Regime-aware segmentation: bull/bear/range from trend, plus
+        # high/low volatility regimes from the median volatility split.
+        import statistics as _statistics
+        vol_median = _statistics.median([row["volatility_pct"] for row in rows]) if rows else 0.0
+        regime_groups = {}
+        for row in event_rows:
+            trend_regime = row.get("regime", "range")
+            vol_regime = "high_vol" if row["volatility_pct"] >= vol_median else "low_vol"
+            for key in (trend_regime, vol_regime):
+                regime_groups.setdefault(key, []).append(row["return_pct"])
+        result["regimes"] = {
+            name: {
+                "samples": len(values),
+                "mean_return_pct": mean(values),
+                "win_rate_pct": (sum(value > 0 for value in values) / len(values) * 100) if values else 0.0,
+            }
+            for name, values in regime_groups.items()
+        }
+        result["vol_median_pct"] = round(vol_median, 4)
         export_format = request.args.get("format", "json").lower()
         if export_format == "csv":
             import csv
             from io import StringIO
             stream = StringIO()
-            fields = ["date", "return_pct", "volatility_pct", "mae_pct", "event"]
+            fields = ["date", "return_pct", "volatility_pct", "mae_pct", "event", "regime"]
             writer = csv.DictWriter(stream, fieldnames=fields)
             writer.writeheader()
             for row in result["event_returns"]:
                 writer.writerow({key: row.get(key) for key in fields})
             return Response(stream.getvalue(), mimetype="text/csv", headers={"Content-Disposition": "attachment; filename=event-study.csv"})
         if export_format in {"md", "markdown"}:
+            from sbc import __version__
+            regime_lines = [
+                f"  - {name}: n={stats['samples']}, mean={stats['mean_return_pct']:.4f}%, win={stats['win_rate_pct']:.1f}%"
+                for name, stats in (result.get("regimes") or {}).items()
+            ]
             markdown = "\n".join([
                 f"# Event Study: {event}", "", f"- Ticker: `{ticker}`", f"- Window: {horizon} days",
                 f"- Sample size: {result['sample_size']}", f"- Matched controls: {result['matched_control_sample_size']}",
                 f"- Event mean return: {result['event_mean_return_pct']:.4f}%", f"- Baseline mean return: {result['baseline_mean_return_pct']:.4f}%",
                 f"- Event volatility: {result['event_volatility_mean_pct']:.4f}%", f"- Maximum adverse excursion: {result['maximum_adverse_excursion_pct']:.4f}%",
-                "", "Generated by SBC Research Lab.",
+                "", "## Regime segmentation",
+                *regime_lines,
+                "", "## Assumptions",
+                f"- Cost basis: {costs_bps} bps per event; forward window {horizon} trading days",
+                "- Controls matched one-to-one by weekday; small samples are not reliable signals",
+                "- Source: Swiss Ephemeris (Lahiri) + yfinance daily closes",
+                "", f"Generated by SBC Research Lab · calculation version {__version__} · {result['generated_at']}",
             ])
             return Response(markdown, mimetype="text/markdown", headers={"Content-Disposition": "attachment; filename=event-study.md"})
         return jsonify(result)
@@ -2758,6 +2344,11 @@ def api_research_aspects():
     planet_b = request.args.get("planet_b") or None
     aspect = request.args.get("aspect") or None
     try:
+        max_orb = float(request.args.get("max_orb", "8"))
+    except ValueError:
+        return jsonify({"error": "invalid max_orb"}), 400
+    max_orb = max(0.0, min(8.0, max_orb))
+    try:
         import pandas as pd
         import yfinance as yf
         prices = yf.download(ticker, start=start.isoformat(), end=(end + datetime.timedelta(days=1)).isoformat(), interval="1d", auto_adjust=True, progress=False)
@@ -2768,10 +2359,12 @@ def api_research_aspects():
         close = prices["Close"].dropna()
         close.index = pd.to_datetime(close.index).tz_localize(None).normalize()
         events = []
+        prev_planets = None
         for index in range(len(close) - horizon):
             day = close.index[index].date()
             planets, _ = positions(_julday(_utc_from_local(day.isoformat(), "09:15", "Asia/Kolkata")))
-            matches = planetary_aspect_events(day, planets)
+            matches = planetary_aspect_events(day, planets, prev_planets)
+            prev_planets = planets
             for event_record in matches:
                 event_name = event_record.metadata.get("aspect")
                 pair = {event_record.planet_a, event_record.planet_b}
@@ -2781,19 +2374,25 @@ def api_research_aspects():
                     continue
                 if planet_b and planet_b not in pair:
                     continue
+                if event_record.metadata.get("orb") is not None and max_orb is not None \
+                        and event_record.metadata["orb"] > max_orb:
+                    continue
                 base = float(close.iloc[index])
                 future = float(close.iloc[index + horizon])
                 events.append({**event_record.to_dict(), "return_pct": (future / base - 1) * 100})
         grouped = {}
         for event_record in events:
-            key = (event_record["planet_a"], event_record["planet_b"], event_record["metadata"]["aspect"])
+            key = (event_record["planet_a"], event_record["planet_b"],
+                   event_record["metadata"]["aspect"], event_record["metadata"].get("state"))
             grouped.setdefault(key, []).append(event_record["return_pct"])
-        rows = [{"planet_a": key[0], "planet_b": key[1], "aspect": key[2], "samples": len(values),
+        rows = [{"planet_a": key[0], "planet_b": key[1], "aspect": key[2], "state": key[3],
+                 "samples": len(values),
                  "mean_return_pct": sum(values) / len(values),
                  "win_rate_pct": sum(value > 0 for value in values) / len(values) * 100}
                 for key, values in grouped.items()]
         return jsonify({"ticker": ticker, "horizon_days": horizon, "start": start.isoformat(), "end": end.isoformat(),
-                        "filters": {"planet_a": planet_a, "planet_b": planet_b, "aspect": aspect},
+                        "filters": {"planet_a": planet_a, "planet_b": planet_b, "aspect": aspect,
+                                    "max_orb": max_orb},
                         "events": events, "groups": rows,
                         "generated_at": datetime.datetime.now(datetime.timezone.utc).isoformat()})
     except (TypeError, ValueError):
@@ -2805,21 +2404,47 @@ def api_research_aspects():
 
 @app.route("/api/research/cycles", methods=["GET"])
 def api_research_cycles():
-    """Return daily solar/lunar cycle observations and an experimental Bradley score."""
+    """Return daily solar/lunar cycle observations + Bradley barometer (experimental)."""
     start = datetime.date.fromisoformat(request.args.get("start") or (datetime.date.today() - datetime.timedelta(days=365)).isoformat())
     end = datetime.date.fromisoformat(request.args.get("end") or datetime.date.today().isoformat())
+    ticker = request.args.get("ticker") or None
+    horizon = min(max(int(request.args.get("horizon", "5")), 1), 20)
     rows = []
     day = start
+    from sbc.bradley import bradley_score, turning_point_candidates, forward_return_validation
     while day <= end:
         planets, _ = positions(_julday(_utc_from_local(day.isoformat(), "09:15", "Asia/Kolkata")))
         sun = next(planet for planet in planets if planet["name"] == "Sun")
         moon = next(planet for planet in planets if planet["name"] == "Moon")
         separation = (moon["longitude"] - sun["longitude"]) % 360
         phase = "new_moon" if separation < 12 or separation >= 348 else "full_moon" if 168 <= separation <= 192 else "waxing" if separation < 180 else "waning"
-        rows.append({"date": day.isoformat(), "sun_sign": sun["sign"], "moon_sign": moon["sign"], "sun_moon_angle": round(separation, 2), "phase": phase,
-                     "bradley_score": round(sum(1 if 30 <= separation <= 150 else -1 for _ in [day]), 2)})
+        rows.append({"date": day.isoformat(), "sun_sign": sun["sign"], "moon_sign": moon["sign"],
+                     "sun_moon_angle": round(separation, 2), "phase": phase,
+                     "bradley_score": bradley_score(planets)})
         day += datetime.timedelta(days=1)
-    return jsonify({"start": start.isoformat(), "end": end.isoformat(), "experimental": True, "rows": rows,
+
+    candidates = turning_point_candidates(rows)
+
+    validation = None
+    if ticker:
+        try:
+            import pandas as pd
+            import yfinance as yf
+            prices = yf.download(ticker, start=start.isoformat(), end=(end + datetime.timedelta(days=1)).isoformat(),
+                                 interval="1d", auto_adjust=True, progress=False)
+            if not prices.empty:
+                if isinstance(prices.columns, pd.MultiIndex):
+                    prices.columns = [column[0] for column in prices.columns]
+                close = prices["Close"].dropna()
+                close.index = pd.to_datetime(close.index).tz_localize(None).normalize()
+                closes_by_date = {d.date().isoformat(): float(v) for d, v in close.items()}
+                validation = forward_return_validation(rows, closes_by_date, horizon)
+        except Exception:
+            app.logger.exception("Bradley validation failed")
+
+    return jsonify({"start": start.isoformat(), "end": end.isoformat(), "experimental": True,
+                    "rows": rows, "turning_point_candidates": candidates,
+                    "validation": validation,
                     "generated_at": datetime.datetime.now(datetime.timezone.utc).isoformat()})
 
 
