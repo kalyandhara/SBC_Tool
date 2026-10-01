@@ -3496,6 +3496,18 @@ if ($("lunar-forecast-run")) {
 
 
 // KP Intraday Trend Change Prediction
+// Red banner when the backend's KP sanity check says the source file is not
+// real ephemeris data (sbc.kp_intraday.assess_kp_data).
+function kpDataQualityBanner(dq, sourceFile) {
+  if (!dq || !dq.synthetic) return null;
+  const el = document.createElement("div");
+  el.className = "kp-data-quality-banner";
+  el.setAttribute("role", "alert");
+  el.style.cssText = "background:rgba(213,0,0,.12);border:1px solid var(--red,#d50000);color:var(--red,#d50000);padding:10px 14px;border-radius:6px;margin:0 0 12px;font-weight:600";
+  el.textContent = `⚠ Not real KP data${sourceFile ? " (" + sourceFile + ")" : ""}: ${dq.message}`;
+  return el;
+}
+
 function renderKPIntradayReport(data) {
   const content = $("kp-intraday-content");
   content.className = "kp-intraday-content";
@@ -3509,6 +3521,8 @@ function renderKPIntradayReport(data) {
 
   const report = document.createElement("div");
   report.className = "kp-report";
+  const dqBanner = kpDataQualityBanner(data.data_quality, data.source_file);
+  if (dqBanner) report.appendChild(dqBanner);
 
   // TITLE BLOCK
   const header = document.createElement("div");
@@ -3775,7 +3789,12 @@ if ($("kp-intraday-path")) {
       if (!res.ok) throw new Error("unavailable (HTTP " + res.status + ")");
       const data = await res.json();
       const panel = $("kp-intraday-path-chart");
-      if (panel) panel.style.display = "";
+      if (panel) {
+        panel.style.display = "";
+        panel.querySelectorAll(".kp-data-quality-banner").forEach(b => b.remove());
+        const dqBanner = kpDataQualityBanner(data.data_quality);
+        if (dqBanner) panel.prepend(dqBanner);
+      }
       const pre = $("kp-path-data");
       if (pre) {
         pre.textContent = data.series ? JSON.stringify(data.series, null, 2) : "No path series returned.";
@@ -4142,7 +4161,7 @@ function renderKPIntradayPriceChart(data) {
   series.setData(points);
   try { series.setMarkers(markers); } catch (e) {}
   window.kpScoreSeries = series;
-  chart.timeScale().fit();
+  chart.timeScale().fitContent();
 }
 
 // ---------------------------------------------------------------

@@ -345,3 +345,33 @@ class TestBuildCumulativePath:
             for point in path:
                 running = round(running + point["score"], 3)
                 assert point["cumulative"] == pytest.approx(running, abs=1e-6)
+
+
+class TestKPDataQuality:
+    """assess_kp_data flags files that are not real ephemeris output."""
+
+    def test_consistent_rows_pass(self):
+        from sbc.kp_intraday import _KP_SIGNS, _KP_STARS, assess_kp_data
+        rows = [{"star": _KP_STARS[int(lon // (40 / 3))], "sign": _KP_SIGNS[int(lon // 30)]}
+                for lon in [x * 0.25 + 0.01 for x in range(1440)]]  # off exact boundaries
+        dq = assess_kp_data(rows)
+        assert dq["rows_checked"] == 1440
+        assert dq["impossible_rows"] == 0
+        assert dq["synthetic"] is False
+
+    def test_random_sample_file_is_flagged(self, tmp_path):
+        import csv
+        from datetime import date
+        from sbc.kp_intraday import assess_kp_data, generate_sample_kp_csv
+        path = tmp_path / "KP_Data_Dec2026.csv"
+        generate_sample_kp_csv(path, date(2026, 12, 1), 3)
+        with open(path, encoding="utf-8") as f:
+            dq = assess_kp_data(list(csv.DictReader(f)))
+        assert dq["synthetic"] is True
+        assert dq["impossible_pct"] > 50
+
+    def test_report_and_path_carry_data_quality(self, client):
+        rep = client.get("/api/kp_intraday_report?date=2026-09-15&instrument=NIFTY").get_json()
+        assert "data_quality" in rep and "synthetic" in rep["data_quality"]
+        path = client.get("/api/engine/intraday_path?date=2026-09-15&instrument=NIFTY").get_json()
+        assert path["data_quality"] == rep["data_quality"]

@@ -132,6 +132,7 @@ class KPIntradayReport:
     exhaustion_warnings: list[str]
 
     config: dict[str, Any] = field(default_factory=dict)
+    data_quality: dict[str, Any] = field(default_factory=dict)
 
 
 # NSE session bounds used by the cumulative path builder.
@@ -309,6 +310,58 @@ def report_to_dict(report: KPIntradayReport) -> dict[str, Any]:
         "strongest_bullish": _window(report.strongest_bullish),
         "strongest_bearish": _window(report.strongest_bearish),
         "exhaustion_warnings": list(report.exhaustion_warnings),
+        "source_file": report.source_file,
+        "data_quality": report.data_quality,
+    }
+
+
+# Sidereal star order; each spans 13deg20', so it can only sit in the one or
+# two signs that arc covers. Used to catch fabricated KP files.
+_KP_STARS = [
+    'Ashwini', 'Bharani', 'Krittika', 'Rohini', 'Mrigashira', 'Ardra', 'Punarvasu',
+    'Pushya', 'Ashlesha', 'Magha', 'Purva Phalguni', 'Uttara Phalguni', 'Hasta',
+    'Chitra', 'Swati', 'Vishakha', 'Anuradha', 'Jyeshtha', 'Mula', 'Purva Ashadha',
+    'Uttara Ashadha', 'Shravana', 'Dhanishta', 'Shatabhisha', 'Purva Bhadrapada',
+    'Uttara Bhadrapada', 'Revati',
+]
+_KP_SIGNS = ['Aries', 'Taurus', 'Gemini', 'Cancer', 'Leo', 'Virgo', 'Libra',
+             'Scorpio', 'Sagittarius', 'Capricorn', 'Aquarius', 'Pisces']
+_STAR_SIGNS = {
+    star: {_KP_SIGNS[int(i * 40 / 3 // 30)], _KP_SIGNS[int((i * 40 / 3 + 40 / 3 - 1e-9) // 30)]}
+    for i, star in enumerate(_KP_STARS)
+}
+# Real ephemeris output has zero mismatches; allow a little for hand edits.
+SYNTHETIC_THRESHOLD_PCT = 5.0
+
+
+def assess_kp_data(rows: list[dict]) -> dict[str, Any]:
+    """Check every planet row's star against its sign.
+
+    A star can only fall in the sign(s) its 13deg20' arc covers. Random sample
+    files (generate_sample_kp_csv) break this on ~89% of rows, so a high
+    mismatch rate means the file is not ephemeris data and any report built
+    from it is noise.
+    """
+    checked = bad = 0
+    for r in rows:
+        allowed = _STAR_SIGNS.get((r.get('star') or '').strip())
+        if allowed is None:
+            continue
+        checked += 1
+        if (r.get('sign') or '').strip() not in allowed:
+            bad += 1
+    pct = round(100.0 * bad / checked, 1) if checked else 0.0
+    synthetic = checked > 0 and pct > SYNTHETIC_THRESHOLD_PCT
+    return {
+        "rows_checked": checked,
+        "impossible_rows": bad,
+        "impossible_pct": pct,
+        "synthetic": synthetic,
+        "message": (
+            f"{pct}% of rows place a nakshatra in a sign it cannot occupy: this "
+            "KP file is not real ephemeris data. Signals below are random."
+            if synthetic else ""
+        ),
     }
 
 
@@ -1037,6 +1090,7 @@ def generate_kp_intraday_report(
     generator = KPReportGenerator(cfg)
 
     rows = parser.parse_csv(csv_path)
+    data_quality = assess_kp_data(rows)
     day_data = parser.parse_day_data(rows, trading_day)
 
     day_bias_score, day_bias_label = engine.compute_day_bias(
@@ -1100,7 +1154,8 @@ def generate_kp_intraday_report(
         strongest_bullish=strongest_bullish,
         strongest_bearish=strongest_bearish,
         exhaustion_warnings=exhaustion_warnings,
-        config=cfg
+        config=cfg,
+        data_quality=data_quality
     )
 
     enrich_report_v15(report, day_data['all_rows'])

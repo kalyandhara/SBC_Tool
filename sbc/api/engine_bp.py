@@ -405,6 +405,7 @@ def intraday_path():
         "exhaustion_warnings": exhaustion_warnings,
         "strongest_bullish": strongest_bullish,
         "strongest_bearish": strongest_bearish,
+        "data_quality": report.data_quality,
         "report_summary": {
             "day_lord": getattr(report.day_signature, "day_lord", None),
             "moon_sign": getattr(report.day_signature, "moon_sign", None),
