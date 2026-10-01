@@ -23,7 +23,8 @@ code and tech debt · **P3** = hygiene.
 | B-03 demo Trading Signals | ✅ live tithi/Bhadra/reversal windows; panels moved into tabs |
 | B-04 tests → real profiles DB | ✅ `SBC_PROFILES_DB`; 63 test rows removed (backup `data/profiles.db.pre-cleanup-2026-10-01`) |
 | B-06 duplicate auth gate | ✅ header-only gate |
-| **B-33 KP data is random** (new) | 🟡 detected and flagged in the UI/API; **real data source still needed** |
+| **B-33 KP data is random** (new) | ✅ flagged in UI/API, then all files regenerated from Swiss Ephemeris (`sbc/kp_ephemeris.py`) |
+| B-12 random KP sample button | ✅ button/endpoint now generate ephemeris data; won't overwrite real files without `force` |
 | B-34 KP report crashed in render (new) | ✅ `timeScale().fit()` → `fitContent()` |
 
 ### B-33 · Every KP data file is random sample output (P0, new)
@@ -37,10 +38,22 @@ code and tech debt · **P3** = hygiene.
 - **Done so far:** `sbc.kp_intraday.assess_kp_data` checks star↔sign geometry. Both
   `/api/kp_intraday_report` and `/api/engine/intraday_path` return `data_quality`, and
   the UI shows a red "Not real KP data" banner when the file fails.
-- **Still to do:** generate real KP data from Swiss Ephemeris (KP ayanamsa, Placidus
-  cusps for Mumbai, star/sub/sub-sub lords, horas) or import it from a vendor. Then
-  delete the fake files, drop the "Generate Sample Data" button (B-12), and re-run the
-  intraday validation.
+- **Resolved:** `sbc/kp_ephemeris.py` computes every row: KP ayanamsa, Moshier,
+  Placidus cusps for NSE Mumbai, Vimshottari sub and sub-sub lords, KP house
+  significations, sunrise-based Chaldean horas, and Vedic sign aspects. CLI:
+  `python scripts/generate_kp_data.py 2026-10 [2026-12] [--step 1]`. Jan 2024 and
+  Aug–Nov 2026 have been regenerated, with 0 impossible rows. Parser fixes made at
+  the same time: hora slots are built on lord changes (with real end times), the day
+  bias uses the Moon's star *lord* (it was passed the star name, so that term was
+  always neutral), and Moon affliction reads the Moon row's aspects (it read the
+  Sun's).
+- **Convention to confirm:** house_set_strength scores houses 2/6/10/11 as rise and
+  5/8/12 as fall (`RISE_HOUSES`/`FALL_HOUSES` in `kp_ephemeris.py`). Change these if
+  your KP school uses a different set. NSE holidays aren't excluded yet (weekends are).
+- **Re-validation on real data (2026-08-04 → 09-30, 41 days):** pooled hit rate 50.8%,
+  regime-shift 49.7%, pooled correlation +0.004. Day direction was 28/41, against a
+  60.8% chance baseline (the model is bearish on 90% of days in a market that was
+  down on 63%). **Still no edge** — see B-21.
 
 ---
 
@@ -267,7 +280,7 @@ engine until someone remembers to call `clear()`.
 **Fix:** Add an `engine_version` column (hash of the relevant module sources, or a constant
 bumped manually), and miss on mismatch.
 
-### B-21 · Intraday path is marked "COMPLETE" but shows no edge
+### B-21 · Intraday path is marked "COMPLETE" but shows no edge (confirmed on real KP data 2026-10-01)
 `docs/INTRADAY_PATH_VALIDATION.md`: regime-shift direction hit rate **49.8%** (3345
 shifts), and pooled score hit rate **54.8%** on 217 windows (not significant). Per-day
 correlation swings between −0.77 and +0.69. `docs/todo_predictive_intraday.md` still says

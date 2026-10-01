@@ -109,6 +109,7 @@ def validate_day(day: str, path: dict, bars: pd.DataFrame):
     day_open = bars["Open"].iloc[0]
     day_ret = float(bars["Close"].iloc[-1] - day_open)
     day_hit = None
+    final_cum = None
     if series:
         final_cum = series[-1]["cumulative"]
         if final_cum != 0 and day_ret != 0:
@@ -158,6 +159,7 @@ def validate_day(day: str, path: dict, bars: pd.DataFrame):
         "cumdelta_hit_rate": cr,
         "cumdelta_windows": n_cum,
         "day_direction_hit": day_hit,
+        "final_cumulative": final_cum,
         "day_return_pct": round(day_ret, 2),
         "regime_hits": sum(regime),
         "regime_total": len(regime),
@@ -198,6 +200,14 @@ def write_reports(results, period):
     bear_hits = sum(1 for r in results if r["strongest_bearish_hit"])
     bear_total = sum(1 for r in results if r["strongest_bearish_hit"] is not None)
 
+    # Chance baseline for the day-direction hit: a model that calls bearish on
+    # a share q of days, in a period with a share p of down days, hits
+    # q*p + (1-q)*(1-p) of the time with no skill at all.
+    called = [r for r in results if r["day_direction_hit"] is not None]
+    q = sum(1 for r in called if r["final_cumulative"] < 0) / len(called) if called else 0
+    p = sum(1 for r in called if r["day_return_pct"] < 0) / len(called) if called else 0
+    day_baseline = q * p + (1 - q) * (1 - p)
+
     r_scores = [r["r_score_return"] for r in results if r["r_score_return"] is not None]
     mean_r = float(np.mean(r_scores)) if r_scores else None
 
@@ -217,6 +227,7 @@ def write_reports(results, period):
         f"| Pooled score direction hit rate | {fmt_rate(pooled_sr)} ({pooled_n} windows) |",
         f"| Regime-shift direction hit rate | {fmt_rate(regime_hits / regime_total if regime_total else None)} ({regime_total} shifts) |",
         f"| Day-direction hit (final cumulative vs day range) | {day_hits}/{day_eval} |",
+        f"| ↳ chance baseline (model bearish {q:.0%} of days, market down {p:.0%}) | {fmt_rate(day_baseline)} |",
         f"| Strongest bullish window hit | {bull_hits}/{bull_total} |",
         f"| Strongest bearish window hit | {bear_hits}/{bear_total} |",
         "",
