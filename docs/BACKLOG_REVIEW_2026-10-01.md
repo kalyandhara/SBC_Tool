@@ -14,6 +14,36 @@ code and tech debt · **P3** = hygiene.
 
 ---
 
+## Sprint 1 status (2026-10-01, branch `sprint1-review-fixes`)
+
+| Item | Status |
+|---|---|
+| B-01 untracked work | ✅ committed in 3 slices (root clutter left for B-30) |
+| B-02 cache poisoning | ✅ boot warm-up removed; trimmed rows rebuild on read; cold import 131 s → 0.6 s |
+| B-03 demo Trading Signals | ✅ live tithi/Bhadra/reversal windows; panels moved into tabs |
+| B-04 tests → real profiles DB | ✅ `SBC_PROFILES_DB`; 63 test rows removed (backup `data/profiles.db.pre-cleanup-2026-10-01`) |
+| B-06 duplicate auth gate | ✅ header-only gate |
+| **B-33 KP data is random** (new) | 🟡 detected and flagged in the UI/API; **real data source still needed** |
+| B-34 KP report crashed in render (new) | ✅ `timeScale().fit()` → `fitContent()` |
+
+### B-33 · Every KP data file is random sample output (P0, new)
+- **Evidence:** all of `data/kp/KP_Data_{Jan2024,Aug2026,Sep2026,Oct2026,Nov2026}.csv`
+  place a nakshatra in a sign it cannot occupy on **~89% of rows** (e.g. Uttara Bhadrapada
+  in Leo, Mula in Cancer), and the Sun shows up in 10+ signs within one month. This is
+  the output of `generate_sample_kp_csv`.
+- **Impact:** the KP intraday report, the predictive intraday path, and its validation
+  (`docs/INTRADAY_PATH_VALIDATION.md`: 49.8% regime hit rate) were all computed on
+  noise. B-21's "no edge" result is explained by this.
+- **Done so far:** `sbc.kp_intraday.assess_kp_data` checks star↔sign geometry. Both
+  `/api/kp_intraday_report` and `/api/engine/intraday_path` return `data_quality`, and
+  the UI shows a red "Not real KP data" banner when the file fails.
+- **Still to do:** generate real KP data from Swiss Ephemeris (KP ayanamsa, Placidus
+  cusps for Mumbai, star/sub/sub-sub lords, horas) or import it from a vendor. Then
+  delete the fake files, drop the "Generate Sample Data" button (B-12), and re-run the
+  intraday validation.
+
+---
+
 ## P0 — Fix first
 
 ### B-01 · Working tree depends on 131 untracked files; HEAD can't be rebuilt
