@@ -1159,12 +1159,14 @@
     const latMin = document.getElementById('lat-min');
     const latSec = document.getElementById('lat-sec');
     function toDMS(dec){
+      // Round once, in whole arc-seconds, then split. Rounding the seconds
+      // after flooring minutes turned 22.7 into 22°41'60" (float drift),
+      // which the 0-59 seconds field rejects.
       const sign = dec < 0 ? -1 : 1;
-      dec = Math.abs(dec);
-      const d = Math.floor(dec);
-      const mFloat = (dec - d) * 60;
-      const m = Math.floor(mFloat);
-      const s = Math.round((mFloat - m) * 60);
+      const total = Math.round(Math.abs(dec) * 3600);
+      const d = Math.floor(total / 3600);
+      const m = Math.floor((total % 3600) / 60);
+      const s = total % 60;
       return {d: d*sign, m, s};
     }
     function fillCoords(lat, lon){

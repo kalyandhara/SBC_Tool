@@ -200,3 +200,4 @@ data/output/
 package.json
 package-lock.json
 
+data/cities.db.*
