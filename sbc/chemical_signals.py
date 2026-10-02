@@ -20,7 +20,6 @@ def check_chemical_syntax(planets, tithi, sun, moon):
     """Check all chemical sector bullish syntax configurations."""
 
     jupiter = get_planet(planets, "Jupiter")
-    venus = get_planet(planets, "Venus")
     saturn = get_planet(planets, "Saturn")
     mercury = get_planet(planets, "Mercury")
     mars = get_planet(planets, "Mars")
@@ -97,10 +96,8 @@ def check_chemical_syntax(planets, tithi, sun, moon):
 
     # ---- 6. SBC VEDHA CHECKS ----
     try:
-        from .chakra import GRID
-        from .prediction import compute_vedhas, place_planets, sector_read
+        from .prediction import compute_vedhas, sector_read
 
-        grid = place_planets(GRID, planets)
         vedha_map, _ = compute_vedhas(planets, school="allthree")
 
         sector_projections = sector_read(vedha_map, planets)

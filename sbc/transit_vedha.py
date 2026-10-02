@@ -215,7 +215,7 @@ def scan_transit_vedha_matrix(date: datetime.date = None) -> dict[str, Any]:
 
     # Approaching matches (adjacent nakshatras)
     for vedha_type, approach_nakshatras in APPROACHING_TRIGGERS.items():
-        for planet_name in set(t[0] for t in TRIGGER_CONDITIONS.get(vedha_type, [])):
+        for planet_name in {t[0] for t in TRIGGER_CONDITIONS.get(vedha_type, [])}:
             planet = next((p for p in planets if p["name"] == planet_name), None)
             if not planet:
                 continue
@@ -236,7 +236,7 @@ def scan_transit_vedha_matrix(date: datetime.date = None) -> dict[str, Any]:
                     affected_sectors=VEDHA_SECTOR_MAP[vedha_type],
                     intensity=INTENSITY_DEFAULTS[vedha_type],
                     confidence=0.65,  # Lower confidence for approaching
-                    duration_estimate="Approaching: {0} to {1} (1-2 weeks)".format(planet['nakshatra'], target_nakshatra),
+                    duration_estimate="Approaching: {} to {} (1-2 weeks)".format(planet['nakshatra'], target_nakshatra),
                     details={
                         "planet": planet_name,
                         "current_nakshatra": planet["nakshatra"],
@@ -361,30 +361,30 @@ def format_transit_vedha_for_ui(scan_result: dict) -> str:
     lines = []
     lines.append("=" * 70)
     lines.append("TRANSIT VEDHA MATRIX - SECTOR TRIGGERS")
-    lines.append("Date: {0} | Ayanamsa: {1}°".format(scan_result['date'], scan_result['ayanamsa']))
+    lines.append("Date: {} | Ayanamsa: {}°".format(scan_result['date'], scan_result['ayanamsa']))
     lines.append("=" * 70)
 
     if not scan_result["signals"]:
         lines.append("\nNo active transit vedha signals detected.")
         return "\n".join(lines)
 
-    lines.append("\nACTIVE TRANSIT VEDHA SIGNALS ({0}):".format(len(scan_result['signals'])))
+    lines.append("\nACTIVE TRANSIT VEDHA SIGNALS ({}):".format(len(scan_result['signals'])))
     lines.append("-" * 70)
 
     for i, s in enumerate(scan_result["signals"], 1):
         intensity_marker = {"EXTREME": "[!!!]", "HIGH": "[!!]", "MODERATE-HIGH": "[!]", "MODERATE": "[+]"}.get(s["intensity"], "[ ]")
 
         lines.append(f"\n{i}. {intensity_marker} {intensity_marker}")
-        lines.append("   Title: {0}".format(s['title']))
-        lines.append("   Type: {0}".format(s['vedha_type'].replace('_', ' ').title()))
-        lines.append("   Intensity: {0} | Confidence: {1:.0%}".format(s['intensity'], s['confidence']))
-        lines.append("   Nakshatra: {0}".format(s['key_nakshatra']))
-        lines.append("   Vedha Mechanism: {0}".format(s['directional_vedha_target']))
-        lines.append("   Market Impact: {0}".format(s['primary_market_impact']))
-        lines.append("   Affected Sectors: {0}".format(', '.join(s['affected_sectors'])))
-        lines.append("   Duration: {0}".format(s['duration_estimate']))
+        lines.append("   Title: {}".format(s['title']))
+        lines.append("   Type: {}".format(s['vedha_type'].replace('_', ' ').title()))
+        lines.append("   Intensity: {} | Confidence: {:.0%}".format(s['intensity'], s['confidence']))
+        lines.append("   Nakshatra: {}".format(s['key_nakshatra']))
+        lines.append("   Vedha Mechanism: {}".format(s['directional_vedha_target']))
+        lines.append("   Market Impact: {}".format(s['primary_market_impact']))
+        lines.append("   Affected Sectors: {}".format(', '.join(s['affected_sectors'])))
+        lines.append("   Duration: {}".format(s['duration_estimate']))
         if 'match_type' in s.get('details', {}):
-            lines.append("   Match: {0}".format(s['details']['match_type']))
+            lines.append("   Match: {}".format(s['details']['match_type']))
 
     # By sector
     lines.append("\n" + "-" * 70)
@@ -395,7 +395,7 @@ def format_transit_vedha_for_ui(scan_result: dict) -> str:
             max_int = max(s["intensity"] for s in signals)
             lines.append(f"  {sector}: {len(signals)} signal(s), max {max_int}")
             for s in signals:
-                lines.append("    - {0} ({1})".format(s['title'], s['intensity']))
+                lines.append("    - {} ({})".format(s['title'], s['intensity']))
 
     lines.append("\n" + "=" * 70)
     lines.append("MATRIX REFERENCE:")

@@ -63,7 +63,6 @@ def venus_vedha_events(planets, vedha_map=None, school="classical"):
     if not (hits_chitra or hits_libra):
         return None
 
-    venus_lon = venus["longitude"]
     dignity = ", ".join(venus.get("dignity_reasons", [])) or "neutral dignity"
     retro = " retrograde" if venus["retrograde"] else ""
 

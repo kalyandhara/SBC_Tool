@@ -99,7 +99,6 @@ def _planet_dict(name, lon, speed):
 
 def refine_natures(planets, tithi):
     """Apply the classical nature switches for Mercury and the Moon."""
-    moon_lon = next(p for p in planets if p["name"] == "Moon")["longitude"]
     malefic_lons = []
     for p in planets:
         if p["name"] in ("Sun", "Mars", "Saturn", "Rahu", "Ketu"):

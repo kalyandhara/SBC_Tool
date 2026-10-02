@@ -292,7 +292,7 @@ def rahu_moon_sub_windows(day_rows: list[dict], close: str = "15:30") -> list[tu
     )
     windows: list[tuple[str, str]] = []
     start = None
-    for i, r in enumerate(moon):
+    for _i, r in enumerate(moon):
         hhmm = r["timestamp"][11:16]
         if r.get("sublord") == "Rahu":
             if start is None:

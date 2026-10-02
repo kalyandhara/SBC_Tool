@@ -247,8 +247,6 @@ def setups_for_confluence(confluence: dict) -> list[TradeSetup]:
     net = confluence.get("overall", {}).get("net", 0)
     highlights = confluence.get("highlights", {})
     bullish_sectors = highlights.get("bullish_confluence_sectors", [])
-    bearish_sectors = highlights.get("bearish_confluence_sectors", [])
-    conflicted = highlights.get("conflicted_sectors", [])
 
     # Vedha Cluster Reversal
     if overall_signal == "BEARISH" and net <= -2.0:

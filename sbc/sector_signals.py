@@ -272,7 +272,10 @@ SPAN_SCAN_BACK = 270
 SPAN_SCAN_FWD = 270
 
 
-def _active_pairs(date_str, _cache={}):
+_ACTIVE_PAIRS_CACHE: dict = {}
+
+
+def _active_pairs(date_str, _cache=_ACTIVE_PAIRS_CACHE):
     """Set of (source -> target) planet pairs whose vedha ray hits target's cell."""
     if date_str in _cache:
         return _cache[date_str]

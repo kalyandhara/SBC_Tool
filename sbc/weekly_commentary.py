@@ -11,11 +11,9 @@ from zoneinfo import ZoneInfo
 import swisseph as swe
 
 from sbc.backtest import run_bearish_futurecast, run_bullish_futurecast
-from sbc.chakra import GRID
 from sbc.confluence import build_confluence_report
 from sbc.market_calendar import _anchor_nakshatra as anchor_nakshatra_func
 from sbc.market_calendar import (
-    get_all_bullish_reversal_windows,
     jupiter_market_analysis,
     lunar_phase_alert,
     reversal_alert,
@@ -26,7 +24,6 @@ from sbc.planets import all_planets_with_natures, positions
 from sbc.prediction import (
     analyze,
     compute_vedhas,
-    place_planets,
     planet_sector_read,
     sector_read,
 )
@@ -370,11 +367,9 @@ def generate_weekly_commentary(start_date=None):
     transits_list = transit_alert(planets)
     lunar = lunar_phase_alert(tithi)
     jupiter_analysis = jupiter_market_analysis(planets)
-    bullish_windows = get_all_bullish_reversal_windows(start_date, planets, tithi)
 
     # Confluence
     vedha_map, _ = compute_vedhas(planets, school="classical")
-    grid = place_planets(GRID, planets)
     analysis = analyze(planets, vedha_map, anchor_nakshatra_func("nse"), school="classical")
     sector_read_data = sector_read(vedha_map, planets)
     planet_sector_read_data = planet_sector_read(planets)
@@ -686,15 +681,6 @@ def _build_sector_outlook(by_name, sector_read_data, planet_sector_read_data, co
     conflicted_sectors = set(highlights.get("conflicted_sectors", []))
     sector_confluence = confluence.get("sector_confluence", {})
 
-    sun = by_name["Sun"]
-    mercury = by_name["Mercury"]
-    mars = by_name["Mars"]
-    jupiter = by_name["Jupiter"]
-    saturn = by_name["Saturn"]
-    venus = by_name["Venus"]
-    rahu = by_name["Rahu"]
-    ketu = by_name["Ketu"]
-    moon = by_name["Moon"]
 
     outlook = []
 
@@ -850,12 +836,8 @@ def _generate_key_focus(sector, by_name):
     mercury = by_name["Mercury"]
     mars = by_name["Mars"]
     saturn = by_name["Saturn"]
-    jupiter = by_name["Jupiter"]
     venus = by_name["Venus"]
-    rahu = by_name["Rahu"]
     ketu = by_name["Ketu"]
-    sun = by_name["Sun"]
-    moon = by_name["Moon"]
 
     if "IT" in sector:
         focuses.append("Watch for sudden news flow, earnings revisions")
@@ -966,10 +948,6 @@ def _generate_general_strategy(by_name, confluence, alert):
     signal = overall.get("signal", "NEUTRAL")
     net = overall.get("net", 0)
 
-    sun = by_name["Sun"]
-    moon = by_name["Moon"]
-    mars = by_name["Mars"]
-    mercury = by_name["Mercury"]
 
     strategy = []
 

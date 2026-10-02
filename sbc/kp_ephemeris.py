@@ -220,9 +220,9 @@ def hora_schedule(day: dt.date) -> list[tuple[dt.datetime, str]]:
 
 def _hora_at(schedule, when: dt.datetime) -> str:
     lord = schedule[0][1]
-    for start, l in schedule:
+    for start, hora_lord in schedule:
         if when >= start:
-            lord = l
+            lord = hora_lord
     return lord
 
 

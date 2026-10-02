@@ -22,6 +22,14 @@ from research.astro_research import (
     unified_daily_forecast_contract,
 )
 from sbc import db as profiles_db
+from sbc.api.blueprints.balance_bp import balance_bp
+from sbc.api.blueprints.chakra_bp import chakra_bp
+from sbc.api.blueprints.chart_bp import chart_bp
+from sbc.api.blueprints.forecast_bp import forecast_bp
+from sbc.api.blueprints.kp_bp import kp_bp
+from sbc.api.blueprints.overview_bp import overview_bp
+from sbc.api.blueprints.research_bp import research_bp
+from sbc.api.blueprints.sectors_bp import sectors_bp
 from sbc.api.engine_bp import engine_bp
 from sbc.api.sector_bp import sector_bp
 from sbc.app_boot import boot
@@ -76,14 +84,6 @@ app = Flask(__name__)
 
 app.register_blueprint(engine_bp)
 app.register_blueprint(sector_bp)
-from sbc.api.blueprints.balance_bp import balance_bp
-from sbc.api.blueprints.chakra_bp import chakra_bp
-from sbc.api.blueprints.chart_bp import chart_bp
-from sbc.api.blueprints.forecast_bp import forecast_bp
-from sbc.api.blueprints.kp_bp import kp_bp
-from sbc.api.blueprints.overview_bp import overview_bp
-from sbc.api.blueprints.research_bp import research_bp
-from sbc.api.blueprints.sectors_bp import sectors_bp
 
 app.register_blueprint(overview_bp)
 app.register_blueprint(chart_bp)
@@ -713,7 +713,6 @@ def contra_signals():
     alert = rj.get("market_alert") or {}
     confluence = alert.get("confluence") or {}
     conf_overall = confluence.get("overall") or {}
-    confl_signal = conf_overall.get("signal") or ""
     bull_w = conf_overall.get("bullish_weight", 0) or 0
     bear_w = conf_overall.get("bearish_weight", 0) or 0
     net_c = bull_w - bear_w
@@ -1315,11 +1314,10 @@ def api_habits_streaks():
         logs = defaultdict(set)
         for h,d in rows:
             logs[h].add(d)
-        today = dt.date.today().isoformat()
         result = {}
         for h, dates_set in logs.items():
             dates = sorted(dates_set, reverse=True)
-            dset = set(dt.date.fromisoformat(d) for d in dates_set)
+            dset = {dt.date.fromisoformat(d) for d in dates_set}
             streak = 0
             if dates:
                 cur_day = max(dset)
@@ -1385,7 +1383,7 @@ def api_habits_summary():
         cur.execute("SELECT habit_type, COUNT(DISTINCT log_date) as days FROM habit_logs WHERE user_key=? GROUP BY habit_type", (user_key,))
         rows = cur.fetchall()
         conn.close()
-        summary = {h: days for h,days in rows}
+        summary = dict(rows)
         return jsonify(summary)
     except Exception as e:
         return jsonify({"error":str(e)}),500
@@ -1426,7 +1424,6 @@ def api_vedha_daily():
             end_date_req = datetime.date.today()
             start_date_req = end_date_req - datetime.timedelta(days=179)
         # Try real heatmap based scores
-        real_scores_used = False
         try:
             from sbc.monthly_heatmap import NIFTY_SECTOR_ROWS, monthly_heatmap
             end = end_date_req
@@ -1440,8 +1437,6 @@ def api_vedha_daily():
                 # also check tags
                 if any(sector_name.lower() in tag.lower() for tag in tags):
                     target_row = display_name
-                    break
-                    target_row = k
                     break
             if target_row:
                 cur = end
@@ -1484,11 +1479,10 @@ def api_vedha_daily():
                 if shape_logs:
                     app.logger.warning(f"vedha_daily shape logs for {sector_name}: {shape_logs}")
                 if collected:
-                    real_scores_used = True
                     collected.sort(key=lambda x:x[0])
                     # Generate output for requested date range
                     out = []
-                    day_to_score = {d:s for d,s in collected}
+                    day_to_score = dict(collected)
                     d = start_date_req
                     while d <= end_date_req:
                         score = day_to_score.get(d,0)
@@ -2606,12 +2600,12 @@ def api_backtest_moon():
                     if sector_name in mat:
                         for dd,s in mat[sector_name].items():
                             try: scores[dd]=float(s)
-                            except: pass
+                            except (TypeError, ValueError): pass
                     vedha_cache[key]=scores
                 v=vedha_cache[key].get(d.isoformat())
-                if v is not None:
-                    if (expected=="bullish" and v<=0) or (expected=="bearish" and v>=0):
-                        continue
+                if v is not None and (
+                        (expected=="bullish" and v<=0) or (expected=="bearish" and v>=0)):
+                    continue
             entry_i=i+1
             if volume:
                 if pd.isna(df['vol_ma'].iloc[entry_i]): continue

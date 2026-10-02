@@ -33,7 +33,6 @@ def daily_indication_balance():
     if key in _balance_cache:
         return jsonify(_balance_cache[key])
 
-    days = []
     jyotish = []
     kp = []
     western = []

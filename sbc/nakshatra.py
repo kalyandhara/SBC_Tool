@@ -147,6 +147,4 @@ def gandanta_of(longitude):
     if (88.5 <= lon <= 90.0) or (120.0 <= lon <= 121.5):
         return True
     # Junction 3: Scorpio (210-240) / Sagittarius (240-270)
-    if (208.5 <= lon <= 210.0) or (240.0 <= lon <= 241.5):
-        return True
-    return False
+    return bool(208.5 <= lon <= 210.0 or 240.0 <= lon <= 241.5)

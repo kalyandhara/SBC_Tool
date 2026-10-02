@@ -130,7 +130,7 @@ def _day_sector_net(planets, tithi, anchor_nakshatra, row_canonical_cache):
                 break
         if not assigned:
             # Fall back to any row whose canonical set contains raw_canon.
-            for row_name, tags in NIFTY_SECTOR_ROWS:
+            for row_name, _tags in NIFTY_SECTOR_ROWS:
                 if raw_canon in row_canonical_cache[row_name]:
                     net_by_row[row_name] += net
                     break

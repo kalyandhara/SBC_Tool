@@ -123,10 +123,11 @@ def compute_daily_trap(date_str: str, industries: list[str] | None = None) -> li
                 reasons.append(f"Rahu opposite {ruling}")
 
         # Moon conjunction
-        if moon_lon is not None and planet_lon is not None:
-            if _angular_distance(moon_lon, rahu_lon) <= 10 or _angular_distance(moon_lon, ketu_lon) <= 10:
-                score += WEIGHTS["moon_conjunction"]
-                reasons.append("Moon conjunct Rahu/Ketu")
+        if moon_lon is not None and planet_lon is not None and (
+                _angular_distance(moon_lon, rahu_lon) <= 10
+                or _angular_distance(moon_lon, ketu_lon) <= 10):
+            score += WEIGHTS["moon_conjunction"]
+            reasons.append("Moon conjunct Rahu/Ketu")
 
         # Tithi
         if 8 <= tithi <= 14:

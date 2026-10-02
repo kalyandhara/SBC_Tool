@@ -5,14 +5,12 @@ from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 import swisseph as swe
 
-from .chakra import GRID
 from .confluence import build_confluence_report
 from .nakshatra import tithi_of
 from .planets import all_planets_with_natures, positions
 from .prediction import (
     analyze,
     compute_vedhas,
-    place_planets,
     planet_sector_read,
     sector_read,
 )
@@ -247,11 +245,6 @@ def _pushya_reversal_windows(date, planets):
     saturn = next(p for p in planets if p["name"] == "Saturn")
     jupiter = next(p for p in planets if p["name"] == "Jupiter")
     sun = next(p for p in planets if p["name"] == "Sun")
-    mars = next(p for p in planets if p["name"] == "Mars")
-    rahu = next(p for p in planets if p["name"] == "Rahu")
-    ketu = next(p for p in planets if p["name"] == "Ketu")
-    venus = next(p for p in planets if p["name"] == "Venus")
-    mercury = next(p for p in planets if p["name"] == "Mercury")
 
     weekday = date.weekday()  # Monday=0
     moon_in_pushya = moon["nakshatra"] == PUSHYA_NAKSHATRA
@@ -568,9 +561,7 @@ def _detect_rahu_ketu_separation(planets, date):
 
     # Rahu moving away from Sun (was conjunct, now separating > 15°)
     rahu_sun = angle(rahu["longitude"], sun["longitude"])
-    rahu_moon = angle(rahu["longitude"], moon["longitude"])
     ketu_sun = angle(ketu["longitude"], sun["longitude"])
-    ketu_moon = angle(ketu["longitude"], moon["longitude"])
 
     if rahu_sun > 15 and rahu_sun < 30:  # Recently separated
         windows.append({
@@ -1320,7 +1311,6 @@ def reversal_alert(date_str, planets=None, tithi=None):
         tithi_val = tithi if tithi is not None else tithi_of(sun_planet["longitude"], moon_planet["longitude"])
         planets = all_planets_with_natures(planets, tithi_val, sun_planet["longitude"])
         vedha_map, _ = compute_vedhas(planets, school="classical")
-        grid = place_planets(GRID, planets)
         analysis = analyze(planets, vedha_map, _anchor_nakshatra("nse"), school="classical")
         sector_read_data = sector_read(vedha_map, planets)
         planet_sector_read_data = planet_sector_read(planets)

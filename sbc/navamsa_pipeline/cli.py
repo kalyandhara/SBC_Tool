@@ -39,7 +39,6 @@ def main():
     kp_cache = {}
     prev_sublord = None
     prev_house_set = None
-    prev_dt = None
     confirmation_streak = 0
     for dt in market_hours_times(start, end):
         day = dt.date()
@@ -55,7 +54,7 @@ def main():
                 if ts.date() == day and abs((ts - dt.replace(tzinfo=None)).total_seconds()) < 180:
                     kp_row = r
                     break
-            except:
+            except (AttributeError, TypeError, ValueError):
                 continue
 
         pos, ayan = epi.get_positions(dt)
@@ -75,7 +74,7 @@ def main():
         if kp_row:
             try:
                 house_set_strength = float(kp_row.get('house_set_strength', 1.0))
-            except:
+            except (TypeError, ValueError):
                 pass
             hora_lord = kp_row.get('hora_lord', '')
             house_set = kp_row.get('house_set', '')
@@ -101,7 +100,6 @@ def main():
 
         prev_sublord = sublord
         prev_house_set = house_set
-        prev_dt = dt
 
         # Pure-set alarm placeholder
         pure_set_alarm = False

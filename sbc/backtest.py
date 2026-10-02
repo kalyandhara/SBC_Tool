@@ -1040,7 +1040,7 @@ def run_saturn_macro_analysis(center_date=None, years_back=100, years_forward=10
     # Find current ingress and next ingress
     current_ingress = None
     next_ingress = None
-    for i, ingress in enumerate(SATURN_INGRESSES):
+    for _i, ingress in enumerate(SATURN_INGRESSES):
         ingress_date = datetime.date.fromisoformat(ingress["date"])
         if ingress_date <= center:
             current_ingress = ingress

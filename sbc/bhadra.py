@@ -105,7 +105,6 @@ def bhadra_windows(month_start_local, tz, step_minutes=4):
 
     step = datetime.timedelta(minutes=step_minutes)
     windows = []
-    cur_start = None
 
     t = start_scan
     jd = _local_to_jd(t)
@@ -114,7 +113,7 @@ def bhadra_windows(month_start_local, tz, step_minutes=4):
 
     prev_inside = _is_vishti(jd)
     if prev_inside:
-        cur_start = t
+        pass
 
     # Sweep through the scan window to find Vishti run boundaries, then
     # refine each boundary with bisection for sub-minute accuracy.

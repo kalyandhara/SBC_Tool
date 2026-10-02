@@ -102,8 +102,16 @@ select = [
     "T20", # flake8-print
 ]
 ignore = [
-    "E501",  # line length: not enforced (no formatter run over the codebase)
-    "B008",  # function calls in default arguments
+    "E501",    # line length: not enforced (no formatter run over the codebase)
+    "B008",    # function calls in default arguments
+    # Style preferences, not defects; existing code uses these idioms freely.
+    "E701",    # `if x: y` on one line
+    "E702",    # `a; b` on one line
+    "E731",    # assigning a lambda to a name
+    "B905",    # zip() without strict=
+    "UP031",   # %-style string formatting
+    "SIM105",  # try/except/pass instead of contextlib.suppress
+    "SIM108",  # if/else block instead of a ternary
 ]
 
 [tool.ruff.lint.per-file-ignores]
@@ -112,7 +120,7 @@ ignore = [
 # Modules with a __main__ command-line entry point.
 "sbc/{astro_plot,bullion_vedha,crash_analyzer,kp_intraday,transit_vedha,transits,weekly_commentary}.py" = ["T201"]
 "sbc/navamsa_pipeline/cli.py" = ["T201"]
-"tests/*.py" = ["E402"]
+"tests/*.py" = ["E402", "T201"]
 
 [tool.ruff.lint.isort]
 known-first-party = ["sbc", "research", "app"]

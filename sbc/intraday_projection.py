@@ -157,9 +157,6 @@ def intraday_projection(start_date, tz_name="Asia/Kolkata", days=5, anchor_key="
         while minute <= MARKET_CLOSE_MIN:
             jd = _jd_at(date_str, minute, tz)
             pl, _ = positions(jd)
-            s2 = next(p for p in pl if p["name"] == "Sun")
-            m2 = next(p for p in pl if p["name"] == "Moon")
-            t2 = tithi_of(s2["longitude"], m2["longitude"])
 
             hora_lord = _hour_hora_lord(date_str, minute, tz)
             hora_score = HORA_QUALITY.get(hora_lord, 0.0) if hora_lord else 0.0

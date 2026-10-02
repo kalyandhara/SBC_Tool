@@ -129,11 +129,9 @@ def _is_in_same_nakshatra_line(p1, p2) -> bool:
     """Check if two planets are on same nakshatra line (same nakshatra or trine nakshatras)."""
     n1 = p1["nakshatra"]
     n2 = p2["nakshatra"]
-    if n1 == n2:
-        return True
-    # Check trine nakshatras (5/9 from each other in 27 nakshatra scheme)
-    # Simplified: same element trine
-    return False  # Would need full nakshatra trine logic
+    # Only the same nakshatra counts for now; a trine (5/9 apart in the 27
+    # nakshatra scheme) would need full nakshatra trine logic.
+    return n1 == n2
 
 
 # ============================================================
@@ -198,7 +196,6 @@ def detect_rohini_vedha(planets, vedha_map) -> list[BullionVedhaSignal]:
 
     for p in planets:
         if p["name"] in kroora and p["nakshatra"] == "Rohini":
-            vedha_hits = vedha_map.get(p["name"], [])
 
             intensity = "HIGH"
             if _is_retrograde(p):

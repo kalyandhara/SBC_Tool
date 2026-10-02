@@ -4,9 +4,8 @@ Combines lunar cycles (tithi, nakshatra, paksha), SBC vedha analysis,
 and planetary nakshatra confluence to generate sector bullish/bearish forecasts.
 """
 
-from .chakra import GRID
 from .nakshatra import moon_nature, nakshatra_of, paksha_of, tithi_of
-from .prediction import compute_vedhas, place_planets, sector_read, sentiment_of
+from .prediction import compute_vedhas, sector_read, sentiment_of
 from .sector_keywords import (
     NAKSHATRA_SECTOR_KEYWORDS,
     canonical_sectors_for,
@@ -168,7 +167,6 @@ def get_planetary_nakshatra_confluence(planets):
     for p in planets:
         p_name = p["name"]
         p_nak = p["nakshatra"]
-        p_sign = p["sign"]
         p_weight = PLANET_NAKSHATRA_SECTOR_WEIGHT.get(p_name, {"weight": 1.0, "sectors": []})
 
         # Nakshatra-based sectors
@@ -219,7 +217,6 @@ def get_planetary_nakshatra_confluence(planets):
 def get_sbc_sector_vedha(planets):
     """Get SBC vedha analysis for sectors."""
     try:
-        grid = place_planets(GRID, planets)
         vedha_map, _ = compute_vedhas(planets, school="allthree")
         sector_projections = sector_read(vedha_map, planets)
 
@@ -293,12 +290,6 @@ def generate_lunar_sector_forecast(date_str, planets, tithi, sun, moon, current_
         'opposition': {'angle': 180, 'orb': 8, 'bias': -0.8, 'weight': 1.3},
     }
 
-    PLANET_PAIRS = [
-        ('Sun', 'Moon'), ('Sun', 'Mars'), ('Sun', 'Jupiter'), ('Sun', 'Saturn'),
-        ('Moon', 'Mars'), ('Moon', 'Jupiter'), ('Moon', 'Saturn'),
-        ('Mars', 'Jupiter'), ('Mars', 'Saturn'), ('Jupiter', 'Saturn'),
-        ('Mercury', 'Jupiter'), ('Mercury', 'Saturn'), ('Venus', 'Mars'), ('Venus', 'Jupiter'),
-    ]
 
     def get_planet_by_name(planets, name):
         return next((p for p in planets if p['name'] == name), None)
@@ -318,7 +309,6 @@ def generate_lunar_sector_forecast(date_str, planets, tithi, sun, moon, current_
         for aspect_name, aspect_data in ASPECTS.items():
             target = aspect_data['angle']; orb = aspect_data['orb']
             if abs(dist - target) <= orb:
-                exactness = 1.0 - (abs(dist - target) / orb)
                 aspects.append({
                     'aspect': aspect_name, 'planet1': p1_name, 'planet2': p2_name,
                     'bias': aspect_data['bias'], 'weight': aspect_data['weight'],
@@ -339,7 +329,7 @@ def generate_lunar_sector_forecast(date_str, planets, tithi, sun, moon, current_
                 all_sectors.update(data["sector_scores"].keys())
 
     # Add confluence top sectors
-    for sector, score in confluence.get("top_bullish", []):
+    for sector, _score in confluence.get("top_bullish", []):
         all_sectors.add(sector)
 
     # Sector forecasts
@@ -514,7 +504,6 @@ def generate_infographic_card(forecast):
     lunar = forecast["lunar"]
 
     # Key aspects
-    key_aspects = []
 
     # Build card data
     card = {
@@ -526,7 +515,6 @@ def generate_infographic_card(forecast):
         "sun_nakshatra": forecast["lunar"]["sun_nakshatra"],
         "tithi": f"{forecast['lunar']['tithi']} - {forecast['lunar']['tithi_name']}",
         "paksha": forecast["lunar"]["paksha"],
-        "overall_bias": forecast["overall_bias"],
         "avg_score": forecast["avg_score"],
         "top_bullish": [{"sector": s, "score": round(d["score"], 1), "bias": d["bias"]}
                         for s, d in sorted(tradeable.items(), key=lambda x: -x[1]["score"])[:5]],
@@ -547,7 +535,6 @@ def generate_infographic_card(forecast):
             "bearish_rashis": forecast["sbc"].get("bearish_rashis", 0),
         },
         "confluence_top": forecast["confluence"].get("top_bullish", [])[:3],
-        "key_dates": forecast["key_dates"],
         "stats": {
             "bullish_sectors": forecast["bullish_sectors"],
             "bearish_sectors": forecast["bearish_sectors"],

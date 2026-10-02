@@ -105,10 +105,8 @@ def check_tourism_syntax(planets, tithi, sun, moon):
 
     # ---- 6. SBC VEDHA CHECKS ----
     try:
-        from .chakra import GRID
-        from .prediction import compute_vedhas, place_planets, sector_read
+        from .prediction import compute_vedhas, sector_read
 
-        grid = place_planets(GRID, planets)
         vedha_map, _ = compute_vedhas(planets, school="allthree")
 
         sector_projections = sector_read(vedha_map, planets)

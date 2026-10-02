@@ -386,7 +386,6 @@ def _build_aspect_timelines(
 ) -> list[AspectTimeline]:
     """Build continuous aspect timelines from planet tracks."""
     # Get all dates
-    dates = planet_tracks[PLANETS_ORDER[0]]
     aspect_timelines = []
 
     for i, p1_name in enumerate(PLANETS_ORDER):

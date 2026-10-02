@@ -44,8 +44,6 @@ PADA_BULLISH = {
     "Punarvasu": {1, 4}, "Pushya": {1, 4}, "Ashlesha": {1, 4},
     "Vishakha": {1, 4}, "Anuradha": {1, 4}, "Jyeshtha": {1, 4},
     "P.Bhadrapada": {1, 4}, "Shatabhisha": {1, 4},
-    # Air signs (Gemini, Libra, Aquarius) - even padas bullish
-    "Krittika": {2, 4},  # Actually Krittika spans Aries/Taurus
 }
 
 # Simplified: pada 1 and 3 are generally bullish, 2 and 4 bearish
@@ -62,7 +60,6 @@ def is_pada_bullish(nakshatra: str, pada: int) -> bool:
     water_naks = {"Punarvasu", "Pushya", "Ashlesha", "Vishakha", "Anuradha", "Jyeshtha",
                   "P.Bhadrapada", "Shatabhisha"}
     # Air nakshatras: Gemini, Libra, Aquarius spans
-    air_naks = {"Krittika", "Swati", "Dhanishta", "Shatabhisha"}  # overlap handled
 
     if nakshatra in fire_naks or nakshatra in earth_naks:
         return pada in (1, 3)
@@ -103,15 +100,6 @@ def get_sign_type(sign: str) -> str:
     return "neutral"
 
 
-def get_sign_type(sign: str) -> str:
-    """Classify sign as 'bullish' or 'bearish'."""
-    if sign in BULLISH_SIGNS:
-        return "bullish"
-    if sign in BEARISH_SIGNS:
-        return "bearish"
-    return "neutral"
-
-
 def get_jupiter_motion(planets: list) -> str:
     """Get Jupiter's motion state: 'direct' or 'retrograde'.
 
@@ -128,58 +116,6 @@ def get_jupiter_motion(planets: list) -> str:
     if jupiter["speed"] < 0 or jupiter["retrograde"]:
         return JUPITER_MOTION_RETROGRADE
     return JUPITER_MOTION_DIRECT
-
-
-def get_jupiter_transit_table() -> list:
-    """Get the 12-sign Jupiter transit table.
-
-    Based on the Sarvatobhadra Chakra + Nakshatra-Transit cheatsheet:
-    - Direct trend: Jupiter's effect when moving direct
-    - Retrograde trend: Jupiter's effect when moving retrograde
-
-    Returns list of dicts: [{'sign': str, 'direct': str, 'retrograde': str}, ...]
-    Ordered by zodiac sign (Aries first, Pisces last).
-    """
-    # Per cheatsheet classifications:
-    # Bullish Direct: Taurus, Leo, Sagittarius, Capricorn, Aquarius, Pisces
-    # Bullish Retrograde: Aries, Taurus, Gemini, Cancer, Virgo, Libra, Scorpio, Capricorn, Pisces
-    # Dual-Bullish (both motions): Taurus, Capricorn, Pisces
-    # Dual-Bearish (direct bearish, retro bullish): Aries, Gemini, Cancer, Virgo, Libra, Scorpio
-    # Dual-Mixed (direct bullish, retrograde bearish): Leo, Sagittarius, Aquarius
-
-    signs = ["Aries", "Taurus", "Gemini", "Cancer", "Leo", "Virgo", "Libra", "Scorpio",
-             "Sagittarius", "Capricorn", "Aquarius", "Pisces"]
-
-    # Direct bullish signs per cheatsheet
-    direct_bullish = {"Taurus", "Leo", "Sagittarius", "Capricorn", "Aquarius", "Pisces"}
-    # Dual-bullish (both direct and retrograde)
-    dual_bullish = {"Taurus", "Capricorn", "Pisces"}
-    # Dual-mixed (direct bullish, retrograde bearish)
-    dual_mixed = {"Leo", "Sagittarius", "Aquarius"}
-
-    table = []
-    for sign in signs:
-        # Direct trend: bullish if sign in direct_bullish set
-        direct_trend = "Bullish" if sign in direct_bullish else "Bearish"
-
-        # Retrograde trend: bullish if sign in retrograde_bullish set
-        retrograde_bullish = {"Aries", "Taurus", "Gemini", "Cancer", "Virgo", "Libra", "Scorpio", "Capricorn", "Pisces"}
-        retrograde_trend = "Bullish" if sign in retrograde_bullish else "Bearish"
-
-        # Override for dual classifications
-        if sign in dual_bullish:
-            retrograde_trend = "Bullish"  # emphasizing both-motions bullish
-        if sign in dual_mixed:
-            direct_trend = "Bullish"  # direct is bullish despite being in mixed set
-            retrograde_trend = "Bearish"  # retrograde is bearish for mixed signs
-
-        table.append({
-            "sign": sign,
-            "direct": direct_trend,
-            "retrograde": retrograde_trend
-        })
-
-    return table
 
 
 def get_pada_type(nakshatra: str, pada: int) -> str:
@@ -602,7 +538,6 @@ def generate_cgsp_report(date_str: str, planets: list, tithi: int, current_price
 
     # Summary narrative
     cruel_planets = [c for c in score_data["contributions"] if c["type"] == "cruel"]
-    gentle_planets = [c for c in score_data["contributions"] if c["type"] == "gentle"]
 
     bullish_drivers = [c["planet"] for c in cruel_planets if c["weighted"] > 0]
     bearish_drivers = [c["planet"] for c in cruel_planets if c["weighted"] < 0]
@@ -661,8 +596,6 @@ def backtest_cgsp(start_date: str, end_date: str, price_data: dict = None) -> di
     end = datetime.date.fromisoformat(end_date)
 
     results = []
-    correct = 0
-    total = 0
 
     d = start
     while d <= end:
@@ -682,10 +615,8 @@ def backtest_cgsp(start_date: str, end_date: str, price_data: dict = None) -> di
             # Determine predicted direction
             pred_up = bias in ("STRONG_BULLISH", "BULLISH")
             pred_down = bias in ("STRONG_BEARISH", "BEARISH")
-            pred_neutral = bias == "NEUTRAL"
 
             # Get actual price movement if price_data provided
-            actual = None
             if price_data and ds in price_data:
                 # Would need next day's price for comparison
                 pass

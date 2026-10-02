@@ -116,7 +116,7 @@ def get_crash_chart_links(crash_date: str, window_days: int = 30) -> dict:
     end = (datetime.date.fromisoformat(crash_date) + datetime.timedelta(days=window_days)).isoformat()
 
     links = {}
-    for name, symbol in TV_SYMBOLS.items():
+    for name, _symbol in TV_SYMBOLS.items():
         if "_FUT" not in name:  # Skip futures duplicates for simplicity
             links[name] = build_tradingview_url(
                 symbol=name,

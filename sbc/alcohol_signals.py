@@ -114,10 +114,8 @@ def check_alcohol_syntax(planets, tithi, sun, moon):
 
     # ---- 6. SBC VEDHA CHECKS ----
     try:
-        from sbc.chakra import GRID
-        from sbc.prediction import compute_vedhas, place_planets, sector_read
+        from sbc.prediction import compute_vedhas, sector_read
 
-        grid = place_planets(GRID, planets)
         vedha_map, _ = compute_vedhas(planets, school="allthree")
 
         sector_projections = sector_read(vedha_map, planets)
@@ -171,8 +169,8 @@ def check_alcohol_syntax(planets, tithi, sun, moon):
         for p in planets:
             if p["nature"] == "malefic":
                 for hit in vedha_map.get(p["name"], []):
-                    if hit["type"] == "rashi":
-                        if hit["label"] in ["Taurus", "Libra", "Cancer", "Pisces"]:
+                    if hit["type"] == "rashi" and \
+                            hit["label"] in ["Taurus", "Libra", "Cancer", "Pisces"]:
                             if p["name"] == "Saturn":
                                 saturn_obstruction = True
                             elif p["name"] == "Ketu":

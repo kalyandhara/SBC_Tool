@@ -94,7 +94,6 @@ class TestComputeVedhas:
         from sbc.planets import all_planets_with_natures
         planets = all_planets_with_natures(planets, tithi, sun["longitude"])
 
-        grid = place_planets(GRID, planets)
         vedha_map, ray_paths = compute_vedhas(planets, school="classical")
 
         # Each planet should have vedhas
@@ -119,14 +118,13 @@ class TestComputeVedhas:
         from sbc.planets import all_planets_with_natures
         planets = all_planets_with_natures(planets, tithi, sun["longitude"])
 
-        grid = place_planets(GRID, planets)
         vedha_map, ray_paths = compute_vedhas(planets, school="allthree")
 
         for p in planets:
             assert p["name"] in vedha_map
             vedhas = vedha_map[p["name"]]
             # Should have up to 3 rays (front, left, right)
-            rays = set(v["ray"] for v in vedhas)
+            rays = {v["ray"] for v in vedhas}
             assert len(rays) <= 3
 
 
@@ -150,7 +148,6 @@ class TestAnalyze:
         from sbc.planets import all_planets_with_natures
         planets = all_planets_with_natures(planets, tithi, sun["longitude"])
 
-        grid = place_planets(GRID, planets)
         vedha_map, _ = compute_vedhas(planets, school="allthree")
 
         # Get anchor nakshatra (NSE)
@@ -184,7 +181,6 @@ class TestAnalyze:
         from sbc.planets import all_planets_with_natures
         planets = all_planets_with_natures(planets, tithi, sun["longitude"])
 
-        grid = place_planets(GRID, planets)
         vedha_map, _ = compute_vedhas(planets, school="allthree")
 
         anchor_nakshatra = "Krittika"
@@ -220,7 +216,6 @@ class TestSummarizeVedhas:
         from sbc.planets import all_planets_with_natures
         planets = all_planets_with_natures(planets, tithi, sun["longitude"])
 
-        grid = place_planets(GRID, planets)
         vedha_map, _ = compute_vedhas(planets, school="allthree")
 
         anchor_nakshatra = "Krittika"
