@@ -63,6 +63,7 @@ from sbc.api.blueprints.research_bp import research_bp
 from sbc.api.blueprints.kp_bp import kp_bp
 from sbc.api.blueprints.balance_bp import balance_bp
 from sbc.api.blueprints.chakra_bp import chakra_bp
+from sbc.api.blueprints.forecast_bp import forecast_bp
 
 app.register_blueprint(overview_bp)
 app.register_blueprint(chart_bp)
@@ -71,6 +72,7 @@ app.register_blueprint(research_bp)
 app.register_blueprint(kp_bp)
 app.register_blueprint(balance_bp)
 app.register_blueprint(chakra_bp)
+app.register_blueprint(forecast_bp)
 
 @app.errorhandler(Exception)
 def handle_exception(e):

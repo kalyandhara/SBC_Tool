@@ -181,6 +181,7 @@ data/profiles.db
 data/cities.db
 data/latest_sbc_signal.json
 data/series_cache.db
+data/forecast_ledger.db
 sbc/navamsa_pipeline/navamsa.db
 .playwright-mcp/
 
