@@ -1,7 +1,8 @@
 """Sector Heatmap blueprint."""
 
-from flask import Blueprint, jsonify, request
 import datetime
+
+from flask import Blueprint, jsonify, request
 
 sectors_bp = Blueprint('sectors', __name__, url_prefix='')
 
@@ -38,8 +39,13 @@ def sector_vedha():
 
 @sectors_bp.route('/api/lunar_forecast')
 def lunar_forecast():
+    from sbc.lunar_forecast import (
+        format_card_for_clipboard,
+        format_card_for_social_media,
+        generate_infographic_card,
+        generate_lunar_sector_forecast,
+    )
     from sbc.planets import positioned_planets
-    from sbc.lunar_forecast import generate_lunar_sector_forecast, generate_infographic_card, format_card_for_clipboard, format_card_for_social_media
     date_str = request.args.get("date") or datetime.date.today().isoformat()
     try:
         datetime.datetime.strptime(date_str, "%Y-%m-%d")

@@ -3,17 +3,17 @@ Bullion Vedha Matrix - SBC Vedha Types for Gold/Silver Markets
 Based on classical Sarvatobhadra Chakra principles for precious metals.
 """
 
-from typing import List, Dict, Any
+import datetime
 from dataclasses import dataclass
 from enum import Enum
-
-from sbc.planets import positions, all_planets_with_natures
-from sbc.nakshatra import nakshatra_of, sign_of, tithi_of
-from sbc.prediction import compute_vedhas, place_planets, analyze
-from sbc.chakra import GRID, NAKSHATRA_CELL
-import swisseph as swe
-import datetime
+from typing import Any
 from zoneinfo import ZoneInfo
+
+import swisseph as swe
+
+from sbc.nakshatra import tithi_of
+from sbc.planets import all_planets_with_natures, positions
+from sbc.prediction import compute_vedhas
 
 
 class VedhaType(Enum):
@@ -80,18 +80,18 @@ class BullionVedhaSignal:
     market_impact: str
     intensity: str  # EXTREME, HIGH, MODERATE, LOW
     affected_metal: str  # Gold, Silver, Both
-    triggering_planets: List[str]
-    nakshatras_involved: List[str]
+    triggering_planets: list[str]
+    nakshatras_involved: list[str]
     duration_estimate: str
     confidence: float  # 0-1
     timestamp: str
-    details: Dict[str, Any]
+    details: dict[str, Any]
 
 
 def _julian_at_noon(date: datetime.date) -> float:
     """Get Julian day at noon IST."""
     local = datetime.datetime.combine(date, datetime.time(12, 0), tzinfo=ZoneInfo('Asia/Kolkata'))
-    utc = local.astimezone(datetime.timezone.utc)
+    utc = local.astimezone(datetime.UTC)
     return swe.julday(utc.year, utc.month, utc.day, utc.hour + utc.minute/60.0)
 
 
@@ -129,17 +129,15 @@ def _is_in_same_nakshatra_line(p1, p2) -> bool:
     """Check if two planets are on same nakshatra line (same nakshatra or trine nakshatras)."""
     n1 = p1["nakshatra"]
     n2 = p2["nakshatra"]
-    if n1 == n2:
-        return True
-    # Check trine nakshatras (5/9 from each other in 27 nakshatra scheme)
-    # Simplified: same element trine
-    return False  # Would need full nakshatra trine logic
+    # Only the same nakshatra counts for now; a trine (5/9 apart in the 27
+    # nakshatra scheme) would need full nakshatra trine logic.
+    return n1 == n2
 
 
 # ============================================================
 # 1. KRITTIKA VEDHA - PRIMARY GOLD TRIGGER
 # ============================================================
-def detect_krittika_vedha(planets, vedha_map) -> List[BullionVedhaSignal]:
+def detect_krittika_vedha(planets, vedha_map) -> list[BullionVedhaSignal]:
     """
     Krittika Vedha: Malefic (Sun/Mars/Saturn) in Krittika Nakshatra
     Transits on Krittika cast direct diagonal (Sammukha/Vipreet) Vedha across the grid.
@@ -148,17 +146,17 @@ def detect_krittika_vedha(planets, vedha_map) -> List[BullionVedhaSignal]:
     """
     signals = []
     malefics = ["Sun", "Mars", "Saturn", "Rahu", "Ketu"]
-    
+
     for p in planets:
         if p["name"] in malefics and p["nakshatra"] == "Krittika":
             # Check if this planet casts vedha on sensitive points
             vedha_hits = vedha_map.get(p["name"], [])
             hits_on_krittika_line = [h for h in vedha_hits if h.get("label") == "Krittika"]
-            
+
             intensity = "EXTREME" if _is_retrograde(p) else "HIGH"
             if p["name"] in ("Mars", "Saturn") and _is_retrograde(p):
                 intensity = "EXTREME"
-            
+
             signals.append(BullionVedhaSignal(
                 vedha_type=VedhaType.KRITTIKA_PRIMARY,
                 title=f"Krittika Vedha: {p['name']} in Krittika",
@@ -186,7 +184,7 @@ def detect_krittika_vedha(planets, vedha_map) -> List[BullionVedhaSignal]:
 # ============================================================
 # 2. ROHINI VEDHA - LIQUIDITY & METALS
 # ============================================================
-def detect_rohini_vedha(planets, vedha_map) -> List[BullionVedhaSignal]:
+def detect_rohini_vedha(planets, vedha_map) -> list[BullionVedhaSignal]:
     """
     Rohini Vedha: Kroora Graha (Mars/Saturn/Rahu) in Rohini Nakshatra
     Casts Parshwa (Side) and Sammukha Vedha on key liquid metal axis.
@@ -195,15 +193,14 @@ def detect_rohini_vedha(planets, vedha_map) -> List[BullionVedhaSignal]:
     """
     signals = []
     kroora = ["Mars", "Saturn", "Rahu"]
-    
+
     for p in planets:
         if p["name"] in kroora and p["nakshatra"] == "Rohini":
-            vedha_hits = vedha_map.get(p["name"], [])
-            
+
             intensity = "HIGH"
             if _is_retrograde(p):
                 intensity = "EXTREME"
-            
+
             signals.append(BullionVedhaSignal(
                 vedha_type=VedhaType.ROHINI_LIQUIDITY,
                 title=f"Rohini Vedha: {p['name']} in Rohini",
@@ -230,34 +227,34 @@ def detect_rohini_vedha(planets, vedha_map) -> List[BullionVedhaSignal]:
 # ============================================================
 # 3. ADITYA-GURU VEDHA - SUN-JUPITER CONJUNCTION/VEDHA
 # ============================================================
-def detect_aditya_guru_vedha(planets, vedha_map) -> List[BullionVedhaSignal]:
+def detect_aditya_guru_vedha(planets, vedha_map) -> list[BullionVedhaSignal]:
     """
     Aditya-Guru Vedha: Transiting Sun casting Subha Vedha on Jupiter (or same Nakshatra line)
     Direct Sammukha ray between the Sun line and Jupiter line.
     Macro Gold Accumulation: Triggers central bank buying and institutional store-of-value flows into Gold ETF and spot physical markets.
     """
     signals = []
-    
+
     sun = next((p for p in planets if p["name"] == "Sun"), None)
     jupiter = next((p for p in planets if p["name"] == "Jupiter"), None)
-    
+
     if not sun or not jupiter:
         return signals
-    
+
     # Check conjunction (same nakshatra or very close)
     same_nakshatra = sun["nakshatra"] == jupiter["nakshatra"]
     close_conjunction = _angle(sun["longitude"], jupiter["longitude"]) < 8
-    
+
     # Check if Sun casts vedha on Jupiter's nakshatra
     sun_vedha_hits = vedha_map.get("Sun", [])
     jupiter_vedha_hits = vedha_map.get("Jupiter", [])
-    
+
     sun_hits_jupiter_nakshatra = any(h.get("label") == jupiter["nakshatra"] for h in sun_vedha_hits)
     jupiter_hits_sun_nakshatra = any(h.get("label") == sun["nakshatra"] for h in jupiter_vedha_hits)
-    
+
     if same_nakshatra or close_conjunction or sun_hits_jupiter_nakshatra or jupiter_hits_sun_nakshatra:
         intensity = "EXTREME" if same_nakshatra else "HIGH"
-        
+
         signals.append(BullionVedhaSignal(
             vedha_type=VedhaType.ADITYA_GURU,
             title="Aditya-Guru Vedha: Sun-Jupiter Alignment",
@@ -284,41 +281,41 @@ def detect_aditya_guru_vedha(planets, vedha_map) -> List[BullionVedhaSignal]:
 # ============================================================
 # 4. SHUKI-CHANDRA VEDHA - VENUS-MOON SILVER MULTIPLIER
 # ============================================================
-def detect_shuki_chandra_vedha(planets, vedha_map) -> List[BullionVedhaSignal]:
+def detect_shuki_chandra_vedha(planets, vedha_map) -> list[BullionVedhaSignal]:
     """
     Shuki-Chandra Vedha: Transiting Venus in high-strength Pada casting Vedha on Moon Nakshatra
     Direct horizontal or diagonal SBC intersection with Moon/Liquid Nakshatra.
     Silver Outperformance: Silver historically outperforms Gold when Venus creates a benefic Subha Vedha with Moon/Rohini/Shravana.
     """
     signals = []
-    
+
     venus = next((p for p in planets if p["name"] == "Venus"), None)
     moon = next((p for p in planets if p["name"] == "Moon"), None)
-    
+
     if not venus or not moon:
         return signals
-    
+
     # Check if Venus is benefic (well-placed, not debilitated/combust)
     venus_benefic = venus.get("nature") == "benefic"
-    
+
     # Check Venus-Moon vedha connection
     venus_vedha_hits = vedha_map.get("Venus", [])
     moon_nakshatra = moon["nakshatra"]
-    
+
     venus_hits_moon_nakshatra = any(h.get("label") == moon_nakshatra for h in venus_vedha_hits)
-    
+
     # Liquid nakshatras for Moon
     liquid_nakshatras = {"Rohini", "Shravana", "Pushya", "Revati", "Hasta"}
     moon_in_liquid = moon_nakshatra in liquid_nakshatras
-    
+
     if venus_benefic and (venus_hits_moon_nakshatra or moon_in_liquid):
         # Check Venus strength (exalted, own sign, retrograde)
         venus_strong = venus["sign"] in ("Taurus", "Libra", "Pisces") or _is_retrograde(venus)
-        
+
         intensity = "HIGH" if venus_strong else "MODERATE"
         if _is_retrograde(venus):
             intensity = "EXTREME"
-        
+
         signals.append(BullionVedhaSignal(
             vedha_type=VedhaType.SHUKI_CHANDRA,
             title=f"Shuki-Chandra Vedha: Venus {venus['nakshatra']} -> Moon {moon_nakshatra}",
@@ -348,7 +345,7 @@ def detect_shuki_chandra_vedha(planets, vedha_map) -> List[BullionVedhaSignal]:
 # ============================================================
 # 5. RETROGRADE MALEFIC VEDHA (VAKRA KROORA VEDHA)
 # ============================================================
-def detect_retrograde_malefic_vedha(planets, vedha_map) -> List[BullionVedhaSignal]:
+def detect_retrograde_malefic_vedha(planets, vedha_map) -> list[BullionVedhaSignal]:
     """
     Retrograde Malefic Vedha: Retrograde Mars, Saturn, or Ketu entering Fire Signs (Aries/Leo/Sagittarius)
     Retrograde motion increases Vedha intensity by 3x.
@@ -356,16 +353,16 @@ def detect_retrograde_malefic_vedha(planets, vedha_map) -> List[BullionVedhaSign
     """
     signals = []
     retrograde_malefics = ["Mars", "Saturn", "Ketu", "Rahu"]
-    
+
     for p in planets:
         if p["name"] in retrograde_malefics and _is_retrograde(p) and _is_in_fire_sign(p):
             # Check if this retrograde malefic casts vedha on bullion nakshatras
             vedha_hits = vedha_map.get(p["name"], [])
             bullion_hits = [h for h in vedha_hits if h.get("label") in BULLION_NAKSHATRAS]
-            
+
             # Fire sign retrograde = maximum intensity
             intensity = "EXTREME"
-            
+
             signals.append(BullionVedhaSignal(
                 vedha_type=VedhaType.RETROGRADE_MALEFIC,
                 title=f"Vakra Kroora Vedha: Retrograde {p['name']} in {p['sign']}",
@@ -395,7 +392,7 @@ def detect_retrograde_malefic_vedha(planets, vedha_map) -> List[BullionVedhaSign
 # ============================================================
 # 6. VIPREET OBSTRUCTIVE VEDHA (MANDI / PRICE DUMP TRIGGER)
 # ============================================================
-def detect_vipreet_obstructive_vedha(planets, vedha_map) -> List[BullionVedhaSignal]:
+def detect_vipreet_obstructive_vedha(planets, vedha_map) -> list[BullionVedhaSignal]:
     """
     Vipreet Obstructive Vedha: Benefic (Venus/Jupiter/Mercury) casting Vedha without counter-malefic pressure
     Softening Subha Vedha over Krittika or Rohini axis.
@@ -403,14 +400,14 @@ def detect_vipreet_obstructive_vedha(planets, vedha_map) -> List[BullionVedhaSig
     """
     signals = []
     benefics = ["Venus", "Jupiter", "Mercury"]
-    
+
     for p in planets:
         if p["name"] in benefics:
             # Check if benefic is casting vedha on Krittika or Rohini
             vedha_hits = vedha_map.get(p["name"], [])
             krittika_hit = any(h.get("label") == "Krittika" for h in vedha_hits)
             rohini_hit = any(h.get("label") == "Rohini" for h in vedha_hits)
-            
+
             if krittika_hit or rohini_hit:
                 # Check for counter-malefic pressure on same nakshatra
                 counter_malefic = False
@@ -421,10 +418,10 @@ def detect_vipreet_obstructive_vedha(planets, vedha_map) -> List[BullionVedhaSig
                             counter_malefic = True
                         if rohini_hit and any(h.get("label") == "Rohini" for h in m_vedha):
                             counter_malefic = True
-                
+
                 if not counter_malefic:
                     intensity = "HIGH" if p["name"] == "Jupiter" else "MODERATE"
-                    
+
                     signals.append(BullionVedhaSignal(
                         vedha_type=VedhaType.VIPREET_OBSTRUCTIVE,
                         title=f"Vipreet Obstructive Vedha: {p['name']} softening {'Krittika' if krittika_hit else 'Rohini'} axis",
@@ -451,35 +448,35 @@ def detect_vipreet_obstructive_vedha(planets, vedha_map) -> List[BullionVedhaSig
 # ============================================================
 # 7. MERCURY-KETU-SUN TRIANGLE IN LEO (VOLATILITY CLUSTER)
 # ============================================================
-def detect_mercury_ketu_sun_triangle(planets, vedha_map) -> List[BullionVedhaSignal]:
+def detect_mercury_ketu_sun_triangle(planets, vedha_map) -> list[BullionVedhaSignal]:
     """
     Mercury-Ketu-Sun Triangle in Leo: All three in Leo/Magha nakshatra
     Creates a volatile cluster affecting Gold (Sun/Ketu in Magha) and trading/communication (Mercury).
-    High Volatility / Sudden Moves / Trend Changes: Combines authority (Sun), detachment (Ketu), 
+    High Volatility / Sudden Moves / Trend Changes: Combines authority (Sun), detachment (Ketu),
     and trading intellect (Mercury) in the same nakshatra. Triggers sharp intraday reversals in bullion.
     """
     signals = []
-    
+
     sun = next((p for p in planets if p["name"] == "Sun"), None)
     mercury = next((p for p in planets if p["name"] == "Mercury"), None)
     ketu = next((p for p in planets if p["name"] == "Ketu"), None)
-    
+
     if not all([sun, mercury, ketu]):
         return signals
-    
+
     # Check if all three in Leo
     if sun["sign"] == "Leo" and mercury["sign"] == "Leo" and ketu["sign"] == "Leo":
         # Check if in same or adjacent nakshatras (Magha)
         sun_mer = abs((sun["longitude"] - mercury["longitude"] + 180) % 360 - 180)
         sun_ketu = abs((sun["longitude"] - ketu["longitude"] + 180) % 360 - 180)
         mer_ketu = abs((mercury["longitude"] - ketu["longitude"] + 180) % 360 - 180)
-        
+
         # All in Magha nakshatra = tight triangle
         in_magha = sun["nakshatra"] == "Magha" and mercury["nakshatra"] == "Magha" and ketu["nakshatra"] == "Magha"
-        
+
         if in_magha or max(sun_mer, sun_ketu, mer_ketu) < 10:
             intensity = "EXTREME" if in_magha else "HIGH"
-            
+
             signals.append(BullionVedhaSignal(
                 vedha_type=VedhaType.MERCURY_KETU_SUN_TRIANGLE,
                 title="Mercury-Ketu-Sun Triangle in Leo (Magha)",
@@ -508,18 +505,18 @@ def detect_mercury_ketu_sun_triangle(planets, vedha_map) -> List[BullionVedhaSig
 # ============================================================
 # MASTER DETECTION FUNCTION
 # ============================================================
-def scan_bullion_vedha_matrix(date: datetime.date = None) -> Dict[str, Any]:
+def scan_bullion_vedha_matrix(date: datetime.date = None) -> dict[str, Any]:
     """
     Scan all 6 Bullion Vedha Matrix signals for a given date.
-    
+
     Returns comprehensive bullion vedha analysis.
     """
     if date is None:
         date = datetime.date.today()
-    
+
     planets, tithi, ayanamsa = _get_planets(date)
     vedha_map = _get_vedha_map(planets)
-    
+
     # Run all detectors
     all_signals = []
     all_signals.extend(detect_krittika_vedha(planets, vedha_map))
@@ -529,25 +526,25 @@ def scan_bullion_vedha_matrix(date: datetime.date = None) -> Dict[str, Any]:
     all_signals.extend(detect_retrograde_malefic_vedha(planets, vedha_map))
     all_signals.extend(detect_vipreet_obstructive_vedha(planets, vedha_map))
     all_signals.extend(detect_mercury_ketu_sun_triangle(planets, vedha_map))
-    
+
     # Sort by intensity
     intensity_order = {"EXTREME": 4, "HIGH": 3, "MODERATE": 2, "LOW": 1}
     all_signals.sort(key=lambda s: intensity_order.get(s.intensity, 0), reverse=True)
-    
+
     # Summarize by metal
     gold_signals = [s for s in all_signals if s.affected_metal in ("Gold", "Both")]
     silver_signals = [s for s in all_signals if s.affected_metal in ("Silver", "Both")]
-    
+
     # Overall bias
     gold_bullish = sum(1 for s in gold_signals if "Bullish" in s.market_impact or "Surge" in s.market_impact or "Accumulation" in s.market_impact or "Safe-Haven" in s.market_impact)
     gold_bearish = sum(1 for s in gold_signals if "Correction" in s.market_impact or "Mandi" in s.market_impact or "Cooling" in s.market_impact)
-    
+
     silver_bullish = sum(1 for s in silver_signals if "Bullish" in s.market_impact or "Outperformance" in s.market_impact or "Rally" in s.market_impact)
     silver_bearish = sum(1 for s in silver_signals if "Correction" in s.market_impact or "Mandi" in s.market_impact or "Cooling" in s.market_impact)
-    
+
     gold_bias = "BULLISH" if gold_bullish > gold_bearish else ("BEARISH" if gold_bearish > gold_bullish else "NEUTRAL")
     silver_bias = "BULLISH" if silver_bullish > silver_bearish else ("BEARISH" if silver_bearish > silver_bullish else "NEUTRAL")
-    
+
     return {
         "date": date.isoformat(),
         "ayanamsa": round(ayanamsa, 4),
@@ -580,7 +577,7 @@ def scan_bullion_vedha_matrix(date: datetime.date = None) -> Dict[str, Any]:
                 "extreme_count": sum(1 for s in silver_signals if s.intensity == "EXTREME"),
                 "high_count": sum(1 for s in silver_signals if s.intensity == "HIGH"),
             },
-            "overall_bullion_bias": "BULLISH" if gold_bias == "BULLISH" and silver_bias == "BULLISH" else 
+            "overall_bullion_bias": "BULLISH" if gold_bias == "BULLISH" and silver_bias == "BULLISH" else
                                    "BEARISH" if gold_bias == "BEARISH" and silver_bias == "BEARISH" else "MIXED",
         },
         "matrix_reference": {
@@ -598,36 +595,36 @@ def scan_bullion_vedha_matrix(date: datetime.date = None) -> Dict[str, Any]:
 # ============================================================
 # WEEKLY SCAN
 # ============================================================
-def scan_bullion_vedha_week(start_date: datetime.date = None) -> Dict[str, Any]:
+def scan_bullion_vedha_week(start_date: datetime.date = None) -> dict[str, Any]:
     """Scan bullion vedha matrix for full week (7 days)."""
     if start_date is None:
         start_date = datetime.date.today()
-    
+
     # Adjust to Monday
     monday = start_date - datetime.timedelta(days=start_date.weekday())
-    
+
     daily_scans = []
     for day_offset in range(7):
         day = monday + datetime.timedelta(days=day_offset)
         scan = scan_bullion_vedha_matrix(day)
         daily_scans.append(scan)
-    
+
     # Aggregate weekly signals
     all_signals = []
     for scan in daily_scans:
         all_signals.extend(scan["signals"])
-    
+
     # Deduplicate by vedha_type + triggering planets
     unique_signals = {}
     for s in all_signals:
         key = f"{s['vedha_type']}_{'-'.join(sorted(s['triggering_planets']))}"
         if key not in unique_signals or s["confidence"] > unique_signals[key]["confidence"]:
             unique_signals[key] = s
-    
+
     # Weekly summary
     gold_signals = [s for s in unique_signals.values() if s["affected_metal"] in ("Gold", "Both")]
     silver_signals = [s for s in unique_signals.values() if s["affected_metal"] in ("Silver", "Both")]
-    
+
     return {
         "week_start": monday.isoformat(),
         "week_end": (monday + datetime.timedelta(days=6)).isoformat(),
@@ -646,30 +643,30 @@ def scan_bullion_vedha_week(start_date: datetime.date = None) -> Dict[str, Any]:
 # ============================================================
 # API INTEGRATION HELPER
 # ============================================================
-def format_bullion_vedha_for_ui(scan_result: Dict) -> str:
+def format_bullion_vedha_for_ui(scan_result: dict) -> str:
     """Format bullion vedha scan for UI display."""
     lines = []
     lines.append("=" * 70)
     lines.append("BULLION VEDHA MATRIX - SBC PRECIOUS METALS ANALYSIS")
     lines.append(f"Date: {scan_result['date']} | Ayanamsa: {scan_result['ayanamsa']}°")
     lines.append("=" * 70)
-    
+
     summary = scan_result["summary"]
     lines.append(f"\nOVERALL BULLION BIAS: {summary['overall_bullion_bias']}")
     lines.append(f"  Gold: {summary['gold']['bias']} ({summary['gold']['signal_count']} signals, {summary['gold']['extreme_count']} EXTREME)")
     lines.append(f"  Silver: {summary['silver']['bias']} ({summary['silver']['signal_count']} signals, {summary['silver']['extreme_count']} EXTREME)")
-    
+
     if not scan_result["signals"]:
         lines.append("\nNo active bullion vedha signals detected.")
         return "\n".join(lines)
-    
+
     lines.append(f"\nACTIVE VEDHA SIGNALS ({len(scan_result['signals'])}):")
     lines.append("-" * 70)
-    
+
     for i, s in enumerate(scan_result["signals"], 1):
         intensity_marker = {"EXTREME": "[!!!]", "HIGH": "[!!]", "MODERATE": "[!]", "LOW": "[ ]"}.get(s["intensity"], "[ ]")
         metal_emoji = "GOLD" if "Gold" in s["affected_metal"] else ("SILVER" if "Silver" in s["affected_metal"] else "BOTH")
-        
+
         lines.append(f"\n{i}. {intensity_marker} {s['title']} ({metal_emoji})")
         lines.append(f"   Type: {s['vedha_type'].replace('_', ' ').title()}")
         lines.append(f"   Intensity: {s['intensity']} | Confidence: {s['confidence']:.0%}")
@@ -677,13 +674,13 @@ def format_bullion_vedha_for_ui(scan_result: Dict) -> str:
         lines.append(f"   Impact: {s['market_impact']}")
         lines.append(f"   Duration: {s['duration_estimate']}")
         lines.append(f"   Planets: {', '.join(s['triggering_planets'])} | Nakshatras: {', '.join(s['nakshatras_involved'])}")
-    
+
     lines.append("\n" + "=" * 70)
     lines.append("MATRIX REFERENCE:")
     for k, v in scan_result["matrix_reference"].items():
         lines.append(f"  {k}: {v}")
     lines.append("=" * 70)
-    
+
     return "\n".join(lines)
 
 
@@ -694,7 +691,7 @@ if __name__ == "__main__":
     # Scan for current week
     result = scan_bullion_vedha_week(datetime.date(2026, 8, 24))
     print(format_bullion_vedha_for_ui(result["daily_scans"][0]))  # Monday scan
-    print(f"\n\nWEEKLY SUMMARY:")
+    print("\n\nWEEKLY SUMMARY:")
     print(f"  Unique signals: {result['weekly_summary']['total_unique_signals']}")
     print(f"  Gold signals: {result['weekly_summary']['gold_signals']}")
     print(f"  Silver signals: {result['weekly_summary']['silver_signals']}")

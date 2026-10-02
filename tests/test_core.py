@@ -1,6 +1,7 @@
 """Minimal unit tests for SBC core modules."""
 
 import sys
+
 sys.path.insert(0, "D:\\SBC_Tool - Copy")
 
 def test_chakra_layout():

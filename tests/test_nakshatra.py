@@ -1,15 +1,12 @@
 """Tests for nakshatra, tithi, and paksha calculations."""
 
-import pytest
 from sbc.nakshatra import (
-    NAKSHATRAS_27,
-    RING_28,
     GROUP_OF_TITHI,
     GROUP_WEEKDAYS,
-    paksha_of,
-    tithi_of,
+    NAKSHATRAS_27,
     moon_nature,
     nakshatra_of,
+    paksha_of,
     sign_of,
 )
 

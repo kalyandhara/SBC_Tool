@@ -24,7 +24,6 @@ communication-infrastructure) sectors react to:
 This is symbolic correlation, not a causal mechanism.  Research aid only.
 """
 
-from .planets import EXALT, DEBIL
 
 # Mercury signification: communication, networks, IT, media, trading.
 # Rahu signification: technology, innovation, disruption, foreign capital,

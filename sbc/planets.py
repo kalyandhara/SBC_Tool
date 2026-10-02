@@ -99,7 +99,6 @@ def _planet_dict(name, lon, speed):
 
 def refine_natures(planets, tithi):
     """Apply the classical nature switches for Mercury and the Moon."""
-    moon_lon = next(p for p in planets if p["name"] == "Moon")["longitude"]
     malefic_lons = []
     for p in planets:
         if p["name"] in ("Sun", "Mars", "Saturn", "Rahu", "Ketu"):
@@ -178,7 +177,7 @@ def positioned_planets(date_str, time_str="09:15", tz_name="Asia/Kolkata"):
     y, m, d = (int(x) for x in date_str.split("-"))
     hh, mm = (int(x) for x in time_str.split(":"))
     local = datetime.datetime(y, m, d, hh, mm, tzinfo=tz)
-    utc = local.astimezone(datetime.timezone.utc).replace(tzinfo=None)
+    utc = local.astimezone(datetime.UTC).replace(tzinfo=None)
     h = utc.hour + utc.minute / 60.0 + utc.second / 3600.0
     jul = swe.julday(utc.year, utc.month, utc.day, h)
 

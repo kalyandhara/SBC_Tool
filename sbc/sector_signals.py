@@ -14,10 +14,10 @@ A pair may appear under several themes when it moves different markets
 
 import datetime
 
+from .backtest import _julian_at_noon
 from .chakra import NAKSHATRA_CELL
 from .planets import positions
 from .prediction import compute_vedhas
-from .backtest import _julian_at_noon
 
 DISCLAIMER = ("Historical backtest stats 2021-08..2026-08; small samples on some pairs. "
               "Research aid only - not investment advice.")
@@ -272,7 +272,10 @@ SPAN_SCAN_BACK = 270
 SPAN_SCAN_FWD = 270
 
 
-def _active_pairs(date_str, _cache={}):
+_ACTIVE_PAIRS_CACHE: dict = {}
+
+
+def _active_pairs(date_str, _cache=_ACTIVE_PAIRS_CACHE):
     """Set of (source -> target) planet pairs whose vedha ray hits target's cell."""
     if date_str in _cache:
         return _cache[date_str]

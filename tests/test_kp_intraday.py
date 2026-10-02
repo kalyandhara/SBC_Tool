@@ -362,6 +362,7 @@ class TestKPDataQuality:
     def test_random_sample_file_is_flagged(self, tmp_path):
         import csv
         from datetime import date
+
         from sbc.kp_intraday import assess_kp_data, generate_sample_kp_csv
         path = tmp_path / "KP_Data_Dec2026.csv"
         generate_sample_kp_csv(path, date(2026, 12, 1), 3)

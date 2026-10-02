@@ -2,12 +2,15 @@
 
 import sys
 from pathlib import Path
+
 import pytest
 
 # Add project root to path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-import os, tempfile
+import os
+import tempfile
+
 # Keep test runs out of the real on-disk series cache.
 os.environ.setdefault("SBC_SERIES_CACHE_DB",
                       os.path.join(tempfile.gettempdir(), "sbc_test_series_cache.db"))

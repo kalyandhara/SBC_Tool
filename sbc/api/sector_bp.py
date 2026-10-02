@@ -1,7 +1,8 @@
 """Sector API blueprint."""
 
-from flask import Blueprint, jsonify, request
 import datetime
+
+from flask import Blueprint, jsonify, request
 
 sector_bp = Blueprint("sector", __name__, url_prefix="/api/sector")
 

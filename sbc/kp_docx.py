@@ -8,10 +8,9 @@ be shared exactly the way the hand-produced reports are.
 from __future__ import annotations
 
 import io
-from typing import Iterable
+from collections.abc import Iterable
 
 from docx import Document
-from docx.enum.text import WD_ALIGN_PARAGRAPH
 from docx.shared import Pt, RGBColor
 
 _GREY = RGBColor(0x55, 0x5B, 0x66)

@@ -6,6 +6,7 @@ Mapping is based on sidereal longitude.
 """
 from dataclasses import dataclass
 
+
 @dataclass
 class NavamsaResult:
     navamsa_sign: str

@@ -1,8 +1,6 @@
 """Integration tests for end-to-end workflows."""
 
-import pytest
 import json
-from app import app
 
 
 class TestFullPredictionWorkflow:

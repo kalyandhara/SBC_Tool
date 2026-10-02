@@ -1,9 +1,8 @@
 """OHLC cache + fallback for NIFTY/BANK NIFTY backtesting."""
-from pathlib import Path
-from datetime import datetime, timedelta, timezone
-import json
 import csv
 import random
+from datetime import UTC, datetime, timedelta
+from pathlib import Path
 
 DATA_DIR = Path("data/ohlc")
 DATA_DIR.mkdir(parents=True, exist_ok=True)
@@ -15,7 +14,7 @@ def ensure_week_cache(symbol: str = "NIFTY", days: int = 7):
     """Explicitly generate sample 3-min bars for the last `days` weekdays (CLI/test use)."""
     files = []
     for i in range(days):
-        d = datetime.now(timezone.utc).date() - timedelta(days=i+1)
+        d = datetime.now(UTC).date() - timedelta(days=i+1)
         # skip weekends
         # simple check
         if d.weekday() >= 5:
@@ -55,7 +54,7 @@ def load_week_ohlc(symbol: str = "NIFTY", days: int = 7):
     """
     data = []
     for i in range(days):
-        d = datetime.now(timezone.utc).date() - timedelta(days=i+1)
+        d = datetime.now(UTC).date() - timedelta(days=i+1)
         if d.weekday() >=5:
             continue
         fp = _file_path(symbol, datetime.combine(d, datetime.min.time()))

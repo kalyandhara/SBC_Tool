@@ -26,8 +26,7 @@ otherwise conservative defaults; override them through ``KP_LAYER_CONFIG``.
 from __future__ import annotations
 
 import datetime as _dt
-from dataclasses import dataclass, field
-from typing import Dict, List, Optional, Tuple
+from dataclasses import dataclass
 from zoneinfo import ZoneInfo
 
 import swisseph as swe
@@ -247,7 +246,7 @@ def describe_placement(planet: str, nav: Navamsa) -> str:
 
 def _jd(trading_day: _dt.date, t: _dt.time) -> float:
     local = _dt.datetime.combine(trading_day, t, tzinfo=IST)
-    u = local.astimezone(_dt.timezone.utc)
+    u = local.astimezone(_dt.UTC)
     return swe.julday(u.year, u.month, u.day, u.hour + u.minute / 60 + u.second / 3600)
 
 
@@ -259,7 +258,7 @@ def sidereal_ascendant(trading_day: _dt.date, t: _dt.time,
     return ascmc[0] % 360.0
 
 
-def planets_at(trading_day: _dt.date, t: _dt.time) -> Dict[str, dict]:
+def planets_at(trading_day: _dt.date, t: _dt.time) -> dict[str, dict]:
     pl, _ay, _sun, _moon, _tithi = positioned_planets(
         trading_day.isoformat(), t.strftime("%H:%M"), "Asia/Kolkata")
     return {p["name"]: p for p in pl}
@@ -285,15 +284,15 @@ def _bisect_change(trading_day, t0, t1, key, minutes=5):
 # Rule A-13: Rahu Moon-sub windows
 # ---------------------------------------------------------------------------
 
-def rahu_moon_sub_windows(day_rows: List[dict], close: str = "15:30") -> List[Tuple[str, str]]:
+def rahu_moon_sub_windows(day_rows: list[dict], close: str = "15:30") -> list[tuple[str, str]]:
     """Contiguous market-hour spans in which the Moon's sub-lord is Rahu."""
     moon = sorted(
         (r for r in day_rows if r.get("planet") == "Moon" and r.get("timestamp")),
         key=lambda r: r["timestamp"],
     )
-    windows: List[Tuple[str, str]] = []
+    windows: list[tuple[str, str]] = []
     start = None
-    for i, r in enumerate(moon):
+    for _i, r in enumerate(moon):
         hhmm = r["timestamp"][11:16]
         if r.get("sublord") == "Rahu":
             if start is None:
@@ -306,7 +305,7 @@ def rahu_moon_sub_windows(day_rows: List[dict], close: str = "15:30") -> List[Tu
     return windows
 
 
-def rahu_windows_text(windows: List[Tuple[str, str]]) -> str:
+def rahu_windows_text(windows: list[tuple[str, str]]) -> str:
     if not windows:
         return "Rahu Moon-sub windows (Rule A-13): none during market hours."
     spans = ", ".join(f"{a} to {b}" for a, b in windows)
@@ -321,7 +320,7 @@ def rahu_windows_text(windows: List[Tuple[str, str]]) -> str:
 
 @dataclass
 class NavamsaLayer:
-    placements: Dict[str, str]          # planet -> "Sign (dignity FLAGS)"
+    placements: dict[str, str]          # planet -> "Sign (dignity FLAGS)"
     moon_element: str                   # Fire/Earth/Air/Water
     n3_text: str
     n5_text: str
@@ -330,7 +329,7 @@ class NavamsaLayer:
     n6_adjust: float
     lagna_d9_sign: str
     moon_vargottama: bool
-    moon_navamsa_change: Optional[str]  # HH:MM if the Moon's navamsa changes in-session
+    moon_navamsa_change: str | None  # HH:MM if the Moon's navamsa changes in-session
 
 
 @dataclass
@@ -339,7 +338,7 @@ class NadiLayer:
     nadi: str
     multiplier: float
     character: str
-    transition: Optional[str]           # "HH:MM -> <nakshatra> (<nadi>)" or None
+    transition: str | None           # "HH:MM -> <nakshatra> (<nadi>)" or None
     text: str
 
 
@@ -351,7 +350,7 @@ def build_navamsa_layer(trading_day: _dt.date, opening_sublord: str, moon_star: 
     asc_nav = navamsa_of(asc_lon)
     lagna_lord = SIGN_LORD[asc_nav.d1_sign]
 
-    placements: Dict[str, str] = {}
+    placements: dict[str, str] = {}
     key = ["Moon"]
     if opening_sublord and opening_sublord not in key:
         key.append(opening_sublord)
@@ -460,7 +459,7 @@ _NAK_ORDER = [
 ]
 
 
-def _lord_of_nakshatra(nak: str) -> Optional[str]:
+def _lord_of_nakshatra(nak: str) -> str | None:
     if nak in _NAK_ORDER:
         return _NAK_LORDS[_NAK_ORDER.index(nak) % 9]
     # KP files sometimes carry the lord itself in the star column

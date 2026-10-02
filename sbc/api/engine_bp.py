@@ -199,7 +199,9 @@ def intraday_path():
 
     from sbc.kp_config import get_config, get_instrument_config
     from sbc.kp_intraday import (
-        EXPERIMENTAL_NOTICE, EXPERIMENTAL_VALIDATION, generate_kp_intraday_report,
+        EXPERIMENTAL_NOTICE,
+        EXPERIMENTAL_VALIDATION,
+        generate_kp_intraday_report,
     )
 
     kp_data_dir = Path(__file__).resolve().parents[2] / "data" / "kp"

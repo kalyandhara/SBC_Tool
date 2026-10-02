@@ -4,14 +4,10 @@ Combines lunar cycles (tithi, nakshatra, paksha), SBC vedha analysis,
 and planetary nakshatra confluence to generate sector bullish/bearish forecasts.
 """
 
-from .nakshatra import tithi_of, paksha_of, nakshatra_of, sign_of, moon_nature
-from .planets import positions, all_planets_with_natures
-from .cgsp_framework import angular_distance, get_planet
-from .prediction import sector_read, compute_vedhas, place_planets, sentiment_of
-from .chakra import GRID
+from .nakshatra import moon_nature, nakshatra_of, paksha_of, tithi_of
+from .prediction import compute_vedhas, sector_read, sentiment_of
 from .sector_keywords import (
     NAKSHATRA_SECTOR_KEYWORDS,
-    canonical_sector,
     canonical_sectors_for,
     classify,
     normalize_sectors,
@@ -74,7 +70,7 @@ TITHI_EFFECTS = {
     13: {"name": "Trayodashi", "bias": "BULLISH", "note": "Gains"},
     14: {"name": "Chaturdashi", "bias": "VOLATILE", "note": "Intensity"},
     15: {"name": "Purnima", "bias": "PEAK_BULLISH", "note": "Fullness, culmination"},
-    
+
     # Krishna Paksha (16-30)
     16: {"name": "Pratipada", "bias": "MILD_BEARISH", "note": "Decline begins"},
     17: {"name": "Dwitiya", "bias": "BEARISH", "note": "Decline"},
@@ -124,22 +120,22 @@ def get_lunar_cycle_analysis(sun_lon, moon_lon, planets):
     paksha = paksha_of(tithi)
     moon_nak = nakshatra_of(moon_lon)[0]
     sun_nak = nakshatra_of(sun_lon)[0]
-    
+
     # Tithi effect
     tithi_effect = TITHI_EFFECTS.get(tithi, {"bias": "NEUTRAL", "note": ""})
-    
+
     # Paksha bias
     paksha_info = PAKSHA_BIAS.get(paksha, {"bias": "NEUTRAL", "sectors": [], "strength": 1.0})
-    
+
     # Moon nakshatra sector influence
     moon_nak_sectors = NAKSHATRA_SECTOR_MAP.get(moon_nak, [])
-    
+
     # Sun nakshatra sector influence
     sun_nak_sectors = NAKSHATRA_SECTOR_MAP.get(sun_nak, [])
-    
+
     # Moon nature (shubha/ashubha)
     moon_nat = moon_nature(tithi)
-    
+
     return {
         "tithi": tithi,
         "tithi_name": tithi_effect.get("name", ""),
@@ -167,62 +163,49 @@ def get_planetary_nakshatra_confluence(planets):
     """Calculate planetary nakshatra confluence for sectors."""
     sector_scores = {}
     details = []
-    
+
     for p in planets:
         p_name = p["name"]
         p_nak = p["nakshatra"]
-        p_sign = p["sign"]
         p_weight = PLANET_NAKSHATRA_SECTOR_WEIGHT.get(p_name, {"weight": 1.0, "sectors": []})
-        
+
         # Nakshatra-based sectors
         nak_sectors = NAKSHATRA_SECTOR_MAP.get(p_nak, [])
-        
+
         # Planet's natural sectors
         planet_sectors = p_weight["sectors"]
-        
+
         # Combined weight
         base_weight = p_weight["weight"]
-        
+
         # Dignity multiplier (simplified)
         dignity_mult = 1.0
-        if p["sign"] in {"Aries", "Leo", "Sagittarius"} and p_name == "Sun":
+        if p["sign"] in {"Aries", "Leo", "Sagittarius"} and p_name == "Sun" or p["sign"] == "Taurus" and p_name == "Moon" or p["sign"] == "Capricorn" and p_name == "Mars" or p["sign"] == "Virgo" and p_name == "Mercury" or p["sign"] == "Cancer" and p_name == "Jupiter" or p["sign"] == "Pisces" and p_name == "Venus" or p["sign"] == "Libra" and p_name == "Saturn":
             dignity_mult = 1.5
-        elif p["sign"] == "Taurus" and p_name == "Moon":
-            dignity_mult = 1.5
-        elif p["sign"] == "Capricorn" and p_name == "Mars":
-            dignity_mult = 1.5
-        elif p["sign"] == "Virgo" and p_name == "Mercury":
-            dignity_mult = 1.5
-        elif p["sign"] == "Cancer" and p_name == "Jupiter":
-            dignity_mult = 1.5
-        elif p["sign"] == "Pisces" and p_name == "Venus":
-            dignity_mult = 1.5
-        elif p["sign"] == "Libra" and p_name == "Saturn":
-            dignity_mult = 1.5
-        
+
         # Retrograde bonus
         if p.get("retrograde", False):
             dignity_mult *= 1.5
-        
+
         # Combustion penalty
         sun_lon = next((p2["longitude"] for p2 in planets if p2["name"] == "Sun"), 0)
         if p_name != "Sun":
             dist = abs((p["longitude"] - sun_lon + 180) % 360 - 180)
             if dist < 15:
                 dignity_mult *= 0.5
-        
+
         total_weight = base_weight * dignity_mult
-        
+
         # Apply to nakshatra sectors
         for sector in nak_sectors:
             sector_scores[sector] = sector_scores.get(sector, 0) + total_weight
             details.append(f"{p_name} in {p_nak} -> {sector} (+{total_weight:.2f})")
-        
+
         # Apply to planet natural sectors
         for sector in planet_sectors:
             sector_scores[sector] = sector_scores.get(sector, 0) + total_weight * 0.8
             details.append(f"{p_name} natural -> {sector} (+{total_weight * 0.8:.2f})")
-    
+
     return {
         "sector_scores": sector_scores,
         "details": details,
@@ -234,10 +217,9 @@ def get_planetary_nakshatra_confluence(planets):
 def get_sbc_sector_vedha(planets):
     """Get SBC vedha analysis for sectors."""
     try:
-        grid = place_planets(GRID, planets)
         vedha_map, _ = compute_vedhas(planets, school="allthree")
         sector_projections = sector_read(vedha_map, planets)
-        
+
         # sector_read() scores each *rashi*; the forecast below looks sectors up
         # by *sector name*. Until this mapping existed the lookup never matched
         # and the SBC term of every lunar score was silently zero. Each rashi's
@@ -266,12 +248,12 @@ def get_sbc_sector_vedha(planets):
         for agg in sector_vedha.values():
             agg["net"] = round(agg["net"], 3)
             agg["verdict"] = sentiment_of(agg["net"])[0]
-        
+
         # Overall SBC bias
         total_net = sum(p["net"] for p in sector_projections)
         bullish_rashis = sum(1 for p in sector_projections if p["verdict"] in ["BULLISH", "STRONG_BULLISH"])
         bearish_rashis = sum(1 for p in sector_projections if p["verdict"] in ["BEARISH", "STRONG_BEARISH"])
-        
+
         return {
             "sector_vedha": sector_vedha,
             "rashi_vedha": rashi_vedha,
@@ -286,19 +268,18 @@ def get_sbc_sector_vedha(planets):
 
 def generate_lunar_sector_forecast(date_str, planets, tithi, sun, moon, current_prices=None):
     """Generate complete lunar cycle sector forecast."""
-    
+
     # 1. Lunar cycle analysis
     lunar = get_lunar_cycle_analysis(sun["longitude"], moon["longitude"], planets)
-    
+
     # 2. Planetary nakshatra confluence
     confluence = get_planetary_nakshatra_confluence(planets)
-    
+
     # 3. SBC sector vedha
     sbc = get_sbc_sector_vedha(planets)
-    
+
     # 3.5. Aspect analysis
-    from .cgsp_framework import get_planet, angular_distance
-    
+
     ASPECTS = {
         'conjunction': {'angle': 0, 'orb': 8, 'bias': 0, 'weight': 1.0, 'planet_dependent': True},
         'semisextile': {'angle': 30, 'orb': 3, 'bias': 0.3, 'weight': 0.5},
@@ -308,20 +289,14 @@ def generate_lunar_sector_forecast(date_str, planets, tithi, sun, moon, current_
         'trine': {'angle': 120, 'orb': 8, 'bias': 0.8, 'weight': 1.0},
         'opposition': {'angle': 180, 'orb': 8, 'bias': -0.8, 'weight': 1.3},
     }
-    
-    PLANET_PAIRS = [
-        ('Sun', 'Moon'), ('Sun', 'Mars'), ('Sun', 'Jupiter'), ('Sun', 'Saturn'),
-        ('Moon', 'Mars'), ('Moon', 'Jupiter'), ('Moon', 'Saturn'),
-        ('Mars', 'Jupiter'), ('Mars', 'Saturn'), ('Jupiter', 'Saturn'),
-        ('Mercury', 'Jupiter'), ('Mercury', 'Saturn'), ('Venus', 'Mars'), ('Venus', 'Jupiter'),
-    ]
-    
+
+
     def get_planet_by_name(planets, name):
         return next((p for p in planets if p['name'] == name), None)
-    
+
     def angular_distance(lon1, lon2):
         return abs((lon1 - lon2 + 180) % 360 - 180)
-    
+
     aspects = []
     for p1_name, p2_name in [('Sun', 'Moon'), ('Sun', 'Mars'), ('Sun', 'Jupiter'), ('Sun', 'Saturn'),
                               ('Moon', 'Mars'), ('Moon', 'Jupiter'), ('Moon', 'Saturn'),
@@ -334,13 +309,12 @@ def generate_lunar_sector_forecast(date_str, planets, tithi, sun, moon, current_
         for aspect_name, aspect_data in ASPECTS.items():
             target = aspect_data['angle']; orb = aspect_data['orb']
             if abs(dist - target) <= orb:
-                exactness = 1.0 - (abs(dist - target) / orb)
                 aspects.append({
                     'aspect': aspect_name, 'planet1': p1_name, 'planet2': p2_name,
                     'bias': aspect_data['bias'], 'weight': aspect_data['weight'],
                     'exactness': 1.0 - (abs(dist - target) / orb)
                 })
-    
+
     # Sector synthesis
     all_sectors = set()
     for data in [confluence, lunar]:
@@ -353,19 +327,19 @@ def generate_lunar_sector_forecast(date_str, planets, tithi, sun, moon, current_
                 all_sectors.update(data["paksha_sectors"])
             if "sector_scores" in data:
                 all_sectors.update(data["sector_scores"].keys())
-    
+
     # Add confluence top sectors
-    for sector, score in confluence.get("top_bullish", []):
+    for sector, _score in confluence.get("top_bullish", []):
         all_sectors.add(sector)
-    
+
     # Sector forecasts
     sector_forecasts = {}
-    
+
     for sector in all_sectors:
         score = 0
         signals = []
         risks = []
-        
+
         # Lunar influence
         if sector in lunar.get("moon_nak_sectors", []):
             score += 2
@@ -376,7 +350,7 @@ def generate_lunar_sector_forecast(date_str, planets, tithi, sun, moon, current_
         if sector in lunar.get("paksha_sectors", []):
             score += 1.5
             signals.append(f"{lunar['paksha']} Paksha favors {sector}")
-        
+
         # Tithi bias
         tithi_bias = lunar.get("tithi_bias", "NEUTRAL")
         if tithi_bias in ["BULLISH", "PEAK_BULLISH"]:
@@ -385,25 +359,25 @@ def generate_lunar_sector_forecast(date_str, planets, tithi, sun, moon, current_
         elif tithi_bias in ["BEARISH", "PEAK_BEARISH"]:
             score -= 1
             risks.append(f"Tithi {lunar['tithi']} ({lunar['tithi_name']}) is {tithi_bias}")
-        
+
         # Paksha bias
         if lunar["paksha_bias"] == "BULLISH":
             score += lunar["paksha_strength"]
         elif lunar["paksha_bias"] == "BEARISH":
             score -= lunar["paksha_strength"]
-        
+
         # Moon nature
         if lunar["moon_nature"] == "benefic":
             score += 0.5
         elif lunar["moon_nature"] == "malefic":
             score -= 0.5
-        
+
         # Confluence
         conf_score = confluence.get("sector_scores", {}).get(sector, 0)
         if conf_score > 0:
             score += min(conf_score, 3)
             signals.append(f"Planetary confluence: +{conf_score:.1f}")
-        
+
         # SBC Vedha
         sbc_data = sbc.get("sector_vedha", {}).get(sector, {})
         if sbc_data.get("net", 0) > 0:
@@ -412,17 +386,15 @@ def generate_lunar_sector_forecast(date_str, planets, tithi, sun, moon, current_
         elif sbc_data.get("net", 0) < 0:
             score -= min(abs(sbc_data["net"]), 2)
             risks.append(f"SBC Vedha bearish: net {sbc_data['net']:.1f}")
-        
+
         # Aspect influence
         aspect_score = 0
         for a in aspects:
-            if a["bias"] > 0:
+            if a["bias"] > 0 or a["bias"] < 0:
                 aspect_score += a["bias"] * a["weight"] * a["exactness"]
-            elif a["bias"] < 0:
-                aspect_score += a["bias"] * a["weight"] * a["exactness"]
-        
+
         score += aspect_score * 0.5
-        
+
         # Determine bias
         if score >= 3:
             bias = "STRONG_BULLISH"
@@ -438,7 +410,7 @@ def generate_lunar_sector_forecast(date_str, planets, tithi, sun, moon, current_
             bias = "MILD_BEARISH"
         else:
             bias = "NEUTRAL"
-        
+
         kind, _ = classify(sector)
         sector_forecasts[sector] = {
             "sector": sector,
@@ -451,14 +423,14 @@ def generate_lunar_sector_forecast(date_str, planets, tithi, sun, moon, current_
             "sbc_net": round(sbc_data.get("net", 0), 2) if sbc_data else 0,
             "aspect_score": round(aspect_score, 2),
         }
-    
+
     # Sort by score
     sorted_sectors = sorted(sector_forecasts.items(), key=lambda x: -x[1]["score"])
-    
+
     # Overall market bias
     total_score = sum(s["score"] for s in sector_forecasts.values())
     avg_score = total_score / len(sector_forecasts) if sector_forecasts else 0
-    
+
     if avg_score >= 1.5:
         overall_bias = "BULLISH"
     elif avg_score >= 0.5:
@@ -469,7 +441,7 @@ def generate_lunar_sector_forecast(date_str, planets, tithi, sun, moon, current_
         overall_bias = "MILD_BEARISH"
     else:
         overall_bias = "NEUTRAL"
-    
+
     # Key dates
     key_dates = []
     if lunar["is_purnima"]:
@@ -484,7 +456,7 @@ def generate_lunar_sector_forecast(date_str, planets, tithi, sun, moon, current_
         key_dates.append({"date": "Today", "event": "Chaturthi", "impact": "MEDIUM", "note": "Obstacles"})
     if lunar["is_chaturdashi"]:
         key_dates.append({"date": "Today", "event": "Chaturdashi", "impact": "HIGH", "note": "Intensity, volatility"})
-    
+
     # Tradeable sectors vs market themes. "sector_forecasts" still carries both
     # so existing consumers are unaffected; the split views are additive.
     tradeable = {k: v for k, v in sector_forecasts.items() if v["kind"] == "sector"}
@@ -527,15 +499,12 @@ def generate_infographic_card(forecast):
     bearish = [(s, d) for s, d in tradeable.items()
                if d["bias"] in ["BEARISH", "STRONG_BEARISH", "MILD_BEARISH"]]
     bearish = sorted(bearish, key=lambda x: x[1]["score"])[:3]
-    
+
     # Lunar info
     lunar = forecast["lunar"]
-    
+
     # Key aspects
-    key_aspects = []
-    from .cgsp_framework import get_planet, angular_distance
-    from .cgsp_framework import get_planet
-    
+
     # Build card data
     card = {
         "title": "🌙 LUNAR CYCLE SECTOR FORECAST",
@@ -546,7 +515,6 @@ def generate_infographic_card(forecast):
         "sun_nakshatra": forecast["lunar"]["sun_nakshatra"],
         "tithi": f"{forecast['lunar']['tithi']} - {forecast['lunar']['tithi_name']}",
         "paksha": forecast["lunar"]["paksha"],
-        "overall_bias": forecast["overall_bias"],
         "avg_score": forecast["avg_score"],
         "top_bullish": [{"sector": s, "score": round(d["score"], 1), "bias": d["bias"]}
                         for s, d in sorted(tradeable.items(), key=lambda x: -x[1]["score"])[:5]],
@@ -567,7 +535,6 @@ def generate_infographic_card(forecast):
             "bearish_rashis": forecast["sbc"].get("bearish_rashis", 0),
         },
         "confluence_top": forecast["confluence"].get("top_bullish", [])[:3],
-        "key_dates": forecast["key_dates"],
         "stats": {
             "bullish_sectors": forecast["bullish_sectors"],
             "bearish_sectors": forecast["bearish_sectors"],
@@ -575,7 +542,7 @@ def generate_infographic_card(forecast):
         },
         "disclaimer": "For research only. Not financial advice. Vedic astrology is probabilistic.",
     }
-    
+
     return card
 
 
@@ -619,7 +586,7 @@ def format_card_for_social_media(card):
     bias_emoji = {"BULLISH": "🟢", "MILD_BULLISH": "🟢", "STRONG_BULLISH": "🚀",
                   "BEARISH": "🔴", "MILD_BEARISH": "🔴", "STRONG_BEARISH": "📉",
                   "NEUTRAL": "⚪"}[card["overall_bias"]]
-    
+
     text = f"{bias_emoji} LUNAR SECTOR FORECAST - {card['date']}\n\n"
     text += f"🌙 {card['lunar_phase']} | Tithi: {card['tithi']}\n"
     text += f"🌙 Moon: {card['moon_nakshatra']} | ☀️ Sun: {card['sun_nakshatra']}\n\n"
@@ -631,5 +598,5 @@ def format_card_for_social_media(card):
     for i, s in enumerate(card["top_bearish"][:2], 1):
         text += f"  {i}. {s['sector']} ({s['bias']}) Score: {s['score']}\n"
     text += f"\n🌙 {card['lunar_phase']} | Moon: {card['moon_nakshatra']}\n"
-    text += f"\n#VedicAstrology #MarketForecast #LunarCycle #Trading"
+    text += "\n#VedicAstrology #MarketForecast #LunarCycle #Trading"
     return text

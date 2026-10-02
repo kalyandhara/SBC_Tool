@@ -21,8 +21,8 @@ def get_sector_signals(sector, date_str, time_str="09:15", tz_name="Asia/Kolkata
         dict with planets, vedha, verdict, and sector metadata.
     """
     planets, ayanamsa, sun, moon, tithi = positioned_planets(date_str, time_str, tz_name)
-    from .prediction import compute_vedhas, analyze
     from .nakshatra import sensitive_stars
+    from .prediction import analyze, compute_vedhas
 
     # Map sector to a representative anchor nakshatra
     sector_anchor = {

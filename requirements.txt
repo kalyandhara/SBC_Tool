@@ -1,37 +1,20 @@
 # SBC Tool - Vedic Market Timing Workstation
-# Core dependencies
+# Runtime dependencies. Ranges cover the versions the test suite runs on
+# (numpy 2.4, pandas 3.0, yfinance 1.6, timezonefinder 8.3 as of 2026-10).
+# Dev tools (pytest, ruff, mypy) live in pyproject.toml's [dev] extra.
 flask>=3.0.0,<4.0.0
 pyswisseph>=2.10.0,<3.0.0  # import name: swisseph
-pandas>=2.1.0,<3.0.0
-numpy>=1.26.0,<2.0.0
-yfinance>=0.2.40,<1.0.0
+pandas>=2.1.0,<4.0.0
+numpy>=1.26.0,<3.0.0
+yfinance>=0.2.40,<2.0.0
 requests>=2.31.0,<3.0.0
-
-# Database
-
-# Timezone handling
-timezonefinder>=6.4.0,<7.0.0
-
-# Data processing
+timezonefinder>=6.4.0,<9.0.0
 python-dateutil>=2.8.2,<3.0.0
 
-# Optional: for production deployment
-gunicorn>=21.2.0,<22.0.0
+# Kota workbook import, KP report DOCX export, native charts
+openpyxl>=3.1.0,<4.0.0
+python-docx>=1.1.0,<2.0.0
+matplotlib>=3.8.0,<4.0.0
 
-# Development & Testing
-pytest>=7.4.0,<8.0.0
-pytest-cov>=4.1.0,<5.0.0
-pytest-mock>=3.12.0,<4.0.0
-black>=23.0.0,<24.0.0
-ruff>=0.1.0,<1.0.0
-mypy>=1.6.0,<2.0.0
-types-requests>=2.31.0
-types-pyyaml>=6.0.0
-
-# Linting & Type checking
-flake8>=6.1.0,<7.0.0
-isort>=5.12.0,<6.0.0
-
-# Documentation
-sphinx>=7.2.0,<8.0.0
-sphinx-rtd-theme>=1.3.0,<2.0.0
+# Production server (Dockerfile)
+gunicorn>=21.2.0,<24.0.0

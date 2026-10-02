@@ -5,17 +5,14 @@ for financial-chart-style visualization.
 """
 
 import datetime
-from dataclasses import dataclass, field
-from typing import Literal, Optional
+from dataclasses import dataclass
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 import swisseph as swe
 
-from .nakshatra import nakshatra_of, sign_of, tithi_of, NAKSHATRAS_27
 from .market_calendar import NAKSHATRA_LORDS
-from .planets import positions, NATURAL_NATURE, SYMBOLS, COMBUST_ORB, EXALT, DEBIL
-from .chakra import GRID
-
+from .nakshatra import NAKSHATRAS_27, nakshatra_of, sign_of
+from .planets import COMBUST_ORB, DEBIL, EXALT, NATURAL_NATURE
 
 # =============================================================================
 # CONFIGURATION
@@ -94,10 +91,10 @@ class AstroEvent:
     datetime: str
     type: str  # "ingress", "retrograde_start", "retrograde_end", "station", "combustion_start", "combustion_end", "nakshatra_change", "eclipse", "aspect_exact", "tithi_change"
     planet: str
-    secondary_planet: Optional[str] = None
+    secondary_planet: str | None = None
     description: str = ""
     severity: str = "moderate"  # "mild", "moderate", "strong", "extreme"
-    value: Optional[float] = None  # e.g., aspect angle, combustion orb
+    value: float | None = None  # e.g., aspect angle, combustion orb
 
 
 @dataclass
@@ -150,7 +147,7 @@ def _get_planet_positions(julian_day: float) -> list[dict]:
     """Get all planet positions for a Julian day."""
     flags = swe.FLG_MOSEPH | swe.FLG_SIDEREAL | swe.FLG_SPEED
     swe.set_sid_mode(swe.SIDM_LAHIRI)
-    
+
     out = []
     rahu = None
     for body, name in [
@@ -164,12 +161,12 @@ def _get_planet_positions(julian_day: float) -> list[dict]:
         out.append({"name": name, "longitude": lon, "speed": speed})
         if name == "Rahu":
             rahu = out[-1]
-    
+
     # Add Ketu
     if rahu:
         ketu_lon = (rahu["longitude"] + 180.0) % 360.0
         out.append({"name": "Ketu", "longitude": ketu_lon, "speed": rahu["speed"]})
-    
+
     return out
 
 
@@ -234,19 +231,19 @@ def _calculate_strength(planet: dict, dignity: str, retrograde: bool, combust: b
         base = -2.0
     elif dignity == "own":
         base = 1.0
-    
+
     if retrograde:
         base *= 1.5  # Retrograde amplifies
     if combust:
         base *= 0.5  # Combustion weakens
-    
+
     # Nature modifier
     nature = NATURAL_NATURE.get(planet["name"], "neutral")
     if nature == "benefic":
         base = abs(base)
     elif nature == "malefic":
         base = -abs(base)
-    
+
     return max(-3.0, min(3.0, base))
 
 
@@ -262,16 +259,16 @@ def _detect_events(
 ) -> list[AstroEvent]:
     """Detect events between two time points."""
     events = []
-    
+
     for planet_name in PLANETS_ORDER:
         if planet_name not in curr_points:
             continue
         curr = curr_points[planet_name]
         prev = prev_points.get(planet_name)
-        
+
         if prev is None:
             continue
-        
+
         # Retrograde start/end
         if prev.retrograde != curr.retrograde:
             if curr.retrograde:
@@ -288,7 +285,7 @@ def _detect_events(
                     description=f"{planet_name} turns direct at {curr.sign} {curr.degree:.1f}°",
                     severity="strong",
                 ))
-        
+
         # Stationary (speed near 0)
         if abs(curr.speed) < 0.01 and abs(prev.speed) > 0.01:
             events.append(AstroEvent(
@@ -297,7 +294,7 @@ def _detect_events(
                 description=f"{planet_name} stationary at {curr.sign} {curr.degree:.1f}°",
                 severity="extreme",
             ))
-        
+
         # Sign ingress
         if prev.sign_index != curr.sign_index:
             events.append(AstroEvent(
@@ -306,7 +303,7 @@ def _detect_events(
                 description=f"{planet_name} enters {curr.sign} from {prev.sign}",
                 severity="moderate",
             ))
-        
+
         # Nakshatra change
         if prev.nakshatra != curr.nakshatra:
             events.append(AstroEvent(
@@ -315,7 +312,7 @@ def _detect_events(
                 description=f"{planet_name} enters {curr.nakshatra} (pada {curr.pada}) from {prev.nakshatra}",
                 severity="mild",
             ))
-        
+
         # Combustion start/end
         if prev.combust != curr.combust:
             if curr.combust:
@@ -332,7 +329,7 @@ def _detect_events(
                     description=f"{planet_name} emerges from combustion",
                     severity="moderate",
                 ))
-    
+
     return events
 
 
@@ -344,32 +341,32 @@ def _detect_aspects(
 ) -> list[AstroEvent]:
     """Detect exact aspects between planets."""
     events = []
-    
+
     for i, p1_name in enumerate(PLANETS_ORDER):
         if p1_name not in curr_points:
             continue
         for p2_name in PLANETS_ORDER[i+1:]:
             if p2_name not in curr_points:
                 continue
-            
+
             p1_curr = curr_points[p1_name]
             p2_curr = curr_points[p2_name]
             p1_prev = prev_points.get(p1_name)
             p2_prev = prev_points.get(p2_name)
-            
+
             if not p1_prev or not p2_prev:
                 continue
-            
+
             angle_curr = abs((p1_curr.longitude - p2_curr.longitude + 180) % 360 - 180)
             angle_prev = abs((p1_prev.longitude - p2_prev.longitude + 180) % 360 - 180)
-            
+
             for aspect_name, aspect_angle in ASPECT_ANGLES.items():
                 orb = ASPECT_ORBS[aspect_name]
-                
+
                 # Check if exact aspect formed (orb crossed threshold)
                 curr_orb = abs(angle_curr - aspect_angle)
                 prev_orb = abs(angle_prev - aspect_angle)
-                
+
                 if curr_orb <= orb and prev_orb > orb:
                     # Aspect became exact
                     applying = curr_orb < prev_orb
@@ -380,7 +377,7 @@ def _detect_aspects(
                         severity="moderate" if aspect_name in ("conjunction", "opposition") else "mild",
                         value=angle_curr,
                     ))
-    
+
     return events
 
 
@@ -389,31 +386,30 @@ def _build_aspect_timelines(
 ) -> list[AspectTimeline]:
     """Build continuous aspect timelines from planet tracks."""
     # Get all dates
-    dates = planet_tracks[PLANETS_ORDER[0]]
     aspect_timelines = []
-    
+
     for i, p1_name in enumerate(PLANETS_ORDER):
         if p1_name not in planet_tracks:
             continue
         for p2_name in PLANETS_ORDER[i+1:]:
             if p2_name not in planet_tracks:
                 continue
-            
+
             track1 = planet_tracks[p1_name]
             track2 = planet_tracks[p2_name]
-            
+
             for aspect_name, aspect_angle in ASPECT_ANGLES.items():
                 orb = ASPECT_ORBS[aspect_name]
-                
+
                 active_start = None
                 exact_date = None
                 exact_orb = 999
                 applying_phase = True
-                
+
                 for pt1, pt2 in zip(track1, track2):
                     angle = abs((pt1.longitude - pt2.longitude + 180) % 360 - 180)
                     curr_orb = abs(angle - aspect_angle)
-                    
+
                     if curr_orb <= orb:
                         if active_start is None:
                             active_start = pt1.date
@@ -443,7 +439,7 @@ def _build_aspect_timelines(
                             ))
                             active_start = None
                             exact_orb = 999
-                
+
                 # Close if still active at end
                 if active_start is not None:
                     aspect_timelines.append(AspectTimeline(
@@ -458,26 +454,26 @@ def _build_aspect_timelines(
                         orb_at_exact=exact_orb,
                         orb_at_end=abs((track1[-1].longitude - track2[-1].longitude + 180) % 360 - 180 - aspect_angle),
                     ))
-    
+
     return aspect_timelines
 
 
 def _detect_eclipses(planet_tracks: dict[str, list[PlanetPoint]]) -> list[dict]:
     """Detect solar/lunar eclipses."""
     eclipses = []
-    
+
     if "Sun" not in planet_tracks or "Moon" not in planet_tracks:
         return eclipses
-    
+
     sun_track = planet_tracks["Sun"]
     moon_track = planet_tracks["Moon"]
     rahu_track = planet_tracks.get("Rahu", [])
     ketu_track = planet_tracks.get("Ketu", [])
-    
+
     # Build lookup for nodes
     rahu_lons = {pt.date: pt.longitude for pt in rahu_track}
     ketu_lons = {pt.date: pt.longitude for pt in ketu_track}
-    
+
     for sun_pt, moon_pt in zip(sun_track, moon_track):
         # Solar eclipse: Sun-Moon conjunction near node
         sun_moon_angle = abs((sun_pt.longitude - moon_pt.longitude + 180) % 360 - 180)
@@ -486,7 +482,7 @@ def _detect_eclipses(planet_tracks: dict[str, list[PlanetPoint]]) -> list[dict]:
             ketu_lon = ketu_lons.get(sun_pt.date, 0)
             sun_rahu = abs((sun_pt.longitude - rahu_lon + 180) % 360 - 180)
             sun_ketu = abs((sun_pt.longitude - ketu_lon + 180) % 360 - 180)
-            
+
             if sun_rahu < 15 or sun_ketu < 15:
                 eclipses.append({
                     "date": sun_pt.date,
@@ -494,14 +490,14 @@ def _detect_eclipses(planet_tracks: dict[str, list[PlanetPoint]]) -> list[dict]:
                     "description": f"Solar eclipse: Sun-Moon {sun_moon_angle:.1f}°, node distance {min(sun_rahu, sun_ketu):.1f}°",
                     "severity": "extreme" if min(sun_rahu, sun_ketu) < 5 else "strong",
                 })
-        
+
         # Lunar eclipse: Sun-Moon opposition near node
         if sun_moon_angle > 162:  # Full Moon
             rahu_lon = rahu_lons.get(sun_pt.date, 0)
             ketu_lon = ketu_lons.get(sun_pt.date, 0)
             sun_rahu = abs((sun_pt.longitude - rahu_lon + 180) % 360 - 180)
             sun_ketu = abs((sun_pt.longitude - ketu_lon + 180) % 360 - 180)
-            
+
             if sun_rahu < 15 or sun_ketu < 15:
                 eclipses.append({
                     "date": sun_pt.date,
@@ -509,7 +505,7 @@ def _detect_eclipses(planet_tracks: dict[str, list[PlanetPoint]]) -> list[dict]:
                     "description": f"Lunar eclipse: Sun-Moon {sun_moon_angle:.1f}°, node distance {min(sun_rahu, sun_ketu):.1f}°",
                     "severity": "extreme" if min(sun_rahu, sun_ketu) < 5 else "strong",
                 })
-    
+
     return eclipses
 
 
@@ -527,21 +523,21 @@ def generate_astro_plot(
     house_system: str = "whole_sign",
 ) -> AstroPlotData:
     """Generate complete astrological plot data for a date window."""
-    
+
     if center_date is None:
         center_date = datetime.date.today().isoformat()
-    
+
     center = datetime.date.fromisoformat(center_date)
     half_window = window_days // 2
     start_date = center - datetime.timedelta(days=half_window)
     end_date = center + datetime.timedelta(days=half_window)
-    
+
     # Timezone handling
     try:
         tz = ZoneInfo(timezone)
     except ZoneInfoNotFoundError:
         tz = ZoneInfo(DEFAULT_TZ)
-    
+
     # Generate time points
     time_points = []
     if resolution == "daily":
@@ -559,24 +555,24 @@ def generate_astro_plot(
             current += datetime.timedelta(hours=1)
     else:
         raise ValueError("Resolution must be 'daily' or 'hourly'")
-    
+
     # Calculate all planet positions
     planet_tracks = {p: [] for p in PLANETS_ORDER}
     all_events = []
     prev_points = {}
-    
+
     for date_str, datetime_str, dt in time_points:
-        jul = _julian_day(dt.astimezone(datetime.timezone.utc).replace(tzinfo=None))
-        
+        jul = _julian_day(dt.astimezone(datetime.UTC).replace(tzinfo=None))
+
         # Planet positions
         raw_planets = _get_planet_positions(jul)
-        
+
         # Houses
         cusps = _calculate_houses(jul, latitude, longitude, HOUSE_SYSTEMS.get(house_system, "W"))
-        
+
         # Sun longitude for combustion
         sun_lon = next(p["longitude"] for p in raw_planets if p["name"] == "Sun")
-        
+
         # Build current points
         curr_points = {}
         for rp in raw_planets:
@@ -593,7 +589,7 @@ def generate_astro_plot(
             dignity = _get_dignity(name, sign_idx)
             nature = NATURAL_NATURE.get(name, "neutral")
             strength = _calculate_strength(rp, dignity, retrograde, combust, comb_orb)
-            
+
             point = PlanetPoint(
                 date=date_str,
                 datetime=datetime_str,
@@ -616,17 +612,17 @@ def generate_astro_plot(
             )
             curr_points[name] = point
             planet_tracks[name].append(point)
-        
+
         # Detect events
         if prev_points:
             all_events.extend(_detect_events(prev_points, curr_points, date_str, datetime_str))
             all_events.extend(_detect_aspects(prev_points, curr_points, date_str, datetime_str))
-        
+
         prev_points = curr_points
-    
+
     # Build aspect timelines
     aspects = _build_aspect_timelines(planet_tracks)
-    
+
     # Detect eclipses
     eclipses = _detect_eclipses(planet_tracks)
     for eclipse in eclipses:
@@ -639,7 +635,7 @@ def generate_astro_plot(
             description=eclipse["description"],
             severity=eclipse["severity"],
         ))
-    
+
     # Build nakshatra bands (for background shading)
     nakshatra_bands = []
     for i, nak in enumerate(NAKSHATRAS_27):
@@ -660,11 +656,11 @@ def generate_astro_plot(
             "color": lord_colors.get(lord, "#888888"),
             "index": i,
         })
-    
+
     # Build house bands (for background)
     # Use center date houses
     center_jul = _julian_day(
-        datetime.datetime.combine(center, datetime.time(9, 15), tzinfo=tz).astimezone(datetime.timezone.utc).replace(tzinfo=None)
+        datetime.datetime.combine(center, datetime.time(9, 15), tzinfo=tz).astimezone(datetime.UTC).replace(tzinfo=None)
     )
     center_cusps = _calculate_houses(center_jul, latitude, longitude, HOUSE_SYSTEMS.get(house_system, "W"))
     house_bands = []
@@ -678,7 +674,7 @@ def generate_astro_plot(
             "start_deg": cusp_start,
             "end_deg": cusp_end,
         })
-    
+
     # Build combustion zones
     combustion_zones = []
     for planet_name in PLANETS_ORDER:
@@ -704,7 +700,7 @@ def generate_astro_plot(
                 "end_date": track[-1].date,
                 "max_orb": max(p.combustion_orb for p in track if p.date >= zone_start),
             })
-    
+
     # Build retrograde periods
     retrograde_periods = []
     for planet_name in PLANETS_ORDER:
@@ -732,7 +728,7 @@ def generate_astro_plot(
                 "start_deg": next(p.degree for p in track if p.date == period_start),
                 "end_deg": track[-1].degree,
             })
-    
+
     return AstroPlotData(
         center_date=center_date,
         start_date=start_date.isoformat(),
@@ -841,7 +837,7 @@ if __name__ == "__main__":
     print(f"Eclipses: {len(serialized['eclipses'])}")
     print(f"Combustion zones: {len(serialized['combustion_zones'])}")
     print(f"Retrograde periods: {len(serialized['retrograde_periods'])}")
-    
+
     # Show sample events
     for e in serialized['events'][:10]:
         print(f"  {e['date']} {e['type']}: {e['description']} [{e['severity']}]")

@@ -104,7 +104,7 @@ def analyze_sector_confluence(sector_read, planet_sector_read):
                 "nature": p_data["nature"],
             })
 
-    for sector, data in sector_scores.items():
+    for data in sector_scores.values():
         rashi_net = sum(h["net"] for h in data["rashi_hits"])
         planet_net = sum(h["strength"] for h in data["planet_hits"])
         combined = round(rashi_net + planet_net, 3)
@@ -153,7 +153,7 @@ def analyze_reversal_window_confluence(windows, active_only=True):
         elif signal == "BEARISH":
             total_bearish += abs(weight)
 
-    for sector, data in sector_scores.items():
+    for data in sector_scores.values():
         data["signal"] = score_to_signal(data["net"])
 
     overall_signal = "BULLISH" if total_bullish > total_bearish else ("BEARISH" if total_bearish > total_bullish else "NEUTRAL")
@@ -204,7 +204,7 @@ def analyze_transit_confluence(transits):
         elif signal == "BEARISH":
             total_bearish += abs(weight)
 
-    for sector, data in sector_scores.items():
+    for data in sector_scores.values():
         data["signal"] = score_to_signal(data["net"])
 
     overall_signal = "BULLISH" if total_bullish > total_bearish else ("BEARISH" if total_bearish > total_bullish else "NEUTRAL")
@@ -366,7 +366,7 @@ def blend_forecast_scores(components, weights):
 def combine_confluence(*analyses):
     """Combine multiple confluence analyses into unified sector scores."""
     all_sectors = set()
-    for name, analysis in analyses:
+    for _name, analysis in analyses:
         all_sectors.update(analysis.get("sectors", {}).keys())
 
     combined = {}
@@ -393,7 +393,6 @@ def _agreement_score(signals):
         return 0.0
     bullish = signals.count("BULLISH")
     bearish = signals.count("BEARISH")
-    neutral = signals.count("NEUTRAL")
     total = len(signals)
     if bullish == total or bearish == total:
         return 1.0
@@ -437,7 +436,7 @@ def build_confluence_report(
             vedha_sector_map.setdefault(sector, {"net": 0.0, "signal": "NEUTRAL", "points": []})
             vedha_sector_map[sector]["net"] += data["net"]
             vedha_sector_map[sector]["points"].append(point)
-    for sector, data in vedha_sector_map.items():
+    for data in vedha_sector_map.values():
         data["signal"] = score_to_signal(data["net"])
 
     combined = combine_confluence(

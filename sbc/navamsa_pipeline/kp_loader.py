@@ -1,9 +1,10 @@
 """
 Load KP precomputed CSV data for a given date range.
 """
-from pathlib import Path
 import csv
-from datetime import datetime, date
+from datetime import datetime
+from pathlib import Path
+
 import pytz
 
 IST = pytz.timezone("Asia/Kolkata")

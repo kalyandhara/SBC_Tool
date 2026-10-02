@@ -3,15 +3,17 @@ Transit Vedha Matrix - SBC Sector-Specific Transit Triggers
 Maps specific planetary transits in key nakshatras to sectoral market impacts.
 """
 
-from typing import List, Dict, Any
+import datetime
 from dataclasses import dataclass
 from enum import Enum
-from sbc.planets import positions, all_planets_with_natures
-from sbc.nakshatra import nakshatra_of, sign_of, tithi_of
-from sbc.prediction import compute_vedhas
-import swisseph as swe
-import datetime
+from typing import Any
 from zoneinfo import ZoneInfo
+
+import swisseph as swe
+
+from sbc.nakshatra import tithi_of
+from sbc.planets import all_planets_with_natures, positions
+from sbc.prediction import compute_vedhas
 
 
 class TransitVedhaType(Enum):
@@ -35,11 +37,11 @@ class TransitVedhaSignal:
     key_nakshatra: str
     directional_vedha_target: str
     primary_market_impact: str
-    affected_sectors: List[str]
+    affected_sectors: list[str]
     intensity: str
     confidence: float
     duration_estimate: str
-    details: Dict[str, Any]
+    details: dict[str, Any]
 
 
 # Sector mappings for each vedha type
@@ -151,7 +153,7 @@ INTENSITY_DEFAULTS = {
 
 def _julian_at_noon(date: datetime.date) -> float:
     local = datetime.datetime.combine(date, datetime.time(12, 0), tzinfo=ZoneInfo('Asia/Kolkata'))
-    utc = local.astimezone(datetime.timezone.utc)
+    utc = local.astimezone(datetime.UTC)
     return swe.julday(utc.year, utc.month, utc.day, utc.hour + utc.minute/60.0)
 
 
@@ -165,28 +167,28 @@ def _get_planets(date: datetime.date):
     return planets, tithi, ayanamsa
 
 
-def scan_transit_vedha_matrix(date: datetime.date = None) -> Dict[str, Any]:
+def scan_transit_vedha_matrix(date: datetime.date = None) -> dict[str, Any]:
     """
     Scan all Transit Vedha Matrix signals for a given date.
     """
     if date is None:
         date = datetime.date.today()
-    
+
     planets, tithi, ayanamsa = _get_planets(date)
     vedha_map = compute_vedhas(planets, school="classical")[0]
-    
+
     all_signals = []
-    
+
     # Exact matches
     for vedha_type, triggers in TRIGGER_CONDITIONS.items():
         for planet_name, nakshatra in triggers:
             planet = next((p for p in planets if p["name"] == planet_name), None)
             if not planet:
                 continue
-            
+
             if planet["nakshatra"] == nakshatra:
                 vedha_hits = vedha_map.get(planet_name, [])
-                
+
                 signal = TransitVedhaSignal(
                     vedha_type=vedha_type,
                     title=f"{planet_name} in {nakshatra} ({planet['sign']} {planet['degree']:.2f}°)",
@@ -210,20 +212,20 @@ def scan_transit_vedha_matrix(date: datetime.date = None) -> Dict[str, Any]:
                     }
                 )
                 all_signals.append(signal)
-    
+
     # Approaching matches (adjacent nakshatras)
     for vedha_type, approach_nakshatras in APPROACHING_TRIGGERS.items():
-        for planet_name in set(t[0] for t in TRIGGER_CONDITIONS.get(vedha_type, [])):
+        for planet_name in {t[0] for t in TRIGGER_CONDITIONS.get(vedha_type, [])}:
             planet = next((p for p in planets if p["name"] == planet_name), None)
             if not planet:
                 continue
-            
+
             if planet["nakshatra"] in approach_nakshatras:
                 # Find which trigger nakshatra this is approaching
                 target_nakshatra = next((t[1] for t in TRIGGER_CONDITIONS.get(vedha_type, []) if t[0] == planet_name), None)
-                
+
                 vedha_hits = vedha_map.get(planet_name, [])
-                
+
                 signal = TransitVedhaSignal(
                     vedha_type=vedha_type,
                     title=f"{planet_name} in {planet['nakshatra']} ({planet['sign']} {planet['degree']:.2f} deg) approaching {target_nakshatra}",
@@ -234,7 +236,7 @@ def scan_transit_vedha_matrix(date: datetime.date = None) -> Dict[str, Any]:
                     affected_sectors=VEDHA_SECTOR_MAP[vedha_type],
                     intensity=INTENSITY_DEFAULTS[vedha_type],
                     confidence=0.65,  # Lower confidence for approaching
-                    duration_estimate="Approaching: {0} to {1} (1-2 weeks)".format(planet['nakshatra'], target_nakshatra),
+                    duration_estimate="Approaching: {} to {} (1-2 weeks)".format(planet['nakshatra'], target_nakshatra),
                     details={
                         "planet": planet_name,
                         "current_nakshatra": planet["nakshatra"],
@@ -248,11 +250,11 @@ def scan_transit_vedha_matrix(date: datetime.date = None) -> Dict[str, Any]:
                     }
                 )
                 all_signals.append(signal)
-    
+
     # Sort by intensity
     intensity_order = {"EXTREME": 4, "HIGH": 3, "MODERATE-HIGH": 2, "MODERATE": 1, "LOW": 0}
     all_signals.sort(key=lambda s: intensity_order.get(s.intensity, 0), reverse=True)
-    
+
     # Group by sector impact
     sector_signals = {}
     for s in all_signals:
@@ -260,7 +262,7 @@ def scan_transit_vedha_matrix(date: datetime.date = None) -> Dict[str, Any]:
             if sector not in sector_signals:
                 sector_signals[sector] = []
             sector_signals[sector].append(s)
-    
+
     return {
         "date": date.isoformat(),
         "ayanamsa": round(ayanamsa, 4),
@@ -303,29 +305,29 @@ def scan_transit_vedha_matrix(date: datetime.date = None) -> Dict[str, Any]:
     }
 
 
-def scan_transit_vedha_week(start_date: datetime.date = None) -> Dict[str, Any]:
+def scan_transit_vedha_week(start_date: datetime.date = None) -> dict[str, Any]:
     """Scan transit vedha matrix for full week (7 days)."""
     if start_date is None:
         start_date = datetime.date.today()
-    
+
     monday = start_date - datetime.timedelta(days=start_date.weekday())
-    
+
     daily_scans = []
     all_signals = []
-    
+
     for day_offset in range(7):
         day = monday + datetime.timedelta(days=day_offset)
         scan = scan_transit_vedha_matrix(day)
         daily_scans.append(scan)
         all_signals.extend(scan["signals"])
-    
+
     # Deduplicate by vedha_type + planet + nakshatra
     unique_signals = {}
     for s in all_signals:
         key = f"{s['vedha_type']}_{s['details']['planet']}_{s['key_nakshatra']}"
         if key not in unique_signals:
             unique_signals[key] = s
-    
+
     # Weekly sector summary
     sector_summary = {}
     for s in unique_signals.values():
@@ -338,7 +340,7 @@ def scan_transit_vedha_week(start_date: datetime.date = None) -> Dict[str, Any]:
             intensity_order = {"EXTREME": 4, "HIGH": 3, "MODERATE-HIGH": 2, "MODERATE": 1, "LOW": 0}
             if intensity_order.get(s["intensity"], 0) > intensity_order.get(sector_summary[sector]["max_intensity"], 0):
                 sector_summary[sector]["max_intensity"] = s["intensity"]
-    
+
     return {
         "week_start": monday.isoformat(),
         "week_end": (monday + datetime.timedelta(days=6)).isoformat(),
@@ -354,36 +356,36 @@ def scan_transit_vedha_week(start_date: datetime.date = None) -> Dict[str, Any]:
     }
 
 
-def format_transit_vedha_for_ui(scan_result: Dict) -> str:
+def format_transit_vedha_for_ui(scan_result: dict) -> str:
     """Format transit vedha scan for UI display."""
     lines = []
     lines.append("=" * 70)
     lines.append("TRANSIT VEDHA MATRIX - SECTOR TRIGGERS")
-    lines.append("Date: {0} | Ayanamsa: {1}°".format(scan_result['date'], scan_result['ayanamsa']))
+    lines.append("Date: {} | Ayanamsa: {}°".format(scan_result['date'], scan_result['ayanamsa']))
     lines.append("=" * 70)
-    
+
     if not scan_result["signals"]:
         lines.append("\nNo active transit vedha signals detected.")
         return "\n".join(lines)
-    
-    lines.append("\nACTIVE TRANSIT VEDHA SIGNALS ({0}):".format(len(scan_result['signals'])))
+
+    lines.append("\nACTIVE TRANSIT VEDHA SIGNALS ({}):".format(len(scan_result['signals'])))
     lines.append("-" * 70)
-    
+
     for i, s in enumerate(scan_result["signals"], 1):
         intensity_marker = {"EXTREME": "[!!!]", "HIGH": "[!!]", "MODERATE-HIGH": "[!]", "MODERATE": "[+]"}.get(s["intensity"], "[ ]")
-        
-        lines.append("\n{0}. {1} {1}".format(i, intensity_marker))
-        lines.append("   Title: {0}".format(s['title']))
-        lines.append("   Type: {0}".format(s['vedha_type'].replace('_', ' ').title()))
-        lines.append("   Intensity: {0} | Confidence: {1:.0%}".format(s['intensity'], s['confidence']))
-        lines.append("   Nakshatra: {0}".format(s['key_nakshatra']))
-        lines.append("   Vedha Mechanism: {0}".format(s['directional_vedha_target']))
-        lines.append("   Market Impact: {0}".format(s['primary_market_impact']))
-        lines.append("   Affected Sectors: {0}".format(', '.join(s['affected_sectors'])))
-        lines.append("   Duration: {0}".format(s['duration_estimate']))
+
+        lines.append(f"\n{i}. {intensity_marker} {intensity_marker}")
+        lines.append("   Title: {}".format(s['title']))
+        lines.append("   Type: {}".format(s['vedha_type'].replace('_', ' ').title()))
+        lines.append("   Intensity: {} | Confidence: {:.0%}".format(s['intensity'], s['confidence']))
+        lines.append("   Nakshatra: {}".format(s['key_nakshatra']))
+        lines.append("   Vedha Mechanism: {}".format(s['directional_vedha_target']))
+        lines.append("   Market Impact: {}".format(s['primary_market_impact']))
+        lines.append("   Affected Sectors: {}".format(', '.join(s['affected_sectors'])))
+        lines.append("   Duration: {}".format(s['duration_estimate']))
         if 'match_type' in s.get('details', {}):
-            lines.append("   Match: {0}".format(s['details']['match_type']))
-    
+            lines.append("   Match: {}".format(s['details']['match_type']))
+
     # By sector
     lines.append("\n" + "-" * 70)
     lines.append("BY SECTOR:")
@@ -391,16 +393,16 @@ def format_transit_vedha_for_ui(scan_result: Dict) -> str:
     for sector, signals in scan_result["by_sector"].items():
         if signals:
             max_int = max(s["intensity"] for s in signals)
-            lines.append("  {0}: {1} signal(s), max {2}".format(sector, len(signals), max_int))
+            lines.append(f"  {sector}: {len(signals)} signal(s), max {max_int}")
             for s in signals:
-                lines.append("    - {0} ({1})".format(s['title'], s['intensity']))
-    
+                lines.append("    - {} ({})".format(s['title'], s['intensity']))
+
     lines.append("\n" + "=" * 70)
     lines.append("MATRIX REFERENCE:")
     for k, v in scan_result["matrix_reference"].items():
-        lines.append("  {0}: {1}".format(k, v))
+        lines.append(f"  {k}: {v}")
     lines.append("=" * 70)
-    
+
     return "\n".join(lines)
 
 

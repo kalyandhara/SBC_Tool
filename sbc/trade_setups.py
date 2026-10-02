@@ -13,7 +13,6 @@ Each setup defines:
 from dataclasses import dataclass
 from typing import Literal
 
-
 Direction = Literal["LONG", "SHORT"]
 
 
@@ -248,8 +247,6 @@ def setups_for_confluence(confluence: dict) -> list[TradeSetup]:
     net = confluence.get("overall", {}).get("net", 0)
     highlights = confluence.get("highlights", {})
     bullish_sectors = highlights.get("bullish_confluence_sectors", [])
-    bearish_sectors = highlights.get("bearish_confluence_sectors", [])
-    conflicted = highlights.get("conflicted_sectors", [])
 
     # Vedha Cluster Reversal
     if overall_signal == "BEARISH" and net <= -2.0:
@@ -280,7 +277,7 @@ def format_setup_for_display(setup: TradeSetup) -> str:
         f"STOP:    {setup.stop}",
         f"TARGET:  {setup.target}",
         f"SIZING:  {setup.sizing}",
-        f"FILTERS: " + "; ".join(setup.filters),
+        "FILTERS: " + "; ".join(setup.filters),
         f"STATS:   {setup.historical['trades']} trades | "
         f"WR: {setup.historical['win_rate']:.0%} | "
         f"Avg R: {setup.historical['avg_r']:.2f} | "

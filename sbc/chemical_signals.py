@@ -12,26 +12,23 @@ BEARISH (avoid): Mars-Jupiter trine (negative 1-10d), Mercury chemical trade (ne
 
 from .cgsp_framework import angular_distance, get_planet
 
-
 # =============================================================================
 # CHEMICAL SECTOR SYNTAX CHECKS
 # =============================================================================
 
 def check_chemical_syntax(planets, tithi, sun, moon):
     """Check all chemical sector bullish syntax configurations."""
-    
+
     jupiter = get_planet(planets, "Jupiter")
-    venus = get_planet(planets, "Venus")
     saturn = get_planet(planets, "Saturn")
     mercury = get_planet(planets, "Mercury")
     mars = get_planet(planets, "Mars")
     rahu = get_planet(planets, "Rahu")
     ketu = get_planet(planets, "Ketu")
-    
-    from .nakshatra import paksha_of
-    
+
+
     results = {}
-    
+
     # ---- 1. MARS (Primary for Chemicals) ----
     mars_strong = mars["sign"] in {"Aries", "Scorpio", "Capricorn"}
     mars_sat_trine = abs(angular_distance(mars["longitude"], saturn["longitude"]) - 120) < 8
@@ -39,76 +36,74 @@ def check_chemical_syntax(planets, tithi, sun, moon):
     mars_rahu_free = angular_distance(mars["longitude"], rahu["longitude"]) > 15
     mars_ketu_free = angular_distance(mars["longitude"], ketu["longitude"]) > 15
     mars_malefic_free = mars_rahu_free and mars_ketu_free
-    
+
     results["mars_strong"] = mars_strong
     results["mars_sat_trine"] = mars_sat_trine
     results["mars_jup_trine"] = mars_jup_trine
     results["mars_malefic_free"] = mars_malefic_free
-    
+
     # Mars Ideal for Chemicals
     results["mars_ideal_chemical"] = mars_strong and (mars_sat_trine or mars_jup_trine) and mars_malefic_free
-    
+
     # ---- 2. SATURN ----
     saturn_strong = saturn["sign"] in {"Capricorn", "Aquarius"}
     saturn_earthy = saturn["sign"] in {"Taurus", "Virgo"}
     sat_mars_trine = abs(angular_distance(saturn["longitude"], mars["longitude"]) - 120) < 8
     sat_merc_trine = abs(angular_distance(saturn["longitude"], mercury["longitude"]) - 120) < 8
-    
+
     results["saturn_strong"] = saturn_strong
     results["saturn_earthy"] = saturn_earthy
     results["sat_mars_trine"] = sat_mars_trine
     results["sat_merc_trine"] = sat_merc_trine
-    
+
     results["saturn_chemical_stable"] = (saturn_strong or saturn_earthy) and (sat_mars_trine or sat_merc_trine)
-    
+
     # ---- 3. RAHU (Petrochemicals) ----
     rahu_strong = rahu["sign"] in {"Aries", "Taurus"}
     rahu_chemical_naks = rahu["nakshatra"] in {"Bharani", "Krittika", "Rohini", "Mrigashira"}
     rahu_mars_conj = angular_distance(rahu["longitude"], mars["longitude"]) < 8
     rahu_merc_trine = abs(angular_distance(rahu["longitude"], mercury["longitude"]) - 120) < 8
     rahu_chemical_support = rahu_mars_conj or rahu_merc_trine
-    
+
     results["rahu_strong"] = rahu_strong
     results["rahu_chemical_naks"] = rahu_chemical_naks
     results["rahu_chemical_support"] = rahu_chemical_support
-    
+
     results["rahu_ideal_chemical"] = (rahu_strong or rahu_chemical_naks) and rahu_chemical_support
-    
+
     # ---- 4. MERCURY ----
     mercury_strong = mercury["sign"] in {"Virgo", "Gemini"}
     merc_sat_trine = abs(angular_distance(mercury["longitude"], saturn["longitude"]) - 120) < 8
     merc_mars_trine = abs(angular_distance(mercury["longitude"], mars["longitude"]) - 120) < 8
     merc_comb_free = True  # Simplified
-    
+
     results["mercury_strong"] = mercury_strong
     results["merc_sat_trine"] = merc_sat_trine
     results["merc_mars_trine"] = merc_mars_trine
     results["merc_comb_free"] = merc_comb_free
-    
+
     results["mercury_chemical_trade"] = mercury_strong and (merc_sat_trine or merc_mars_trine) and merc_comb_free
-    
+
     # ---- 5. JUPITER (Secondary) ----
     jup_mars_trine = abs(angular_distance(jupiter["longitude"], mars["longitude"]) - 120) < 8
     jupiter_earthy = jupiter["sign"] in {"Taurus", "Virgo", "Capricorn"}
     jupiter_cancer = jupiter["sign"] == "Cancer"
-    
+
     results["jup_mars_trine"] = jup_mars_trine
     results["jupiter_earthy"] = jupiter_earthy
     results["jupiter_cancer"] = jupiter_cancer
     results["jupiter_chemical_demand"] = jup_mars_trine or jupiter_earthy or jupiter_cancer
-    
+
     # ---- 6. SBC VEDHA CHECKS ----
     try:
-        from .prediction import sector_read, compute_vedhas, place_planets
-        from .chakra import GRID
-        
-        grid = place_planets(GRID, planets)
+        from .prediction import compute_vedhas, sector_read
+
         vedha_map, _ = compute_vedhas(planets, school="allthree")
-        
+
         sector_projections = sector_read(vedha_map, planets)
-        
+
         chemical_rashis = ["Aries", "Scorpio", "Capricorn", "Aquarius", "Taurus", "Virgo", "Leo"]
-        
+
         positive_chemical = 0
         negative_chemical = 0
         for proj in sector_projections:
@@ -117,16 +112,16 @@ def check_chemical_syntax(planets, tithi, sun, moon):
                     positive_chemical += proj["net"]
                 elif proj["net"] < 0:
                     negative_chemical += abs(proj["net"])
-        
+
         results["sbc_chemical_net"] = positive_chemical - negative_chemical
         results["sbc_chemical_positive"] = positive_chemical > negative_chemical
         results["sbc_chemical_strong"] = positive_chemical > negative_chemical + 1
-        
+
         # Specific cell vedha
         industry_vedha = False
         material_vedha = False
         business_vedha = False
-        
+
         for p in planets:
             if p["nature"] == "benefic":
                 for hit in vedha_map.get(p["name"], []):
@@ -137,26 +132,26 @@ def check_chemical_syntax(planets, tithi, sun, moon):
                             material_vedha = True
                         if hit["label"] in ["Taurus", "Scorpio", "Gemini", "Sagittarius"]:
                             business_vedha = True
-        
+
         results["sbc_industry_vedha"] = industry_vedha
         results["sbc_material_vedha"] = material_vedha
         results["sbc_business_vedha"] = business_vedha
         results["sbc_chemical_all_clear"] = industry_vedha and material_vedha and business_vedha
-        
+
         # Ketu obstruction check
         ketu_obstruction = False
         for hit in vedha_map.get("Ketu", []):
             if hit["type"] == "rashi" and hit["label"] in ["Aries", "Scorpio", "Taurus", "Virgo"]:
                 ketu_obstruction = True
         results["ketu_obstruction"] = ketu_obstruction
-        
+
     except Exception as e:
         results["sbc_error"] = str(e)
-    
+
     # ---- 7. COMBINED SCORING ----
     score = 0
     active = []
-    
+
     # Tier 1: Core planetary syntax (backtested highest Sharpe)
     if results.get("mars_strong", False):
         score += 4
@@ -170,7 +165,7 @@ def check_chemical_syntax(planets, tithi, sun, moon):
     if results.get("mars_ideal_chemical", False):
         score += 3
         active.append("MARS_IDEAL (Mars Ari/Sco/Cap + Sat trine + malefic-free) - 68.5% win 10d, Sharpe 2.30")
-    
+
     # Tier 2: Strong planetary
     if results.get("jupiter_chemical_demand", False):
         score += 2
@@ -184,7 +179,7 @@ def check_chemical_syntax(planets, tithi, sun, moon):
     if results.get("saturn_earthy", False):
         score += 2
         active.append("SATURN EARTHY (Taurus/Virgo) - stable materials")
-    
+
     # Tier 3: Supporting planetary
     if results.get("rahu_ideal_chemical", False) and not results.get("rahu_strong", False):
         score += 1
@@ -195,7 +190,7 @@ def check_chemical_syntax(planets, tithi, sun, moon):
     if results.get("saturn_earthy", False) and not results.get("saturn_chemical_stable", False):
         score += 1
         active.append("SATURN EARTHY (Taurus/Virgo)")
-    
+
     # Tier 4: SBC Vedha
     if results.get("sbc_chemical_strong", False):
         score += 2
@@ -203,7 +198,7 @@ def check_chemical_syntax(planets, tithi, sun, moon):
     elif results.get("sbc_chemical_positive", False):
         score += 1
         active.append("SBC CHEMICAL POSITIVE")
-    
+
     if results.get("sbc_industry_vedha", False):
         score += 1
         active.append("SBC INDUSTRY VEDHA BENEFIC")
@@ -213,7 +208,7 @@ def check_chemical_syntax(planets, tithi, sun, moon):
     if results.get("sbc_business_vedha", False):
         score += 1
         active.append("SBC BUSINESS VEDHA BENEFIC")
-    
+
     # Tier 5: BEARISH warnings (penalty)
     if results.get("mars_jup_trine", False) and not results.get("mars_ideal_chemical", False):
         score -= 2
@@ -224,12 +219,12 @@ def check_chemical_syntax(planets, tithi, sun, moon):
     if results.get("ketu_obstruction", False):
         score -= 2
         active.append("⚠ KETU OBSTRUCTION ON INDUSTRY/MATERIAL")
-    
+
     results["chemical_score"] = score
     results["active_signals"] = active
     results["is_bullish"] = score >= 5
     results["is_strong_bullish"] = score >= 8
-    
+
     if score >= 10:
         results["conviction"] = "VERY_HIGH"
     elif score >= 7:
@@ -240,7 +235,7 @@ def check_chemical_syntax(planets, tithi, sun, moon):
         results["conviction"] = "LOW"
     else:
         results["conviction"] = "NONE"
-    
+
     return results
 
 
@@ -271,8 +266,8 @@ def get_chemical_price_levels(current_price, results):
         "target_high": target,
         "support_zone": support,
         "stop_loss": stop,
-        "method": f"Chemical score {score}: " + 
-                 ("Strong 10% target" if results["is_strong_bullish"] else 
+        "method": f"Chemical score {score}: " +
+                 ("Strong 10% target" if results["is_strong_bullish"] else
                   "Moderate 6% target" if results["is_bullish"] else "Neutral")
     }
 

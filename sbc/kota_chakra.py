@@ -4,7 +4,8 @@ Parses Prediction_Kota_Chakra Excel files and provides daily/weekly/monthly view
 """
 
 from pathlib import Path
-from typing import List, Dict, Any
+from typing import Any
+
 import pandas as pd
 
 SCORING_RULES = {
@@ -23,7 +24,7 @@ BANKNIFTY_ONLY = {
     "Jupiter Sign": {"Cancer": 1, "Sagittarius": 1, "Pisces": 1, "Capricorn": -3},
 }
 
-def parse_kota_excel(path: Path) -> Dict[str, pd.DataFrame]:
+def parse_kota_excel(path: Path) -> dict[str, pd.DataFrame]:
     """Parse Kota Chakra Excel file.
 
     Returns dict with keys: dashboard, monthly, rules
@@ -61,18 +62,18 @@ def normalize_dashboard(df: pd.DataFrame) -> pd.DataFrame:
     df = df.dropna(how='all')
     return df
 
-def daily_view(df: pd.DataFrame, date_str: str, instrument: str = "NIFTY") -> Dict[str, Any]:
+def daily_view(df: pd.DataFrame, date_str: str, instrument: str = "NIFTY") -> dict[str, Any]:
     """Return daily records for a given date."""
     # Filter by Date column
     # Column names may be messy, assume 'Date' exists
     # Return list of sessions
     return {"date": date_str, "instrument": instrument, "rows": []}
 
-def weekly_aggregate(df: pd.DataFrame, week_start: str) -> Dict[str, Any]:
+def weekly_aggregate(df: pd.DataFrame, week_start: str) -> dict[str, Any]:
     """Aggregate weekly scores."""
     return {"week_start": week_start, "nifty": {}, "banknifty": {}}
 
-def monthly_summary(df_monthly: pd.DataFrame, month: str) -> Dict[str, Any]:
+def monthly_summary(df_monthly: pd.DataFrame, month: str) -> dict[str, Any]:
     """Return monthly summary."""
     return {"month": month, "summary": {}}
 

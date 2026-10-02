@@ -1,7 +1,8 @@
 """Executive Overview blueprint."""
 
-from flask import Blueprint, jsonify, request
 import datetime
+
+from flask import Blueprint, jsonify, request
 
 overview_bp = Blueprint('overview', __name__, url_prefix='')
 
@@ -20,7 +21,7 @@ def presets():
 @overview_bp.route('/api/market/holidays')
 def market_holidays():
     """NSE weekday holidays + Muhurat sessions for a year (default: this year)."""
-    from sbc.market_holidays import holidays_in, COVERED_YEARS
+    from sbc.market_holidays import COVERED_YEARS, holidays_in
     try:
         year = int(request.args.get("year") or datetime.date.today().year)
     except ValueError:
@@ -30,7 +31,7 @@ def market_holidays():
 
 @overview_bp.route('/api/prediction')
 def prediction():
-    from app import build_response, ANCHORS
+    from app import ANCHORS, build_response
     date_str = request.args.get("date") or datetime.date.today().isoformat()
     time_str = request.args.get("time", "09:15")
     tz_name = request.args.get("tz", "Asia/Kolkata")
@@ -50,8 +51,7 @@ def prediction():
 
 @overview_bp.route('/api/weekly_commentary')
 def weekly_commentary():
-    from app import build_response
-    from sbc.weekly_commentary import generate_weekly_commentary, format_commentary_text
+    from sbc.weekly_commentary import format_commentary_text, generate_weekly_commentary
     date_str = request.args.get("date") or datetime.date.today().isoformat()
     try:
         date = datetime.date.fromisoformat(date_str)

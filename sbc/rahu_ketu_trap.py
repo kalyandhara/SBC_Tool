@@ -5,19 +5,17 @@ Backtestable with configurable rule weights.
 """
 
 from __future__ import annotations
-import datetime
-from dataclasses import dataclass, asdict
-from typing import Dict, List, Tuple
-import math
 
-from sbc.planets import positions
+import datetime
+from dataclasses import asdict, dataclass
+
 from sbc.backtest import _julian_at_noon
-from sbc.nakshatra import NAKSHATRAS_27
-from sbc.config import SECTOR_NAME_MAP
 from sbc.market_holidays import is_trading_day
+from sbc.nakshatra import NAKSHATRAS_27
+from sbc.planets import positions
 
 # Industry → ruling planet mapping (customizable)
-INDUSTRY_RULING_PLANET: Dict[str, str] = {
+INDUSTRY_RULING_PLANET: dict[str, str] = {
     "BANKING": "Mercury",
     "FINANCIAL SERVICES": "Mercury",
     "IT": "Mercury",
@@ -59,13 +57,13 @@ class TrapSignal:
     tithi: int
     score: int
     level: str
-    reasons: List[str]
+    reasons: list[str]
 
 def _angular_distance(a: float, b: float) -> float:
     d = abs(a - b) % 360
     return min(d, 360 - d)
 
-def _get_planet_longitude(planets: List[dict], name: str) -> float:
+def _get_planet_longitude(planets: list[dict], name: str) -> float:
     for p in planets:
         if p["name"] == name:
             return p["longitude"]
@@ -77,35 +75,35 @@ def _nakshatra_of_longitude(lon: float) -> str:
     idx = idx % 27
     return NAKSHATRAS_27[idx]
 
-def compute_daily_trap(date_str: str, industries: List[str] | None = None) -> List[TrapSignal]:
+def compute_daily_trap(date_str: str, industries: list[str] | None = None) -> list[TrapSignal]:
     jul = _julian_at_noon(date_str)
     planets, ayanamsa = positions(jul)
-    
+
     # Get Rahu/Ketu/Moon positions
     rahu_lon = _get_planet_longitude(planets, "Rahu")
     ketu_lon = _get_planet_longitude(planets, "Ketu")
     moon_lon = _get_planet_longitude(planets, "Moon")
     sun_lon = _get_planet_longitude(planets, "Sun")
-    
+
     # Tithi
     from sbc.nakshatra import tithi_of
     tithi = tithi_of(sun_lon, moon_lon)
-    
+
     rahu_nak = _nakshatra_of_longitude(rahu_lon) if rahu_lon is not None else "Unknown"
     ketu_nak = _nakshatra_of_longitude(ketu_lon) if ketu_lon is not None else "Unknown"
     moon_nak = _nakshatra_of_longitude(moon_lon) if moon_lon is not None else "Unknown"
-    
+
     if industries is None:
         industries = list(INDUSTRY_RULING_PLANET.keys())
-    
+
     signals = []
     for industry in industries:
         ruling = INDUSTRY_RULING_PLANET.get(industry.upper(), "Saturn")
         planet_lon = _get_planet_longitude(planets, ruling)
-        
+
         score = 0
         reasons = []
-        
+
         # Node proximity
         if planet_lon is not None:
             d_rahu = _angular_distance(planet_lon, rahu_lon)
@@ -113,7 +111,7 @@ def compute_daily_trap(date_str: str, industries: List[str] | None = None) -> Li
             if d_rahu <= 5 or d_ketu <= 5:
                 score += WEIGHTS["node_proximity"]
                 reasons.append(f"Rahu/Ketu within 5° of {ruling}")
-        
+
         # Vedha proxy: same nakshatra or 180°
         if planet_lon is not None:
             planet_nak = _nakshatra_of_longitude(planet_lon)
@@ -123,18 +121,19 @@ def compute_daily_trap(date_str: str, industries: List[str] | None = None) -> Li
             if _angular_distance(planet_lon, rahu_lon) >= 175 and _angular_distance(planet_lon, rahu_lon) <= 185:
                 score += WEIGHTS["vedha"]
                 reasons.append(f"Rahu opposite {ruling}")
-        
+
         # Moon conjunction
-        if moon_lon is not None and planet_lon is not None:
-            if _angular_distance(moon_lon, rahu_lon) <= 10 or _angular_distance(moon_lon, ketu_lon) <= 10:
-                score += WEIGHTS["moon_conjunction"]
-                reasons.append("Moon conjunct Rahu/Ketu")
-        
+        if moon_lon is not None and planet_lon is not None and (
+                _angular_distance(moon_lon, rahu_lon) <= 10
+                or _angular_distance(moon_lon, ketu_lon) <= 10):
+            score += WEIGHTS["moon_conjunction"]
+            reasons.append("Moon conjunct Rahu/Ketu")
+
         # Tithi
         if 8 <= tithi <= 14:
             score += WEIGHTS["tithi"]
             reasons.append("Krishna Paksha 8-14")
-        
+
         # Level
         if score >= 9:
             level = "RED"
@@ -144,7 +143,7 @@ def compute_daily_trap(date_str: str, industries: List[str] | None = None) -> Li
             level = "AMBER"
         else:
             level = "GREEN"
-        
+
         signals.append(TrapSignal(
             date=date_str,
             industry=industry,
@@ -157,10 +156,10 @@ def compute_daily_trap(date_str: str, industries: List[str] | None = None) -> Li
             level=level,
             reasons=reasons
         ))
-    
+
     return signals
 
-def generate_calendar(start_date: str, end_date: str, industries: List[str] | None = None) -> Dict:
+def generate_calendar(start_date: str, end_date: str, industries: list[str] | None = None) -> dict:
     start = datetime.date.fromisoformat(start_date)
     end = datetime.date.fromisoformat(end_date)
     delta = datetime.timedelta(days=1)
@@ -189,7 +188,7 @@ def generate_calendar(start_date: str, end_date: str, industries: List[str] | No
     }
 
 # Backtest stub
-def backtest_trap_correlation(start_date: str, end_date: str, price_data_fn) -> Dict:
+def backtest_trap_correlation(start_date: str, end_date: str, price_data_fn) -> dict:
     """
     price_data_fn(date, industry) -> next_day_return
     Returns correlation metrics.

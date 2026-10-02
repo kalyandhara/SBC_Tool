@@ -12,7 +12,6 @@ from zoneinfo import ZoneInfo
 
 import swisseph as swe
 
-from .config import RASHI_TREND
 from .planets import positions
 
 _DATA_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)),

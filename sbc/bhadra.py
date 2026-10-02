@@ -50,7 +50,7 @@ def _is_vishti(jd_ut):
 
 def _local_to_jd(dt_local):
     """Convert an aware local datetime into a UT Julian day."""
-    utc = dt_local.astimezone(datetime.timezone.utc)
+    utc = dt_local.astimezone(datetime.UTC)
     h = utc.hour + utc.minute / 60.0 + utc.second / 3600.0
     return swe.julday(utc.year, utc.month, utc.day, h)
 
@@ -61,7 +61,7 @@ def _jd_to_local(jd_ut, tz):
     hh = int(h)
     mm = int((h - hh) * 60)
     ss = int(((h - hh) * 60 - mm) * 60)
-    utc = datetime.datetime(y, m, d, hh, mm, ss, tzinfo=datetime.timezone.utc)
+    utc = datetime.datetime(y, m, d, hh, mm, ss, tzinfo=datetime.UTC)
     return utc.astimezone(tz)
 
 
@@ -105,7 +105,6 @@ def bhadra_windows(month_start_local, tz, step_minutes=4):
 
     step = datetime.timedelta(minutes=step_minutes)
     windows = []
-    cur_start = None
 
     t = start_scan
     jd = _local_to_jd(t)
@@ -114,7 +113,7 @@ def bhadra_windows(month_start_local, tz, step_minutes=4):
 
     prev_inside = _is_vishti(jd)
     if prev_inside:
-        cur_start = t
+        pass
 
     # Sweep through the scan window to find Vishti run boundaries, then
     # refine each boundary with bisection for sub-minute accuracy.

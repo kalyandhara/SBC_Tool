@@ -1,9 +1,10 @@
 """KP Intraday blueprint."""
 
-from flask import Blueprint, jsonify, request, Response, send_file
 import datetime
 from io import BytesIO
 from pathlib import Path
+
+from flask import Blueprint, Response, jsonify, request, send_file
 
 kp_bp = Blueprint('kp', __name__, url_prefix='')
 
@@ -12,10 +13,8 @@ _DOCX_MIME = "application/vnd.openxmlformats-officedocument.wordprocessingml.doc
 
 @kp_bp.route('/api/kp_intraday_report')
 def kp_intraday_report():
-    from sbc.kp_intraday import (
-        generate_kp_intraday_report, report_to_dict, KPReportGenerator
-    )
     from sbc.kp_config import get_config, get_instrument_config
+    from sbc.kp_intraday import KPReportGenerator, generate_kp_intraday_report, report_to_dict
     date_str = request.args.get("date") or datetime.date.today().isoformat()
     instrument = request.args.get("instrument", "NIFTY")
     format_type = request.args.get("format", "json")

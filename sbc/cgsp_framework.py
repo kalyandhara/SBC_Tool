@@ -7,7 +7,6 @@ Alternative framework based on:
 - Overall sentiment = sum of (planet_type × sign_type × pada_type)
 """
 
-from .nakshatra import sign_of, nakshatra_of
 
 # Planet classification: cruel (bullish driver) vs gentle (bearish/modulator)
 # Based on the video framework
@@ -45,8 +44,6 @@ PADA_BULLISH = {
     "Punarvasu": {1, 4}, "Pushya": {1, 4}, "Ashlesha": {1, 4},
     "Vishakha": {1, 4}, "Anuradha": {1, 4}, "Jyeshtha": {1, 4},
     "P.Bhadrapada": {1, 4}, "Shatabhisha": {1, 4},
-    # Air signs (Gemini, Libra, Aquarius) - even padas bullish
-    "Krittika": {2, 4},  # Actually Krittika spans Aries/Taurus
 }
 
 # Simplified: pada 1 and 3 are generally bullish, 2 and 4 bearish
@@ -63,7 +60,6 @@ def is_pada_bullish(nakshatra: str, pada: int) -> bool:
     water_naks = {"Punarvasu", "Pushya", "Ashlesha", "Vishakha", "Anuradha", "Jyeshtha",
                   "P.Bhadrapada", "Shatabhisha"}
     # Air nakshatras: Gemini, Libra, Aquarius spans
-    air_naks = {"Krittika", "Swati", "Dhanishta", "Shatabhisha"}  # overlap handled
 
     if nakshatra in fire_naks or nakshatra in earth_naks:
         return pada in (1, 3)
@@ -104,18 +100,9 @@ def get_sign_type(sign: str) -> str:
     return "neutral"
 
 
-def get_sign_type(sign: str) -> str:
-    """Classify sign as 'bullish' or 'bearish'."""
-    if sign in BULLISH_SIGNS:
-        return "bullish"
-    if sign in BEARISH_SIGNS:
-        return "bearish"
-    return "neutral"
-
-
 def get_jupiter_motion(planets: list) -> str:
     """Get Jupiter's motion state: 'direct' or 'retrograde'.
-    
+
     Uses the planet's speed field from Swiss Ephemeris:
     - speed > 0: direct motion
     - speed < 0: retrograde motion
@@ -124,63 +111,11 @@ def get_jupiter_motion(planets: list) -> str:
     jupiter = next((p for p in planets if p["name"] == "Jupiter"), None)
     if jupiter is None:
         return JUPITER_MOTION_DIRECT  # default if not found
-    
+
     # Use the speed field; also validate with retrograde boolean
     if jupiter["speed"] < 0 or jupiter["retrograde"]:
         return JUPITER_MOTION_RETROGRADE
     return JUPITER_MOTION_DIRECT
-
-
-def get_jupiter_transit_table() -> list:
-    """Get the 12-sign Jupiter transit table.
-
-    Based on the Sarvatobhadra Chakra + Nakshatra-Transit cheatsheet:
-    - Direct trend: Jupiter's effect when moving direct
-    - Retrograde trend: Jupiter's effect when moving retrograde
-
-    Returns list of dicts: [{'sign': str, 'direct': str, 'retrograde': str}, ...]
-    Ordered by zodiac sign (Aries first, Pisces last).
-    """
-    # Per cheatsheet classifications:
-    # Bullish Direct: Taurus, Leo, Sagittarius, Capricorn, Aquarius, Pisces
-    # Bullish Retrograde: Aries, Taurus, Gemini, Cancer, Virgo, Libra, Scorpio, Capricorn, Pisces
-    # Dual-Bullish (both motions): Taurus, Capricorn, Pisces
-    # Dual-Bearish (direct bearish, retro bullish): Aries, Gemini, Cancer, Virgo, Libra, Scorpio
-    # Dual-Mixed (direct bullish, retrograde bearish): Leo, Sagittarius, Aquarius
-
-    signs = ["Aries", "Taurus", "Gemini", "Cancer", "Leo", "Virgo", "Libra", "Scorpio", 
-             "Sagittarius", "Capricorn", "Aquarius", "Pisces"]
-
-    # Direct bullish signs per cheatsheet
-    direct_bullish = {"Taurus", "Leo", "Sagittarius", "Capricorn", "Aquarius", "Pisces"}
-    # Dual-bullish (both direct and retrograde)
-    dual_bullish = {"Taurus", "Capricorn", "Pisces"}
-    # Dual-mixed (direct bullish, retrograde bearish)
-    dual_mixed = {"Leo", "Sagittarius", "Aquarius"}
-
-    table = []
-    for sign in signs:
-        # Direct trend: bullish if sign in direct_bullish set
-        direct_trend = "Bullish" if sign in direct_bullish else "Bearish"
-
-        # Retrograde trend: bullish if sign in retrograde_bullish set
-        retrograde_bullish = {"Aries", "Taurus", "Gemini", "Cancer", "Virgo", "Libra", "Scorpio", "Capricorn", "Pisces"}
-        retrograde_trend = "Bullish" if sign in retrograde_bullish else "Bearish"
-
-        # Override for dual classifications
-        if sign in dual_bullish:
-            retrograde_trend = "Bullish"  # emphasizing both-motions bullish
-        if sign in dual_mixed:
-            direct_trend = "Bullish"  # direct is bullish despite being in mixed set
-            retrograde_trend = "Bearish"  # retrograde is bearish for mixed signs
-
-        table.append({
-            "sign": sign,
-            "direct": direct_trend,
-            "retrograde": retrograde_trend
-        })
-
-    return table
 
 
 def get_pada_type(nakshatra: str, pada: int) -> str:
@@ -205,7 +140,7 @@ def get_jupiter_transit_table() -> list:
     # Dual-Bearish (direct bearish, retro bullish): Aries, Gemini, Cancer, Virgo, Libra, Scorpio
     # Dual-Mixed (direct bullish, retrograde bearish): Leo, Sagittarius, Aquarius
 
-    signs = ["Aries", "Taurus", "Gemini", "Cancer", "Leo", "Virgo", "Libra", "Scorpio", 
+    signs = ["Aries", "Taurus", "Gemini", "Cancer", "Leo", "Virgo", "Libra", "Scorpio",
              "Sagittarius", "Capricorn", "Aquarius", "Pisces"]
 
     # Direct bullish signs per cheatsheet
@@ -246,7 +181,7 @@ def get_sign_element(sign: str) -> str:
     earth_signs = {"Taurus", "Virgo", "Capricorn"}
     water_signs = {"Cancer", "Scorpio", "Pisces"}
     air_signs = {"Gemini", "Libra", "Aquarius"}
-    
+
     if sign in fire_signs:
         return "fire"
     elif sign in earth_signs:
@@ -260,7 +195,7 @@ def get_sign_element(sign: str) -> str:
 
 def get_market_regime(bias: str) -> str:
     """Determine market regime based on CGSP bias.
-    
+
     Rule 3 from cheatsheet:
     - If trend is bullish: regime = 'risk-on'
     - If trend is bearish: regime = 'risk-off'
@@ -277,7 +212,7 @@ def get_market_regime(bias: str) -> str:
 
 def get_sector_boost(regulation: str) -> list:
     """Get sector boost list based on market regime.
-    
+
     Rule 4 from cheatsheet:
     - If regime is risk-on: overweight = ['banks', 'tech', 'auto', 'luxury', 'midcaps']
     - If regime is risk-off: overweight = ['defensives', 'FMCG', 'utilities', 'pharma']
@@ -362,9 +297,7 @@ def compute_cgsp_score(planets: list, tithi: int) -> dict:
         else:  # gentle
             if s_type == "bullish" and pa_type == "bullish":
                 alignment = 1  # Gentle support
-            elif s_type == "bullish" and pa_type == "bearish":
-                alignment = 0  # Neutral
-            elif s_type == "bearish" and pa_type == "bullish":
+            elif s_type == "bullish" and pa_type == "bearish" or s_type == "bearish" and pa_type == "bullish":
                 alignment = 0  # Neutral
             elif s_type == "bearish" and pa_type == "bearish":
                 alignment = -1  # Gentle pressure in bearish env
@@ -552,27 +485,28 @@ def get_sector_bias(planets: list, tithi: int) -> list:
 def check_panchaka(date_str: str, planets: list = None) -> dict:
     """Check for Panchaka (5 inauspicious nakshatras) period."""
     panchaka_naks = {"Dhanishta", "Shatabhisha", "P.Bhadrapada", "U.Bhadrapada", "Revati"}
-    
+
     if planets is None:
-        from .planets import positions
         import datetime
         import zoneinfo
-        
+
+        from .planets import positions
+
         def _utc_from_local(d, t, tz):
             local = datetime.datetime.strptime(d + ' ' + t, '%Y-%m-%d %H:%M')
             tz = zoneinfo.ZoneInfo(tz)
             local = local.replace(tzinfo=tz)
-            return local.astimezone(datetime.timezone.utc).replace(tzinfo=None)
-        
+            return local.astimezone(datetime.UTC).replace(tzinfo=None)
+
         def _julday(dt):
             base = datetime.datetime(2000, 1, 1, 12, 0, 0)
             diff = dt - base
             return 2451545.0 + diff.total_seconds() / 86400.0
-        
+
         utc = _utc_from_local(date_str, "09:15", "Asia/Kolkata")
         jul = _julday(utc)
         planets, _ = positions(jul)
-    
+
     moon = next(p for p in planets if p["name"] == "Moon")
     is_panchaka = moon["nakshatra"] in panchaka_naks
     return {
@@ -604,7 +538,6 @@ def generate_cgsp_report(date_str: str, planets: list, tithi: int, current_price
 
     # Summary narrative
     cruel_planets = [c for c in score_data["contributions"] if c["type"] == "cruel"]
-    gentle_planets = [c for c in score_data["contributions"] if c["type"] == "gentle"]
 
     bullish_drivers = [c["planet"] for c in cruel_planets if c["weighted"] > 0]
     bearish_drivers = [c["planet"] for c in cruel_planets if c["weighted"] < 0]
@@ -642,14 +575,15 @@ def backtest_cgsp(start_date: str, end_date: str, price_data: dict = None) -> di
         Dict with accuracy metrics, confusion matrix, etc.
     """
     import datetime
-    from .planets import positions, all_planets_with_natures
+
     from .nakshatra import tithi_of
+    from .planets import all_planets_with_natures, positions
 
     def _utc_from_local(d, t, tz):
         local = datetime.datetime.strptime(d + ' ' + t, '%Y-%m-%d %H:%M')
         tz = zoneinfo.ZoneInfo(tz)
         local = local.replace(tzinfo=tz)
-        return local.astimezone(datetime.timezone.utc).replace(tzinfo=None)
+        return local.astimezone(datetime.UTC).replace(tzinfo=None)
 
     def _julday(dt):
         base = datetime.datetime(2000, 1, 1, 12, 0, 0)
@@ -662,8 +596,6 @@ def backtest_cgsp(start_date: str, end_date: str, price_data: dict = None) -> di
     end = datetime.date.fromisoformat(end_date)
 
     results = []
-    correct = 0
-    total = 0
 
     d = start
     while d <= end:
@@ -683,10 +615,8 @@ def backtest_cgsp(start_date: str, end_date: str, price_data: dict = None) -> di
             # Determine predicted direction
             pred_up = bias in ("STRONG_BULLISH", "BULLISH")
             pred_down = bias in ("STRONG_BEARISH", "BEARISH")
-            pred_neutral = bias == "NEUTRAL"
 
             # Get actual price movement if price_data provided
-            actual = None
             if price_data and ds in price_data:
                 # Would need next day's price for comparison
                 pass

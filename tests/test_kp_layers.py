@@ -63,9 +63,9 @@ def test_incoming_sublord_parse():
 
 @pytest.mark.skipif(not Path("data/kp/KP_Data_Sep2026.csv").exists(), reason="needs the Sep-2026 KP file")
 def test_report_carries_v15_layers_and_exports_docx():
-    from sbc.kp_intraday import generate_kp_intraday_report
     from sbc.kp_config import get_config, get_instrument_config
     from sbc.kp_docx import render_docx
+    from sbc.kp_intraday import generate_kp_intraday_report
 
     cfg = get_instrument_config("NIFTY", get_config())
     rep = generate_kp_intraday_report(Path("data/kp/KP_Data_Sep2026.csv"), datetime.date(2026, 9, 7), "NIFTY", cfg)

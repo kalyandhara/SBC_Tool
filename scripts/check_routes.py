@@ -1,7 +1,9 @@
 """Parametrized 200-check for all GET routes."""
 import sys
+
 sys.path.append(".")
 from app import app
+
 
 def main():
     client = app.test_client()

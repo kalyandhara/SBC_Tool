@@ -21,10 +21,10 @@ from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 import swisseph as swe
 
-from .planets import positions
-from .nakshatra import tithi_of
 from .bhadra import bhadra_windows
-from .market_calendar import daily_yoga_glyphs, _local_julian
+from .market_calendar import daily_yoga_glyphs
+from .nakshatra import tithi_of
+from .planets import positions
 
 MARKET_OPEN_MIN = 9 * 60 + 15   # 09:15
 MARKET_CLOSE_MIN = 15 * 60 + 30  # 15:30
@@ -66,7 +66,7 @@ def _local_aware(date_str, minutes, tz):
 
 def _jd_at(date_str, minutes, tz):
     local = _local_aware(date_str, minutes, tz)
-    utc = local.astimezone(datetime.timezone.utc)
+    utc = local.astimezone(datetime.UTC)
     h = utc.hour + utc.minute / 60.0
     return swe.julday(utc.year, utc.month, utc.day, h)
 
@@ -108,10 +108,9 @@ def intraday_projection(start_date, tz_name="Asia/Kolkata", days=5, anchor_key="
     else:
         start_date = start_date
 
-    from .prediction import analyze, compute_vedhas
-    from .planets import all_planets_with_natures
-    from .chakra import GRID
     from .market_calendar import _anchor_nakshatra
+    from .planets import all_planets_with_natures
+    from .prediction import analyze, compute_vedhas
 
     hours = []
     yogas = []
@@ -158,9 +157,6 @@ def intraday_projection(start_date, tz_name="Asia/Kolkata", days=5, anchor_key="
         while minute <= MARKET_CLOSE_MIN:
             jd = _jd_at(date_str, minute, tz)
             pl, _ = positions(jd)
-            s2 = next(p for p in pl if p["name"] == "Sun")
-            m2 = next(p for p in pl if p["name"] == "Moon")
-            t2 = tithi_of(s2["longitude"], m2["longitude"])
 
             hora_lord = _hour_hora_lord(date_str, minute, tz)
             hora_score = HORA_QUALITY.get(hora_lord, 0.0) if hora_lord else 0.0
@@ -184,7 +180,7 @@ def intraday_projection(start_date, tz_name="Asia/Kolkata", days=5, anchor_key="
             cum += projection
 
             local = _local_aware(date_str, minute, tz)
-            unix_ts = int(local.astimezone(datetime.timezone.utc).timestamp())
+            unix_ts = int(local.astimezone(datetime.UTC).timestamp())
 
             hours.append({
                 "time": unix_ts,

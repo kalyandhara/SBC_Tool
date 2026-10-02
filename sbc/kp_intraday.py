@@ -6,10 +6,10 @@ trend change prediction reports for NIFTY/BANK NIFTY.
 
 import csv
 import json
-from html import escape as html_escape
 from dataclasses import dataclass, field
 from datetime import date, datetime, time, timedelta
 from enum import Enum
+from html import escape as html_escape
 from pathlib import Path
 from typing import Any
 
@@ -417,7 +417,7 @@ class KPDataParser:
         """Extract and structure data for a specific trading day."""
         day_rows = [r for r in rows if self._parse_date(r.get('timestamp', '')) == target_date]
         if not day_rows and rows:
-            dates_in_file = sorted(list(set(self._parse_date(r.get('timestamp', '')) for r in rows if self._parse_date(r.get('timestamp', '')))))
+            dates_in_file = sorted({self._parse_date(r.get('timestamp', '')) for r in rows if self._parse_date(r.get('timestamp', ''))})
             if dates_in_file:
                 nearest_date = min(dates_in_file, key=lambda d: abs((d - target_date).days))
                 day_rows = [r for r in rows if self._parse_date(r.get('timestamp', '')) == nearest_date]
@@ -472,13 +472,13 @@ class KPDataParser:
     def _parse_date(self, ts_str: str) -> date | None:
         try:
             return datetime.fromisoformat(ts_str.replace('Z', '+00:00')).date()
-        except:
+        except (AttributeError, TypeError, ValueError):
             return None
 
     def _parse_time(self, ts_str: str) -> time | None:
         try:
             return datetime.fromisoformat(ts_str.replace('Z', '+00:00')).time()
-        except:
+        except (AttributeError, TypeError, ValueError):
             return None
 
 
@@ -908,7 +908,7 @@ class KPRuleEngine:
     def _parse_time(self, ts_str: str) -> time | None:
         try:
             return datetime.fromisoformat(ts_str.replace('Z', '+00:00')).time()
-        except:
+        except (AttributeError, TypeError, ValueError):
             return None
 
 
