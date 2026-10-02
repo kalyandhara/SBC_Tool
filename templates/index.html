@@ -5,29 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <link rel="icon" type="image/svg+xml" href="/static/favicon.svg">
   <title>Sarvatobhadra Chakra - Market Prediction</title>
-  <link rel="stylesheet" href="/static/style.css?v=18">
+  <link rel="stylesheet" href="/static/style.css?v=21">
   <script src="/static/chart.umd.min.js"></script>
-  <script>
-    // Writes (POST/PUT/DELETE) need X-API-Token once the server has SBC_API_TOKEN set.
-    // Store yours once:  localStorage.setItem('sbcApiToken', '<token>')
-    (function () {
-      var orig = window.fetch;
-      window.fetch = function (input, init) {
-        init = init || {};
-        var method = (init.method || 'GET').toUpperCase();
-        if (method !== 'GET' && method !== 'HEAD') {
-          var token = null;
-          try { token = localStorage.getItem('sbcApiToken'); } catch (e) {}
-          if (token) {
-            var headers = new Headers(init.headers || {});
-            headers.set('X-API-Token', token);
-            init = Object.assign({}, init, { headers: headers });
-          }
-        }
-        return orig.call(this, input, init);
-      };
-    })();
-  </script>
+  <script src="/static/js/api-token.js"></script>
 </head>
 <body>
   <a href="#main-content" class="skip-link">Skip to main content</a>
@@ -105,9 +85,6 @@
           </button>
           <button class="nav-tab" data-tab="tab-balance" role="tab" aria-selected="false" aria-controls="tab-balance">
             <span class="tab-icon">⚖️</span> Monthly Projection
-          </button>
-          <button class="nav-tab" data-tab="tab-chakra" role="tab" aria-selected="false" aria-controls="tab-chakra">
-            <span class="tab-icon">🕉️</span> SBC
           </button>
         </div>
       </details>
@@ -202,6 +179,266 @@
         <div id="alert-windows" class="alert-windows"></div>
       </section>
 
+    <!-- ============================================================== -->
+    <!-- SBC CHAKRA ENGINE - hosted on Executive Overview, after Calendar Confluence Overlay -->
+    <!-- ============================================================== -->
+    <section id="tab-chakra" class="sbc-page-panel">
+      <div class="layout">
+        <div class="panel birth-data-panel">
+          <div class="panel-head">
+            <h2>Enter Birthdata</h2>
+          </div>
+          <form id="birth-data-form" class="birth-form">
+            <div class="birth-form-grid">
+              <div class="form-field">
+                <label>Birthdate (Gregorian)
+                  <div class="week-picker-wrap">
+                    <input type="date" id="bd-date" required class="week-picker-input">
+                    <span class="calendar-icon" onclick="document.getElementById('bd-date').showPicker?.() || document.getElementById('bd-date').focus()">
+                      <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                    </span>
+                    <div class="week-calendar-dropdown hidden" id="bd-date-calendar"></div>
+                  </div>
+                </label>
+              </div>
+              <div class="form-field">
+                <label>Birthtime (0–24 hrs)
+                  <div class="week-picker-wrap">
+                    <input type="time" id="bd-time" step="1" required class="time-picker-input">
+                    <span class="calendar-icon time-icon" onclick="document.getElementById('bd-time').showPicker?.() || document.getElementById('bd-time').focus()">
+                      <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                    </span>
+                  </div>
+                </label>
+              </div>
+              <div class="form-field">
+                <label>Gender
+                  <select id="bd-gender">
+                    <option value="">Select</option>
+                    <option>Male</option>
+                    <option>Female</option>
+                    <option>Other</option>
+                  </select>
+                </label>
+              </div>
+              <div class="form-field full">
+                <label>City name
+                  <input type="text" id="bd-city" placeholder="City name">
+                </label>
+                <div class="city-buttons">
+                  <button type="button" class="btn btn-secondary">Search Worldwide</button>
+                  <button type="button" class="btn btn-secondary">Search USA</button>
+                </div>
+                <div class="coords-grid">
+                  <div class="coord-block">
+                    <span class="coord-label">Longitude</span>
+                    <div class="deg-min-sec">
+                      <input type="number" placeholder="°" min="-180" max="180" id="lon-deg">°
+                      <input type="number" placeholder="′" min="0" max="59" id="lon-min">′
+                      <input type="number" placeholder="″" min="0" max="59" id="lon-sec">″
+                    </div>
+                  </div>
+                  <div class="coord-block">
+                    <span class="coord-label">Latitude</span>
+                    <div class="deg-min-sec">
+                      <input type="number" placeholder="°" min="-90" max="90" id="lat-deg">°
+                      <input type="number" placeholder="′" min="0" max="59" id="lat-min">′
+                      <input type="number" placeholder="″" min="0" max="59" id="lat-sec">″
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="form-field">
+                <label>Time Zone (Standard Time)
+                  <div class="tz-inputs">
+                    <input type="number" id="tz-hours" placeholder="Hours" min="-12" max="14" step="1">
+                    <span>:</span>
+                    <input type="number" id="tz-mins" placeholder="Mins" min="0" max="59" step="1">
+                  </div>
+                </label>
+              </div>
+              <div class="form-field">
+                <label>Altitude (m above sea level)
+                  <input type="number" id="bd-altitude" placeholder="meters">
+                </label>
+              </div>
+              <div class="form-field">
+                <label>Atmospheric pressure
+                  <input type="number" id="bd-pressure" placeholder="mbar (hPa)">
+                </label>
+              </div>
+              <div class="form-field">
+                <label>Atmospheric temperature
+                  <input type="number" id="bd-temp" placeholder="°C">
+                </label>
+              </div>
+            </div>
+            <div class="profile-controls" style="display:flex;gap:8px;align-items:center;margin-bottom:8px">
+              <select id="bd-profile-select" style="flex:1">
+                <option value="">-- Select saved profile --</option>
+              </select>
+              <button type="button" class="btn btn-secondary" id="bd-profile-rename">Rename</button>
+              <button type="button" class="btn btn-secondary" id="bd-profile-default">Set Default</button>
+              <button type="button" class="btn btn-secondary" id="bd-profile-delete">Delete</button>
+              <button type="button" class="btn btn-secondary" id="bd-profile-export">Export</button>
+              <input type="file" id="bd-profile-import" accept="application/json" style="display:none">
+              <button type="button" class="btn btn-secondary" id="bd-profile-import-btn">Import</button>
+            </div>
+            <div class="form-actions">
+              <button type="button" class="btn" id="bd-load">Load Latest Profile</button>
+              <button type="button" class="btn" id="bd-save">Save Birth Profile</button>
+              <button type="button" class="btn" id="bd-generate">Generate Recommendations</button>
+              <button type="submit" class="btn">OK</button>
+              <button type="button" class="btn btn-secondary" onclick="document.getElementById('birth-data-form').reset()">Cancel</button>
+            </div>
+          </form>
+          <div id="wellness-output" class="wellness-output hidden"></div>
+        </div>
+        <div class="panel grid-panel">
+          <div class="panel-head">
+            <h2>Today&rsquo;s SBC Chakra</h2>
+            <span class="panel-sub" id="grid-sub"></span>
+          </div>
+          <div id="gridwrap">
+            <div id="grid"></div>
+            <svg id="rays" viewBox="0 0 540 540" preserveAspectRatio="none"></svg>
+          </div>
+          <div class="legend" id="legend"></div>
+        </div>
+      </div>
+
+      <div class="layout-full">
+        <div class="side-below">
+          <div class="panel">
+            <div class="panel-head">
+              <h2>Planetary Ephemeris</h2>
+              <span class="panel-sub">Sidereal &middot; Lahiri Ayanamsa</span>
+            </div>
+            <table class="ptable">
+              <thead><tr><th>P</th><th>Sign</th><th>Nakshatra</th><th>Mot</th><th>Nat</th></tr></thead>
+              <tbody id="planets"></tbody>
+            </table>
+          </div>
+
+          <div class="panel">
+            <div class="panel-head">
+              <h2>Sensitive Stars (Pancha-Shakha)</h2>
+              <span class="panel-sub">of <b id="anchor-name"></b> <em id="anchor-star"></em></span>
+            </div>
+            <ul id="points" class="points"></ul>
+          </div>
+        </div>
+      </div>
+
+      <details class="panel method-accordion vedha-fold" id="vedha-dashboard">
+        <summary class="method-summary">
+          <span>🔱 Vedhas from the Chakra &mdash; Combined Dashboard</span>
+          <span class="summary-toggle-icon">▼</span>
+        </summary>
+        <div class="method-body">
+          <span class="panel-sub" id="vedhas-sub"></span>
+
+          <div class="vedha-layer">
+            <h4>Layer 1 &mdash; Chakra Wheel <small>(geometry: rays + directions)</small></h4>
+            <div id="vedha-wheel" class="vedha-wheel"></div>
+            <div id="vedha-wheel-legend" class="nifty-chart-legend"></div>
+          </div>
+
+          <div class="vedha-layer">
+            <h4>Layer 2 &mdash; Sankey <small>(impact flow: most-hit targets)</small></h4>
+            <div id="vedha-sankey" class="vedha-sankey"></div>
+          </div>
+
+          <div class="vedha-layer">
+            <h4>Layer 3 &mdash; Strength Bars <small>(numeric: graha power ranking)</small></h4>
+            <div id="vedha-strength" class="vedha-strength"></div>
+          </div>
+
+          <div id="vedhas" class="vedhas"></div>
+        </div>
+      </details>
+
+      <section class="panel">
+        <div class="panel-head">
+          <h2>Rasi Sector Projection</h2>
+          <span class="panel-sub" id="sectors-sub"></span>
+        </div>
+        <div id="sectors" class="sectors"></div>
+      </section>
+
+      <section class="panel">
+        <div class="panel-head">
+          <h2>Planet Sector Rulership</h2>
+          <span class="panel-sub" id="psectors-sub"></span>
+        </div>
+        <div id="psectors" class="psectors"></div>
+      </section>
+
+      <section class="panel">
+        <div class="panel-head">
+          <h2>Classical Reading</h2>
+          <span class="panel-sub" id="read-sub"></span>
+        </div>
+        <div id="reading" class="reading"></div>
+      </section>
+
+      <!-- Bhadra (Vishti Karana) Monthly Calendar -->
+      <section id="bhadra-calendar" class="panel bhadra-panel">
+        <div class="panel-head">
+          <h2>Bhadra (Vishti Karana) Calendar</h2>
+          <span class="panel-sub" id="bhadra-sub">Inauspicious muhurta windows &middot; derived from SBC Sun-Moon elongation</span>
+        </div>
+        <div class="bhadra-controls">
+          <span class="bhadra-location" id="bhadra-location">Mumbai, India</span>
+          <div class="bhadra-nav">
+            <button id="bhadra-prev" class="btn btn-secondary" title="Previous month">‹ Prev Month</button>
+            <button id="bhadra-month" class="btn" title="Current month">Current Month</button>
+            <button id="bhadra-next" class="btn btn-secondary" title="Next month">Next Month ›</button>
+          </div>
+        </div>
+        <div id="bhadra-month-label" class="bhadra-month-label"></div>
+        <div id="bhadra-list" class="bhadra-list"></div>
+        <details class="bhadra-fold">
+          <summary class="bhadra-fold-summary">
+            <span class="bhadra-note-title">Reversal-Calendar Cross-Reference</span>
+            <span class="summary-toggle-icon">▼</span>
+          </summary>
+          <div id="bhadra-backtest" class="bhadra-backtest"></div>
+        </details>
+      </section>
+
+      <!-- Collapsible Method & Methodology Reference -->
+      <details class="panel method-accordion">
+        <summary class="method-summary">
+          <span>📚 Sarvatobhadra Chakra Methodology &amp; Mathematical Rules</span>
+          <span class="summary-toggle-icon">▼</span>
+        </summary>
+        <div class="method-body">
+          <p>The <b>Sarvatobhadra Chakra</b> is a 9&times;9 (81-cell) transit diagram of Vedic astrology. The 28 nakshatras
+          (the 27 lunar mansions plus Abhijit) line the border &mdash; Krittika starts the East side and the ring runs
+          clockwise. Inside sit the 16 vowels, the 20 name consonants (avakahada), the 12 rashis and the five tithi
+          groups with their weekday rulers.</p>
+          <p>Each transiting graha is placed on the nakshatra it occupies and casts <b>vedha</b> (piercing) rays across
+          the chakra: <b>front</b> (straight across), <b>left</b> (diagonal in the direction of motion) and
+          <b>right</b> (the other diagonal). The classical school uses one operative ray per graha chosen by its
+          motion &mdash; swift casts left, retrograde casts right, mean speed casts front; Sun and Moon always cast left,
+          Rahu and Ketu always right.</p>
+          <p>From the market&rsquo;s anchor nakshatra nine sensitive stars are counted out on the 28-star ring; the
+          five Pancha-Shakha points (Janma, Karma, Sanghatika, Samudayika, Adhana) form the market core. A malefic
+          (Saturn, Sun, Mars, Rahu, Ketu, ashubha Moon or harsh Mercury) vedha on a core point is bearish; a benefic
+          (Jupiter, Venus, shubha Moon or well-placed Mercury) vedha is bullish. Strength is scaled by dignity &mdash;
+          retrograde &times;2, exalted &times;3, debilitated &times;0.5, combust &times;0.5.</p>
+          <p>The <b>Rasi Sector Projection</b> panel nets the same vedha rays over the twelve rashis of the inner ring:
+          every ray that pierces a rashi cell adds the piercing graha&rsquo;s signed strength to that rashi. Each rashi
+          is mapped to the market sectors classically associated with it (banks for Taurus, oil &amp; gas for Scorpio,
+          technology for Aquarius, etc.); a negative net is a bearish projection, a positive net bullish, and a rashi
+          left untouched by any vedha shows no signal.</p>
+          <p class="method-sources">Sources: Phaladeepika XXVI, Horaratna/Rajavijaya (preserved in the Phaladeepika XXVI.48 commentary),
+          Narapatijayacharya; layout verified against classical references.</p>
+        </div>
+      </details>
+    </section>
+
       <!-- Weekly Confluence Commentary Panel -->
       <section id="weekly-commentary" class="panel weekly-commentary-panel hidden">
         <div class="panel-head">
@@ -226,6 +463,20 @@
         <div id="weekly-commentary-content" class="weekly-commentary-content"></div>
       </section>
 
+      <!-- Rahu/Ketu Trap Calendar -->
+      <section class="panel rahu-ketu-trap-panel">
+        <div class="panel-head">
+          <h2>Rahu/Ketu Trap Calendar</h2>
+          <span class="panel-sub">Industry-wise daily trap scores · v1</span>
+        </div>
+        <div class="trap-controls" style="display:flex;gap:8px;flex-wrap:wrap;margin:8px 0">
+          <label style="font-size:13px">Start <input type="date" id="rk-start" style="margin-left:4px"></label>
+          <label style="font-size:13px">End <input type="date" id="rk-end" style="margin-left:4px"></label>
+          <button id="rk-run" class="btn btn-primary" style="margin-left:auto">Load Calendar</button>
+        </div>
+        <div id="rk-heatmap" style="overflow:auto;max-height:600px"></div>
+      </section>
+
       <!-- Upcoming Yoga Alerts -->
       <section class="panel yoga-panel">
         <div class="panel-head">
@@ -233,6 +484,57 @@
           <span class="panel-sub">7-day forward view &middot; Panchanga &amp; Planetary Yogas</span>
         </div>
         <div id="yoga-alerts" class="yoga-alerts"></div>
+      </section>
+      <!-- Trading Signals - Astro Technical -->
+      <section id="trading-signals-astro" class="panel">
+
+        <div class="panel-head">
+          <h2>TRADING SIGNALS</h2>
+          <span class="panel-sub">Astro-Technical &middot; live panchanga, Bhadra and reversal windows</span>
+          <button class="btn btn-sm btn-secondary" id="toggle-trading-details">Show Details</button>
+        </div>
+        <div id="trading-signals-details" class="hidden">
+          <div id="astro-score" class="panel-sub" style="text-align:center;margin:20px 0"></div>
+          <div class="monthly-heatmap-controls" style="margin:12px 0">
+            <label>Sector
+              <select id="nakshatra-sector-select" class="form-control">
+                <option>Nifty Bank</option>
+                <option>Nifty IT</option>
+                <option>Nifty Auto</option>
+                <option>Nifty Metal</option>
+                <option>Nifty FMCG</option>
+                <option>Nifty Pharma</option>
+                <option>Nifty Energy</option>
+                <option>Nifty Realty</option>
+              </select>
+            </label>
+            <label>Gann Start
+              <input type="date" id="gann-start-date" style="width:150px">
+            </label>
+            <label style="margin-left:8px"><input type="checkbox" id="gann-toggle"> Gann Fan</label>
+            <button id="trading-predicted-actual-load" class="btn" style="margin-left:8px" title="Experimental: not validated">Load Projection vs Actual <span class="experimental-badge">Experimental</span></button>
+          </div>
+          <div id="trading-signals-predicted-actual" style="height:650px;margin-top:24px">
+            <div style="display:flex;gap:12px;margin-bottom:8px;font-size:12px;color:#94a3b8">
+              <span>Top: SBC intraday projection (/api/intraday_projection) &mdash; <strong style="color:var(--accent)">experimental, not validated</strong></span>
+              <span>Bottom: Actual price candles</span>
+            </div>
+            <div id="predicted-actual-top" style="height:300px;border:1px solid #1e293b;border-radius:6px"></div>
+            <div style="height:8px"></div>
+            <div id="predicted-actual-bottom" style="height:340px;border:1px solid #1e293b;border-radius:6px"></div>
+          </div>
+          <h1 id="astro-score-label">&mdash;</h1>
+          <div id="astro-score-sub">Loading live panchanga&hellip;</div>
+          <div id="astro-signals-list"></div>
+          <div id="reversal-zone" class="alert alert-danger hidden">
+            <div><b>⚡ REVERSAL WINDOWS ACTIVE TODAY</b></div>
+            <div id="reversal-details"></div>
+          </div>
+          <div id="sector-map" style="margin-top:20px">
+            <h3>Today's Sector Map <span id="sector-map-overall" style="float:right"></span></h3>
+            <div id="sector-map-items"></div>
+          </div>
+        </div>
       </section>
     </div>
 
@@ -259,6 +561,7 @@
           </label>
           <button id="nifty-chart-run" class="btn btn-secondary">Load Chart</button>
           <label class="crashscore-toggle"><input type="checkbox" id="nifty-chart-crashscore"> Crash score</label>
+          <label class="gannzones-toggle"><input type="checkbox" id="nifty-chart-gannzones"> Gann Zones</label>
         </div>
         <div id="nifty-chart-legend" class="nifty-chart-legend">
           <span><i class="mk mk-bull"></i> Bullish prediction</span>
@@ -268,6 +571,9 @@
           <span><i class="mk mk-today"></i> Today (future = forecast)</span>
           <span class="lunar-legend"><i class="mk mk-purnima"></i> Purnima (Full Moon)</span>
           <span class="lunar-legend"><i class="mk mk-amavasya"></i> Amavasya (New Moon)</span>
+          <span class="gann-legend"><i class="mk mk-gann-init"></i> Gann initiation (purple)</span>
+          <span class="gann-legend"><i class="mk mk-gann-target"></i> Gann target (red)</span>
+          <span class="gann-legend"><i class="mk mk-gann-sl"></i> Gann SL / trailing (black)</span>
         </div>
         <div id="nifty-chart-status" class="nifty-chart-status"></div>
         <div id="nifty-chart" class="nifty-chart"></div>
@@ -278,7 +584,7 @@
       <section class="panel intraday-projection-panel">
         <div class="panel-head">
           <h2>Intraday NIFTY 50 Astro-Projection</h2>
-          <span class="panel-sub" id="intraday-proj-sub">Hourly astro bias + yogas in market hours &middot; forward projection (week level)</span>
+          <span class="panel-sub" id="intraday-proj-sub">Cumulative KP composite path + hora-lord bands + intraday momentum &middot; forward projection (week level)</span>
         </div>
         <div class="astro-plot-controls">
           <label>Week of
@@ -292,8 +598,50 @@
         </div>
         <div id="intraday-proj-status" class="nifty-chart-status"></div>
         <div id="intraday-proj-chart" class="intraday-proj-chart"></div>
+        <div id="intraday-proj-legend" class="nifty-chart-legend">
+          <span><i style="display:inline-block;width:14px;height:3px;border-radius:2px;background:#3b82f6;margin-right:5px"></i> Cumulative KP path</span>
+          <span><i style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#f59e0b;margin-right:5px"></i> Reversal turning points</span>
+          <span><i style="display:inline-block;width:10px;height:10px;border-radius:2px;background:rgba(34,197,94,0.85);margin-right:5px"></i> Benefic hora momentum</span>
+          <span><i style="display:inline-block;width:10px;height:10px;border-radius:2px;background:rgba(239,68,68,0.85);margin-right:5px"></i> Malefic hora momentum</span>
+          <span><i style="display:inline-block;width:10px;height:10px;border-radius:2px;background:rgba(148,163,184,0.6);margin-right:5px"></i> Dahan (Bhadra) muted</span>
+          <span>Shaded bands: hora lord</span>
+        </div>
         <div id="intraday-proj-tip" class="nifty-chart-tip hidden"></div>
         <div id="intraday-proj-yoga-list" class="intraday-yoga-list"></div>
+      </section>
+
+      <!-- AstroCycle Pro: Mercury/Moon time bars -->
+      <section class="panel astrocycle-panel">
+        <div class="panel-head">
+          <h2>AstroCycle Pro &mdash; Mercury/Moon Time Bars</h2>
+          <span class="panel-sub">Intraday reversal windows from Mercury & Moon horas + Moon nakshatra ingresses</span>
+        </div>
+        <div class="astro-plot-controls">
+          <label>Date <input type="date" id="astrocycle-date"></label>
+          <button id="astrocycle-run" class="btn btn-secondary">Load Cycles</button>
+        </div>
+        <div id="astrocycle-status" class="nifty-chart-status"></div>
+        <div id="astrocycle-results" class="astrocycle-results"></div>
+      </section>
+
+      <!-- Expiry Range Indicator -->
+      <section class="panel expiry-range-panel">
+        <div class="panel-head">
+          <h2>Expiry Range Indicator</h2>
+          <span class="panel-sub">Expiry-day support/resistance forecast with false-breakout buffers</span>
+        </div>
+        <div class="astro-plot-controls">
+          <label>Instrument
+            <select id="expiry-instrument">
+              <option value="NIFTY" selected>NIFTY (weekly)</option>
+              <option value="BANKNIFTY">BANKNIFTY (monthly)</option>
+            </select>
+          </label>
+          <button id="expiry-run" class="btn btn-secondary">Load Forecast</button>
+          <button id="expiry-backtest" class="btn">Backtest</button>
+        </div>
+        <div id="expiry-status" class="nifty-chart-status"></div>
+        <div id="expiry-results" class="expiry-results"></div>
       </section>
 
       <!-- Crash Futurecast Risk Windows -->
@@ -339,6 +687,37 @@
            <button class="pill active" data-filter="all">All Sectors</button>
          </div>
        </div>
+
+      <!-- SBC Sector Dashboard (3-layer visual structure) -->
+      <section class="panel sd-panel" data-sector-category="all">
+        <div class="panel-head">
+          <h2>SBC Sector Dashboard</h2>
+          <span class="panel-sub">Daily rashi confluence &middot; 12-box heatmap + vedha badges + sector chips &middot; loads with Predict</span>
+        </div>
+        <div id="sd-status" class="nifty-chart-status"></div>
+
+        <!-- Layer 0: Top summary bar -->
+        <div id="sd-summary-bar" class="sd-summary-bar" aria-live="polite"></div>
+
+        <!-- Layer 1: 12-rashi heatmap grid (3x4) -->
+        <div id="sd-heatmap" class="sd-heatmap"></div>
+
+        <!-- Bottom trend ribbon -->
+        <div id="sd-trend-ribbon" class="sd-trend-ribbon" aria-hidden="true"></div>
+
+        <!-- Optional: radar chart + rotation wheel -->
+        <div class="sd-optional-row">
+          <div class="sd-radar-wrap">
+            <h4 class="sd-opt-title">Rashi Strength Radar</h4>
+            <div id="sd-radar" class="sd-radar"></div>
+          </div>
+          <div class="sd-wheel-wrap">
+            <h4 class="sd-opt-title">Sector Rotation Wheel</h4>
+            <div id="sd-wheel" class="sd-wheel"></div>
+            <div id="sd-wheel-legend" class="sd-wheel-legend"></div>
+          </div>
+        </div>
+      </section>
 
       <!-- Monthly Sector Confluence Heatmap -->
       <section id="monthly-heatmap" class="panel monthly-heatmap-panel" data-sector-category="all">
@@ -534,16 +913,60 @@
         <div id="lunar-forecast-content" class="lunar-forecast-content"></div>
         <div id="lunar-forecast-toast" class="toast hidden"></div>
       </section>
+      <!-- Daily Nakshatra Sector Dashboard -->
+      <section id="daily-nakshatra-dashboard" class="panel">
+        <div class="panel-head">
+          <h2>Daily Nakshatra + SBC Sector Confluence</h2>
+          <span class="panel-sub">Moon Nakshatra bias + SBC vedha direction for sector selection</span>
+        </div>
+        <div class="monthly-heatmap-controls">
+          <label>Date <input type="date" id="nakshatra-date"></label>
+          <button id="nakshatra-run" class="btn">Generate</button>
+          <label>Chart range
+            <select id="nakshatra-chart-range">
+              <option value="1">1 month</option>
+              <option value="3" selected>3 months</option>
+              <option value="6">6 months</option>
+              <option value="12">12 months</option>
+            </select>
+          </label>
+          <button id="nakshatra-chart-run" class="btn btn-secondary" type="button">Plot NIFTY Chart</button>
+        </div>
+        <div id="nakshatra-status" class="nifty-chart-status"></div>
+        <div id="nakshatra-content" class="lunar-forecast-content"></div>
+        <div id="nakshatra-chart-status" class="nifty-chart-status"></div>
+        <img id="nakshatra-chart" class="nakshatra-chart hidden" alt="Native Python NIFTY chart with Nakshatra and SBC confluence">
+      </section>
     </div>
 
     <!-- ============================================================== -->
     <!-- TAB 4: KP INTRADAY -->
     <!-- ============================================================== -->
     <div id="tab-kp" class="tab-pane" role="tabpanel">
+      <!-- Forward intraday forecast: SBC + KP transition confluence (Plotly) -->
+      <section id="intraday-forecast" class="panel intraday-forecast-panel">
+        <div class="panel-head">
+          <h2>Intraday Forecast &middot; SBC + KP Confluence <span class="experimental-badge">Experimental</span></h2>
+          <span class="panel-sub">Forward 5-minute path for the NSE session (09:15&ndash;15:30 IST), computed from the ephemeris; actual NIFTY overlaid once traded</span>
+        </div>
+        <p class="experimental-note"><strong>Not a trading signal.</strong> The KP composite behind this back-tested at chance. Each day&rsquo;s forecast is frozen before the open and scored after the close; the record below is the only evidence that counts.</p>
+        <div class="intraday-forecast-controls">
+          <label>Trading day <input type="date" id="ifc-date"></label>
+          <label>Bucket
+            <select id="ifc-step"><option value="5" selected>5 min</option><option value="15">15 min</option></select>
+          </label>
+          <button id="ifc-load" class="btn">Load forecast</button>
+          <span id="ifc-frozen" class="ifc-frozen"></span>
+        </div>
+        <div id="ifc-status" class="nifty-chart-status" role="status" aria-live="polite"></div>
+        <div id="ifc-chart" class="ifc-chart" aria-label="Intraday forecast chart"></div>
+        <div id="ifc-ledger" class="ifc-ledger" aria-live="polite"></div>
+      </section>
+
       <section id="kp-intraday" class="panel kp-intraday-panel">
         <div class="panel-head">
-          <h2>KP Intraday Trend Change Prediction</h2>
-          <span class="panel-sub" id="kp-intraday-sub">Rule-based intraday trend change signals for index futures (NIFTY/BANK NIFTY) using KP astrology</span>
+          <h2>KP Intraday Trend Change Prediction <span class="experimental-badge">Experimental</span></h2>
+          <span class="panel-sub" id="kp-intraday-sub">Rule-based intraday trend change signals for index futures (NIFTY/BANK NIFTY) using KP astrology &middot; back-tested with no edge over chance; research only</span>
         </div>
         <div class="kp-intraday-controls">
           <label>Trading Day
@@ -563,14 +986,16 @@
             <select id="kp-intraday-format">
               <option value="html">HTML Interactive Report</option>
               <option value="json">JSON Structured Data</option>
+              <option value="docx">Word document (.docx)</option>
             </select>
           </label>
           <button id="kp-intraday-run" class="btn">⚡ Generate Report</button>
-          <button id="kp-intraday-sample" class="btn btn-secondary">Generate Sample Data</button>
-          <button id="kp-intraday-path" class="btn btn-secondary">📈 Predictive Intraday Path</button>
+          <button id="kp-intraday-sample" class="btn btn-secondary" title="Compute this month's KP data from Swiss Ephemeris">Generate KP Data</button>
+          <button id="kp-intraday-path" class="btn btn-secondary" title="Experimental: no validated edge">📈 Intraday Path (experimental)</button>
         </div>
         <div id="kp-intraday-path-chart" class="kp-intraday-chart" style="display:none;">
-          <h3>Predictive Intraday Path (cumulative KP composite score)</h3>
+          <h3>Intraday Path (cumulative KP composite score) <span class="experimental-badge">Experimental</span></h3>
+          <p class="experimental-note"><strong>Experimental &mdash; no validated edge.</strong> Back-test on Swiss-Ephemeris KP data, 4 Aug&ndash;30 Sep 2026 (41 days): hourly direction hit 50.8%, regime-shift hit 49.7%, correlation with returns +0.004 &mdash; indistinguishable from chance. Shown for research only; do not trade on it. Details: <code>docs/INTRADAY_PATH_VALIDATION.md</code>.</p>
           <div id="kp-path-container" style="height: 320px; width: 100%;"></div>
           <div id="kp-nifty-intraday-wrap" style="margin-top:24px; display:none;">
             <h4>NIFTY Intraday Chart (3-min)</h4>
@@ -640,6 +1065,28 @@
           </div>
         </div>
       </section>
+
+      <!-- Confluence Calendar Matrix (year view, day-of-month) -->
+      <section id="confluence-matrix" class="panel confluence-matrix-panel">
+        <div class="panel-head">
+          <h2>Confluence Calendar Matrix</h2>
+          <span class="panel-sub" id="cm-sub">Day-of-month SBC confluence verdicts for the year &middot; click a day to load its Daily Indication Balance</span>
+        </div>
+        <div class="monthly-heatmap-controls">
+          <label>Year
+            <select id="cm-year"></select>
+          </label>
+          <button id="cm-run" class="btn">⚡ Load Matrix</button>
+        </div>
+        <div id="cm-status" class="nifty-chart-status"></div>
+        <div id="cm-summary" class="cm-summary"></div>
+        <div id="cm-matrix" class="cm-matrix"></div>
+        <div id="cm-legend" class="nifty-chart-legend">
+          <span><i style="display:inline-block;width:12px;height:12px;border-radius:2px;background:#3d8b40;margin-right:5px"></i> BULLISH</span>
+          <span><i style="display:inline-block;width:12px;height:12px;border-radius:2px;background:#cc4b3d;margin-right:5px"></i> BEARISH</span>
+          <span><i style="display:inline-block;width:12px;height:12px;border-radius:2px;background:#c9993a;margin-right:5px"></i> NEUTRAL / no signal</span>
+        </div>
+      </section>
     </div>
 
     <!-- TAB 6: ASTRO RESEARCH LAB -->
@@ -707,321 +1154,7 @@
       </section>
     </div>
 
-    <!-- ============================================================== -->
-    <!-- TAB 6: SBC CHAKRA ENGINE -->
-    <!-- ============================================================== -->
-    <div id="tab-chakra" class="tab-pane" role="tabpanel">
-      <div class="layout">
-        <div class="panel birth-data-panel">
-          <div class="panel-head">
-            <h2>Enter Birthdata</h2>
-          </div>
-          <form id="birth-data-form" class="birth-form">
-            <div class="birth-form-grid">
-              <div class="form-field">
-                <label>Birthdate (Gregorian)
-                  <div class="week-picker-wrap">
-                    <input type="date" id="bd-date" required class="week-picker-input">
-                    <span class="calendar-icon" onclick="document.getElementById('bd-date').showPicker?.() || document.getElementById('bd-date').focus()">
-                      <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-                    </span>
-                    <div class="week-calendar-dropdown hidden" id="bd-date-calendar"></div>
-                  </div>
-                </label>
-              </div>
-              <div class="form-field">
-                <label>Birthtime (0–24 hrs)
-                  <div class="week-picker-wrap">
-                    <input type="time" id="bd-time" step="1" required class="time-picker-input">
-                    <span class="calendar-icon time-icon" onclick="document.getElementById('bd-time').showPicker?.() || document.getElementById('bd-time').focus()">
-                      <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-                    </span>
-                  </div>
-                </label>
-              </div>
-              <div class="form-field">
-                <label>Gender
-                  <select id="bd-gender">
-                    <option value="">Select</option>
-                    <option>Male</option>
-                    <option>Female</option>
-                    <option>Other</option>
-                  </select>
-                </label>
-              </div>
-              <div class="form-field full">
-                <label>City name
-                  <input type="text" id="bd-city" placeholder="City name">
-                </label>
-                <div class="city-buttons">
-                  <button type="button" class="btn btn-secondary">Search Worldwide</button>
-                  <button type="button" class="btn btn-secondary">Search USA</button>
-                </div>
-                <div class="coords-grid">
-                  <div class="coord-block">
-                    <span class="coord-label">Longitude</span>
-                    <div class="deg-min-sec">
-                      <input type="number" placeholder="°" min="-180" max="180" id="lon-deg">°
-                      <input type="number" placeholder="′" min="0" max="59" id="lon-min">′
-                      <input type="number" placeholder="″" min="0" max="59" id="lon-sec">″
-                    </div>
-                  </div>
-                  <div class="coord-block">
-                    <span class="coord-label">Latitude</span>
-                    <div class="deg-min-sec">
-                      <input type="number" placeholder="°" min="-90" max="90" id="lat-deg">°
-                      <input type="number" placeholder="′" min="0" max="59" id="lat-min">′
-                      <input type="number" placeholder="″" min="0" max="59" id="lat-sec">″
-                    </div>
-                  </div>
-                </div>
-              </div>
-              <div class="form-field">
-                <label>Time Zone (Standard Time)
-                  <div class="tz-inputs">
-                    <input type="number" id="tz-hours" placeholder="Hours" min="-12" max="14" step="1">
-                    <span>:</span>
-                    <input type="number" id="tz-mins" placeholder="Mins" min="0" max="59" step="1">
-                  </div>
-                </label>
-              </div>
-              <div class="form-field">
-                <label>Altitude (m above sea level)
-                  <input type="number" id="bd-altitude" placeholder="meters">
-                </label>
-              </div>
-              <div class="form-field">
-                <label>Atmospheric pressure
-                  <input type="number" id="bd-pressure" placeholder="mbar (hPa)">
-                </label>
-              </div>
-              <div class="form-field">
-                <label>Atmospheric temperature
-                  <input type="number" id="bd-temp" placeholder="°C">
-                </label>
-              </div>
-            </div>
-            <div class="profile-controls" style="display:flex;gap:8px;align-items:center;margin-bottom:8px">
-              <select id="bd-profile-select" style="flex:1">
-                <option value="">-- Select saved profile --</option>
-              </select>
-              <button type="button" class="btn btn-secondary" id="bd-profile-rename">Rename</button>
-              <button type="button" class="btn btn-secondary" id="bd-profile-default">Set Default</button>
-              <button type="button" class="btn btn-secondary" id="bd-profile-delete">Delete</button>
-              <button type="button" class="btn btn-secondary" id="bd-profile-export">Export</button>
-              <input type="file" id="bd-profile-import" accept="application/json" style="display:none">
-              <button type="button" class="btn btn-secondary" id="bd-profile-import-btn">Import</button>
-            </div>
-            <div class="form-actions">
-              <button type="button" class="btn" id="bd-load">Load Latest Profile</button>
-              <button type="button" class="btn" id="bd-save">Save Birth Profile</button>
-              <button type="button" class="btn" id="bd-generate">Generate Recommendations</button>
-              <button type="submit" class="btn">OK</button>
-              <button type="button" class="btn btn-secondary" onclick="document.getElementById('birth-data-form').reset()">Cancel</button>
-            </div>
-          </form>
-          <div id="wellness-output" class="wellness-output hidden"></div>
-        </div>
-        <div class="panel grid-panel">
-          <div class="panel-head">
-            <h2>Today&rsquo;s SBC Chakra</h2>
-            <span class="panel-sub" id="grid-sub"></span>
-          </div>
-          <div id="gridwrap">
-            <div id="grid"></div>
-            <svg id="rays" viewBox="0 0 540 540" preserveAspectRatio="none"></svg>
-          </div>
-          <div class="legend" id="legend"></div>
-        </div>
-      </div>
 
-      <div class="layout-full">
-        <div class="side-below">
-          <div class="panel">
-            <div class="panel-head">
-              <h2>Planetary Ephemeris</h2>
-              <span class="panel-sub">Sidereal &middot; Lahiri Ayanamsa</span>
-            </div>
-            <table class="ptable">
-              <thead><tr><th>P</th><th>Sign</th><th>Nakshatra</th><th>Mot</th><th>Nat</th></tr></thead>
-              <tbody id="planets"></tbody>
-            </table>
-          </div>
-
-          <div class="panel">
-            <div class="panel-head">
-              <h2>Sensitive Stars (Pancha-Shakha)</h2>
-              <span class="panel-sub">of <b id="anchor-name"></b> <em id="anchor-star"></em></span>
-            </div>
-            <ul id="points" class="points"></ul>
-          </div>
-        </div>
-      </div>
-
-      <section class="panel">
-        <div class="panel-head">
-          <h2>Vedhas from the Chakra</h2>
-          <span class="panel-sub" id="vedhas-sub"></span>
-        </div>
-        <div id="vedhas" class="vedhas"></div>
-      </section>
-
-      <section class="panel">
-        <div class="panel-head">
-          <h2>Sector Projections</h2>
-          <span class="panel-sub" id="sectors-sub"></span>
-        </div>
-        <div id="sectors" class="sectors"></div>
-      </section>
-
-      <section class="panel">
-        <div class="panel-head">
-          <h2>Planet Sector Rulership</h2>
-          <span class="panel-sub" id="psectors-sub"></span>
-        </div>
-        <div id="psectors" class="psectors"></div>
-      </section>
-
-      <section class="panel">
-        <div class="panel-head">
-          <h2>Classical Reading</h2>
-          <span class="panel-sub" id="read-sub"></span>
-        </div>
-        <div id="reading" class="reading"></div>
-      </section>
-
-      <!-- Bhadra (Vishti Karana) Monthly Calendar -->
-      <section id="bhadra-calendar" class="panel bhadra-panel">
-        <div class="panel-head">
-          <h2>Bhadra (Vishti Karana) Calendar</h2>
-          <span class="panel-sub" id="bhadra-sub">Inauspicious muhurta windows &middot; derived from SBC Sun-Moon elongation</span>
-        </div>
-        <div class="bhadra-controls">
-          <span class="bhadra-location" id="bhadra-location">Mumbai, India</span>
-          <div class="bhadra-nav">
-            <button id="bhadra-prev" class="btn btn-secondary" title="Previous month">‹ Prev Month</button>
-            <button id="bhadra-month" class="btn" title="Current month">Current Month</button>
-            <button id="bhadra-next" class="btn btn-secondary" title="Next month">Next Month ›</button>
-          </div>
-        </div>
-        <div id="bhadra-month-label" class="bhadra-month-label"></div>
-        <div id="bhadra-list" class="bhadra-list"></div>
-        <div id="bhadra-backtest" class="bhadra-backtest"></div>
-      </section>
-
-      <!-- Collapsible Method & Methodology Reference -->
-      <details class="panel method-accordion">
-        <summary class="method-summary">
-          <span>📚 Sarvatobhadra Chakra Methodology &amp; Mathematical Rules</span>
-          <span class="summary-toggle-icon">▼</span>
-        </summary>
-        <div class="method-body">
-          <p>The <b>Sarvatobhadra Chakra</b> is a 9&times;9 (81-cell) transit diagram of Vedic astrology. The 28 nakshatras
-          (the 27 lunar mansions plus Abhijit) line the border &mdash; Krittika starts the East side and the ring runs
-          clockwise. Inside sit the 16 vowels, the 20 name consonants (avakahada), the 12 rashis and the five tithi
-          groups with their weekday rulers.</p>
-          <p>Each transiting graha is placed on the nakshatra it occupies and casts <b>vedha</b> (piercing) rays across
-          the chakra: <b>front</b> (straight across), <b>left</b> (diagonal in the direction of motion) and
-          <b>right</b> (the other diagonal). The classical school uses one operative ray per graha chosen by its
-          motion &mdash; swift casts left, retrograde casts right, mean speed casts front; Sun and Moon always cast left,
-          Rahu and Ketu always right.</p>
-          <p>From the market&rsquo;s anchor nakshatra nine sensitive stars are counted out on the 28-star ring; the
-          five Pancha-Shakha points (Janma, Karma, Sanghatika, Samudayika, Adhana) form the market core. A malefic
-          (Saturn, Sun, Mars, Rahu, Ketu, ashubha Moon or harsh Mercury) vedha on a core point is bearish; a benefic
-          (Jupiter, Venus, shubha Moon or well-placed Mercury) vedha is bullish. Strength is scaled by dignity &mdash;
-          retrograde &times;2, exalted &times;3, debilitated &times;0.5, combust &times;0.5.</p>
-          <p>The <b>Sector Projections</b> panel nets the same vedha rays over the twelve rashis of the inner ring:
-          every ray that pierces a rashi cell adds the piercing graha&rsquo;s signed strength to that rashi. Each rashi
-          is mapped to the market sectors classically associated with it (banks for Taurus, oil &amp; gas for Scorpio,
-          technology for Aquarius, etc.); a negative net is a bearish projection, a positive net bullish, and a rashi
-          left untouched by any vedha shows no signal.</p>
-          <p class="method-sources">Sources: Phaladeepika XXVI, Horaratna/Rajavijaya (preserved in the Phaladeepika XXVI.48 commentary),
-          Narapatijayacharya; layout verified against classical references.</p>
-        </div>
-      </details>
-    </div>
-
-    <!-- Trading Signals - Astro Technical -->
-    <section id="trading-signals-astro" class="panel">
-
-      <div class="panel-head">
-        <h2>TRADING SIGNALS</h2>
-        <span class="panel-sub">Astro-Technical</span>
-        <button class="btn btn-sm btn-secondary" id="toggle-trading-details">Show Details</button>
-      </div>
-      <div class="monthly-heatmap-controls trading-signals-tabs">
-        <button class="btn btn-sm tab active" data-scope="INTRADAY">INTRADAY</button>
-        <button class="btn btn-sm tab" data-scope="SWING">SWING</button>
-        <button class="btn btn-sm tab" data-scope="POSITIONAL">POSITIONAL</button>
-      </div>
-      <div id="trading-signals-details" class="hidden">
-        <div id="astro-score" class="panel-sub" style="text-align:center;margin:20px 0"></div>
-        <div class="monthly-heatmap-controls" style="margin:12px 0">
-          <label>Sector
-            <select id="nakshatra-sector-select" class="form-control">
-              <option>Nifty Bank</option>
-              <option>Nifty IT</option>
-              <option>Nifty Auto</option>
-              <option>Nifty Metal</option>
-              <option>Nifty FMCG</option>
-              <option>Nifty Pharma</option>
-              <option>Nifty Energy</option>
-              <option>Nifty Realty</option>
-            </select>
-          </label>
-          <label>Gann Start
-            <input type="date" id="gann-start-date" style="width:150px">
-          </label>
-          <label style="margin-left:8px"><input type="checkbox" id="gann-toggle"> Gann Fan</label>
-          <button id="trading-predicted-actual-load" class="btn" style="margin-left:8px">Load Predicted vs Actual</button>
-        </div>
-        <div id="trading-signals-predicted-actual" style="height:650px;margin-top:24px">
-          <div style="display:flex;gap:12px;margin-bottom:8px;font-size:12px;color:#94a3b8">
-            <span>Top: Predictive intraday path (cumulative KP composite score)</span>
-            <span>Bottom: Actual price candles</span>
-          </div>
-          <div id="predicted-actual-top" style="height:300px;border:1px solid #1e293b;border-radius:6px"></div>
-          <div style="height:8px"></div>
-          <div id="predicted-actual-bottom" style="height:340px;border:1px solid #1e293b;border-radius:6px"></div>
-        </div>
-        <h1 id="astro-score-label">NEUTRAL</h1>
-        <div id="astro-score-sub">Astro Score: 0 - Wednesday - Krishna Ashtami - Mula Nak</div>
-        <div id="astro-signals-list"></div>
-        <div id="reversal-zone" class="alert alert-danger">
-          <div><b>⚡ REVERSAL ZONE — Possible bias shift approaching</b></div>
-          <div id="reversal-details">Next Reversal Window<br>23:15 - 23:35<br>Probability: High</div>
-        </div>
-        <div id="sector-map" style="margin-top:20px">
-          <h3>Today's Sector Map <span style="float:right">NEUTRAL</span></h3>
-          <div id="sector-map-items"></div>
-        </div>
-      </div>
-    </section>
-
-    <!-- Daily Nakshatra Sector Dashboard -->
-    <section id="daily-nakshatra-dashboard" class="panel">
-      <div class="panel-head">
-        <h2>Daily Nakshatra + SBC Sector Confluence</h2>
-        <span class="panel-sub">Moon Nakshatra bias + SBC vedha direction for sector selection</span>
-      </div>
-      <div class="monthly-heatmap-controls">
-        <label>Date <input type="date" id="nakshatra-date"></label>
-        <button id="nakshatra-run" class="btn">Generate</button>
-        <label>Chart range
-          <select id="nakshatra-chart-range">
-            <option value="1">1 month</option>
-            <option value="3" selected>3 months</option>
-            <option value="6">6 months</option>
-            <option value="12">12 months</option>
-          </select>
-        </label>
-        <button id="nakshatra-chart-run" class="btn btn-secondary" type="button">Plot NIFTY Chart</button>
-      </div>
-      <div id="nakshatra-status" class="nifty-chart-status"></div>
-      <div id="nakshatra-content" class="lunar-forecast-content"></div>
-      <div id="nakshatra-chart-status" class="nifty-chart-status"></div>
-      <img id="nakshatra-chart" class="nakshatra-chart hidden" alt="Native Python NIFTY chart with Nakshatra and SBC confluence">
-    </section>
 
     <!-- Global Disclaimer -->
     <p class="disclaimer">For study and research. Not financial advice. Financial markets involve substantial risk of loss. Trade on your own analysis.</p>
@@ -1033,9 +1166,10 @@
 
   <!-- Client-Side Scripts -->
   <script src="/static/vendor/lightweight-charts.js?v=4"></script>
-  <script src="/static/nifty-chart.js?v=15"></script>
-  <script src="/static/app.js?v=29"></script>
+  <script src="/static/nifty-chart.js?v=16"></script>
+  <script src="/static/app.js?v=34"></script>
   <script src="/static/intraday-projection.js?v=2"></script>
+  <script src="/static/intraday-forecast.js?v=7"></script>
   <script>
   document.addEventListener('DOMContentLoaded', function(){
     const cityInput = document.getElementById('bd-city');
@@ -1046,12 +1180,14 @@
     const latMin = document.getElementById('lat-min');
     const latSec = document.getElementById('lat-sec');
     function toDMS(dec){
+      // Round once, in whole arc-seconds, then split. Rounding the seconds
+      // after flooring minutes turned 22.7 into 22°41'60" (float drift),
+      // which the 0-59 seconds field rejects.
       const sign = dec < 0 ? -1 : 1;
-      dec = Math.abs(dec);
-      const d = Math.floor(dec);
-      const mFloat = (dec - d) * 60;
-      const m = Math.floor(mFloat);
-      const s = Math.round((mFloat - m) * 60);
+      const total = Math.round(Math.abs(dec) * 3600);
+      const d = Math.floor(total / 3600);
+      const m = Math.floor((total % 3600) / 60);
+      const s = total % 60;
       return {d: d*sign, m, s};
     }
     function fillCoords(lat, lon){
@@ -1327,7 +1463,7 @@
         window.sbc_habit_server = data;
         // Reminder for missed habits
         if('Notification' in window && Notification.permission === 'granted'){
-          const today = new Date().toISOString().slice(0,10);
+          const today = localTodayISO();
           const habits = ['meditation','steps','colour'];
           habits.forEach(h=>{
             const server = data[h];
@@ -1533,7 +1669,7 @@
         updateStreak(colourData, colourSpan);
         if(logBtn){
           logBtn.addEventListener('click', async ()=>{
-            const now = new Date().toISOString().slice(0,10);
+            const now = localTodayISO();
             if(medData.last !== now){
               if(medData.last){
                 const prev = new Date(medData.last);
@@ -1555,7 +1691,7 @@
         }
         if(stepsBtn){
           stepsBtn.addEventListener('click', async ()=>{
-            const now = new Date().toISOString().slice(0,10);
+            const now = localTodayISO();
             if(stepsData.last !== now){
               if(stepsData.last){
                 const prev = new Date(stepsData.last);
@@ -1577,7 +1713,7 @@
         }
         if(colourBtn){
           colourBtn.addEventListener('click', async ()=>{
-            const now = new Date().toISOString().slice(0,10);
+            const now = localTodayISO();
             if(colourData.last !== now){
               if(colourData.last){
                 const prev = new Date(colourData.last);
@@ -1634,7 +1770,7 @@ Colour streak: ${colourData.streak} days, last: ${colourData.last||'never'}`);
               for(let i=6;i>=0;i--){
                 const d = new Date(today);
                 d.setDate(today.getDate()-i);
-                const ds = d.toISOString().slice(0,10);
+                const ds = isoDateOf(d);
                 html += `<div style="text-align:center"><div style="font-size:10px;opacity:.7">${ds.slice(5)}</div>`;
                 habits.forEach((h,idx)=>{
                   const cnt = (hist[h] && hist[h][ds]) ? 1 : 0;
@@ -1654,42 +1790,78 @@ Colour streak: ${colourData.streak} days, last: ${colourData.last||'never'}`);
 
 // Trading Signals Astro Technical
 document.addEventListener('DOMContentLoaded', async ()=>{
-  // Try live data first
-  const today = new Date().toISOString().slice(0,10);
-  let astro = {};
+  // Every row below comes from /api/astro/personal (build_response + Bhadra
+  // calendar). Nothing is defaulted: a missing field shows as unavailable.
+  const today = localTodayISO();
+  let astro = null;
   try {
     const res = await fetch(`/api/astro/personal?date=${today}`);
     if(res.ok) astro = await res.json();
   } catch(e){}
-  const moonNak = astro.moon?.nakshatra || 'Mula';
-  const vedhaNet = astro.vedha_net || 0;
-  const tithi = astro.tithi || 'Krishna Ashtami';
-  const weekday = new Date().toLocaleDateString('en-US',{weekday:'long'});
-  // Populate trading signals demo
-  const signals = [
-    {icon: vedhaNet>0?'green':'red', title:`SBC VEDHA NET ${vedhaNet.toFixed(2)}`, sub: vedhaNet>0?'bullish undercurrent':'bearish undercurrent'},
-    {icon:'red', title:tithi.toUpperCase(), sub:'inauspicious tithi, exercise caution'},
-    {icon:'green', title:weekday.toUpperCase(), sub:'favorable market day'},
-    {icon:'red', title:moonNak.toUpperCase(), sub:'caution, volatile nakshatra'},
-    {icon:'red', title:'BADRA ACTIVE', sub:'avoid major positions, high risk period'}
-  ];
-  // Update score header
   const scoreLabel = document.getElementById('astro-score-label');
   const scoreSub = document.getElementById('astro-score-sub');
-  if(scoreLabel){
-    const score = vedhaNet>0?'BULLISH':vedhaNet<0?'BEARISH':'NEUTRAL';
-    scoreLabel.textContent = score;
-    scoreSub.textContent = `Astro Score: ${vedhaNet.toFixed(0)} - ${weekday} - ${tithi} - ${moonNak} Nak`;
-    scoreLabel.insertAdjacentHTML('afterend', '<hr style="border:none;border-top:1px solid var(--border);margin:12px 0">');
-  }
   const list = document.getElementById('astro-signals-list');
-  if(list){
-    list.innerHTML = signals.map(s=>`
-      <div class="signal-row" style="display:flex;align-items:flex-start;gap:12px;padding:12px 0;border-bottom:1px solid var(--border)">
-        <div class="signal-dot ${s.icon}" style="width:24px;height:24px;border-radius:50%;background:var(--dot-bg);display:flex;align-items:center;justify-content:center">●</div>
-        <div><b>${s.title}</b><div style="opacity:.7;font-size:13px">${s.sub}</div></div>
-      </div>
-    `).join('');
+  const fmtTime = iso => iso ? iso.slice(11,16) : '?';
+  const fmtDay = iso => iso ? iso.slice(5,10) : '?';
+  if(!astro || astro.error){
+    if(scoreLabel) scoreLabel.textContent = 'UNAVAILABLE';
+    if(scoreSub) scoreSub.textContent = 'Live panchanga could not be loaded.';
+  } else {
+    const vedhaNet = typeof astro.vedha_net === 'number' ? astro.vedha_net : null;
+    const t = astro.tithi;
+    const weekday = astro.weekday || '';
+    const moonNak = astro.moon?.nakshatra || null;
+    const tithiLabel = t ? `${t.paksha} ${t.name}` : 'tithi n/a';
+    const signals = [];
+    if(vedhaNet !== null){
+      signals.push({icon: vedhaNet>0?'green':vedhaNet<0?'red':'grey',
+        title:`SBC VEDHA NET ${vedhaNet.toFixed(2)}`,
+        sub: vedhaNet>0?'benefic vedhas dominate':vedhaNet<0?'malefic vedhas dominate':'balanced'});
+    }
+    if(t){
+      signals.push({icon: t.moon_benefic?'green':'red', title: tithiLabel.toUpperCase(), sub: t.moon_note || ''});
+      if(weekday){
+        const match = (t.group_weekdays||[]).includes(weekday);
+        signals.push({icon: match?'green':'grey', title: weekday.toUpperCase(),
+          sub: match ? `matches ${t.group} tithi weekdays` : `${t.group} tithi favours ${(t.group_weekdays||[]).join('/')||'—'}`});
+      }
+    }
+    if(moonNak){
+      signals.push({icon:'grey', title:`MOON IN ${moonNak.toUpperCase()}`, sub: astro.moon?.sign ? `${astro.moon.sign} (sidereal)` : ''});
+    }
+    const b = astro.bhadra;
+    if(b){
+      if(b.active_today){
+        const spans = b.windows_today.map(w=>`${fmtDay(w.begin)} ${fmtTime(w.begin)}–${fmtDay(w.end)} ${fmtTime(w.end)}`).join(', ');
+        signals.push({icon:'red', title:'BHADRA (VISHTI) TODAY', sub:`${spans} IST · avoid initiating major positions inside the window`});
+      } else {
+        signals.push({icon:'green', title:'NO BHADRA TODAY',
+          sub: b.next ? `next: ${fmtDay(b.next.begin)} ${fmtTime(b.next.begin)}–${fmtDay(b.next.end)} ${fmtTime(b.next.end)} IST` : ''});
+      }
+    }
+    if(scoreLabel){
+      scoreLabel.textContent = vedhaNet===null ? '—' : vedhaNet>0?'BULLISH':vedhaNet<0?'BEARISH':'NEUTRAL';
+      scoreLabel.insertAdjacentHTML('afterend', '<hr style="border:none;border-top:1px solid var(--border);margin:12px 0">');
+    }
+    if(scoreSub){
+      scoreSub.textContent = [vedhaNet!==null?`Vedha net ${vedhaNet.toFixed(2)}`:null, weekday, tithiLabel, moonNak?`${moonNak} Nak`:null]
+        .filter(Boolean).join(' · ');
+    }
+    if(list){
+      list.innerHTML = signals.map(s=>`
+        <div class="signal-row" style="display:flex;align-items:flex-start;gap:12px;padding:12px 0;border-bottom:1px solid var(--border)">
+          <div class="signal-dot ${s.icon}" style="width:24px;height:24px;border-radius:50%;background:var(--dot-bg);display:flex;align-items:center;justify-content:center">●</div>
+          <div><b>${esc(s.title)}</b><div style="opacity:.7;font-size:13px">${esc(s.sub)}</div></div>
+        </div>
+      `).join('');
+    }
+    const rz = document.getElementById('reversal-zone');
+    const rd = document.getElementById('reversal-details');
+    const wins = astro.reversal_windows || [];
+    if(rz && rd){
+      rz.classList.toggle('hidden', wins.length === 0);
+      rd.innerHTML = wins.map(w=>`<div>${esc(w.level)} · ${esc(w.bias)} — ${esc(w.title)}</div>`).join('');
+    }
   }
   // Hide details toggle with aria
   const toggleBtn = document.getElementById('toggle-trading-details');
@@ -1704,17 +1876,6 @@ document.addEventListener('DOMContentLoaded', async ()=>{
     });
   }
 
-  // Tabs
-  document.querySelectorAll('.trading-signals-tabs .tab').forEach(btn=>{
-    btn.addEventListener('click', ()=>{
-      document.querySelectorAll('.trading-signals-tabs .tab').forEach(b=>b.classList.remove('active'));
-      btn.classList.add('active');
-      // Optionally filter signals by scope
-      const scope = btn.dataset.scope;
-      document.getElementById('astro-score-sub').textContent += ` [${scope}]`;
-    });
-  });
-
   // Integrate backtest accuracy into Astro Score display
   const astroScoreSub = document.getElementById('astro-score-sub');
   async function refreshAstroAccuracy(){
@@ -1723,7 +1884,9 @@ document.addEventListener('DOMContentLoaded', async ()=>{
       const res = await fetch(`/api/backtest/moon?ticker=^NSEI&multi_tf=true&regime=true&volume=true&vedha=false`);
       const data = await res.json();
       if(!data.error && data.samples>0){
-        astroScoreSub.textContent += ` | Moon Backtest Accuracy ${(data.accuracy*100).toFixed(1)}%`;
+        let acc = document.getElementById('astro-score-accuracy');
+        if(!acc){ acc = document.createElement('div'); acc.id = 'astro-score-accuracy'; acc.style.opacity = '.7'; astroScoreSub.after(acc); }
+        acc.textContent = `Moon backtest accuracy ${(data.accuracy*100).toFixed(1)}% (${data.samples} samples)`;
       }
     }catch(e){}
   }
@@ -2192,6 +2355,11 @@ document.addEventListener('DOMContentLoaded', async ()=>{
         const dir = v>=0?'up':'down';
         sectors.push({name: sector, score:`${score}/10`, dir});
       });
+      const overall = document.getElementById('sector-map-overall');
+      if(overall && sectors.length){
+        const up = sectors.filter(x=>x.dir==='up').length, down = sectors.length - up;
+        overall.textContent = up>down ? `BULLISH ${up}/${sectors.length}` : down>up ? `BEARISH ${down}/${sectors.length}` : 'MIXED';
+      }
       const sm = document.getElementById('sector-map-items');
       if(sm){
         sm.innerHTML = sectors.slice(0,12).map(sec=>`
@@ -2217,7 +2385,7 @@ document.addEventListener('DOMContentLoaded', ()=>{
   const contentEl = document.getElementById('nakshatra-content');
   if(!runBtn) return;
   if(!dateEl.value){
-    const today = new Date().toISOString().slice(0,10);
+    const today = localTodayISO();
     dateEl.value = today;
   }
   async function generate(){
@@ -2320,33 +2488,49 @@ document.addEventListener('DOMContentLoaded', ()=>{
       try{
         const sector = sectorSelect?.value || 'Nifty Large Caps';
         const tickerMap = {
-          'Nifty Bank':'^NSEBANK','Nifty IT':'^NSEIT','Nifty Auto':'^NSEAUTO',
-          'Nifty Metal':'^NSEMETAL','Nifty FMCG':'^NSEFMCG','Nifty Pharma':'^NSEPHARMA',
-          'Nifty Energy':'NIFTYEN','Nifty Realty':'^NSEREALTY','Nifty Large Caps':'^NSEI'
+          'Nifty Bank':'^NSEBANK','Nifty IT':'^CNXIT','Nifty Auto':'^CNXAUTO',
+          'Nifty Metal':'^CNXMETAL','Nifty FMCG':'^CNXFMCG','Nifty Pharma':'^CNXPHARMA',
+          'Nifty Energy':'^CNXENERGY','Nifty Realty':'^CNXREALTY','Nifty Large Caps':'^NSEI'
         };
         const ticker = tickerMap[sector] || '^NSEI';
-        const today = new Date().toISOString().slice(0,10);
-        const priceRes = await fetch(`/api/price?ticker=${encodeURIComponent(ticker)}&days=90`);
+        const dateEl = document.getElementById('date');
+        const selDate = dateEl?.value || localTodayISO();
+        const priceRes = await fetch(`/api/price?ticker=${encodeURIComponent(ticker)}&start=${encodeURIComponent(selDate)}&end=${encodeURIComponent(selDate)}&interval=3m`);
         const candles = await priceRes.json();
-        const projRes = await fetch(`/api/intraday_projection?sector=${encodeURIComponent(sector)}&date=${today}`);
+        const projRes = await fetch(`/api/intraday_projection?sector=${encodeURIComponent(sector)}&date=${selDate}`);
         let proj = [];
         try{ proj = await projRes.json(); }catch(e){ proj = []; }
         if(!topChart && window.LightweightCharts && topDiv && bottomDiv){
           topChart = LightweightCharts.createChart(topDiv,{layout:{background:{type:'solid',color:'#0b1220'}},width:topDiv.clientWidth,height:300});
           bottomChart = LightweightCharts.createChart(bottomDiv,{layout:{background:{type:'solid',color:'#0b1220'}},width:bottomDiv.clientWidth,height:340});
-          topSeries = topChart.addLineSeries({color:'#f59e0b',lineWidth:2});
+          topSeries = topChart.addCandlestickSeries({upColor:'#22c55e',downColor:'#ef4444',borderVisible:false,wickUpColor:'#22c55e',wickDownColor:'#ef4444'});
           bottomSeries = bottomChart.addCandlestickSeries();
+          // sync time scales
+          topChart.timeScale().subscribeVisibleTimeRangeChange(range=>{
+            if(range && bottomChart) bottomChart.timeScale().setVisibleRange(range);
+          });
+          bottomChart.timeScale().subscribeVisibleTimeRangeChange(range=>{
+            if(range && topChart) topChart.timeScale().setVisibleRange(range);
+          });
+          // sync crosshair - optional; keep simple time sync
+          // topChart.subscribeCrosshairMove(param=>{
+          //   if(bottomChart && param.time) bottomChart.timeScale().setVisibleRange(bottomChart.timeScale().getVisibleRange()||{from:param.time-3600,to:param.time+3600});
+          // });
+          // bottomChart.subscribeCrosshairMove(param=>{
+          //   if(topChart && param.time) topChart.timeScale().setVisibleRange(topChart.timeScale().getVisibleRange()||{from:param.time-3600,to:param.time+3600});
+          // });
           const ro = new ResizeObserver(()=>{
             topChart.applyOptions({width:topDiv.clientWidth});
             bottomChart.applyOptions({width:bottomDiv.clientWidth});
           });
           ro.observe(topDiv); ro.observe(bottomDiv);
         }
-        const predData = (proj.points||[]).map(p=>({time:Math.floor(new Date(p.time).getTime()/1000),value:p.score||0}));
-        if(predData.length){ topSeries.setData(predData); }else{
+        const rawPoints = Array.isArray(proj.points) ? proj.points : (Array.isArray(proj.hours) ? proj.hours : []);
+        const predPoints = rawPoints.map(p=>{const t = typeof p.time==='number' ? p.time : Math.floor(new Date(p.time).getTime()/1000); const v = p.score ?? p.projection ?? 0; return {time:t,open:v,high:v,low:v,close:v};});
+        if(predPoints.length){ topSeries.setData(predPoints); }else{
           const vedhaRes = await fetch(`/api/vedha_daily?sector=${encodeURIComponent(sector)}&days=90`);
           const vedha = await vedhaRes.json();
-          const placeholder = candles.slice(0,100).map((c,i)=>({time:c.time,value:(vedha[i]?.score||0)*100}));
+          const placeholder = candles.slice(0,100).map((c,i)=>{const v=(vedha[i]?.score||0)*100; return {time:c.time,open:v,high:v,low:v,close:v};});
           topSeries.setData(placeholder);
         }
         bottomSeries.setData(candles);
@@ -2357,5 +2541,94 @@ document.addEventListener('DOMContentLoaded', ()=>{
   })();
 });
   </script>
+  <script>
+  document.addEventListener('DOMContentLoaded',()=>{
+    const runBtn=document.getElementById('rk-run');
+    const startEl=document.getElementById('rk-start');
+    const endEl=document.getElementById('rk-end');
+    const heatDiv=document.getElementById('rk-heatmap');
+    if(!runBtn) return;
+    const today=new Date();
+    const fmt=d=>isoDateOf(d);
+    const nseHolidays = new Set([
+      '2025-01-26','2025-03-14','2025-03-31','2025-04-14','2025-04-18','2025-05-01','2025-08-15','2025-10-02','2025-10-20','2025-11-01','2025-11-05','2025-11-24','2025-12-25',
+      '2026-01-26','2026-03-13','2026-03-30','2026-04-14','2026-04-17','2026-05-01','2026-08-15','2026-10-02','2026-10-19','2026-11-01','2026-11-04','2026-11-23','2026-12-25'
+    ]);
+    const isTradingDay = dStr=>{ const dt=new Date(dStr); const w=dt.getDay(); return w!==0 && w!==6 && !nseHolidays.has(dStr); };
+    const nextTradingDays = (startDate, n)=>{ const dates=[]; let d=new Date(startDate); while(dates.length<n){ const ds=fmt(d); if(isTradingDay(ds)) dates.push(new Date(d)); d.setDate(d.getDate()+1); } return dates; };
+    const tradingDates = nextTradingDays(today,5);
+    const startDt = tradingDates[0];
+    const endDt = tradingDates[4];
+    if(!startEl.value) startEl.value=fmt(startDt);
+    if(!endEl.value) endEl.value=fmt(endDt);
+    const dayName=d=>new Date(d+'T00:00:00').toLocaleDateString('en-US',{weekday:'long'});
+    const levelColor=s=>{
+      if(s>=9) return '#ef4444';
+      if(s>=6) return '#f97316';
+      if(s>=3) return '#eab308';
+      return '#22c55e';
+    };
+    runBtn.addEventListener('click',async()=>{
+      heatDiv.innerHTML='<div style="padding:8px">Loading...</div>';
+      try{
+        const start=startEl.value; const end=endEl.value;
+        if(!start||!end){ heatDiv.innerHTML='Select start and end dates.'; return; }
+        const res=await fetch(`/api/rahu_ketu_trap_calendar?start=${encodeURIComponent(start)}&end=${encodeURIComponent(end)}`);
+        if(!res.ok) throw new Error('API error');
+        const data=await res.json();
+        const calendar=data.calendar||[];
+        if(!calendar.length){ heatDiv.innerHTML='<div style="padding:8px">No data</div>'; return; }
+        // collect industries
+        const indSet=new Set();
+        calendar.forEach(day=>{ (day.signals||[]).forEach(s=>indSet.add(s.industry)); });
+        const industries=[...indSet];
+        // header
+        let html=`<table style="border-collapse:collapse;font-size:11px;width:100%;overflow:auto"><thead><tr style="background:#0b1220">`;
+        html+=`<th style="padding:4px;border:1px solid #334155;position:sticky;left:0;background:#0b1220">Date</th>`;
+        html+=`<th style="padding:4px;border:1px solid #334155">Day</th>`;
+        html+=`<th style="padding:4px;border:1px solid #334155">NSE?</th>`;
+        industries.forEach(ind=>{ html+=`<th style="padding:4px;border:1px solid #334155;min-width:110px">${ind}</th>`; });
+        html+=`<th style="padding:4px;border:1px solid #334155">Rahu/Ketu Status</th>`;
+        html+=`</tr></thead><tbody>`;
+        calendar.forEach(day=>{
+          const date=day.date;
+          if(!isTradingDay(date)) return;
+          const dayNameStr=dayName(date);
+          const nse='<span style="color:#22c55e">✓ Open</span>';
+          html+=`<tr>`;
+          html+=`<td style="padding:4px;border:1px solid #334155;position:sticky;left:0;background:#0b1220">${date}</td>`;
+          html+=`<td style="padding:4px;border:1px solid #334155">${dayNameStr}</td>`;
+          html+=`<td style="padding:4px;border:1px solid #334155">${nse}</td>`;
+          // map signals by industry
+          const sigMap={};
+          (day.signals||[]).forEach(s=>{ sigMap[s.industry.toUpperCase()]=s; });
+          industries.forEach(ind=>{
+            const s=sigMap[ind.toUpperCase()];
+            if(!s){ html+=`<td style="padding:4px;border:1px solid #334155;background:#1f2937">—</td>`; return; }
+            const score=s.score||0;
+            const level=s.level||'GREEN';
+            const reasons=(s.reasons||[]).join(' · ');
+            const title=`${s.ruling_planet} | Rahu:${s.rahu_nakshatra} Ketu:${s.ketu_nakshatra} Moon:${s.moon_nakshatra} | ${reasons}`;
+            html+=`<td title="${title.replace(/"/g,'&quot;')}" style="padding:4px;border:1px solid #334155;background:${levelColor(score)};text-align:center">${score}<br><span style="font-size:9px;opacity:.8">${level}</span></td>`;
+          });
+          // status column: first signal's nodes
+          const firstSig=(day.signals||[])[0];
+          const rahuN=firstSig?.rahu_nakshatra||'-';
+          const ketuN=firstSig?.ketu_nakshatra||'-';
+          html+=`<td style="padding:4px;border:1px solid #334155;font-size:10px">Rahu:${rahuN}<br>Ketu:${ketuN}</td>`;
+          html+=`</tr>`;
+        });
+        html+=`</tbody></table>`;
+        heatDiv.innerHTML=html;
+      }catch(e){ heatDiv.innerHTML='Error loading calendar: '+e.message; }
+    });
+    runBtn.click();
+  });
+  </script>
+  <footer class="site-footer">
+    <div class="wrap">
+      <small>For informational purposes only. Astrological market timing is not financial advice. Trade at your own risk.</small>
+    </div>
+  </footer>
 </body>
 </html>

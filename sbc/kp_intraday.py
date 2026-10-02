@@ -6,11 +6,12 @@ trend change prediction reports for NIFTY/BANK NIFTY.
 
 import csv
 import json
+from html import escape as html_escape
 from dataclasses import dataclass, field
-from datetime import datetime, date, time, timedelta
-from pathlib import Path
-from typing import Optional, List, Dict, Any
+from datetime import date, datetime, time, timedelta
 from enum import Enum
+from pathlib import Path
+from typing import Any
 
 
 class SignalGrade(Enum):
@@ -74,6 +75,8 @@ class TrendChangeSignal:
     hora_lord: str
     score: float = 0.0
     notes: str = ""
+    navamsa_d9: str = ""      # v15: "Gemini (friend VARGOTTAMA PUSHKARA) Mo:AI"
+    nadi: str = ""            # v15.1: "Neer (1.05x)"
 
     def time_str(self) -> str:
         return self.timestamp.strftime('%H:%M')
@@ -85,7 +88,7 @@ class WindowScore:
     end: time
     score: float
     direction: Direction
-    signals: List[TrendChangeSignal] = field(default_factory=list)
+    signals: list[TrendChangeSignal] = field(default_factory=list)
 
     def time_range_str(self) -> str:
         return f"{self.start.strftime('%H:%M')}–{self.end.strftime('%H:%M')}"
@@ -101,7 +104,13 @@ class DayChartSignature:
     day_bias_score: float
     day_bias_label: str
     moon_affliction_gate: str
-    hora_slots: List[HoraSlot]
+    hora_slots: list[HoraSlot]
+    # v15 / v15.1 layers (filled by kp_layers.enrich_report; empty if it fails)
+    rahu_windows: list[Any] = field(default_factory=list)
+    rahu_windows_note: str = ""
+    vargottama_note: str = ""
+    navamsa: dict[str, Any] | None = None
+    nadi: dict[str, Any] | None = None
 
 
 @dataclass
@@ -115,15 +124,271 @@ class KPIntradayReport:
     brand: str
 
     day_signature: DayChartSignature
-    regime_shifts: List[RegimeShift]
-    trend_changes: List[TrendChangeSignal]
-    bullish_windows: List[WindowScore]
-    bearish_windows: List[WindowScore]
-    strongest_bullish: Optional[WindowScore]
-    strongest_bearish: Optional[WindowScore]
-    exhaustion_warnings: List[str]
+    regime_shifts: list[RegimeShift]
+    trend_changes: list[TrendChangeSignal]
+    bullish_windows: list[WindowScore]
+    bearish_windows: list[WindowScore]
+    strongest_bullish: WindowScore | None
+    strongest_bearish: WindowScore | None
+    exhaustion_warnings: list[str]
 
-    config: Dict[str, Any] = field(default_factory=dict)
+    config: dict[str, Any] = field(default_factory=dict)
+    data_quality: dict[str, Any] = field(default_factory=dict)
+
+
+# The KP report's signals (regime shifts, trend-change windows) and the
+# intraday path built from them showed no edge when back-tested on Swiss
+# Ephemeris KP data (scripts/validate_intraday_path.py). Every surface that
+# shows them (JSON, HTML, DOCX, /api/engine/intraday_path) carries this notice.
+# Update the numbers here when the validation is re-run.
+EXPERIMENTAL_VALIDATION = {
+    "period": "2026-08-04..2026-09-30",
+    "days": 41,
+    "direction_hit_rate": 0.508,
+    "regime_shift_hit_rate": 0.497,
+    "pooled_corr": 0.004,
+    "verdict": "no edge over chance",
+}
+EXPERIMENTAL_NOTICE = (
+    "No validated edge. Back-test on Swiss-Ephemeris KP data, "
+    "4 Aug–30 Sep 2026 (41 days): hourly direction hit 50.8%, regime-shift hit "
+    "49.7%, correlation with returns +0.004 — indistinguishable from chance. "
+    "For research only; do not trade on these signals. "
+    "Details: docs/INTRADAY_PATH_VALIDATION.md."
+)
+
+
+# NSE session bounds used by the cumulative path builder.
+NSE_MARKET_OPEN = time(9, 15)
+NSE_MARKET_CLOSE = time(15, 30)
+
+# Composite scoring weights for the predictive intraday path.
+HORA_QUALITY_SCORE = {
+    "Sluggish": -0.5,
+    "Neutral": 0.0,
+    "Fruitful": 0.5,
+    "Aggressive": 0.8,
+    "Volatile": 0.0,
+}
+REGIME_SHIFT_DELTA = 1.5
+WINDOW_VOTE_DELTA = 1.0
+
+MALEFIC_HORAS = ("Mars", "Saturn", "Rahu", "Ketu")
+BENEFIC_HORAS = ("Moon", "Jupiter")
+
+
+def build_cumulative_path(
+    report: KPIntradayReport, step_minutes: int = 60
+) -> list[dict[str, Any]]:
+    """Build a cumulative composite score path from a KP intraday report.
+
+    Aggregates hora quality, regime shifts, and window scores into a
+    cumulative composite score per interval (default hourly). Each point
+    carries the hora lord, DL-hora / Dahan / Chand-Vat flags, and signal
+    markers, ready for chart.js / lightweight-charts consumption.
+    """
+    if step_minutes <= 0:
+        raise ValueError("step_minutes must be a positive number of minutes")
+
+    ds = report.day_signature
+    hora_slots = list(getattr(ds, "hora_slots", []) or [])
+    hora_by_start = {hs.start: hs for hs in hora_slots}
+    day_lord = ds.day_lord
+
+    regime_by_time = {rs.timestamp: rs for rs in report.regime_shifts}
+    signals_by_time: dict[time, list[TrendChangeSignal]] = {}
+    for tc in report.trend_changes:
+        signals_by_time.setdefault(tc.timestamp, []).append(tc)
+
+    windows = list(report.bullish_windows) + list(report.bearish_windows)
+
+    def _slot_at(t: time) -> HoraSlot | None:
+        slot = hora_by_start.get(t)
+        if slot is None:
+            for hs in hora_slots:
+                if hs.start <= t < hs.end:
+                    return hs
+        return slot
+
+    series: list[dict[str, Any]] = []
+    cumulative = 0.0
+    current = datetime.combine(report.trading_day, NSE_MARKET_OPEN)
+    end_dt = datetime.combine(report.trading_day, NSE_MARKET_CLOSE)
+
+    while current <= end_dt:
+        t = current.time()
+        clock = t.strftime("%H:%M")
+
+        slot = _slot_at(t)
+        hora_quality = HORA_QUALITY_SCORE.get(slot.quality.value, 0.0) if slot else 0.0
+        hora_lord = slot.lord if slot else None
+
+        regime_delta = 0.0
+        rs = regime_by_time.get(t)
+        if rs is not None:
+            if rs.direction == Direction.BULLISH:
+                regime_delta = REGIME_SHIFT_DELTA
+            elif rs.direction == Direction.BEARISH:
+                regime_delta = -REGIME_SHIFT_DELTA
+
+        window_delta = 0.0
+        for w in windows:
+            if w.start <= t < w.end:
+                if w.direction == Direction.BULLISH:
+                    window_delta += WINDOW_VOTE_DELTA
+                elif w.direction == Direction.BEARISH:
+                    window_delta -= WINDOW_VOTE_DELTA
+
+        score = round(hora_quality + regime_delta + window_delta, 3)
+        cumulative = round(cumulative + score, 3)
+
+        dl_hora = bool(hora_lord) and hora_lord == day_lord and hora_quality > 0
+        dahan = hora_lord in MALEFIC_HORAS and hora_quality < 0
+        chand_vat = hora_lord in BENEFIC_HORAS and hora_quality >= 0
+
+        markers = [{
+            "grade": s.grade.value,
+            "direction": s.direction.value,
+            "score": s.score,
+        } for s in signals_by_time.get(t, [])]
+
+        series.append({
+            "time": clock,
+            "cumulative": cumulative,
+            "score": score,
+            "hora_lord": hora_lord,
+            "hora_quality": hora_quality,
+            "regime_delta": regime_delta,
+            "window_delta": round(window_delta, 3),
+            "dl_hora": bool(dl_hora),
+            "dahan": bool(dahan),
+            "chand_vat": bool(chand_vat),
+            "markers": markers,
+        })
+
+        current += timedelta(minutes=step_minutes)
+
+    return series
+
+
+def report_to_dict(report: KPIntradayReport) -> dict[str, Any]:
+    """Serialize a KPIntradayReport into the JSON shape the web UI expects.
+
+    Enum fields become their string values; time objects become "HH:MM".
+    """
+    def _window(w: WindowScore | None) -> dict[str, Any] | None:
+        if not w:
+            return None
+        return {
+            "time_range": w.time_range_str(),
+            "score": round(w.score, 2),
+            "direction": w.direction.value,
+        }
+
+    ds = report.day_signature
+    return {
+        "trading_day": report.trading_day.isoformat(),
+        "instrument": report.instrument,
+        "market": report.market,
+        "ayanamsa": report.ayanamsa,
+        "brand": report.brand,
+        "day_signature": {
+            "day_lord": ds.day_lord,
+            "moon_sign": ds.moon_sign,
+            "moon_star": ds.moon_star,
+            "opening_sublord": ds.opening_sublord,
+            "moon_speed": ds.moon_speed,
+            "day_bias_score": ds.day_bias_score,
+            "day_bias_label": ds.day_bias_label,
+            "moon_affliction_gate": ds.moon_affliction_gate,
+            "hora_slots": [{
+                "time_range": hs.time_range_str(),
+                "lord": hs.lord,
+                "quality": hs.quality.value,
+                "base_quality": hs.base_quality,
+                "aspects_received": hs.aspects_received,
+                "interpretation": hs.interpretation,
+                "aspect_notes": hs.aspect_notes,
+            } for hs in ds.hora_slots],
+        },
+        "regime_shifts": [{
+            "time": rs.time_str(),
+            "planet": rs.planet,
+            "old_sublord": rs.old_sublord,
+            "new_sublord": rs.new_sublord,
+            "house_set_strength": rs.house_set_strength,
+            "regime_label": rs.regime_label,
+            "direction": rs.direction.value,
+        } for rs in report.regime_shifts],
+        "trend_changes": [{
+            "time": tc.time_str(),
+            "grade": tc.grade.value,
+            "direction": tc.direction.value,
+            "trigger": tc.trigger,
+            "asc_sub_house_set": tc.asc_sub_house_set,
+            "hora_lord": tc.hora_lord,
+            "score": tc.score,
+            "notes": tc.notes,
+        } for tc in report.trend_changes],
+        "strongest_bullish": _window(report.strongest_bullish),
+        "strongest_bearish": _window(report.strongest_bearish),
+        "exhaustion_warnings": list(report.exhaustion_warnings),
+        "source_file": report.source_file,
+        "data_quality": report.data_quality,
+        "status": "experimental",
+        "validation": dict(EXPERIMENTAL_VALIDATION),
+        "experimental_notice": EXPERIMENTAL_NOTICE,
+    }
+
+
+# Sidereal star order; each spans 13deg20', so it can only sit in the one or
+# two signs that arc covers. Used to catch fabricated KP files.
+_KP_STARS = [
+    'Ashwini', 'Bharani', 'Krittika', 'Rohini', 'Mrigashira', 'Ardra', 'Punarvasu',
+    'Pushya', 'Ashlesha', 'Magha', 'Purva Phalguni', 'Uttara Phalguni', 'Hasta',
+    'Chitra', 'Swati', 'Vishakha', 'Anuradha', 'Jyeshtha', 'Mula', 'Purva Ashadha',
+    'Uttara Ashadha', 'Shravana', 'Dhanishta', 'Shatabhisha', 'Purva Bhadrapada',
+    'Uttara Bhadrapada', 'Revati',
+]
+_KP_SIGNS = ['Aries', 'Taurus', 'Gemini', 'Cancer', 'Leo', 'Virgo', 'Libra',
+             'Scorpio', 'Sagittarius', 'Capricorn', 'Aquarius', 'Pisces']
+_STAR_SIGNS = {
+    star: {_KP_SIGNS[int(i * 40 / 3 // 30)], _KP_SIGNS[int((i * 40 / 3 + 40 / 3 - 1e-9) // 30)]}
+    for i, star in enumerate(_KP_STARS)
+}
+# Real ephemeris output has zero mismatches; allow a little for hand edits.
+SYNTHETIC_THRESHOLD_PCT = 5.0
+
+
+def assess_kp_data(rows: list[dict]) -> dict[str, Any]:
+    """Check every planet row's star against its sign.
+
+    A star can only fall in the sign(s) its 13deg20' arc covers. Random sample
+    files (generate_sample_kp_csv) break this on ~89% of rows, so a high
+    mismatch rate means the file is not ephemeris data and any report built
+    from it is noise.
+    """
+    checked = bad = 0
+    for r in rows:
+        allowed = _STAR_SIGNS.get((r.get('star') or '').strip())
+        if allowed is None:
+            continue
+        checked += 1
+        if (r.get('sign') or '').strip() not in allowed:
+            bad += 1
+    pct = round(100.0 * bad / checked, 1) if checked else 0.0
+    synthetic = checked > 0 and pct > SYNTHETIC_THRESHOLD_PCT
+    return {
+        "rows_checked": checked,
+        "impossible_rows": bad,
+        "impossible_pct": pct,
+        "synthetic": synthetic,
+        "message": (
+            f"{pct}% of rows place a nakshatra in a sign it cannot occupy: this "
+            "KP file is not real ephemeris data. Signals below are random."
+            if synthetic else ""
+        ),
+    }
 
 
 class KPDataParser:
@@ -136,19 +401,19 @@ class KPDataParser:
         'hora_lord', 'day_lord', 'aspects'
     ]
 
-    def __init__(self, config: Optional[Dict] = None):
+    def __init__(self, config: dict | None = None):
         self.config = config or {}
 
-    def parse_csv(self, filepath: Path) -> List[Dict]:
+    def parse_csv(self, filepath: Path) -> list[dict]:
         """Parse KP data CSV file."""
         rows = []
-        with open(filepath, 'r', encoding='utf-8') as f:
+        with open(filepath, encoding='utf-8') as f:
             reader = csv.DictReader(f)
             for row in reader:
                 rows.append(row)
         return rows
 
-    def parse_day_data(self, rows: List[Dict], target_date: date) -> Dict[str, Any]:
+    def parse_day_data(self, rows: list[dict], target_date: date) -> dict[str, Any]:
         """Extract and structure data for a specific trading day."""
         day_rows = [r for r in rows if self._parse_date(r.get('timestamp', '')) == target_date]
         if not day_rows and rows:
@@ -166,20 +431,32 @@ class KPDataParser:
         moon_sign = moon_rows[0].get('sign', '') if moon_rows else ''
         moon_star = moon_rows[0].get('star', '') if moon_rows else ''
         moon_speed = float(moon_rows[0].get('moon_speed', 0)) if moon_rows else 0.0
+        moon_aspects = moon_rows[0].get('aspects', '') if moon_rows else ''
 
         asc_rows = [r for r in day_rows if r.get('planet') == 'Ascendant']
         opening_sublord = asc_rows[0].get('sublord', '') if asc_rows else ''
 
-        hora_rows = [r for r in day_rows if r.get('hora_lord')]
+        # One slot per hora: a new slot starts where the lord changes. Ephemeris
+        # files carry hora_lord on every row; older files only at slot starts.
+        # Aspects are those received by the hora lord (its own planet row).
+        rows_by_ts: dict[str, dict[str, dict]] = {}
+        for r in day_rows:
+            rows_by_ts.setdefault(r.get('timestamp', ''), {})[r.get('planet', '')] = r
         hora_slots = []
-        for hr in hora_rows:
-            ts = self._parse_time(hr.get('timestamp', ''))
-            if ts:
-                hora_slots.append({
-                    'time': ts,
-                    'lord': hr.get('hora_lord', ''),
-                    'aspects': hr.get('aspects', '')
-                })
+        prev_lord = None
+        for ts_str in sorted(rows_by_ts):
+            by_planet = rows_by_ts[ts_str]
+            lord = next((r.get('hora_lord') for r in by_planet.values() if r.get('hora_lord')), '')
+            ts = self._parse_time(ts_str)
+            if not lord or not ts or lord == prev_lord:
+                continue
+            prev_lord = lord
+            lord_row = by_planet.get(lord) or next(iter(by_planet.values()))
+            hora_slots.append({'time': ts, 'lord': lord, 'aspects': lord_row.get('aspects', '')})
+        # A lord change on the closing row would be a zero-length slot.
+        hora_slots = [hs for hs in hora_slots if hs['time'] < time(15, 30)] or hora_slots
+        for i, hs in enumerate(hora_slots):
+            hs['end'] = hora_slots[i + 1]['time'] if i + 1 < len(hora_slots) else time(15, 30)
 
         return {
             'day_lord': day_lord,
@@ -187,17 +464,18 @@ class KPDataParser:
             'moon_star': moon_star,
             'opening_sublord': opening_sublord,
             'moon_speed': moon_speed,
+            'moon_aspects': moon_aspects,
             'hora_slots': hora_slots,
             'all_rows': day_rows
         }
 
-    def _parse_date(self, ts_str: str) -> Optional[date]:
+    def _parse_date(self, ts_str: str) -> date | None:
         try:
             return datetime.fromisoformat(ts_str.replace('Z', '+00:00')).date()
         except:
             return None
 
-    def _parse_time(self, ts_str: str) -> Optional[time]:
+    def _parse_time(self, ts_str: str) -> time | None:
         try:
             return datetime.fromisoformat(ts_str.replace('Z', '+00:00')).time()
         except:
@@ -239,7 +517,7 @@ class KPRuleEngine:
         'Saturn': 'malefic', 'Rahu': 'malefic', 'Ketu': 'malefic'
     }
 
-    def __init__(self, config: Optional[Dict] = None):
+    def __init__(self, config: dict | None = None):
         self.config = config or {}
         self.weights = {**self.RULE_WEIGHTS, **self.config.get('weights', {})}
         self.thresholds = {**self.SIGNAL_THRESHOLDS, **self.config.get('thresholds', {})}
@@ -335,7 +613,7 @@ class KPRuleEngine:
         aspect_notes_str = f"Lord receives: {aspects_received_str} ({interpretation_str})"
         return quality, base_quality, aspects_received_str, interpretation_str, aspect_notes_str
 
-    def detect_regime_shifts(self, day_rows: List[Dict]) -> List[RegimeShift]:
+    def detect_regime_shifts(self, day_rows: list[dict]) -> list[RegimeShift]:
         """Detect Moon sub-lord and Ascendant sub-lord changes (Rule A-11/A-12)."""
         shifts = []
 
@@ -401,7 +679,7 @@ class KPRuleEngine:
             return "cautious sell-on-rise"
         return "neutral/range"
 
-    def detect_trend_changes(self, day_rows: List[Dict], regime_shifts: List[RegimeShift]) -> List[TrendChangeSignal]:
+    def detect_trend_changes(self, day_rows: list[dict], regime_shifts: list[RegimeShift]) -> list[TrendChangeSignal]:
         """Detect all trend change signals: pure-set alarms, regime shifts, tier-1, tier-2."""
         signals = []
 
@@ -466,7 +744,7 @@ class KPRuleEngine:
         signals.sort(key=lambda x: x.timestamp)
         return signals
 
-    def _detect_pure_set_alarms(self, day_rows: List[Dict], regime_shifts: List[RegimeShift]) -> List[TrendChangeSignal]:
+    def _detect_pure_set_alarms(self, day_rows: list[dict], regime_shifts: list[RegimeShift]) -> list[TrendChangeSignal]:
         """Detect pure-set alarms (counter-regime)."""
         signals = []
         asc_rows = [r for r in day_rows if r.get('planet') == 'Ascendant']
@@ -558,14 +836,14 @@ class KPRuleEngine:
 
         return round(score, 2)
 
-    def _get_hora_at_time(self, day_rows: List[Dict], ts: time) -> str:
+    def _get_hora_at_time(self, day_rows: list[dict], ts: time) -> str:
         for r in day_rows:
             rt = self._parse_time(r.get('timestamp', ''))
             if rt and rt == ts and r.get('hora_lord'):
                 return r.get('hora_lord', '')
         return ''
 
-    def score_windows(self, signals: List[TrendChangeSignal], day_rows: List[Dict]) -> tuple[List[WindowScore], List[WindowScore]]:
+    def score_windows(self, signals: list[TrendChangeSignal], day_rows: list[dict]) -> tuple[list[WindowScore], list[WindowScore]]:
         """Score candidate windows from signals."""
         bullish_windows = []
         bearish_windows = []
@@ -605,7 +883,7 @@ class KPRuleEngine:
         window_minute = (minute // 15) * 15
         return time(ts.hour, window_minute)
 
-    def identify_exhaustion_warnings(self, bullish_windows: List[WindowScore], bearish_windows: List[WindowScore]) -> List[str]:
+    def identify_exhaustion_warnings(self, bullish_windows: list[WindowScore], bearish_windows: list[WindowScore]) -> list[str]:
         """Identify mixed-house reversal risks."""
         warnings = []
 
@@ -627,7 +905,7 @@ class KPRuleEngine:
 
         return warnings
 
-    def _parse_time(self, ts_str: str) -> Optional[time]:
+    def _parse_time(self, ts_str: str) -> time | None:
         try:
             return datetime.fromisoformat(ts_str.replace('Z', '+00:00')).time()
         except:
@@ -637,7 +915,7 @@ class KPRuleEngine:
 class KPReportGenerator:
     """Generate formatted KP Intraday Prediction Reports matching the exact Astro Quant Research Initiative template."""
 
-    def __init__(self, config: Optional[Dict] = None):
+    def __init__(self, config: dict | None = None):
         self.config = config or {}
         self.brand = self.config.get('brand', 'Astro Quant Research Initiative | Trading Bramha Consulting')
 
@@ -661,6 +939,8 @@ class KPReportGenerator:
         lines.append(f'<div class="kp-meta-line"><strong>Trading Day:</strong> {report.trading_day.isoformat()}</div>')
         lines.append(f'<div class="kp-meta-line"><strong>{report.instrument}</strong> &bull; {report.market} &bull; {report.ayanamsa}</div>')
         lines.append("<div class=\"kp-brand\">" + report.brand + "</div>")
+        lines.append('<p class="experimental-note"><span class="experimental-badge">Experimental</span> '
+                     + html_escape(EXPERIMENTAL_NOTICE) + '</p>')
         lines.append('</div>')
         lines.append('<hr class="kp-divider">')
         return '\n'.join(lines)
@@ -678,6 +958,10 @@ class KPReportGenerator:
         lines.append(f'<tr><td>Moon Speed</td><td><strong>{ds.moon_speed:.4f}&deg;/day</strong></td></tr>')
         lines.append(f'<tr><td>Day-Level Bias</td><td><strong>{ds.day_bias_label}</strong></td></tr>')
         lines.append(f'<tr><td>Moon Affliction Gate (Rule A-14)</td><td><strong>{ds.moon_affliction_gate}</strong></td></tr>')
+        if getattr(ds, 'rahu_windows_note', ''):
+            lines.append(f'<tr><td>Rahu Moon-sub windows (Rule A-13)</td><td>{ds.rahu_windows_note}</td></tr>')
+        if getattr(ds, 'vargottama_note', ''):
+            lines.append(f'<tr><td>Vargottama Moon (Rule C-5)</td><td>{ds.vargottama_note}</td></tr>')
         lines.append('</table>')
 
         lines.append('<h3>Hora Timeline Table</h3>')
@@ -693,6 +977,22 @@ class KPReportGenerator:
         lines.append('</table>')
 
         lines.append('<p class="kp-rule-note"><strong>Rule Note:</strong> Base hora quality is modified by aspects (weight 0.3). Benefic aspects (Jupiter, Venus, Mercury) upgrade quality; malefic aspects (Saturn, Mars, Rahu, Ketu) downgrade it. Do not treat hora as standalone signal.</p>')
+
+        nav = getattr(ds, 'navamsa', None)
+        if nav and 'error' not in nav:
+            lines.append('<h3>1b. Navamsa (D-9) Strength Layer (v15)</h3>')
+            lines.append('<table class="kp-table kp-signature-table">')
+            for k, v in nav.get('placements', {}).items():
+                lines.append(f'<tr><td>{k}</td><td><strong>{v}</strong></td></tr>')
+            lines.append('</table>')
+            for k in ('n3_text', 'n5_text', 'n6_text'):
+                if nav.get(k):
+                    lines.append(f'<p class="kp-rule-note">{nav[k]}</p>')
+        nadi = getattr(ds, 'nadi', None)
+        if nadi:
+            lines.append('<h3>1c. SBC Nadi Classification (v15.1)</h3>')
+            for ln in (nadi.get('text') or '').split('\n'):
+                lines.append(f'<p class="kp-rule-note">{ln}</p>')
         lines.append('</section>')
         return '\n'.join(lines)
 
@@ -705,9 +1005,9 @@ class KPReportGenerator:
             lines.append('<p>No regime shifts detected for this session.</p>')
         else:
             for rs in report.regime_shifts:
-                lines.append(f'<div class="kp-regime-shift">')
+                lines.append('<div class="kp-regime-shift">')
                 lines.append(f'<div class="regime-time"><strong>{rs.time_str()}</strong></div>')
-                lines.append(f'<div class="regime-detail">')
+                lines.append('<div class="regime-detail">')
                 lines.append(f'<span>{rs.planet} sub change: <strong>{rs.old_sublord} &rarr; {rs.new_sublord}</strong></span> &bull; ')
                 lines.append(f'<span>House-set strength: <strong>{rs.house_set_strength:+.1f}</strong></span> &bull; ')
                 lines.append(f'<span>Post-shift regime: <strong class="regime-tag {rs.direction.value.lower()}">{rs.regime_label}</strong></span>')
@@ -735,7 +1035,7 @@ class KPReportGenerator:
             lines.append('<p>No trend change signals detected.</p>')
         else:
             lines.append('<table class="kp-table kp-signals-table">')
-            lines.append('<thead><tr><th>Time</th><th>Grade</th><th>Direction</th><th>Trigger (Rule A-8/A-11)</th><th>Asc Sub House-Set</th><th>Hora</th></tr></thead>')
+            lines.append('<thead><tr><th>Time</th><th>Grade</th><th>Direction</th><th>Trigger (Rule A-8/A-11)</th><th>Asc Sub House-Set</th><th>Hora</th><th>Navamsa D-9</th><th>Nadi</th></tr></thead>')
             lines.append('<tbody>')
             for tc in report.trend_changes:
                 grade_class = tc.grade.value.replace('-', '').replace(' ', '').lower()
@@ -746,6 +1046,8 @@ class KPReportGenerator:
                 lines.append(f'<td>{tc.trigger}</td>')
                 lines.append(f'<td>{tc.asc_sub_house_set}</td>')
                 lines.append(f'<td>{tc.hora_lord}</td>')
+                lines.append(f'<td>{getattr(tc, "navamsa_d9", "")}</td>')
+                lines.append(f'<td>{getattr(tc, "nadi", "")}</td>')
                 lines.append('</tr>')
             lines.append('</tbody>')
             lines.append('</table>')
@@ -819,7 +1121,7 @@ def generate_kp_intraday_report(
     csv_path: Path,
     trading_day: date,
     instrument: str = "NIFTY",
-    config: Optional[Dict] = None
+    config: dict | None = None
 ) -> KPIntradayReport:
     """Main entry point to generate a KP Intraday report."""
     cfg = config or {}
@@ -829,17 +1131,20 @@ def generate_kp_intraday_report(
     generator = KPReportGenerator(cfg)
 
     rows = parser.parse_csv(csv_path)
+    data_quality = assess_kp_data(rows)
     day_data = parser.parse_day_data(rows, trading_day)
 
+    # compute_day_bias wants the Moon's star LORD; the CSV holds the star name.
+    from sbc.kp_ephemeris import STAR_LORD
     day_bias_score, day_bias_label = engine.compute_day_bias(
         day_data['day_lord'],
-        day_data['moon_star']
+        STAR_LORD.get(day_data['moon_star'], day_data['moon_star'])
     )
 
     moon_affliction = engine.evaluate_moon_affliction_gate(
         day_data['moon_sign'],
         day_data['moon_star'],
-        day_data['all_rows'][0].get('aspects', '') if day_data['all_rows'] else ''
+        day_data['moon_aspects']
     )
 
     hora_slots = []
@@ -847,7 +1152,7 @@ def generate_kp_intraday_report(
         quality, base_q, asp_rec, interp, notes = engine.evaluate_hora_quality(hs['lord'], hs['aspects'])
         hora_slots.append(HoraSlot(
             start=hs['time'],
-            end=(datetime.combine(date.today(), hs['time']) + timedelta(minutes=60)).time(),
+            end=hs.get('end') or (datetime.combine(date.today(), hs['time']) + timedelta(minutes=60)).time(),
             lord=hs['lord'],
             quality=quality,
             base_quality=base_q,
@@ -892,10 +1197,80 @@ def generate_kp_intraday_report(
         strongest_bullish=strongest_bullish,
         strongest_bearish=strongest_bearish,
         exhaustion_warnings=exhaustion_warnings,
-        config=cfg
+        config=cfg,
+        data_quality=data_quality
     )
 
+    enrich_report_v15(report, day_data['all_rows'])
     return report
+
+
+def enrich_report_v15(report: KPIntradayReport, day_rows: list[dict]) -> None:
+    """Attach the v15 layers (A-13, C-5, Navamsa D-9, Nadi) to a built report.
+
+    Never raises: a failure leaves the v14 report intact with a note, so the
+    document can still be produced.
+    """
+    from . import kp_layers as L
+    ds = report.day_signature
+    try:
+        wins = L.rahu_moon_sub_windows(day_rows)
+        ds.rahu_windows = wins
+        ds.rahu_windows_note = L.rahu_windows_text(wins)
+    except Exception as exc:  # pragma: no cover - defensive
+        ds.rahu_windows_note = f"Rahu Moon-sub windows (Rule A-13): not computed ({exc})."
+
+    try:
+        nav = L.build_navamsa_layer(report.trading_day, ds.opening_sublord, ds.moon_star)
+        ds.navamsa = {
+            "placements": nav.placements,
+            "moon_element": nav.moon_element,
+            "n3_text": nav.n3_text,
+            "n5_text": nav.n5_text, "n5_adjust": nav.n5_adjust,
+            "n6_text": nav.n6_text, "n6_adjust": nav.n6_adjust,
+            "lagna_d9_sign": nav.lagna_d9_sign,
+            "moon_vargottama": nav.moon_vargottama,
+            "moon_navamsa_change": nav.moon_navamsa_change,
+        }
+        ds.vargottama_note = L.vargottama_text(nav)
+        # per-row column: Ascendant navamsa + incoming sub-lord dignity + Moon element
+        el_open = L.ELEMENT_ABBR[nav.moon_element]
+        change = nav.moon_navamsa_change
+        el_late = None
+        if change:
+            try:
+                t_change = time(int(change[:2]), int(change[3:5]))
+                el_late = L.ELEMENT_ABBR[L.navamsa_of(
+                    L.planets_at(report.trading_day, t_change)["Moon"]["longitude"]).element]
+            except Exception:
+                el_late = None
+        for tc in report.trend_changes:
+            el = el_open
+            if change and el_late and tc.time_str() >= change:
+                el = el_late
+            tc.navamsa_d9 = L.signal_navamsa_column(
+                report.trading_day, tc.timestamp,
+                L.incoming_sublord_from_trigger(tc.trigger), el)
+    except Exception as exc:  # pragma: no cover - defensive
+        ds.vargottama_note = f"Vargottama Moon (Rule C-5): not computed ({exc})."
+        ds.navamsa = {"error": str(exc)}
+
+    try:
+        nd = L.build_nadi_layer(report.trading_day)
+        ds.nadi = {
+            "nakshatra": nd.nakshatra, "nadi": nd.nadi, "multiplier": nd.multiplier,
+            "character": nd.character, "transition": nd.transition, "text": nd.text,
+        }
+        label = f"{nd.nadi} ({nd.multiplier:.2f}x)"
+        late_label = None
+        if nd.transition:
+            hhmm = nd.transition[:5]
+            nadi2 = nd.transition.split("(")[1].split(",")[0]
+            late_label = f"{nadi2} ({L.NADI_PROFILE[nadi2][0]:.2f}x)"
+        for tc in report.trend_changes:
+            tc.nadi = late_label if (nd.transition and late_label and tc.time_str() >= hhmm) else label
+    except Exception as exc:  # pragma: no cover - defensive
+        ds.nadi = {"error": str(exc), "text": f"SBC Nadi Classification (v15.1): not computed ({exc})."}
 
 
 def generate_sample_kp_csv(output_path: Path, start_date, days: int = 31):
@@ -929,14 +1304,7 @@ def generate_sample_kp_csv(output_path: Path, start_date, days: int = 31):
                 ts_str = ts.isoformat()
 
                 for p in planets:
-                    if p == 'Ascendant':
-                        sign = random.choice(signs)
-                        star = random.choice(stars)
-                        sublord = random.choice(planets[:7])
-                        sub_sublord = random.choice(planets[:7])
-                        house_set = f"{random.randint(1,12)},{random.randint(1,12)}"
-                        hs_strength = round(random.uniform(-3, 5), 1)
-                    elif p == 'Moon':
+                    if p == 'Ascendant' or p == 'Moon':
                         sign = random.choice(signs)
                         star = random.choice(stars)
                         sublord = random.choice(planets[:7])

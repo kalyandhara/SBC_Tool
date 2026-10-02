@@ -1021,34 +1021,24 @@ def upcoming_yoga_alerts(date_str, time_str, tz_name, days=7):
     events = []
     for offset in range(days + 1):
         date = start + datetime.timedelta(days=offset)
-        events.append({
-            "date": date.isoformat(),
-            "type": "Abhijit Muhurta",
-            "glyph": "AM",
-            "glyphs": "AM",
-            "basis": "Shubha / Sarva-Siddhi Muhurta",
-            "details": "11:36-12:24 local time; 48-minute window centered on local clock noon. Market use: reset and pivot watch.",
-        })
-        events.append({
-            "date": date.isoformat(),
-            "type": "Brahma Muhurta",
-            "glyph": "BM",
-            "glyphs": "BM",
-            "basis": "Daily Spiritual / Sattvic Muhurta",
-            "details": "Approximately 04:00-05:30 local time; new trend initiation, clarity and breakout watch. Not a reversal signal by itself.",
-        })
         planets, _ = positions(_local_julian(date, time_str, tz_name))
         sun = next(p for p in planets if p["name"] == "Sun")
         moon = next(p for p in planets if p["name"] == "Moon")
         from .nakshatra import tithi_of
         tithi = tithi_of(sun["longitude"], moon["longitude"])
         names, glyphs = daily_yoga_glyphs(date, sun, moon, tithi)
+        yoga_details = {
+            "Indra Yoga": "Nitya Yoga Indra – period of stability and sovereign influence; good for initiating long-term structures.",
+            "Dwipushkar Yoga": "Two Pushkara nakshatras active with Tithi 2/7/12 – double auspicious energy; favorable for commitments.",
+            "Tripushkar Yoga": "Three Pushkara nakshatras active with Tithi 3/8/13 – triple auspicious energy; highly favorable for new ventures.",
+        }
         for name in names:
             events.append({
                 "date": date.isoformat(), "type": name,
-                "glyph": YOGA_GLYPHS[name], "glyphs": glyphs,
+                "glyph": YOGA_GLYPHS.get(name, ""),
+                "glyphs": glyphs,
                 "basis": "Panchanga daily calculation",
-                "details": f"Today is {name}.",
+                "details": yoga_details.get(name, f"Today is {name}."),
             })
         pushkara = []
         for planet in planets:
@@ -1120,6 +1110,10 @@ def _bhadra_events(start, days, tz_name):
             "basis": "Vishti Karana (inauspicious muhurta)",
             "details": f"Bhadra begins {b.strftime('%H:%M')} and ends "
                        f"{e.strftime('%H:%M')} ({tz_name}).",
+            "start_time": b.strftime('%H:%M'),
+            "end_time": e.strftime('%H:%M'),
+            "start_iso": b.isoformat(),
+            "end_iso": e.isoformat(),
         })
     return events
 

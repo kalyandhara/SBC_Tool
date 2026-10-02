@@ -181,8 +181,25 @@ data/profiles.db
 data/cities.db
 data/latest_sbc_signal.json
 data/series_cache.db
+data/forecast_ledger.db
 sbc/navamsa_pipeline/navamsa.db
 .playwright-mcp/
 
 # Kota Chakra workbooks are user data, not source
 data/kota/*.xlsx
+data/profiles.db.*
+
+# Personal Obsidian vaults kept beside the code (notes, book extracts)
+Financial_Astrology/
+SBC-Tool/
+
+# Generated study/backtest output and text dumps. Files committed here
+# before this rule stay tracked; new output is ignored.
+data/output/
+
+# Unrelated Node tooling (opencode-models-discovery), not used by the app
+package.json
+package-lock.json
+
+data/cities.db.*
+data/forecast_ledger.db.*

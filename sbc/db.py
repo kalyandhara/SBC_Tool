@@ -5,7 +5,12 @@ import sqlite3
 from pathlib import Path
 
 _SCHEMA_PATH = Path(__file__).parent.parent / "data" / "schema.sql"
-_DB_PATH = Path(__file__).parent.parent / "data" / "profiles.db"
+# SBC_PROFILES_DB overrides the location (tests point it at a temp file so
+# they never write into the real profiles).
+_DB_PATH = Path(
+    os.environ.get("SBC_PROFILES_DB")
+    or Path(__file__).parent.parent / "data" / "profiles.db"
+)
 _BOOTSTRAPPED = False
 
 
@@ -38,6 +43,12 @@ def get_db():
     conn = sqlite3.connect(str(_DB_PATH))
     conn.row_factory = sqlite3.Row
     return conn
+
+
+def connect():
+    """Plain sqlite3 connection (tuple rows) to the profiles DB."""
+    _bootstrap()
+    return sqlite3.connect(str(_DB_PATH))
 
 
 # For backwards compatibility with inline-connect code in app.py

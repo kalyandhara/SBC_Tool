@@ -1,9 +1,10 @@
-from pathlib import Path
-import os
 """Engine API blueprint."""
 
-from flask import Blueprint, jsonify, request
 import datetime
+import os
+from pathlib import Path
+
+from flask import Blueprint, jsonify, request
 
 _KOTA_DIR = Path(__file__).resolve().parents[2] / "data" / "kota"
 
@@ -32,11 +33,15 @@ _CACHE_TTL_SECONDS = 24 * 60 * 60
 _kota_cache = {}
 _KOTA_TTL_SECONDS = 24 * 60 * 60
 
+# Unified daily forecast contract cache
+_confluence_cache = {}
+
 
 @engine_bp.route("/version")
 def version():
-    from sbc import __version__
     from flask import current_app
+
+    from sbc import __version__
     return jsonify({
         "version": __version__,
         "engine": "Sarvatobhadra Chakra",
@@ -52,9 +57,9 @@ def summary():
     anchor = request.args.get("anchor") or "nse"
     school = request.args.get("school") or "classical"
 
+    from sbc.nakshatra import sensitive_stars
     from sbc.planets import positioned_planets
     from sbc.prediction import analyze, compute_vedhas, sentiment_of
-    from sbc.nakshatra import sensitive_stars
 
     planets, ayanamsa, sun, moon, tithi = positioned_planets(date_str, time_str, tz_name)
     vedha_map, ray_paths = compute_vedhas(planets, school=school)
@@ -102,9 +107,9 @@ def trace():
     anchor = request.args.get("anchor") or "nse"
     school = request.args.get("school") or "classical"
 
+    from sbc.nakshatra import sensitive_stars
     from sbc.planets import positioned_planets
     from sbc.prediction import compute_vedhas, summarize_vedhas
-    from sbc.nakshatra import sensitive_stars
 
     planets, ayanamsa, sun, moon, tithi = positioned_planets(date_str, time_str, tz_name)
     vedha_map, ray_paths = compute_vedhas(planets, school=school)
@@ -157,7 +162,11 @@ def trace():
 def market_ohlc():
     from sbc.market_ohlc import load_week_ohlc
     symbol = request.args.get("symbol", "NIFTY").upper()
-    days = int(request.args.get("days", "7"))
+    try:
+        days = int(request.args.get("days", "7"))
+    except ValueError:
+        return jsonify({"error": "invalid days"}), 400
+    days = max(1, min(60, days))
     data = load_week_ohlc(symbol, days)
     return jsonify({"symbol": symbol, "days": days, "bars": data}), 200
 
@@ -179,17 +188,30 @@ def intraday_path():
 
     from datetime import date as dtdate
     trading_day = dtdate.fromisoformat(date_str)
+    from sbc.market_holidays import holiday_name
+    closed = holiday_name(trading_day)
+    if closed:
+        return jsonify({"error": f"NSE is closed on {trading_day.isoformat()} ({closed})",
+                        "holiday": closed}), 400
 
     # Load KP report
-    from sbc.kp_config import get_config, get_instrument_config
-    from sbc.kp_intraday import generate_kp_intraday_report, generate_sample_kp_csv
     from pathlib import Path
 
-    kp_data_dir = Path("data/kp")
+    from sbc.kp_config import get_config, get_instrument_config
+    from sbc.kp_intraday import (
+        EXPERIMENTAL_NOTICE, EXPERIMENTAL_VALIDATION, generate_kp_intraday_report,
+    )
+
+    kp_data_dir = Path(__file__).resolve().parents[2] / "data" / "kp"
     kp_data_dir.mkdir(parents=True, exist_ok=True)
     month_file = kp_data_dir / f"KP_Data_{trading_day.strftime('%b%Y')}.csv"
     if not month_file.exists():
-        generate_sample_kp_csv(month_file, trading_day.replace(day=1), 31)
+        return jsonify({
+            "error": (
+                f"KP data unavailable for {trading_day.strftime('%B %Y')}. "
+                "Use 'Generate KP Data' (Swiss Ephemeris) to create it."
+            )
+        }), 404
 
     config = get_config()
     instrument_cfg = get_instrument_config(instrument, config)
@@ -205,10 +227,19 @@ def intraday_path():
     series = []
     cumulative = 0.0
     # Map hora slots by time
-    hora_map = {}
-    for slot in getattr(report, "hora_slots", []):
-        t = slot.start.strftime("%H:%M")
-        hora_map[t] = slot
+    hora_slots = list(report.day_signature.hora_slots)
+
+    def hora_slot_at(clock):
+        # Horas start at real (sunrise-based) times, not on series ticks:
+        # pick the slot whose [start, end) contains the clock time.
+        try:
+            t = datetime.datetime.strptime(clock, "%H:%M").time()
+        except ValueError:
+            return None
+        for slot in hora_slots:
+            if slot.start <= t < slot.end or (slot.end <= slot.start and t >= slot.start):
+                return slot
+        return None
 
     from sbc.planets import positioned_planets
     # Nadi mapping for 27 nakshatras – simplified
@@ -269,8 +300,8 @@ def intraday_path():
         hora_quality = 0.0
         hora_lord = None
         hora_aspect_mod = 0.0
-        if time_str in hora_map:
-            slot = hora_map[time_str]
+        slot = hora_slot_at(time_str)
+        if slot is not None:
             q = slot.quality.name if hasattr(slot.quality, "name") else str(slot.quality)
             q_map = {"SLUGGISH": -0.5, "NEUTRAL": 0.0, "FRUITFUL": 0.5, "AGGRESSIVE": 0.8, "VOLATILE": 0.0}
             hora_quality = q_map.get(q, 0.0)
@@ -390,6 +421,11 @@ def intraday_path():
         "exhaustion_warnings": exhaustion_warnings,
         "strongest_bullish": strongest_bullish,
         "strongest_bearish": strongest_bearish,
+        "data_quality": report.data_quality,
+        # No validated edge: see docs/INTRADAY_PATH_VALIDATION.md.
+        "status": "experimental",
+        "validation": dict(EXPERIMENTAL_VALIDATION),
+        "experimental_notice": EXPERIMENTAL_NOTICE,
         "report_summary": {
             "day_lord": getattr(report.day_signature, "day_lord", None),
             "moon_sign": getattr(report.day_signature, "moon_sign", None),
@@ -412,8 +448,8 @@ def intraday_path():
 
 @engine_bp.route("/kota/daily")
 def kota_daily():
-    from pathlib import Path
     import datetime
+
     from sbc.kota_chakra import parse_kota_excel
     date_str = request.args.get("date")
     instrument = request.args.get("instrument", "NIFTY").upper()
@@ -450,7 +486,6 @@ def kota_daily():
 
 @engine_bp.route("/kota/weekly")
 def kota_weekly():
-    from pathlib import Path
     from sbc.kota_chakra import parse_kota_excel
     week_start = request.args.get("week_start")
     if not week_start:
@@ -477,7 +512,6 @@ def kota_weekly():
 
 @engine_bp.route("/kota/monthly")
 def kota_monthly():
-    from pathlib import Path
     from sbc.kota_chakra import parse_kota_excel
     month = request.args.get("month")
     if not month:
@@ -501,16 +535,101 @@ def kota_monthly():
 
 @engine_bp.route("/confluence/daily")
 def confluence_daily():
-    date_str = request.args.get("date")
+    """Unified daily forecast contract: SBC + KP + Kota confluence verdict.
+
+    Shared source for current and forward confluence data. Components that
+    fail (missing KP data, Kota workbook, ephemeris) are excluded and their
+    weight is redistributed; the response carries cache metadata, data
+    freshness, and the calculation version.
+    """
+    date_str = request.args.get("date") or datetime.date.today().isoformat()
     instrument = request.args.get("instrument", "NIFTY").upper()
-    # Placeholder confluence: combine KP intraday cumulative with Kota daily score
-    return jsonify({
+    now_ts = datetime.datetime.utcnow().timestamp()
+    cache_key = f"confluence_daily-{date_str}-{instrument}"
+    cached = _confluence_cache.get(cache_key)
+    if cached:
+        ts, data = cached
+        if now_ts - ts < _CACHE_TTL_SECONDS:
+            cache_meta = {"cached": True, "cache_age_seconds": round(now_ts - ts, 1)}
+            return jsonify({**data, "cache": cache_meta}), 200
+
+    components = {}
+
+    # SBC daily net (normalised -1..1)
+    try:
+        from sbc.market_calendar import _anchor_nakshatra
+        from sbc.planets import positioned_planets
+        from sbc.prediction import analyze, compute_vedhas
+        planets, ayanamsa, sun, moon, tithi = positioned_planets(date_str, "09:15", "Asia/Kolkata")
+        vedha_map, _ = compute_vedhas(planets, school="classical")
+        analysis = analyze(planets, vedha_map, _anchor_nakshatra("nse"), school="classical")
+        sbc_net = float(analysis["net"])
+        components["sbc"] = max(-1.0, min(1.0, sbc_net / 3.0))
+    except Exception:
+        components["sbc"] = None
+
+    # KP intraday cumulative (final cumulative, normalised)
+    kp_cumulative = None
+    try:
+        from pathlib import Path
+
+        from sbc.kp_config import get_config, get_instrument_config
+        from sbc.kp_intraday import build_cumulative_path, generate_kp_intraday_report
+        trading_day = datetime.date.fromisoformat(date_str)
+        kp_data_dir = Path(__file__).resolve().parents[2] / "data" / "kp"
+        month_file = kp_data_dir / f"KP_Data_{trading_day.strftime('%b%Y')}.csv"
+        if month_file.exists():
+            config = get_config()
+            instrument_cfg = get_instrument_config(instrument, config)
+            report = generate_kp_intraday_report(month_file, trading_day, instrument, instrument_cfg)
+            path = build_cumulative_path(report, step_minutes=60)
+            if path:
+                final = path[-1]["cumulative"]
+                kp_cumulative = max(-1.0, min(1.0, final / 6.0))
+        components["kp"] = kp_cumulative
+    except Exception:
+        components["kp"] = None
+
+    # Kota daily score (normalised)
+    kota_score = None
+    try:
+        import pandas as pd
+        excel_path = _kota_excel_path()
+        if excel_path.exists():
+            from sbc.kota_chakra import parse_kota_excel
+            sheets = parse_kota_excel(excel_path)
+            dashboard_key = next((k for k in sheets if "Dashboard" in k), None)
+            if dashboard_key:
+                df = sheets[dashboard_key]
+                date_col = next((c for c in df.columns if "Date" in str(c)), None)
+                score_cols = [c for c in df.columns if "score" in str(c).lower()]
+                if date_col and score_cols:
+                    filtered = df[df[date_col].astype(str).str.contains(date_str, na=False)]
+                    if not filtered.empty:
+                        vals = pd.to_numeric(filtered[score_cols[0]], errors="coerce").dropna()
+                        if not vals.empty:
+                            value = float(vals.iloc[-1])
+                            kota_score = max(-1.0, min(1.0, value / 100.0 if abs(value) > 1.5 else value))
+        components["kota"] = kota_score
+    except Exception:
+        components["kota"] = None
+
+    from sbc import __version__
+    from sbc.confluence import blend_forecast_scores
+    weights = {"sbc": 0.4, "kp": 0.4, "kota": 0.2}
+    blended = blend_forecast_scores(components, weights)
+
+    data = {
         "date": date_str,
         "instrument": instrument,
-        "confluence_schema": {
-            "kp_weight": 0.5,
-            "kota_weight": 0.5,
-            "signals": ["kp_intraday_cumulative", "kota_daily_score"]
+        **blended,
+        "calculation_version": __version__,
+        "weights_config": weights,
+        "freshness": {
+            "date": date_str,
+            "generated_at": datetime.datetime.utcnow().isoformat() + "Z",
         },
-        "verdict": "pending"
-    }), 200
+        "cache": {"cached": False, "cache_age_seconds": 0},
+    }
+    _confluence_cache[cache_key] = (now_ts, data)
+    return jsonify(data), 200
