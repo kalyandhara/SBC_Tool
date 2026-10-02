@@ -1,0 +1,31 @@
+# Keep the image to the app: no environments, VCS, local data or research folders.
+.git
+.github
+.claude
+**/__pycache__
+**/*.pyc
+.pytest_cache
+.ruff_cache
+.mypy_cache
+
+venv
+venv-py314
+.venv
+node_modules
+package.json
+package-lock.json
+
+# Local runtime state (recreated in the container)
+data/*.db
+data/*.db.*
+data/output
+data/kota/*.xlsx
+
+# Research and notes, not needed at runtime
+Financial_Astrology
+SBC-Tool
+scripts/adhoc
+tests
+research/__pycache__
+*.md
+!README.md

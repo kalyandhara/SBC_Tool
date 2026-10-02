@@ -109,7 +109,7 @@ jobs:
   docker:
     name: Docker Build
     runs-on: ubuntu-latest
-    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+    # Build on PRs too, so a broken image is caught before it reaches master.
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -132,7 +132,15 @@ jobs:
             curl -fs http://localhost:8000/healthz && break
             sleep 2
           done
-          curl -f http://localhost:8000/healthz
+          curl -f http://localhost:8000/healthz || { docker logs sbc-test; exit 1; }
+          # The image's own HEALTHCHECK must turn healthy as well.
+          for i in $(seq 1 30); do
+            state=$(docker inspect -f '{{.State.Health.Status}}' sbc-test)
+            [ "$state" = healthy ] && break
+            sleep 3
+          done
+          echo "container health: $state"
+          [ "$state" = healthy ] || { docker logs sbc-test; exit 1; }
           docker stop sbc-test
 
   security:
