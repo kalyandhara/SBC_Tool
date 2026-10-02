@@ -26,8 +26,11 @@ def forecast():
         step = int(request.args.get("step", 5))
     except ValueError:
         return jsonify({"error": "invalid date or step"}), 400
-    if day.weekday() >= 5:
-        return jsonify({"error": f"{day.isoformat()} is a weekend; NSE is closed"}), 400
+    from sbc.market_holidays import holiday_name
+    closed = holiday_name(day)
+    if closed:
+        return jsonify({"error": f"NSE is closed on {day.isoformat()} ({closed})",
+                        "holiday": closed}), 400
     if not 1 <= step <= 60:
         return jsonify({"error": "step must be 1..60"}), 400
 
@@ -70,7 +73,10 @@ def freeze():
         day = _date_arg()
     except ValueError:
         return jsonify({"error": "invalid date"}), 400
-    row = do_freeze(day, backfill=bool(body.get("backfill")), force=bool(body.get("force")))
+    try:
+        row = do_freeze(day, backfill=bool(body.get("backfill")), force=bool(body.get("force")))
+    except ValueError as exc:
+        return jsonify({"error": str(exc)}), 400
     return jsonify({k: row[k] for k in ("date", "kind", "frozen_at", "model_version")})
 
 

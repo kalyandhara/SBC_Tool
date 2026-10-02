@@ -9,6 +9,7 @@ Conventions (all documented choices, edit the constants to change them):
   sbc.planets, so no external data files are needed.
 * Place: NSE, Mumbai (18.9300 N, 72.8333 E); IST (UTC+5:30); timestamps are
   naive local IST, which is what KPDataParser reads.
+* Days: NSE trading days only (weekends and sbc.market_holidays excluded).
 * Houses: Placidus cusps. A planet occupies the house whose cusp arc holds
   its longitude.
 * Nodes: mean node (Krishnamurti's choice); Ketu = Rahu + 180.
@@ -258,7 +259,10 @@ def day_rows(day: dt.date, step_minutes: int = 3) -> list[list]:
 
 
 def trading_days(year: int, month: int, holidays: set[dt.date] | None = None) -> list[dt.date]:
-    holidays = holidays or set()
+    """Weekdays of the month minus holidays (default: NSE calendar, sbc.market_holidays)."""
+    if holidays is None:
+        from sbc.market_holidays import NSE_HOLIDAYS
+        holidays = set(NSE_HOLIDAYS)
     d = dt.date(year, month, 1)
     out = []
     while d.month == month:

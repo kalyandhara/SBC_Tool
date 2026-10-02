@@ -17,6 +17,17 @@ def presets():
         "nakshatras": NAKSHATRAS_27,
     })
 
+@overview_bp.route('/api/market/holidays')
+def market_holidays():
+    """NSE weekday holidays + Muhurat sessions for a year (default: this year)."""
+    from sbc.market_holidays import holidays_in, COVERED_YEARS
+    try:
+        year = int(request.args.get("year") or datetime.date.today().year)
+    except ValueError:
+        return jsonify({"error": "invalid year"}), 400
+    return jsonify({"year": year, "covered": year in COVERED_YEARS,
+                    "holidays": holidays_in(year)})
+
 @overview_bp.route('/api/prediction')
 def prediction():
     from app import build_response, ANCHORS

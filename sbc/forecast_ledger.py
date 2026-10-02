@@ -69,6 +69,10 @@ def freeze(day: dt.date, now: dt.datetime | None = None, backfill: bool = False,
            force: bool = False) -> dict:
     """Store the day's forecast once. Returns the stored row (existing wins)."""
     from sbc.intraday_forecast import build_forecast
+    from sbc.market_holidays import holiday_name
+    closed = holiday_name(day)
+    if closed:
+        raise ValueError(f"NSE is closed on {day.isoformat()} ({closed}); nothing to forecast")
     now = _now_ist(now)
     existing = get_frozen(day)
     if existing and not force:

@@ -202,3 +202,4 @@ package.json
 package-lock.json
 
 data/cities.db.*
+data/forecast_ledger.db.*

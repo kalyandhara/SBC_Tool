@@ -58,11 +58,13 @@ def _forecast_ledger_loop(interval_s=600):
     """
     import time as _time
     from sbc import forecast_ledger as ledger
+    from sbc.market_holidays import is_trading_day
     while True:
         try:
             now = ledger._now_ist()
             day = now.date()
-            if day.weekday() < 5 and datetime.time(6, 0) <= now.time() < datetime.time(9, 15)                     and ledger.get_frozen(day) is None:
+            if (is_trading_day(day) and datetime.time(6, 0) <= now.time() < datetime.time(9, 15)
+                    and ledger.get_frozen(day) is None):
                 ledger.freeze(day, now)
                 app.logger.info("forecast ledger: froze %s", day)
             if now.time() >= datetime.time(16, 15):

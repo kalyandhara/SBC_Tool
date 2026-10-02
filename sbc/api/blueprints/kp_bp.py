@@ -25,6 +25,13 @@ def kp_intraday_report():
         return jsonify({"error": "invalid date"}), 400
     if instrument not in ("NIFTY", "BANK NIFTY", "FINNIFTY"):
         return jsonify({"error": "invalid instrument"}), 400
+    from sbc.market_holidays import holiday_name
+    closed = holiday_name(trading_day)
+    if closed:
+        # parse_day_data would otherwise fall back to the nearest day's rows
+        # and label them with this date.
+        return jsonify({"error": f"NSE is closed on {trading_day.isoformat()} ({closed})",
+                        "holiday": closed}), 400
     kp_data_dir = Path(__file__).resolve().parents[3] / "data" / "kp"
     kp_data_dir.mkdir(parents=True, exist_ok=True)
     month_file = kp_data_dir / f"KP_Data_{trading_day.strftime('%b%Y')}.csv"

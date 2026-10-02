@@ -188,6 +188,11 @@ def intraday_path():
 
     from datetime import date as dtdate
     trading_day = dtdate.fromisoformat(date_str)
+    from sbc.market_holidays import holiday_name
+    closed = holiday_name(trading_day)
+    if closed:
+        return jsonify({"error": f"NSE is closed on {trading_day.isoformat()} ({closed})",
+                        "holiday": closed}), 400
 
     # Load KP report
     from pathlib import Path

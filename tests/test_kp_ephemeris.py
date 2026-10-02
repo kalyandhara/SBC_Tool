@@ -69,7 +69,7 @@ def test_generated_month_passes_sanity_check_and_feeds_report(tmp_path):
     path = tmp_path / "KP_Data_Oct2026.csv"
     days = {dt.date(2026, 10, 1), dt.date(2026, 10, 2)}
     info = k.generate_kp_month(2026, 10, path, step_minutes=15,
-                               holidays={d for d in k.trading_days(2026, 10)} - days)
+                               holidays=set(k.trading_days(2026, 10, holidays=set())) - days)
     assert info["days"] == 2
     with open(path, encoding="utf-8") as f:
         rows = list(csv.DictReader(f))

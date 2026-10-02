@@ -14,6 +14,7 @@ from sbc.planets import positions
 from sbc.backtest import _julian_at_noon
 from sbc.nakshatra import NAKSHATRAS_27
 from sbc.config import SECTOR_NAME_MAP
+from sbc.market_holidays import is_trading_day
 
 # Industry → ruling planet mapping (customizable)
 INDUSTRY_RULING_PLANET: Dict[str, str] = {
@@ -166,8 +167,8 @@ def generate_calendar(start_date: str, end_date: str, industries: List[str] | No
     calendar = []
     cur = start
     while cur <= end:
-        # Skip weekends – NSE closed Saturday=5, Sunday=6
-        if cur.weekday() >= 5:
+        # Skip days NSE is closed (weekends and exchange holidays)
+        if not is_trading_day(cur):
             cur += delta
             continue
         signals = compute_daily_trap(cur.isoformat(), industries)

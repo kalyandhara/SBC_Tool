@@ -33,14 +33,23 @@
     s.classList.toggle("error", !!isErr);
   }
 
-  // Default day: today on a weekday before the close, else the next weekday (IST).
-  function defaultDay() {
+  // Default day: today if NSE trades and it's before the close, else the next
+  // trading day (IST), skipping weekends and the NSE holidays in `closed`.
+  const isoOf = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  function defaultDay(closed) {
     const now = new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Kolkata" }));
     const d = new Date(now);
     const afterClose = now.getHours() * 60 + now.getMinutes() > 15 * 60 + 30;
     if (afterClose) d.setDate(d.getDate() + 1);
-    while (d.getDay() === 0 || d.getDay() === 6) d.setDate(d.getDate() + 1);
-    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+    while (d.getDay() === 0 || d.getDay() === 6 || closed.has(isoOf(d))) d.setDate(d.getDate() + 1);
+    return isoOf(d);
+  }
+
+  async function holidaySet() {
+    const year = new Date().getFullYear();
+    const sets = await Promise.all([year, year + 1].map((y) =>
+      getJSON(`/api/market/holidays?year=${y}`).then((r) => r.holidays).catch(() => [])));
+    return new Set(sets.flat().filter((h) => h.type === "holiday").map((h) => h.date));
   }
 
   async function getJSON(url) {
@@ -247,14 +256,20 @@
     }).observe(el("ifc-chart"));
   }
 
-  el("ifc-date").value = defaultDay();
+  let userPicked = false;  // never override a date the user chose
+  el("ifc-date").value = defaultDay(new Set());
+  const ready = holidaySet().then((closed) => {
+    if (!userPicked) el("ifc-date").value = defaultDay(closed);
+  });
   el("ifc-load").addEventListener("click", load);
-  el("ifc-date").addEventListener("change", () => { drawn = true; load(); });
+  el("ifc-date").addEventListener("change", () => { userPicked = true; drawn = true; load(); });
   el("ifc-step").addEventListener("change", () => { drawn = true; load(); });
   // Draw on first visit to the KP tab rather than on page load.
   let drawn = false;
   const tabBtn = document.querySelector('[data-tab="tab-kp"]');
-  const maybeDraw = () => { if (!drawn) { drawn = true; load(); } else { setTimeout(resizeSoon, 50); } };
+  const maybeDraw = () => {
+    if (!drawn) { drawn = true; ready.then(load); } else { setTimeout(resizeSoon, 50); }
+  };
   if (tabBtn) tabBtn.addEventListener("click", maybeDraw);
   if (location.hash === "#tab-kp") maybeDraw();
 })();
