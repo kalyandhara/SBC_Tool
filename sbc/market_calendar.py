@@ -5,12 +5,17 @@ from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 import swisseph as swe
 
-from .nakshatra import sign_of, nakshatra_of, NAKSHATRAS_27, tithi_of
-from .planets import positions, all_planets_with_natures
-from .confluence import build_confluence_report
-from .prediction import analyze, compute_vedhas, place_planets, sector_read, planet_sector_read, summarize_vedhas
 from .chakra import GRID
-
+from .confluence import build_confluence_report
+from .nakshatra import tithi_of
+from .planets import all_planets_with_natures, positions
+from .prediction import (
+    analyze,
+    compute_vedhas,
+    place_planets,
+    planet_sector_read,
+    sector_read,
+)
 
 ANCHORS = {
     "nse": {"date": "1992-11-27", "time": "00:00", "tz": "Asia/Kolkata"},
@@ -31,7 +36,7 @@ def _utc_from_local(date_str, time_str, tz_name):
     y, m, d = (int(x) for x in date_str.split("-"))
     hh, mm = (int(x) for x in time_str.split(":"))
     local = datetime.datetime(y, m, d, hh, mm, tzinfo=tz)
-    return local.astimezone(datetime.timezone.utc).replace(tzinfo=None)
+    return local.astimezone(datetime.UTC).replace(tzinfo=None)
 
 
 def _julday(utc_dt):
@@ -233,7 +238,7 @@ def _planet_in_nakshatra(planets, nakshatra_name):
 def _pushya_reversal_windows(date, planets):
     """
     Detect Pushya Nakshatra based reversal signals for a given date.
-    
+
     Returns list of reversal window dicts compatible with REVERSAL_WINDOWS format.
     These are dynamic single-day or multi-day windows based on planetary positions.
     """
@@ -255,11 +260,11 @@ def _pushya_reversal_windows(date, planets):
     if moon_in_pushya:
         # Moon in Pushya creates a 1-day reversal sensitivity window
         # Bias depends on Moon's nature (shubha/ashubha) and paksha
-        from .nakshatra import tithi_of, moon_nature, paksha_of
+        from .nakshatra import moon_nature, paksha_of, tithi_of
         tithi = tithi_of(sun["longitude"], moon["longitude"])
         moon_nat = moon_nature(tithi)
         pk = paksha_of(tithi)
-        
+
         if moon_nat == "malefic":
             level = "HIGH"
             bias = "BEARISH REVERSAL RISK"
@@ -268,7 +273,7 @@ def _pushya_reversal_windows(date, planets):
             level = "MODERATE-HIGH"
             bias = "BULLISH REVERSAL POTENTIAL"
             explanation = f"Moon in Pushya (Shukla {pk} paksha, shubha) - nourishment phase, bullish reversal potential"
-        
+
         windows.append({
             "id": f"pushya-moon-{date.isoformat()}",
             "start": date.isoformat(),
@@ -428,22 +433,22 @@ NAKSHATRA_MEANINGS = {
 def _detect_bullish_nakshatra_transits(planets, date):
     """Detect bullish nakshatra transits for all planets."""
     windows = []
-    
+
     for planet_name, bullish_naks in BULLISH_NAKSHATRAS.items():
         planet = next((p for p in planets if p["name"] == planet_name), None)
         if not planet:
             continue
-        
+
         if planet["nakshatra"] in bullish_naks:
             meaning = NAKSHATRA_MEANINGS.get(planet["nakshatra"], "favorable")
-            
+
             # Determine level based on planet importance
             level_map = {
                 "Jupiter": "HIGH", "Saturn": "HIGH", "Venus": "MODERATE-HIGH",
                 "Mercury": "MODERATE", "Moon": "MODERATE", "Rahu": "HIGH", "Ketu": "MODERATE-HIGH"
             }
             level = level_map.get(planet_name, "MODERATE")
-            
+
             # Sector mapping
             sector_map = {
                 "Jupiter": ["Large Caps", "Banking", "FMCG", "Financial Services", "Gold"],
@@ -454,7 +459,7 @@ def _detect_bullish_nakshatra_transits(planets, date):
                 "Rahu": ["Defense", "Engineering", "Auto", "Tech", "Startups"],
                 "Ketu": ["Pharma", "Shipping", "Healthcare", "Spiritual", "Large Caps"],
             }
-            
+
             windows.append({
                 "id": f"{planet_name.lower()}-nak-{planet['nakshatra'].lower()}-{date.isoformat()}",
                 "start": date.isoformat(),
@@ -464,7 +469,7 @@ def _detect_bullish_nakshatra_transits(planets, date):
                 "bias": "BULLISH REVERSAL POTENTIAL",
                 "sectors": sector_map.get(planet_name, ["All sectors"]),
             })
-    
+
     return windows
 
 
@@ -474,7 +479,7 @@ def _detect_venus_exiting_virgo(planets, date):
     venus = next((p for p in planets if p["name"] == "Venus"), None)
     if not venus:
         return windows
-    
+
     # Check if Venus just left Virgo (in Libra now, was in Virgo recently)
     # Since we only have current position, check if Venus is in Libra (next sign after Virgo)
     if venus["sign"] == "Libra" and venus["degree"] < 3:  # Just entered Libra
@@ -496,7 +501,7 @@ def _detect_mercury_in_own_nakshatra(planets, date):
     mercury = next((p for p in planets if p["name"] == "Mercury"), None)
     if not mercury:
         return windows
-    
+
     if mercury["nakshatra"] in {"Ashlesha", "Jyeshtha", "Revati"}:
         meaning = NAKSHATRA_MEANINGS.get(mercury["nakshatra"], "favorable")
         windows.append({
@@ -517,7 +522,7 @@ def _detect_moon_bullish_nakshatra(planets, date):
     moon = next((p for p in planets if p["name"] == "Moon"), None)
     if not moon:
         return windows
-    
+
     # Moon in bullish signs
     bullish_signs = {"Taurus", "Cancer", "Pisces"}
     if moon["sign"] in bullish_signs:
@@ -530,7 +535,7 @@ def _detect_moon_bullish_nakshatra(planets, date):
             "bias": "BULLISH REVERSAL POTENTIAL",
             "sectors": ["All sectors", "Banking", "FMCG", "Large Caps"],
         })
-    
+
     # Moon in bullish nakshatras
     bullish_moon_naks = {"Rohini", "Pushya", "UttaraPhalguni", "Revati", "Hasta", "Shravana"}
     if moon["nakshatra"] in bullish_moon_naks:
@@ -554,19 +559,19 @@ def _detect_rahu_ketu_separation(planets, date):
     ketu = next((p for p in planets if p["name"] == "Ketu"), None)
     sun = next((p for p in planets if p["name"] == "Sun"), None)
     moon = next((p for p in planets if p["name"] == "Moon"), None)
-    
+
     if not all([rahu, ketu, sun, moon]):
         return windows
-    
+
     def angle(lon1, lon2):
         return abs((lon1 - lon2 + 180) % 360 - 180)
-    
+
     # Rahu moving away from Sun (was conjunct, now separating > 15°)
     rahu_sun = angle(rahu["longitude"], sun["longitude"])
     rahu_moon = angle(rahu["longitude"], moon["longitude"])
     ketu_sun = angle(ketu["longitude"], sun["longitude"])
     ketu_moon = angle(ketu["longitude"], moon["longitude"])
-    
+
     if rahu_sun > 15 and rahu_sun < 30:  # Recently separated
         windows.append({
             "id": f"rahu-sep-sun-{date.isoformat()}",
@@ -577,7 +582,7 @@ def _detect_rahu_ketu_separation(planets, date):
             "bias": "BULLISH REVERSAL POTENTIAL",
             "sectors": ["All sectors", "Media", "Tech", "Speculative"],
         })
-    
+
     if ketu_sun > 15 and ketu_sun < 30:
         windows.append({
             "id": f"ketu-sep-sun-{date.isoformat()}",
@@ -588,7 +593,7 @@ def _detect_rahu_ketu_separation(planets, date):
             "bias": "BULLISH REVERSAL POTENTIAL",
             "sectors": ["All sectors", "Pharma", "Shipping", "Healthcare"],
         })
-    
+
     return windows
 
 
@@ -598,7 +603,7 @@ def _detect_ketu_leaving_market_degrees(planets, date):
     ketu = next((p for p in planets if p["name"] == "Ketu"), None)
     if not ketu:
         return windows
-    
+
     # Market sensitive degrees: cardinal signs 0°
     if ketu["sign"] in {"Aries", "Cancer", "Libra", "Capricorn"} and ketu["degree"] > 2:
         # Just left the 0° sensitive zone
@@ -619,11 +624,11 @@ def _detect_full_moon_stable_signs(planets, date, tithi):
     windows = []
     if tithi not in (14, 15, 16):  # Only near Full Moon
         return windows
-    
+
     moon = next((p for p in planets if p["name"] == "Moon"), None)
     if not moon:
         return windows
-    
+
     stable_signs = {"Taurus", "Cancer", "Leo", "Scorpio", "Capricorn", "Pisces"}
     if moon["sign"] in stable_signs:
         windows.append({
@@ -645,12 +650,12 @@ def _detect_jupiter_saturn_trine(planets, date):
     saturn = next((p for p in planets if p["name"] == "Saturn"), None)
     if not jupiter or not saturn:
         return windows
-    
+
     def angle(lon1, lon2):
         return abs((lon1 - lon2 + 180) % 360 - 180)
-    
+
     jup_sat_angle = angle(jupiter["longitude"], saturn["longitude"])
-    
+
     # Trine (120°) with 8° orb
     if abs(jup_sat_angle - 120) <= 8:
         applying = jup_sat_angle < 120
@@ -663,19 +668,19 @@ def _detect_jupiter_saturn_trine(planets, date):
             "bias": "BULLISH REVERSAL" if applying else "BULLISH CONTINUATION",
             "sectors": ["Large Caps", "Banking", "Infrastructure", "FMCG", "Financial Services", "Real Estate"],
         })
-    
+
     # Sextile (60°) - opportunity
     if abs(jup_sat_angle - 60) <= 6:
         windows.append({
             "id": f"jup-sat-sextile-{date.isoformat()}",
             "start": date.isoformat(),
             "end": (date + datetime.timedelta(days=14)).isoformat(),
-            "title": f"Jupiter sextile Saturn (60°) — structural opportunity, disciplined growth",
+            "title": "Jupiter sextile Saturn (60°) — structural opportunity, disciplined growth",
             "level": "HIGH",
             "bias": "BULLISH REVERSAL POTENTIAL",
             "sectors": ["Large Caps", "Banking", "Infrastructure", "Metals"],
         })
-    
+
     return windows
 
 
@@ -686,12 +691,12 @@ def _detect_rahu_jupiter_trine(planets, date):
     jupiter = next((p for p in planets if p["name"] == "Jupiter"), None)
     if not rahu or not jupiter:
         return windows
-    
+
     def angle(lon1, lon2):
         return abs((lon1 - lon2 + 180) % 360 - 180)
-    
+
     rahu_jup_angle = angle(rahu["longitude"], jupiter["longitude"])
-    
+
     if abs(rahu_jup_angle - 120) <= 8:
         windows.append({
             "id": f"rahu-jup-trine-{date.isoformat()}",
@@ -712,12 +717,12 @@ def _detect_venus_jupiter_trine(planets, date):
     jupiter = next((p for p in planets if p["name"] == "Jupiter"), None)
     if not venus or not jupiter:
         return windows
-    
+
     def angle(lon1, lon2):
         return abs((lon1 - lon2 + 180) % 360 - 180)
-    
+
     ven_jup_angle = angle(venus["longitude"], jupiter["longitude"])
-    
+
     if abs(ven_jup_angle - 120) <= 8:
         windows.append({
             "id": f"venus-jup-trine-{date.isoformat()}",
@@ -738,12 +743,12 @@ def _detect_mercury_jupiter_trine(planets, date):
     jupiter = next((p for p in planets if p["name"] == "Jupiter"), None)
     if not mercury or not jupiter:
         return windows
-    
+
     def angle(lon1, lon2):
         return abs((lon1 - lon2 + 180) % 360 - 180)
-    
+
     mer_jup_angle = angle(mercury["longitude"], jupiter["longitude"])
-    
+
     if abs(mer_jup_angle - 120) <= 8:
         windows.append({
             "id": f"mercury-jup-trine-{date.isoformat()}",
@@ -763,7 +768,7 @@ def _detect_jupiter_direct_after_retro(planets, date):
     jupiter = next((p for p in planets if p["name"] == "Jupiter"), None)
     if not jupiter:
         return windows
-    
+
     # This would need previous day's data to detect direction change
     # For now, flag if Jupiter is stationary direct (speed near 0, was negative)
     if not jupiter["retrograde"] and abs(jupiter["speed"]) < 0.01:
@@ -785,7 +790,7 @@ def _detect_saturn_direct_after_retro(planets, date):
     saturn = next((p for p in planets if p["name"] == "Saturn"), None)
     if not saturn:
         return windows
-    
+
     if not saturn["retrograde"] and abs(saturn["speed"]) < 0.01:
         windows.append({
             "id": f"saturn-direct-{date.isoformat()}",
@@ -805,7 +810,7 @@ def _detect_mercury_direct_after_retro(planets, date):
     mercury = next((p for p in planets if p["name"] == "Mercury"), None)
     if not mercury:
         return windows
-    
+
     if not mercury["retrograde"] and abs(mercury["speed"]) < 0.02:
         windows.append({
             "id": f"mercury-direct-{date.isoformat()}",
@@ -826,10 +831,10 @@ def _detect_jupiter_combustion_end(planets, date):
     sun = next((p for p in planets if p["name"] == "Sun"), None)
     if not jupiter or not sun:
         return windows
-    
+
     def angle(lon1, lon2):
         return abs((lon1 - lon2 + 180) % 360 - 180)
-    
+
     jup_sun_angle = angle(jupiter["longitude"], sun["longitude"])
     # Combustion orb for Jupiter is 11°
     if jup_sun_angle > 11 and jup_sun_angle < 15:  # Just emerged
@@ -849,10 +854,10 @@ def _detect_jupiter_combustion_end(planets, date):
 def get_all_bullish_reversal_windows(date, planets, tithi):
     """Combine all bullish reversal detection functions."""
     all_windows = []
-    
+
     # Existing Pushya windows (already comprehensive)
     all_windows.extend(_pushya_reversal_windows(date, planets))
-    
+
     # New bullish detectors
     all_windows.extend(_detect_bullish_nakshatra_transits(planets, date))
     all_windows.extend(_detect_venus_exiting_virgo(planets, date))
@@ -869,7 +874,7 @@ def get_all_bullish_reversal_windows(date, planets, tithi):
     all_windows.extend(_detect_saturn_direct_after_retro(planets, date))
     all_windows.extend(_detect_mercury_direct_after_retro(planets, date))
     all_windows.extend(_detect_jupiter_combustion_end(planets, date))
-    
+
     return all_windows
 
 
@@ -897,7 +902,7 @@ SARVARTHA = {
     2: {"Rohini", "Anuradha", "Hasta"},
     3: {"Revati", "Anuradha", "Punarvasu"},
     4: {"Ashwini", "Pushya", "Anuradha"},
-    5: {"Bharani", "P.Phalguni", "P.Phalguni", "Revati"},
+    5: {"Bharani", "P.Phalguni", "Revati"},
     6: {"Rohini", "Shravana"},
 }
 AMRIT_SIDDHI = {
@@ -1010,7 +1015,7 @@ def _local_julian(date, time_str, tz_name):
     tz = ZoneInfo(tz_name)
     hour, minute = (int(value) for value in time_str.split(":"))
     local = datetime.datetime.combine(date, datetime.time(hour, minute), tzinfo=tz)
-    utc = local.astimezone(datetime.timezone.utc)
+    utc = local.astimezone(datetime.UTC)
     return swe.julday(utc.year, utc.month, utc.day,
                       utc.hour + utc.minute / 60.0)
 
@@ -1181,7 +1186,7 @@ def reversal_alert(date_str, planets=None, tithi=None):
     date = datetime.date.fromisoformat(date_str)
     active = []
     upcoming = []
-    
+
     # Static REVERSAL_WINDOWS (predefined clusters)
     for window in REVERSAL_WINDOWS:
         start = datetime.date.fromisoformat(window["start"])
@@ -1196,7 +1201,7 @@ def reversal_alert(date_str, planets=None, tithi=None):
                 "end": end.isoformat(),
                 "days_ahead": (start - date).days,
             })
-    
+
     # Dynamic Comprehensive Bullish/Bearish Reversal Windows
     all_dynamic_windows = get_all_bullish_reversal_windows(date, planets, tithi) if planets else []
     for pw in all_dynamic_windows:

@@ -1,7 +1,9 @@
 c=open(r'D:\SBC_Tool\static\app.js', encoding='utf-8').read()
 import sys
+
 sys.stdout.reconfigure(encoding='utf-8', errors='replace')
 import re
+
 m=re.search(r'async function run\(\) \{.*?^\}', c, re.M|re.S)
 if m:
     # find closing brace of function - need more robust

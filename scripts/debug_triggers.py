@@ -1,23 +1,25 @@
 import sys
-sys.path.insert(0, r'D:\SBC_Tool')
 
-from sbc.planets import positions, all_planets_with_natures
-from sbc.nakshatra import tithi_of, nakshatra_of, moon_nature, paksha_of
-from sbc.cgsp_framework import is_pada_bullish
+sys.path.insert(0, r'D:\SBC_Tool')
 
 import datetime
 import zoneinfo
+
+from sbc.cgsp_framework import is_pada_bullish
+from sbc.nakshatra import tithi_of
+from sbc.planets import all_planets_with_natures, positions
+
 
 def get_planets(date_str):
     local = datetime.datetime.strptime(date_str + ' 09:15', '%Y-%m-%d %H:%M')
     tz = zoneinfo.ZoneInfo('Asia/Kolkata')
     local = local.replace(tzinfo=tz)
-    utc = local.astimezone(datetime.timezone.utc).replace(tzinfo=None)
-    
+    utc = local.astimezone(datetime.UTC).replace(tzinfo=None)
+
     base = datetime.datetime(2000, 1, 1, 12, 0, 0)
     diff = utc - base
     jul = 2451545.0 + diff.total_seconds() / 86400.0
-    
+
     planets, _ = positions(jul)
     sun = next(p for p in planets if p['name'] == 'Sun')
     moon = next(p for p in planets if p['name'] == 'Moon')

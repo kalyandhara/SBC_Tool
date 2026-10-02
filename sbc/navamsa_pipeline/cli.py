@@ -1,18 +1,19 @@
 import argparse
-from pathlib import Path
-from datetime import datetime
 import sys
+from datetime import datetime
+from pathlib import Path
+
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
-from navamsa_pipeline.ephemeris.ephemeris import Ephemeris
+from navamsa_pipeline.db.writer import save_rows
 from navamsa_pipeline.divisional.navamsa import navamsa_of
-from navamsa_pipeline.tiler.tiler import market_hours_times
-from navamsa_pipeline.rules.engine import RuleEngine
+from navamsa_pipeline.ephemeris.ephemeris import Ephemeris
 from navamsa_pipeline.export.exporter import export_csv
 from navamsa_pipeline.kp_loader import find_kp_file, load_kp_for_day
-from navamsa_pipeline.db.writer import save_rows
-from navamsa_pipeline.panchanga import get_panchanga
 from navamsa_pipeline.lagna import get_lagna
-import pytz
+from navamsa_pipeline.panchanga import get_panchanga
+from navamsa_pipeline.rules.engine import RuleEngine
+from navamsa_pipeline.tiler.tiler import market_hours_times
+
 
 def main():
     parser = argparse.ArgumentParser(description="Navamsa D-9 Pipeline CLI")
@@ -23,16 +24,16 @@ def main():
     parser.add_argument("--ephemeris", default="de440", choices=["de440","de441","swisseph"])
     parser.add_argument("--outdir", default="./outputs")
     args = parser.parse_args()
-    
+
     outdir = Path(args.outdir)
     outdir.mkdir(parents=True, exist_ok=True)
-    
+
     start = datetime.strptime(args.start, "%Y-%m-%d").date()
     end = datetime.strptime(args.end, "%Y-%m-%d").date()
-    
+
     epi = Ephemeris(backend=args.ephemeris, ayanamsha=args.ayanamsha)
     engine = RuleEngine()
-    
+
     rows = []
     # Preload KP data per day
     kp_cache = {}
@@ -56,13 +57,13 @@ def main():
                     break
             except:
                 continue
-        
+
         pos, ayan = epi.get_positions(dt)
         moon_lon = pos.get("Moon", {}).get("longitude", 0)
         nav = navamsa_of(moon_lon)
         panch = get_panchanga(dt)
         lagna_lon = get_lagna(dt)
-        
+
         # Build realistic context from KP row if available
         hora_quality = 1.0
         house_set_strength = 1.0
@@ -82,7 +83,7 @@ def main():
             # Simple proxy scores
             moon_sub_score = 1.5 if kp_row.get('planet') == 'Moon' else 1.0
             asc_sub_score = 1.2
-        
+
         # Sub-lord transition detection
         sublord_change = False
         house_set_change = False
@@ -148,7 +149,7 @@ def main():
             "score": round(score,4),
             "grade": grade,
         })
-    
+
     # Export
     fieldnames = ["timestamp","ayanamsa_offset","moon_lon","lagna_lon","navamsa_sign","navamsa_index","vargottama","tithi","nakshatra","nakshatra_pada","yoga","karana","hora_lord","house_set","sublord","sublord_change","regime_shift","pure_set_alarm","confirmation_points","score","grade"]
     export_csv(rows, outdir/"intraday_triggers.csv", fieldnames)

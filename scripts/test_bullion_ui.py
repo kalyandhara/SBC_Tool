@@ -1,4 +1,5 @@
 import sys
+
 sys.path.insert(0, r'D:\SBC_Tool')
 from app import app
 
@@ -11,7 +12,7 @@ with app.test_client() as client:
     print('Has bullion-vedha-date:', 'bullion-vedha-date' in html)
     print('Has bullion-vedha-run:', 'bullion-vedha-run' in html)
     print('Has bullion-vedha-content:', 'bullion-vedha-content' in html)
-    
+
     # Test API
     resp = client.get('/api/bullion_vedha?date=2026-08-24')
     print('\nBullion Vedha API:', resp.status_code)
@@ -19,7 +20,7 @@ with app.test_client() as client:
     data = json.loads(resp.data)
     print('Keys:', list(data.keys()))
     print('Signal count:', len(data.get('data', {}).get('signals', [])))
-    
+
     resp = client.get('/api/bullion_vedha_week?date=2026-08-24')
     print('\nBullion Vedha Week API:', resp.status_code)
     data = json.loads(resp.data)

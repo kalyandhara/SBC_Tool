@@ -29,7 +29,7 @@ def _bootstrap():
         )
         if cur.fetchone() is None:
             # Schema missing — apply it
-            with open(_SCHEMA_PATH, "r", encoding="utf-8") as f:
+            with open(_SCHEMA_PATH, encoding="utf-8") as f:
                 conn.executescript(f.read())
             conn.commit()
     finally:

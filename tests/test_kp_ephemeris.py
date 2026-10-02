@@ -34,8 +34,9 @@ def test_star_and_sub_start_with_star_lord():
 
 def test_sky_on_2026_10_01_matches_lahiri_engine():
     """KP and Lahiri differ by ~6 arcmin, so stars agree away from edges."""
-    from sbc.planets import positions
     import swisseph as swe
+
+    from sbc.planets import positions
     when = dt.datetime(2026, 10, 1, 9, 15)
     chart = k.chart_at(when)
     utc = when - k.IST

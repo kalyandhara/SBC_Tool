@@ -6,10 +6,10 @@ trend change prediction reports for NIFTY/BANK NIFTY.
 
 import csv
 import json
-from html import escape as html_escape
 from dataclasses import dataclass, field
 from datetime import date, datetime, time, timedelta
 from enum import Enum
+from html import escape as html_escape
 from pathlib import Path
 from typing import Any
 

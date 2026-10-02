@@ -1,9 +1,9 @@
 """
 Lagna calculation.
 """
-import swisseph as swe
-from datetime import datetime
+
 import pytz
+import swisseph as swe
 
 IST = pytz.timezone("Asia/Kolkata")
 

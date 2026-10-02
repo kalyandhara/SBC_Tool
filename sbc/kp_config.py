@@ -4,11 +4,11 @@ Centralized configuration for weights, thresholds, and rule parameters.
 All values can be overridden via environment variables or config file.
 """
 
-import os
 import json
+import os
+from dataclasses import asdict, dataclass
 from pathlib import Path
-from typing import Dict, Any, Optional
-from dataclasses import dataclass, asdict
+from typing import Any
 
 
 @dataclass
@@ -16,16 +16,16 @@ class KPConfig:
     """Complete KP Intraday configuration."""
 
     # Rule weights for signal scoring
-    weights: Dict[str, float] = None
+    weights: dict[str, float] = None
 
     # Signal classification thresholds
-    thresholds: Dict[str, float] = None
+    thresholds: dict[str, float] = None
 
     # Hora quality base mappings
-    hora_base_quality: Dict[str, str] = None
+    hora_base_quality: dict[str, str] = None
 
     # Planet nature classifications
-    planet_nature: Dict[str, str] = None
+    planet_nature: dict[str, str] = None
 
     # Trading rules
     max_tier1_trades: int = 3
@@ -75,11 +75,11 @@ class KPConfig:
                 'Saturn': 'malefic', 'Rahu': 'malefic', 'Ketu': 'malefic'
             }
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return asdict(self)
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> 'KPConfig':
+    def from_dict(cls, data: dict[str, Any]) -> 'KPConfig':
         return cls(**{k: v for k, v in data.items() if k in cls.__dataclass_fields__})
 
     def override_from_env(self):
@@ -116,14 +116,14 @@ CONFIG_DIR = Path(__file__).parent.parent / "config"
 CONFIG_FILE = CONFIG_DIR / "kp_intraday.json"
 
 
-def load_config(config_path: Optional[Path] = None) -> KPConfig:
+def load_config(config_path: Path | None = None) -> KPConfig:
     """Load configuration from file, with environment overrides."""
     config = DEFAULT_CONFIG
 
     path = config_path or CONFIG_FILE
     if path.exists():
         try:
-            with open(path, 'r') as f:
+            with open(path) as f:
                 data = json.load(f)
             config = KPConfig.from_dict(data)
         except Exception:
@@ -133,7 +133,7 @@ def load_config(config_path: Optional[Path] = None) -> KPConfig:
     return config
 
 
-def save_config(config: KPConfig, config_path: Optional[Path] = None):
+def save_config(config: KPConfig, config_path: Path | None = None):
     """Save configuration to file."""
     path = config_path or CONFIG_FILE
     CONFIG_DIR.mkdir(exist_ok=True)
@@ -170,7 +170,7 @@ INSTRUMENT_OVERRIDES = {
 }
 
 
-def get_instrument_config(instrument: str, base_config: KPConfig) -> Dict[str, Any]:
+def get_instrument_config(instrument: str, base_config: KPConfig) -> dict[str, Any]:
     """Get merged config for a specific instrument."""
     override = INSTRUMENT_OVERRIDES.get(instrument.upper(), {})
     return {**base_config.__dict__, **override}

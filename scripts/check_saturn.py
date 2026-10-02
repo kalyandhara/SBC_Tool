@@ -1,13 +1,15 @@
 import datetime
-from sbc.planets import positions
-import swisseph as swe
 from zoneinfo import ZoneInfo
+
+import swisseph as swe
+
+from sbc.planets import positions
 
 date = datetime.date(2020, 1, 1)
 last_sign = None
 while date <= datetime.date(2035, 12, 31):
     local = datetime.datetime.combine(date, datetime.time(12, 0), tzinfo=ZoneInfo('Asia/Kolkata'))
-    utc = local.astimezone(datetime.timezone.utc)
+    utc = local.astimezone(datetime.UTC)
     jd = swe.julday(utc.year, utc.month, utc.day, utc.hour + utc.minute/60.0)
     planets, _ = positions(jd)
     saturn = next(p for p in planets if p['name'] == 'Saturn')

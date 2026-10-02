@@ -143,7 +143,7 @@ def save_csv(rows, summary, out_dir="data/output"):
         fh.write(f"# study: {summary['pair']} {summary['asset']}\n")
         fh.write(f"# range: {summary['range']}\n")
         fh.write(f"# flat_threshold_pct: {FLAT_THRESHOLD_PCT}\n")
-        fh.write(f"# price_source: yfinance cache\n")
+        fh.write("# price_source: yfinance cache\n")
         fh.write(f"# generated: {datetime.date.today().isoformat()}\n")
         writer = csv.DictWriter(fh, fieldnames=list(rows[0].keys()))
         writer.writeheader()

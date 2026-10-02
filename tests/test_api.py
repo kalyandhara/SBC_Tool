@@ -1,8 +1,6 @@
 """Tests for Flask API endpoints."""
 
-import pytest
 import json
-from app import app
 
 
 class TestHealthEndpoint:
@@ -99,9 +97,9 @@ class TestPredictionSeriesEndpoint:
         chart_bp._series_cache.pop((day, "nifty", "classical"), None)
         resp = client.get(f"/api/prediction_series?start={day}&end={day}&anchor=nifty")
         row = json.loads(resp.data)["series"][0]
-        assert chart_bp.SERIES_KEYS <= row.keys()
+        assert row.keys() >= chart_bp.SERIES_KEYS
         stored = series_cache.get_many([day], "nifty", "classical")[day]
-        assert chart_bp.SERIES_KEYS <= stored.keys()
+        assert stored.keys() >= chart_bp.SERIES_KEYS
 
     def test_prediction_series_invalid_range(self, client):
         """Too large range should return 400."""
@@ -524,6 +522,7 @@ class TestKPReportExperimentalLabel:
 
     def test_docx_report_carries_notice(self, client):
         import io
+
         from docx import Document
         resp = client.get(self.URL + "&format=docx")
         assert resp.status_code == 200

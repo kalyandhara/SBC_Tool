@@ -1,7 +1,7 @@
 """Research Lab blueprint."""
 
+
 from flask import Blueprint, jsonify
-import datetime
 
 research_bp = Blueprint('research', __name__, url_prefix='/api/research')
 

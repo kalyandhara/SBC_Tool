@@ -6,9 +6,8 @@ from zoneinfo import ZoneInfo
 import swisseph as swe
 
 from .market_calendar import jupiter_market_analysis
+from .nakshatra import gandanta_of
 from .planets import positions
-from .nakshatra import nakshatra_of, sign_of, gandanta_of
-
 
 HISTORICAL_CASES = [
     {"anchor": "1929-10-24", "category": "crash", "period": "1929", "event": "Black Thursday", "reported_outcome": "crash"},
@@ -26,7 +25,7 @@ def _julian_at_noon(date_str):
     date = datetime.date.fromisoformat(date_str)
     local = datetime.datetime.combine(
         date, datetime.time(12, 0), tzinfo=ZoneInfo("Asia/Kolkata"))
-    utc = local.astimezone(datetime.timezone.utc)
+    utc = local.astimezone(datetime.UTC)
     return swe.julday(utc.year, utc.month, utc.day,
                       utc.hour + utc.minute / 60.0)
 
@@ -739,7 +738,6 @@ def _mercury_retrograde(mercury):
 
 def _moon_gandanta(moon_lon):
     """Moon at Gandanta (transition points)"""
-    from .nakshatra import gandanta_of
     return gandanta_of(moon_lon)
 
 
@@ -991,7 +989,7 @@ def _get_saturn_phase(target_date_str):
     """Determine early/mid/late phase within current sign."""
     target = datetime.date.fromisoformat(target_date_str)
     current_sign = _get_saturn_sign_at_date(target_date_str)
-    
+
     # Find ingress date for current sign
     ingress_date = None
     next_ingress_date = None
@@ -1001,14 +999,14 @@ def _get_saturn_phase(target_date_str):
             if i + 1 < len(SATURN_INGRESSES):
                 next_ingress_date = datetime.date.fromisoformat(SATURN_INGRESSES[i + 1]["date"])
             break
-    
+
     if not ingress_date or not next_ingress_date:
         return "unknown"
-    
+
     total_days = (next_ingress_date - ingress_date).days
     elapsed = (target - ingress_date).days
     pct = elapsed / total_days if total_days > 0 else 0
-    
+
     if pct < 0.33:
         return "early"
     elif pct < 0.67:
@@ -1020,7 +1018,7 @@ def _get_saturn_phase(target_date_str):
 def run_saturn_macro_analysis(center_date=None, years_back=100, years_forward=10):
     """
     Comprehensive Saturn macro cycle analysis with historical validation.
-    
+
     Returns:
         - Current Saturn position & phase
         - Historical event alignment (backtest)
@@ -1033,12 +1031,12 @@ def run_saturn_macro_analysis(center_date=None, years_back=100, years_forward=10
         return {"error": err}, 400
 
     center = datetime.date.fromisoformat(center_date) if center_date else datetime.date.today()
-    
+
     # Current Saturn state
     current_sign = _get_saturn_sign_at_date(center.isoformat())
     current_phase = _get_saturn_phase(center.isoformat())
     narrative = MACRO_NARRATIVE_BY_SIGN.get(current_sign, {})
-    
+
     # Find current ingress and next ingress
     current_ingress = None
     next_ingress = None
@@ -1049,7 +1047,7 @@ def run_saturn_macro_analysis(center_date=None, years_back=100, years_forward=10
         elif ingress_date > center and next_ingress is None:
             next_ingress = ingress
             break
-    
+
     # Historical validation: how well did Saturn signs predict macro events?
     historical_hits = []
     for event in SATURN_MACRO_EVENTS:
@@ -1057,14 +1055,14 @@ def run_saturn_macro_analysis(center_date=None, years_back=100, years_forward=10
         event_phase = _get_saturn_phase(event["date"])
         narrative_at_event = MACRO_NARRATIVE_BY_SIGN.get(event_sign, {})
         bias = narrative_at_event.get("bias", "neutral")
-        
+
         # Check if bias aligns with event type
         event_type = "bearish" if any(w in event["event"].lower() for w in ["crash", "low", "peak", "crisis"]) else "bullish"
         aligned = (bias == "very_bearish" and event_type == "bearish") or \
                   (bias == "bearish" and event_type == "bearish") or \
                   (bias == "bullish" and event_type == "bullish") or \
                   (bias == "neutral")
-        
+
         historical_hits.append({
             "date": event["date"],
             "event": event["event"],
@@ -1074,23 +1072,23 @@ def run_saturn_macro_analysis(center_date=None, years_back=100, years_forward=10
             "event_type": event_type,
             "aligned": aligned,
         })
-    
+
     alignment_rate = sum(1 for h in historical_hits if h["aligned"]) / len(historical_hits) * 100
-    
+
     # Forward-looking windows
     windows = []
     scan_start = center.replace(year=center.year - years_back)
     scan_end = center.replace(year=center.year + years_forward)
-    
+
     # Generate sign-based windows from ingresses
     for ingress in SATURN_INGRESSES:
         ingress_date = datetime.date.fromisoformat(ingress["date"])
         if ingress_date < scan_start or ingress_date > scan_end:
             continue
-        
+
         sign = ingress["sign"]
         narrative_info = MACRO_NARRATIVE_BY_SIGN.get(sign, {})
-        
+
         # Find end of this sign (next ingress)
         sign_end = scan_end
         for next_ing in SATURN_INGRESSES:
@@ -1098,7 +1096,7 @@ def run_saturn_macro_analysis(center_date=None, years_back=100, years_forward=10
             if next_date > ingress_date:
                 sign_end = min(next_date - datetime.timedelta(days=1), scan_end)
                 break
-        
+
         windows.append({
             "sign": sign,
             "start": ingress_date.isoformat(),
@@ -1109,7 +1107,7 @@ def run_saturn_macro_analysis(center_date=None, years_back=100, years_forward=10
             "focus_sectors": narrative_info.get("sectors", []),
             "timeline": "past" if sign_end < center else ("current" if ingress_date <= center <= sign_end else "upcoming"),
         })
-    
+
     # Key upcoming transitions
     transitions = []
     for ingress in SATURN_INGRESSES:
@@ -1128,7 +1126,7 @@ def run_saturn_macro_analysis(center_date=None, years_back=100, years_forward=10
                 "shift": f"{from_narr.get('bias','neutral')} → {to_narr.get('bias','neutral')}",
                 "key_sectors": to_narr.get("sectors", []),
             })
-    
+
     # Current actionable summary
     actionable = {
         "current_saturn_sign": current_sign,
@@ -1144,7 +1142,7 @@ def run_saturn_macro_analysis(center_date=None, years_back=100, years_forward=10
             "expected_shift": f"{narrative.get('bias','neutral')} → {MACRO_NARRATIVE_BY_SIGN.get(next_ingress['sign'],{}).get('bias','neutral')}" if next_ingress else None,
         } if next_ingress else None,
     }
-    
+
     return {
         "center_date": center.isoformat(),
         "saturn_cycle": {

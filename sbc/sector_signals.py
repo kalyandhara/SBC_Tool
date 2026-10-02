@@ -14,10 +14,10 @@ A pair may appear under several themes when it moves different markets
 
 import datetime
 
+from .backtest import _julian_at_noon
 from .chakra import NAKSHATRA_CELL
 from .planets import positions
 from .prediction import compute_vedhas
-from .backtest import _julian_at_noon
 
 DISCLAIMER = ("Historical backtest stats 2021-08..2026-08; small samples on some pairs. "
               "Research aid only - not investment advice.")

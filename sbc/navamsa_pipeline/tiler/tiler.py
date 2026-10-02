@@ -2,6 +2,7 @@
 Temporal tiler for minute/hour forward generation.
 """
 from datetime import datetime, timedelta
+
 import pytz
 
 IST = pytz.timezone("Asia/Kolkata")

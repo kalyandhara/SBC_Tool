@@ -8,7 +8,7 @@ if idx >= 0:
     func_start = content.rfind(b'function renderTourismSignals(data) {', 0, idx)
     if func_start == -1:
         func_start = content.rfind(b'function renderTourismSignals(data) {', 0, idx)
-    
+
     if func_start != -1:
         # Find the end of this function
         brace_count = 0
@@ -24,19 +24,19 @@ if idx >= 0:
             pos += 1
         else:
             func_end = len(content)
-        
+
         # Extract the function
         func_code = content[func_start:func_end]
-        
+
         # Remove from current position
         content = content[:func_start] + content[func_end:]
-        
+
         # Find the correct insertion point (before loadTourismSignals)
         insert_idx = content.find(b'async function loadTourismSignals')
         if insert_idx != -1:
             # Insert before loadTourismSignals with proper spacing
             new_content = content[:insert_idx] + func_code + b'\n\n' + content[insert_idx:]
-            
+
             with open('static/app.js', 'wb') as f:
                 f.write(new_content)
             print('Fixed!')

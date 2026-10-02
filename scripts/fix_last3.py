@@ -16,7 +16,7 @@ if idx >= 0:
     print('Fixed!')
 else:
     print('Not found with exact pattern')
-    
+
     # Search more broadly
     for m in re.finditer(b', val] of Object.entries', content):
         print(f'Found at {m.start()}: {content[m.start()-50:m.end()+50]}')

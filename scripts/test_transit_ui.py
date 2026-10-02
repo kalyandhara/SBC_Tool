@@ -1,4 +1,5 @@
 import sys
+
 sys.path.insert(0, r'D:\SBC_Tool')
 from app import app
 

@@ -1,17 +1,20 @@
 import sys
+
 sys.path.insert(0, r'D:\SBC_Tool')
 
-from sbc.planets import positions, all_planets_with_natures
-from sbc.nakshatra import tithi_of
-from sbc.prediction import compute_vedhas
-import swisseph as swe
 import datetime
 from zoneinfo import ZoneInfo
+
+import swisseph as swe
+
+from sbc.nakshatra import tithi_of
+from sbc.planets import all_planets_with_natures, positions
+from sbc.prediction import compute_vedhas
 
 # Check planetary positions for Aug 24
 date = datetime.date(2026, 8, 24)
 local = datetime.datetime.combine(date, datetime.time(12, 0), tzinfo=ZoneInfo('Asia/Kolkata'))
-utc = local.astimezone(datetime.timezone.utc)
+utc = local.astimezone(datetime.UTC)
 jul = swe.julday(utc.year, utc.month, utc.day, utc.hour + utc.minute/60.0)
 
 planets, ayanamsa = positions(jul)

@@ -1,4 +1,5 @@
 import sys
+
 sys.path.insert(0, r'D:\SBC_Tool')
 from app import app
 
@@ -17,12 +18,12 @@ with app.test_client() as client:
         '/api/prediction?date=',
         '/api/crash_analysis?date=',
     ]
-    
+
     for ep in endpoints:
         resp = client.get(ep)
         status = "OK" if resp.status_code == 200 else f"FAIL ({resp.status_code})"
         print(f"{ep}: {status}")
         if resp.status_code != 200:
             print(f"  Error: {resp.get_data(as_text=True)[:200]}")
-    
+
     print("\nAll endpoints tested!")

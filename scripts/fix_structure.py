@@ -1,4 +1,4 @@
-with open('static/app.js', 'r', encoding='utf-8', errors='ignore') as f:
+with open('static/app.js', encoding='utf-8', errors='ignore') as f:
     content = f.read()
 
 # Fix 1: Remove duplicate loadLunarForecast (second occurrence)
@@ -25,7 +25,7 @@ render_tourism_idx = content.find('function renderTourismSignals', idx_fmcg, idx
 
 if render_tourism_idx != -1 and idx_fmcg < render_tourism_idx < idx_tourism:
     print('Found renderTourismSignals inside loadFmcgSignals at', render_tourism_idx)
-    
+
     # Find the function body
     brace_pos = content.find('{', render_tourism_idx)
     if brace_pos != -1:
@@ -38,13 +38,13 @@ if render_tourism_idx != -1 and idx_fmcg < render_tourism_idx < idx_tourism:
                 brace_count -= 1
             pos += 1
         func_end = pos
-        
+
         func_code = content[render_tourism_idx:func_end]
         print('Found renderTourismSignals from', render_tourism_idx, 'to', func_end)
-        
+
         # Remove from inside loadFmcgSignals
         content = content[:render_tourism_idx] + content[func_end:]
-        
+
         # Insert before loadTourismSignals
         insert_pos = idx_tourism
         content = content[:idx_tourism] + func_code + '\n\n' + content[idx_tourism:]

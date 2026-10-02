@@ -1,4 +1,5 @@
 import sys
+
 sys.path.insert(0, r'D:\SBC_Tool')
 from app import app
 
@@ -14,7 +15,7 @@ with app.test_client() as client:
     print('range_end:', data.get('range_end'))
     print('method:', data.get('method')[:50] if data.get('method') else 'None')
     print('disclaimer:', data.get('disclaimer'))
-    
+
     # Test bullish futurecast
     resp = client.get('/api/bullish_futurecast?date=2026-08-24')
     data = json.loads(resp.data)

@@ -57,6 +57,7 @@ def _forecast_ledger_loop(interval_s=600):
     once a day is stored; scoring only touches settled, unscored days.
     """
     import time as _time
+
     from sbc import forecast_ledger as ledger
     from sbc.market_holidays import is_trading_day
     while True:

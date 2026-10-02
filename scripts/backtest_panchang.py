@@ -19,9 +19,9 @@ import os
 
 import pandas as pd
 
-from sbc.planets import positions
 from sbc.backtest import _julian_at_noon
-from sbc.panchang_signals import panchang_signal, tithi_bias, NAKSHATRA_MOD
+from sbc.panchang_signals import panchang_signal
+from sbc.planets import positions
 
 NIFTY = os.path.join("data", "nifty_ohlc.csv")
 

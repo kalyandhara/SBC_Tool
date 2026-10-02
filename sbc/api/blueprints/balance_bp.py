@@ -1,7 +1,8 @@
 """Monthly Projection / Daily Indication Balance blueprint."""
 
-from flask import Blueprint, jsonify, request
 import datetime
+
+from flask import Blueprint, jsonify, request
 
 balance_bp = Blueprint('balance', __name__, url_prefix='')
 
@@ -16,7 +17,7 @@ def daily_indication_balance():
     and Western (zodiac-dignity synthetic line). Each day is scored on the
     Vedic net, mapped to a 0..6 bias scale.
     """
-    from app import build_response, ANCHORS
+    from app import ANCHORS, build_response
     from sbc.metrics import _bias_scale, _western_bias
     start = request.args.get("start")
     try:

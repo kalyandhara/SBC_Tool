@@ -7,22 +7,31 @@ reversal windows, transits, and confluence analysis.
 
 import datetime
 from zoneinfo import ZoneInfo
+
 import swisseph as swe
 
-from sbc.planets import positions, all_planets_with_natures
-from sbc.nakshatra import tithi_of, nakshatra_of, sign_of, moon_nature, paksha_of
-from sbc.market_calendar import (
-    reversal_alert, transit_alert, lunar_phase_alert, 
-    jupiter_market_analysis, get_all_bullish_reversal_windows,
-    TRANSIT_RULES
-)
-from sbc.backtest import run_bullish_futurecast, run_bearish_futurecast
-from sbc.confluence import build_confluence_report
-from sbc.prediction import analyze, compute_vedhas, place_planets, sector_read, planet_sector_read, summarize_vedhas
+from sbc.backtest import run_bearish_futurecast, run_bullish_futurecast
 from sbc.chakra import GRID
-from sbc.venus_vedha import venus_vedha_events, format_venus_vedha
+from sbc.confluence import build_confluence_report
 from sbc.market_calendar import _anchor_nakshatra as anchor_nakshatra_func
-from sbc.telecom_confluence import telecom_confluence, format_telecom_confluence
+from sbc.market_calendar import (
+    get_all_bullish_reversal_windows,
+    jupiter_market_analysis,
+    lunar_phase_alert,
+    reversal_alert,
+    transit_alert,
+)
+from sbc.nakshatra import tithi_of
+from sbc.planets import all_planets_with_natures, positions
+from sbc.prediction import (
+    analyze,
+    compute_vedhas,
+    place_planets,
+    planet_sector_read,
+    sector_read,
+)
+from sbc.telecom_confluence import format_telecom_confluence, telecom_confluence
+from sbc.venus_vedha import format_venus_vedha, venus_vedha_events
 
 # Nakshatra meanings for commentary
 NAKSHATRA_MEANINGS = {
@@ -69,7 +78,7 @@ SIGN_MEANINGS = {
 
 def _julian_at_noon(date):
     local = datetime.datetime.combine(date, datetime.time(12, 0), tzinfo=ZoneInfo('Asia/Kolkata'))
-    utc = local.astimezone(datetime.timezone.utc)
+    utc = local.astimezone(datetime.UTC)
     return swe.julday(utc.year, utc.month, utc.day, utc.hour + utc.minute/60.0)
 
 
@@ -98,16 +107,16 @@ def _detect_key_configurations(planets):
     """Detect major planetary configurations for the week."""
     configs = []
     by_name = {p["name"]: p for p in planets}
-    
+
     # Mercury-Ketu-Sun triangle/conjunction in Leo
     sun = by_name["Sun"]
     mercury = by_name["Mercury"]
     ketu = by_name["Ketu"]
-    
+
     sun_mercury = _angle(sun["longitude"], mercury["longitude"])
     sun_ketu = _angle(sun["longitude"], ketu["longitude"])
     mercury_ketu = _angle(mercury["longitude"], ketu["longitude"])
-    
+
     # Check if all three in same sign
     if sun["sign"] == mercury["sign"] == ketu["sign"]:
         sign = sun["sign"]
@@ -140,7 +149,7 @@ def _detect_key_configurations(planets):
             "details": f"Separation {mercury_ketu:.1f}°",
             "sign": mercury["sign"],
         })
-    
+
     # Jupiter-Saturn aspects
     jupiter = by_name["Jupiter"]
     saturn = by_name["Saturn"]
@@ -156,24 +165,24 @@ def _detect_key_configurations(planets):
         configs.append({
             "name": "Jupiter-Saturn Sextile",
             "type": "harmonious",
-            "details": f"60° aspect",
+            "details": "60° aspect",
             "intensity": "high"
         })
     elif abs(jup_sat - 90) <= 8:
         configs.append({
             "name": "Jupiter-Saturn Square",
             "type": "challenging",
-            "details": f"90° aspect",
+            "details": "90° aspect",
             "intensity": "high"
         })
     elif abs(jup_sat - 180) <= 8:
         configs.append({
             "name": "Jupiter-Saturn Opposition",
             "type": "challenging",
-            "details": f"180° aspect",
+            "details": "180° aspect",
             "intensity": "extreme"
         })
-    
+
     # Rahu-Jupiter trine
     rahu = by_name["Rahu"]
     rahu_jup = _angle(rahu["longitude"], jupiter["longitude"])
@@ -184,7 +193,7 @@ def _detect_key_configurations(planets):
             "details": "Mass optimism, new narratives emerging",
             "intensity": "high"
         })
-    
+
     # Venus-Jupiter trine
     venus = by_name["Venus"]
     ven_jup = _angle(venus["longitude"], jupiter["longitude"])
@@ -195,7 +204,7 @@ def _detect_key_configurations(planets):
             "details": "Liquidity expansion, consumption boom",
             "intensity": "high"
         })
-    
+
     # Mercury-Jupiter trine
     mer_jup = _angle(mercury["longitude"], jupiter["longitude"])
     if abs(mer_jup - 120) <= 8:
@@ -205,7 +214,7 @@ def _detect_key_configurations(planets):
             "details": "Trading clarity, tech/banking optimism",
             "intensity": "moderate-high"
         })
-    
+
     # Ketu in financial signs
     if ketu["sign"] in ("Libra", "Taurus"):
         configs.append({
@@ -214,7 +223,7 @@ def _detect_key_configurations(planets):
             "details": "Capital flight risk, loss of confidence",
             "intensity": "high"
         })
-    
+
     # Saturn in Pisces
     if saturn["sign"] == "Pisces":
         configs.append({
@@ -223,7 +232,7 @@ def _detect_key_configurations(planets):
             "details": "Dissolution of structures, institutional weakening",
             "intensity": "high" if saturn["retrograde"] else "moderate"
         })
-    
+
     # Jupiter in Cancer (exalted)
     if jupiter["sign"] == "Cancer":
         configs.append({
@@ -232,7 +241,7 @@ def _detect_key_configurations(planets):
             "details": "Maximum expansion, liquidity, growth support",
             "intensity": "extreme"
         })
-    
+
     # Venus in Virgo (debilitated)
     if venus["sign"] == "Virgo":
         configs.append({
@@ -241,7 +250,7 @@ def _detect_key_configurations(planets):
             "details": "Deflationary, credit tightening, consumption drop",
             "intensity": "moderate"
         })
-    
+
     # Mercury retrograde
     if mercury["retrograde"]:
         configs.append({
@@ -250,7 +259,7 @@ def _detect_key_configurations(planets):
             "details": "Communication/trading confusion, review period",
             "intensity": "moderate"
         })
-    
+
     return configs
 
 
@@ -269,7 +278,7 @@ def _get_moon_nakshatra_transits(start_date, days=7):
             "sign": moon["sign"],
             "degree": moon["degree"],
             "meaning": meaning,
-            "lord": {"Ashwini": "Ketu", "Bharani": "Venus", "Krittika": "Sun", 
+            "lord": {"Ashwini": "Ketu", "Bharani": "Venus", "Krittika": "Sun",
                      "Rohini": "Moon", "Mrigashira": "Mars", "Ardra": "Rahu",
                      "Punarvasu": "Jupiter", "Pushya": "Saturn", "Ashlesha": "Mercury",
                      "Magha": "Ketu", "P.Phalguni": "Venus", "U.Phalguni": "Sun",
@@ -286,7 +295,7 @@ def _analyze_market_bias(confluence, configurations, transits, bullish_fc, beari
     """Determine overall market bias for the week."""
     bullish_factors = []
     bearish_factors = []
-    
+
     # From confluence
     if confluence:
         overall = confluence.get("overall", {})
@@ -294,14 +303,14 @@ def _analyze_market_bias(confluence, configurations, transits, bullish_fc, beari
             bullish_factors.append(f"Confluence: Net bullish ({overall.get('net', 0):+.2f})")
         elif overall.get("signal") == "BEARISH":
             bearish_factors.append(f"Confluence: Net bearish ({overall.get('net', 0):+.2f})")
-        
+
         # Top sectors
         highlights = confluence.get("highlights", {})
         if highlights.get("bullish_confluence_sectors"):
             bullish_factors.append(f"Bullish sectors: {', '.join(highlights['bullish_confluence_sectors'][:3])}")
         if highlights.get("bearish_confluence_sectors"):
             bearish_factors.append(f"Bearish sectors: {', '.join(highlights['bearish_confluence_sectors'][:3])}")
-    
+
     # From configurations
     for c in configurations:
         if c.get("type") in ("bullish", "harmonious"):
@@ -312,18 +321,18 @@ def _analyze_market_bias(confluence, configurations, transits, bullish_fc, beari
             # Major conjunctions = high volatility
             bearish_factors.append(f"{c['name']}: High volatility, sudden moves likely")
             bullish_factors.append(f"{c['name']}: Potential trend change/reversal window")
-    
+
     # From futurecasts
     if bullish_fc and bullish_fc.get("clusters"):
         for c in bullish_fc["clusters"][:2]:
             if c["score"] >= 7:
                 bullish_factors.append(f"Bullish futurecast: {c['score']}/16 ({', '.join(c['triggers'][:3])})")
-    
+
     if bearish_fc and bearish_fc.get("clusters"):
         for c in bearish_fc["clusters"][:2]:
             if c["score"] >= 3:
                 bearish_factors.append(f"Bearish futurecast: {c['score']}/20 ({', '.join(c['triggers'][:3])})")
-    
+
     # Determine net bias
     if len(bullish_factors) > len(bearish_factors):
         bias = "BULLISH"
@@ -331,17 +340,17 @@ def _analyze_market_bias(confluence, configurations, transits, bullish_fc, beari
         bias = "BEARISH"
     else:
         bias = "VOLATILE / MIXED"
-    
+
     return bias, bullish_factors, bearish_factors
 
 
 def generate_weekly_commentary(start_date=None):
     """
     Generate expert-style weekly confluence commentary.
-    
+
     Args:
         start_date: datetime.date for Monday of the week (defaults to current week)
-    
+
     Returns:
         dict with commentary sections
     """
@@ -349,20 +358,20 @@ def generate_weekly_commentary(start_date=None):
         today = datetime.date.today()
         # Find Monday of current week
         start_date = today - datetime.timedelta(days=today.weekday())
-    
+
     end_date = start_date + datetime.timedelta(days=6)
     week_label = f"{start_date.strftime('%b %d')} - {end_date.strftime('%b %d, %Y')}"
-    
+
     # Get positions for start of week (Monday noon)
     planets, tithi, ayanamsa = _get_planet_positions(start_date)
-    
+
     # Get all analyses
     alert = reversal_alert(start_date.isoformat(), planets, tithi)
     transits_list = transit_alert(planets)
     lunar = lunar_phase_alert(tithi)
     jupiter_analysis = jupiter_market_analysis(planets)
     bullish_windows = get_all_bullish_reversal_windows(start_date, planets, tithi)
-    
+
     # Confluence
     vedha_map, _ = compute_vedhas(planets, school="classical")
     grid = place_planets(GRID, planets)
@@ -383,36 +392,36 @@ def generate_weekly_commentary(start_date=None):
         lunar_phase=lunar,
         venus_vedha=venus_vedha,
     )
-    
+
     # Futurecasts
     bullish_fc = run_bullish_futurecast(center_date=start_date.isoformat(), years=1)
     bearish_fc = run_bearish_futurecast(center_date=start_date.isoformat(), years=1)
-    
+
     # Key configurations
     configurations = _detect_key_configurations(planets)
 
     # Moon nakshatra transits
     moon_transits = _get_moon_nakshatra_transits(start_date)
-    
+
     # Market bias
     bias, bullish_factors, bearish_factors = _analyze_market_bias(
         confluence, configurations, transits_list, bullish_fc, bearish_fc
     )
-    
+
     # Identify the "most important cycle" (highest intensity configuration)
     main_cycle = None
     for c in sorted(configurations, key=lambda x: {"extreme": 4, "high": 3, "moderate-high": 2, "moderate": 1, "low": 0}.get(x.get("intensity", "moderate"), 1), reverse=True):
         if c.get("intensity") in ("extreme", "high"):
             main_cycle = c
             break
-    
+
     # Sector-wise outlook
     by_name = {p["name"]: p for p in planets}
     telecom = telecom_confluence(planets)
     sector_outlook = _build_sector_outlook(by_name, sector_read_data, planet_sector_read_data, confluence, transits_list, alert, telecom)
     general_strategy = _generate_general_strategy(by_name, confluence, alert)
     nifty_levels = _get_nifty_levels_guidance(confluence)
-    
+
     # Build commentary sections
     commentary = {
         "week": week_label,
@@ -440,7 +449,7 @@ def generate_weekly_commentary(start_date=None):
         "general_strategy": general_strategy,
         "nifty_levels": nifty_levels,
     }
-    
+
     return commentary
 
 
@@ -448,10 +457,10 @@ def format_commentary_text(commentary):
     """Format commentary as readable text report."""
     lines = []
     lines.append("=" * 70)
-    lines.append(f"WEEKLY ASTRO-MARKET CONFLUENCE COMMENTARY")
+    lines.append("WEEKLY ASTRO-MARKET CONFLUENCE COMMENTARY")
     lines.append(f"Week of {commentary['week']}")
     lines.append("=" * 70)
-    
+
     # Main Cycle
     mc = commentary["main_cycle"]
     if mc:
@@ -461,8 +470,8 @@ def format_commentary_text(commentary):
             lines.append(f"    Intensity: {mc['intensity'].upper()}")
         lines.append(f"    Sign: {mc.get('sign', 'N/A')} ({mc.get('nakshatra', 'N/A')})")
         lines.append(f"    {SIGN_MEANINGS.get(mc.get('sign', ''), '')}")
-        lines.append(f"    Expected: High volatility, sudden moves, possible trend changes")
-    
+        lines.append("    Expected: High volatility, sudden moves, possible trend changes")
+
     # All Configurations
     lines.append("\n" + "-" * 70)
     lines.append("KEY PLANETARY CONFIGURATIONS THIS WEEK:")
@@ -470,14 +479,14 @@ def format_commentary_text(commentary):
     for c in commentary["all_configurations"]:
         intensity_marker = {"extreme": "[!!!]", "high": "[!!]", "moderate-high": "[!]", "moderate": "[+]"}.get(c.get("intensity", ""), "[ ]")
         lines.append(f"  {intensity_marker} {c['name']}: {c.get('details', '')}")
-    
+
     # Planetary Positions
     lines.append("\n" + "-" * 70)
     lines.append("PLANETARY POSITIONS (Monday noon IST, Lahiri Ayanamsa):")
     lines.append("-" * 70)
     for pos in commentary["planetary_positions"]:
         lines.append(f"  {pos}")
-    
+
     # Moon Nakshatra Transits
     lines.append("\n" + "-" * 70)
     lines.append("MOON NAKSHATRA TRANSITS (Daily Sentiment Drivers):")
@@ -485,7 +494,7 @@ def format_commentary_text(commentary):
     for mt in commentary["moon_transits"]:
         lord_str = f" (Lord: {mt['lord']})" if mt['lord'] else ""
         lines.append(f"  {mt['weekday']} {mt['date'].strftime('%b %d')}: Moon in {mt['sign']} {mt['degree']:.1f}° - {mt['nakshatra']} ({mt['meaning']}){lord_str}")
-    
+
     # Active Reversal Windows
     lines.append("\n" + "-" * 70)
     lines.append("ACTIVE REVERSAL WINDOWS:")
@@ -497,14 +506,14 @@ def format_commentary_text(commentary):
             lines.append(f"     Sectors: {', '.join(w['sectors'])}")
     else:
         lines.append("  No active predefined reversal windows.")
-    
+
     # Upcoming Windows
     if commentary["upcoming_windows"]:
         lines.append("\nUPCOMING HIGH-IMPACT WINDOWS (Next 7 Days):")
         for w in commentary["upcoming_windows"]:
             lines.append(f"  [UPCOMING] {w['title']} (in {w.get('days_ahead', '?')} days)")
             lines.append(f"     Level: {w['level']} | Bias: {w['bias']}")
-    
+
     # Major Transits
     lines.append("\n" + "-" * 70)
     lines.append("MAJOR PLANETARY TRANSITS:")
@@ -514,7 +523,7 @@ def format_commentary_text(commentary):
         lines.append(f"  {t['planet']} in {t['sign']} {t['degree']:.2f}° {t['nakshatra']}{retro}")
         lines.append(f"     Bias: {t['bias']} | {t['explanation']}")
         lines.append(f"     Sectors: {', '.join(t['sectors'])}")
-    
+
     # Venus Vedha Event (Chitra / Libra)
     if commentary.get("venus_vedha") and commentary["venus_vedha"].get("active"):
         lines.append("\n" + "-" * 70)
@@ -540,7 +549,7 @@ def format_commentary_text(commentary):
         lines.append(f"  {lp['phase']} (Tithi {lp['tithi']}) - {lp['window']}")
         lines.append(f"  Level: {lp['level']} | Bias: {lp['bias']}")
         lines.append(f"  {lp['explanation']}")
-    
+
     # Jupiter Analysis
     if commentary["jupiter_analysis"] and commentary["jupiter_analysis"]["active"]:
         ja = commentary["jupiter_analysis"]
@@ -550,7 +559,7 @@ def format_commentary_text(commentary):
         lines.append(f"  Status: ACTIVE - {ja['bias']} ({ja['level']})")
         for r in ja["reasons"]:
             lines.append(f"  • {r}")
-    
+
     # Confluence Analysis
     if commentary["confluence"]:
         conf = commentary["confluence"]
@@ -560,7 +569,7 @@ def format_commentary_text(commentary):
         lines.append("-" * 70)
         lines.append(f"  Overall Signal: {overall['signal']} (Net: {overall['net']:+.2f})")
         lines.append(f"  Bullish Weight: {overall['bullish_weight']:.2f} | Bearish Weight: {overall['bearish_weight']:.2f}")
-        
+
         highlights = conf["highlights"]
         if highlights["bullish_confluence_sectors"]:
             lines.append(f"  [GREEN] Bullish Confluence: {', '.join(highlights['bullish_confluence_sectors'])}")
@@ -568,16 +577,16 @@ def format_commentary_text(commentary):
             lines.append(f"  [RED] Bearish Confluence: {', '.join(highlights['bearish_confluence_sectors'])}")
         if highlights["conflicted_sectors"]:
             lines.append(f"  [CONFLICT] Conflicted: {', '.join(highlights['conflicted_sectors'])}")
-        
+
         lines.append("\n  Component Breakdown:")
         for name, comp in conf["components"].items():
             lines.append(f"    {name}: Bullish={comp['overall']['bullish_weight']:.1f}, Bearish={comp['overall']['bearish_weight']:.1f}, Signal={comp['overall']['signal']}")
-    
+
     # Futurecast Summary
     lines.append("\n" + "-" * 70)
     lines.append("FUTURECAST SIGNALS (Next 30 Days):")
     lines.append("-" * 70)
-    
+
     bc = commentary["bullish_futurecast"]
     if bc.get("clusters"):
         lines.append("  [BULLISH] BULLISH WINDOWS:")
@@ -585,7 +594,7 @@ def format_commentary_text(commentary):
             if c["start"] >= commentary["start_date"] and c["start"] <= commentary["end_date"] or c["timeline"] in ("current", "upcoming"):
                 lines.append(f"    {c['start']} - {c['end']}: Score {c['score']}/16 ({c['level']})")
                 lines.append(f"      Triggers: {', '.join(c['triggers'][:4])}")
-    
+
     brc = commentary["bearish_futurecast"]
     if brc.get("clusters"):
         lines.append("  [BEARISH] BEARISH WINDOWS:")
@@ -593,22 +602,22 @@ def format_commentary_text(commentary):
             if c["start"] >= commentary["start_date"] and c["start"] <= commentary["end_date"] or c["timeline"] in ("current", "upcoming"):
                 lines.append(f"    {c['start']} - {c['end']}: Score {c['score']}/20 ({c['level']})")
                 lines.append(f"      Triggers: {', '.join(c['triggers'][:4])}")
-    
+
     # Market Bias Summary
     lines.append("\n" + "=" * 70)
     lines.append(f"WEEKLY MARKET BIAS: {commentary['market_bias']}")
     lines.append("=" * 70)
-    
+
     if commentary["bullish_factors"]:
         lines.append("  [+] BULLISH FACTORS:")
         for f in commentary["bullish_factors"][:5]:
             lines.append(f"    • {f}")
-    
+
     if commentary["bearish_factors"]:
         lines.append("\n  [-] BEARISH FACTORS:")
         for f in commentary["bearish_factors"][:5]:
             lines.append(f"    • {f}")
-    
+
     # Sector-wise Outlook
     if commentary.get("sector_outlook"):
         lines.append("\n" + "=" * 70)
@@ -618,7 +627,7 @@ def format_commentary_text(commentary):
         lines.append("-" * 110)
         for s in commentary["sector_outlook"]:
             lines.append(f"{s['sector']:<20} {s['astrological_influence'][:48]:<50} {s['trend_outlook'][:23]:<25} {s['key_focus'][:60]}")
-    
+
     # General Market Strategy
     if commentary.get("general_strategy"):
         lines.append("\n" + "=" * 70)
@@ -626,7 +635,7 @@ def format_commentary_text(commentary):
         lines.append("=" * 70)
         for line in commentary["general_strategy"].split('\n'):
             lines.append(f"  {line}")
-    
+
     # Nifty Levels
     if commentary.get("nifty_levels"):
         lines.append("\n" + "=" * 70)
@@ -634,12 +643,12 @@ def format_commentary_text(commentary):
         lines.append("=" * 70)
         for line in commentary["nifty_levels"].split('\n'):
             lines.append(f"  {line}")
-    
+
     lines.append("\n" + "=" * 70)
     lines.append("DISCLAIMER: Research commentary only. Not financial advice.")
     lines.append("Use technical, fundamental and risk management before trading.")
     lines.append("=" * 70)
-    
+
     return "\n".join(lines)
 
 
@@ -653,7 +662,7 @@ def _clean(s):
 
 def _build_sector_outlook(by_name, sector_read_data, planet_sector_read_data, confluence, transits, alert, telecom=None):
     """Build the sector-wise outlook table."""
-    
+
     SECTOR_MAPPING = {
 "Nifty IT": ["IT", "IT & Software", "Technology"],
          "Nifty Telecom/Cable": ["Telecom", "Cable & Media", "Communication Infrastructure", "Digital Infrastructure", "Media"],
@@ -670,13 +679,13 @@ def _build_sector_outlook(by_name, sector_read_data, planet_sector_read_data, co
         "Nifty Large Caps": ["Large Caps", "Large Cap", "Nifty 50"],
         "Nifty Gold": ["Gold/MCX", "Gold", "Gold (store of wealth)", "MCX Gold", "Luxury & Silver"],
     }
-    
+
     highlights = confluence.get("highlights", {})
     bullish_sectors = set(highlights.get("bullish_confluence_sectors", []))
     bearish_sectors = set(highlights.get("bearish_confluence_sectors", []))
     conflicted_sectors = set(highlights.get("conflicted_sectors", []))
     sector_confluence = confluence.get("sector_confluence", {})
-    
+
     sun = by_name["Sun"]
     mercury = by_name["Mercury"]
     mars = by_name["Mars"]
@@ -686,9 +695,9 @@ def _build_sector_outlook(by_name, sector_read_data, planet_sector_read_data, co
     rahu = by_name["Rahu"]
     ketu = by_name["Ketu"]
     moon = by_name["Moon"]
-    
+
     outlook = []
-    
+
     for nifty_sector, mapped_sectors in SECTOR_MAPPING.items():
         conf_score = 0
         conf_signal = "NEUTRAL"
@@ -700,7 +709,7 @@ def _build_sector_outlook(by_name, sector_read_data, planet_sector_read_data, co
                     conf_signal = "BULLISH"
                 elif sc.get("signal") == "BEARISH":
                     conf_signal = "BEARISH" if conf_signal != "BULLISH" else "MIXED"
-        
+
         if nifty_sector == "Nifty Telecom/Cable" and telecom:
             influence = _telecom_influence(telecom)
             trend = _telecom_trend(telecom, conf_signal)
@@ -709,7 +718,7 @@ def _build_sector_outlook(by_name, sector_read_data, planet_sector_read_data, co
             influence = _determine_astrological_influence(nifty_sector, by_name)
             trend = _determine_trend(nifty_sector, conf_signal, bullish_sectors, bearish_sectors, conflicted_sectors, by_name)
             focus = _generate_key_focus(nifty_sector, by_name)
-        
+
         outlook.append({
             "sector": nifty_sector,
             "astrological_influence": influence,
@@ -718,14 +727,14 @@ def _build_sector_outlook(by_name, sector_read_data, planet_sector_read_data, co
             "confluence_score": round(conf_score, 2),
             "confluence_signal": conf_signal,
         })
-    
+
     return outlook
 
 
 def _determine_astrological_influence(sector, by_name):
     """Determine the primary astrological influence for a sector."""
     influences = []
-    
+
     sun = by_name["Sun"]
     mercury = by_name["Mercury"]
     mars = by_name["Mars"]
@@ -735,7 +744,7 @@ def _determine_astrological_influence(sector, by_name):
     rahu = by_name["Rahu"]
     ketu = by_name["Ketu"]
     moon = by_name["Moon"]
-    
+
     if "IT" in sector:
         if mercury["retrograde"]:
             influences.append(f"Mercury Retrograde in {mercury['sign']} ({mercury['nakshatra']})")
@@ -743,63 +752,63 @@ def _determine_astrological_influence(sector, by_name):
             influences.append(f"Mercury in {mercury['sign']} ({mercury['nakshatra']})")
         if jupiter["sign"] in ("Cancer", "Sagittarius", "Pisces"):
             influences.append(f"Jupiter in {jupiter['sign']} (expansive)")
-    
+
     elif "Bank" in sector or "Financial" in sector:
         influences.append(f"Jupiter in {jupiter['sign']} ({jupiter['nakshatra']}) - banking karaka")
         influences.append(f"Saturn in {saturn['sign']} ({saturn['nakshatra']}){' R' if saturn['retrograde'] else ''} - structure")
         if sun["sign"] == "Leo":
-            influences.append(f"Sun in Leo (government/PSU authority)")
-    
+            influences.append("Sun in Leo (government/PSU authority)")
+
     elif "Auto" in sector or "Metal" in sector:
         influences.append(f"Mars in {mars['sign']} ({mars['nakshatra']}) - industrial drive")
         influences.append(f"Sun in {sun['sign']} ({sun['nakshatra']}) - fire element")
         if rahu["sign"] in ("Aries", "Leo"):
             influences.append(f"Rahu in {rahu['sign']} (speculative appetite)")
-    
+
     elif "FMCG" in sector or "Pharma" in sector:
         influences.append(f"Venus in {venus['sign']} ({venus['nakshatra']}) - consumption")
         influences.append(f"Moon in {moon['sign']} ({moon['nakshatra']}) - public sentiment")
         if saturn["sign"] == "Pisces":
-            influences.append(f"Saturn in Pisces (healthcare/pharma structure)")
-    
+            influences.append("Saturn in Pisces (healthcare/pharma structure)")
+
     elif "Energy" in sector or "Oil" in sector:
         influences.append(f"Rahu/Ketu axis ({rahu['sign']}/{ketu['sign']}) - volatile commodities")
         influences.append(f"Sun in {sun['sign']} ({sun['nakshatra']}) - energy source")
         if mars["sign"] in ("Aries", "Scorpio", "Capricorn"):
             influences.append(f"Mars in {mars['sign']} (energy drive)")
-    
+
     elif "Realty" in sector or "Infra" in sector:
         influences.append(f"Saturn in {saturn['sign']} ({saturn['nakshatra']}){' R' if saturn['retrograde'] else ''} - land/structure")
         if jupiter["sign"] in ("Cancer", "Taurus"):
             influences.append(f"Jupiter in {jupiter['sign']} (real estate expansion)")
-    
+
     elif "Large" in sector or "Nifty 50" in sector:
         influences.append(f"Sun in {sun['sign']} - index leadership")
         jup_sat = abs((jupiter["longitude"] - saturn["longitude"] + 180) % 360 - 180)
         if abs(jup_sat - 120) < 8:
-            influences.append(f"Jupiter-Saturn trine (applying)")
-    
+            influences.append("Jupiter-Saturn trine (applying)")
+
     elif "Gold" in sector:
         influences.append(f"Ketu in {ketu['sign']} ({ketu['nakshatra']}) - gold/store of value")
         influences.append(f"Sun in {sun['sign']} - sovereign gold")
-    
+
     return " | ".join(influences) if influences else "General planetary climate"
 
 
 def _determine_trend(sector, conf_signal, bullish_sectors, bearish_sectors, conflicted_sectors, by_name):
     """Determine trend outlook based on confluence and planetary positions."""
-    
+
     in_bullish = any(s in sector or sector in s for s in bullish_sectors)
     in_bearish = any(s in sector or sector in s for s in bearish_sectors)
     in_conflicted = any(s in sector or sector in s for s in conflicted_sectors)
-    
+
     mercury = by_name["Mercury"]
     mars = by_name["Mars"]
     saturn = by_name["Saturn"]
     jupiter = by_name["Jupiter"]
     sun = by_name["Sun"]
     venus = by_name["Venus"]
-    
+
     if in_bullish and not in_bearish:
         base = "Bullish / Outperformer"
     elif in_bearish and not in_bullish:
@@ -812,7 +821,7 @@ def _determine_trend(sector, conf_signal, bullish_sectors, bearish_sectors, conf
         base = "Bearish Bias"
     else:
         base = "Neutral / Consolidation"
-    
+
     if "IT" in sector and mercury["retrograde"]:
         return "Volatile to Cautious" + (" (Mercury R)" if "Volatile" not in base else "")
     elif "Bank" in sector and jupiter["sign"] == "Cancer":
@@ -830,14 +839,14 @@ def _determine_trend(sector, conf_signal, bullish_sectors, bearish_sectors, conf
         if saturn["retrograde"]:
             return "Consolidation" + (" (Saturn R)" if "Consolidation" not in base else "")
         return "Consolidation"
-    
+
     return base
 
 
 def _generate_key_focus(sector, by_name):
     """Generate key focus points for the sector."""
     focuses = []
-    
+
     mercury = by_name["Mercury"]
     mars = by_name["Mars"]
     saturn = by_name["Saturn"]
@@ -847,13 +856,13 @@ def _generate_key_focus(sector, by_name):
     ketu = by_name["Ketu"]
     sun = by_name["Sun"]
     moon = by_name["Moon"]
-    
+
     if "IT" in sector:
         focuses.append("Watch for sudden news flow, earnings revisions")
         if mercury["retrograde"]:
             focuses.append("Mercury R: code glitches, communication delays, contract reviews")
         focuses.append("Currency fluctuations (USD/INR) impacting exporters")
-    
+
     elif "Bank" in sector or "Financial" in sector:
         if "PSU" in sector:
             focuses.append("PSU banks: government policy announcements, recapitalization")
@@ -863,47 +872,47 @@ def _generate_key_focus(sector, by_name):
         focuses.append("Jupiter in Cancer: liquidity support, deposit growth")
         if saturn["retrograde"]:
             focuses.append("Saturn R: asset quality review, provisioning cycle")
-    
+
     elif "Auto" in sector:
         focuses.append("Commercial vehicle cycle uptick")
         focuses.append("Mars-Sun fire: raw material cost pressure but volume growth")
         focuses.append("Festival season demand visibility")
-    
+
     elif "Metal" in sector:
         focuses.append("China stimulus / global demand cues")
         focuses.append("Mars in " + mars["sign"] + ": production drive, capacity utilization")
         focuses.append("Track inventory levels at LME/SHFE")
-    
+
     elif "FMCG" in sector:
         focuses.append("Rural demand recovery, monsoon progress")
         focuses.append("Venus in " + venus["sign"] + ": consumption sentiment")
         focuses.append("Input cost easing (crude, packaging)")
-    
+
     elif "Pharma" in sector:
         focuses.append("US FDA inspections, ANDA approvals")
         focuses.append("Saturn in Pisces: regulatory structure, compliance")
         focuses.append("Domestic formulation growth, API pricing")
-    
+
     elif "Energy" in sector or "Oil" in sector:
         focuses.append("Global crude inventory, OPEC+ decisions")
         focuses.append("Rahu/Ketu axis: sharp intraday swings, gap openings")
         focuses.append("Refining margins, marketing margins")
-    
+
     elif "Realty" in sector or "Infra" in sector:
         focuses.append("Policy announcements (housing, infra spending)")
         focuses.append("Saturn R: project delays, approval pipelines")
         focuses.append("Interest rate trajectory, home loan demand")
-    
+
     elif "Large" in sector or "Nifty 50" in sector:
         focuses.append("Index heavyweight earnings (Reliance, HDFC, ICICI, Infosys)")
         focuses.append("FII flow direction, DII support")
         focuses.append("Technical: gap zones, pivot resistances")
-    
+
     elif "Gold" in sector:
         focuses.append("Ketu in " + ketu["sign"] + ": safe-haven demand")
         focuses.append("Central bank buying, ETF flows")
         focuses.append("USD/INR, real yields")
-    
+
     return " | ".join(focuses[:3])
 
 
@@ -956,31 +965,31 @@ def _generate_general_strategy(by_name, confluence, alert):
     overall = confluence.get("overall", {})
     signal = overall.get("signal", "NEUTRAL")
     net = overall.get("net", 0)
-    
+
     sun = by_name["Sun"]
     moon = by_name["Moon"]
     mars = by_name["Mars"]
     mercury = by_name["Mercury"]
-    
+
     strategy = []
-    
+
     if signal == "BULLISH":
         strategy.append(f"Overall bias: BULLISH (Net: +{net:.2f}) - Favor long positions on dips")
     elif signal == "BEARISH":
         strategy.append(f"Overall bias: BEARISH (Net: {net:.2f}) - Favor short positions on rallies, hedge longs")
     else:
         strategy.append(f"Overall bias: VOLATILE/MIXED (Net: {net:+.2f}) - Range-bound, stock-specific")
-    
+
     strategy.append("Early week (Mon-Wed): Sun-Mercury-Ketu triangle in Leo - high volatility, sudden moves, PSU/Defense/Govt focus")
     strategy.append("Mid week (Thu-Fri): Sun-Mercury exact conjunction (Aug 27, 10:30 PM) - Budhaditya Yoga, policy/communication driven moves")
     strategy.append("Late week (Fri-Sat): Moon in Aquarius (Rahu nakshatra) - sentiment shifts, speculative flush")
-    
+
     strategy.append("Nifty Levels: Watch 24,800-25,000 resistance zone; 24,300-24,400 support zone")
     strategy.append("Bank Nifty: 51,500-52,000 resistance; 50,500-50,800 support")
-    
+
     strategy.append("Risk: Cluster B (Saturn R + eclipse pressure) active till Aug 28 - avoid overnight leveraged positions")
     strategy.append("Jupiter-Saturn applying trine: structural bullish foundation but near-term noise dominates")
-    
+
     return "\n".join(strategy)
 
 
@@ -989,9 +998,9 @@ def _get_nifty_levels_guidance(confluence):
     highlights = confluence.get("highlights", {})
     bullish = highlights.get("bullish_confluence_sectors", [])
     bearish = highlights.get("bearish_confluence_sectors", [])
-    
+
     guidance = []
-    
+
     if "Banking" in bullish or "Financial Services" in bullish:
         guidance.append("Bank Nifty outperforming Nifty - financials leading")
     if "IT" in bullish:
@@ -1000,10 +1009,10 @@ def _get_nifty_levels_guidance(confluence):
         guidance.append("Metals drag - Tata Steel, JSW Steel may weigh")
     if "Energy" in bearish:
         guidance.append("Energy sector pressure - Reliance, ONGC range-bound")
-    
+
     guidance.append("Key pivot: 24,850 (recent high) | Support: 24,350 (20-DMA vicinity)")
     guidance.append("Options: Max pain around 24,900; PCR >1.2 supportive")
-    
+
     return "\n".join(guidance)
 
 
@@ -1017,6 +1026,6 @@ if __name__ == "__main__":
     # Adjust to Monday
     if start.weekday() != 0:
         start = start - datetime.timedelta(days=start.weekday())
-    
+
     commentary = generate_weekly_commentary(start)
     print(format_commentary_text(commentary))

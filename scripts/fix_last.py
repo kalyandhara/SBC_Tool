@@ -1,4 +1,3 @@
-import re
 
 with open('static/app.js', 'rb') as f:
     content = f.read()

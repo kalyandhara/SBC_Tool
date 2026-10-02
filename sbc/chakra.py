@@ -14,9 +14,7 @@ preserved in Phaladeepika XXVI, and the Narapatijayacharya tradition):
 * 5 tithi groups in the centre with the weekdays paired to them.
 """
 
-import copy
 
-from .nakshatra import RING_28
 
 # Cell types
 VOWEL = "vowel"
@@ -177,11 +175,7 @@ def vedha_cells(cell, planet, school="classical"):
         left, _ = diagonals(cell)
         ray = "left"
         cells = left
-    elif name in ("Rahu", "Ketu"):
-        left, right = diagonals(cell)
-        ray = "right"
-        cells = right
-    elif speed < 0:
+    elif name in ("Rahu", "Ketu") or speed < 0:
         left, right = diagonals(cell)
         ray = "right"
         cells = right

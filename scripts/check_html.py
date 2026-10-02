@@ -1,4 +1,4 @@
-with open(r'D:\SBC_Tool\templates\index.html', 'r') as f:
+with open(r'D:\SBC_Tool\templates\index.html') as f:
     content = f.read()
 import re
 

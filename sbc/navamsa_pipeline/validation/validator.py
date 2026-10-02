@@ -1,8 +1,9 @@
 """
 Validation harness against historical OHLC.
 """
+
 import pandas as pd
-from pathlib import Path
+
 
 def load_ohlc(path):
     df = pd.read_csv(path, parse_dates=["Date"])

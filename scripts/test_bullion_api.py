@@ -1,4 +1,5 @@
 import sys
+
 sys.path.insert(0, r'D:\SBC_Tool')
 from app import app
 
@@ -11,9 +12,9 @@ with app.test_client() as client:
     print('Keys:', list(data.keys()))
     print('Summary:', data.get('data', {}).get('summary', {}))
     print('Signal count:', len(data.get('data', {}).get('signals', [])))
-    
+
     print('\n---')
-    
+
     # Test bullion vedha weekly
     resp = client.get('/api/bullion_vedha_week?date=2026-08-24')
     print('\nBullion Vedha Weekly Status:', resp.status_code)

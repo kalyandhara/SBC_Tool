@@ -1,6 +1,12 @@
-import datetime, pandas as pd, yfinance as yf, swisseph as swe
-from sbc.planets import positions
+import datetime
 from zoneinfo import ZoneInfo
+
+import pandas as pd
+import swisseph as swe
+import yfinance as yf
+
+from sbc.planets import positions
+
 swe.set_sid_mode(swe.SIDM_LAHIRI)
 RASHI_TREND={"Aries":"bullish","Taurus":"bullish","Gemini":"bearish","Cancer":"bearish","Leo":"bullish","Virgo":"bearish","Libra":"bearish","Scorpio":"bullish","Sagittarius":"bullish","Capricorn":"bullish","Aquarius":"bearish","Pisces":"bearish"}
 def moon_rashi(dt):
@@ -34,7 +40,7 @@ def walk_forward(ticker="^NSEI", start=None, end=None, window_days=365, step_day
             monday=dt-datetime.timedelta(days=dt.weekday())
             daily=moon_rashi(dt)
             weekly=moon_rashi(datetime.datetime.combine(monday.date(),datetime.time(9,15),tzinfo=ist))
-            if RASHI_TREND.get(daily)!=RASHI_TREND.get(weekly): 
+            if RASHI_TREND.get(daily)!=RASHI_TREND.get(weekly):
                 prev=float(df.loc[idx,'Close']); continue
             close=float(df.loc[idx,'Close'])
             if prev is not None:

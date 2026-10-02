@@ -1,7 +1,7 @@
 """Backtest the app against the pasted Saturn-in-Taurus view.
 The view claims: Saturn in Taurus (bearish), exits to Aries (bullish), 2029-2030 crash.
 Check what the app actually predicts for relevant periods."""
-from sbc.backtest import run_bullish_futurecast, run_bearish_futurecast
+from sbc.backtest import run_bearish_futurecast, run_bullish_futurecast
 
 # Current date (2026) - Saturn in Pisces
 print("=== BEARISH FUTURECAST from 2026 (Saturn in Pisces) ===")

@@ -1,7 +1,9 @@
 import sys
+
 sys.path.insert(0, r'D:\SBC_Tool')
-from sbc.weekly_commentary import generate_weekly_commentary
 import datetime
+
+from sbc.weekly_commentary import generate_weekly_commentary
 
 start = datetime.date(2026, 8, 24)
 c = generate_weekly_commentary(start)

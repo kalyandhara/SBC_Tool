@@ -1,9 +1,11 @@
 import sys
+
 sys.path.insert(0, '.')
+
+import swisseph as swe
+
 from sbc.market_calendar import reversal_alert
 from sbc.planets import positions
-import swisseph as swe
-import datetime
 
 # Test multiple dates to see bullish events
 dates_to_test = [
@@ -21,13 +23,13 @@ for d in dates_to_test:
     moon = next(p for p in planets if p['name'] == 'Moon')
     from sbc.nakshatra import tithi_of
     tithi = tithi_of(sun['longitude'], moon['longitude'])
-    
+
     alert = reversal_alert(d, planets=planets, tithi=tithi)
-    
+
     bullish = [w for w in alert['windows'] if 'BULLISH' in w['bias'] and 'BEARISH' not in w['bias']]
     bearish = [w for w in alert['windows'] if 'BEARISH' in w['bias'] and 'BULLISH' not in w['bias']]
     neutral = [w for w in alert['windows'] if w not in bullish and w not in bearish]
-    
+
     print(d + ': ' + str(len(bullish)) + ' bullish, ' + str(len(bearish)) + ' bearish, ' + str(len(neutral)) + ' neutral/volatile')
     for w in bullish[:5]:
         print('   BULL: ' + w['title'][:70] + ' | ' + w['level'])

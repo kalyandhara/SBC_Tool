@@ -15,7 +15,7 @@ if idx >= 0:
     print('Fixed!')
 else:
     print('Not found with exact pattern')
-    
+
     # Search more broadly
     for m in re.finditer(b'hidden");\r\n\r\n, val]', content):
         print(f'Found at {m.start()}: {content[m.start()-50:m.end()+80]}')

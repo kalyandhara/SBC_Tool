@@ -1,10 +1,12 @@
 import datetime
-import pandas as pd
-import yfinance as yf
-import swisseph as swe
-from sbc.planets import positions
-from sbc.nakshatra import nakshatra_of
 from zoneinfo import ZoneInfo
+
+import pandas as pd
+import swisseph as swe
+import yfinance as yf
+
+from sbc.nakshatra import nakshatra_of
+from sbc.planets import positions
 
 swe.set_sid_mode(swe.SIDM_LAHIRI)
 
@@ -88,6 +90,6 @@ if __name__ == "__main__":
     end = datetime.date.today()
     start = end - datetime.timedelta(days=365*2)
     total, correct, acc, results = backtest(start, end)
-    print(f"Confluence Moon Rashi + Nakshatra Ruler NIFTY50")
+    print("Confluence Moon Rashi + Nakshatra Ruler NIFTY50")
     print(f"Samples: {total}, Correct: {correct}, Accuracy: {acc:.2%}")
     pd.DataFrame(results).to_csv("D:/SBC_Tool/confluence_moon_rashi_nakshatra.csv", index=False)

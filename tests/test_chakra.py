@@ -1,13 +1,14 @@
 """Tests for Sarvatobhadra Chakra grid and vedha computations."""
 
-import pytest
-from sbc.chakra import GRID
-from sbc.prediction import place_planets, compute_vedhas, analyze, summarize_vedhas
-from sbc.planets import positions
-from sbc.nakshatra import tithi_of
-import swisseph as swe
-from datetime import datetime, timezone
 import zoneinfo
+from datetime import UTC, datetime
+
+import swisseph as swe
+
+from sbc.chakra import GRID
+from sbc.nakshatra import tithi_of
+from sbc.planets import positions
+from sbc.prediction import analyze, compute_vedhas, place_planets, summarize_vedhas
 
 
 class TestChakraGrid:
@@ -47,13 +48,10 @@ class TestPlacePlanets:
 
     def test_place_planets_returns_grid(self):
         """place_planets should return modified grid with planets."""
-        import swisseph as swe
-        from datetime import datetime, timezone
-        import zoneinfo
 
         tz = zoneinfo.ZoneInfo("Asia/Kolkata")
         local = datetime(2026, 9, 11, 9, 15, tzinfo=tz)
-        utc = local.astimezone(timezone.utc).replace(tzinfo=None)
+        utc = local.astimezone(UTC).replace(tzinfo=None)
         h = utc.hour + utc.minute / 60.0 + utc.second / 3600.0
         jul = swe.julday(utc.year, utc.month, utc.day, h)
 
@@ -81,13 +79,10 @@ class TestComputeVedhas:
 
     def test_compute_vedhas_classical(self):
         """Classical school should compute single ray per planet."""
-        import swisseph as swe
-        from datetime import datetime, timezone
-        import zoneinfo
 
         tz = zoneinfo.ZoneInfo("Asia/Kolkata")
         local = datetime(2026, 9, 11, 9, 15, tzinfo=tz)
-        utc = local.astimezone(timezone.utc).replace(tzinfo=None)
+        utc = local.astimezone(UTC).replace(tzinfo=None)
         h = utc.hour + utc.minute / 60.0 + utc.second / 3600.0
         jul = swe.julday(utc.year, utc.month, utc.day, h)
 
@@ -109,13 +104,10 @@ class TestComputeVedhas:
 
     def test_compute_vedhas_allthree(self):
         """All-three school should compute three rays per planet."""
-        import swisseph as swe
-        from datetime import datetime, timezone
-        import zoneinfo
 
         tz = zoneinfo.ZoneInfo("Asia/Kolkata")
         local = datetime(2026, 9, 11, 9, 15, tzinfo=tz)
-        utc = local.astimezone(timezone.utc).replace(tzinfo=None)
+        utc = local.astimezone(UTC).replace(tzinfo=None)
         h = utc.hour + utc.minute / 60.0 + utc.second / 3600.0
         jul = swe.julday(utc.year, utc.month, utc.day, h)
 
@@ -143,13 +135,10 @@ class TestAnalyze:
 
     def test_analyze_returns_complete_structure(self):
         """analyze() should return complete analysis dict."""
-        import swisseph as swe
-        from datetime import datetime, timezone
-        import zoneinfo
 
         tz = zoneinfo.ZoneInfo("Asia/Kolkata")
         local = datetime(2026, 9, 11, 9, 15, tzinfo=tz)
-        utc = local.astimezone(timezone.utc).replace(tzinfo=None)
+        utc = local.astimezone(UTC).replace(tzinfo=None)
         h = utc.hour + utc.minute / 60.0 + utc.second / 3600.0
         jul = swe.julday(utc.year, utc.month, utc.day, h)
 
@@ -180,13 +169,10 @@ class TestAnalyze:
 
     def test_point_hits_structure(self):
         """Point hits should have required fields."""
-        import swisseph as swe
-        from datetime import datetime, timezone
-        import zoneinfo
 
         tz = zoneinfo.ZoneInfo("Asia/Kolkata")
         local = datetime(2026, 9, 11, 9, 15, tzinfo=tz)
-        utc = local.astimezone(timezone.utc).replace(tzinfo=None)
+        utc = local.astimezone(UTC).replace(tzinfo=None)
         h = utc.hour + utc.minute / 60.0 + utc.second / 3600.0
         jul = swe.julday(utc.year, utc.month, utc.day, h)
 
@@ -219,13 +205,10 @@ class TestSummarizeVedhas:
 
     def test_summarize_vedhas_groups_by_planet(self):
         """summarize_vedhas should group vedhas by planet."""
-        import swisseph as swe
-        from datetime import datetime, timezone
-        import zoneinfo
 
         tz = zoneinfo.ZoneInfo("Asia/Kolkata")
         local = datetime(2026, 9, 11, 9, 15, tzinfo=tz)
-        utc = local.astimezone(timezone.utc).replace(tzinfo=None)
+        utc = local.astimezone(UTC).replace(tzinfo=None)
         h = utc.hour + utc.minute / 60.0 + utc.second / 3600.0
         jul = swe.julday(utc.year, utc.month, utc.day, h)
 

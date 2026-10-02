@@ -1,10 +1,12 @@
 import datetime
-import pandas as pd
-import yfinance as yf
-import swisseph as swe
-from sbc.planets import positions
-from sbc.nakshatra import nakshatra_of
 from zoneinfo import ZoneInfo
+
+import pandas as pd
+import swisseph as swe
+import yfinance as yf
+
+from sbc.nakshatra import nakshatra_of
+from sbc.planets import positions
 
 swe.set_sid_mode(swe.SIDM_LAHIRI)
 
@@ -26,7 +28,7 @@ def get_moon_nakshatra_ruler(dt_ist):
     nakshatra_ruler_map = {
         'Ashwini':'Ketu','Bharani':'Venus','Krittika':'Sun','Rohini':'Moon','Mrigashira':'Mars','Ardra':'Rahu','Punarvasu':'Jupiter','Pushya':'Saturn','Ashlesha':'Mercury','Magha':'Ketu','Purva Phalguni':'Venus','Uttara Phalguni':'Sun','Hasta':'Moon','Chitra':'Mars','Swati':'Rahu','Vishakha':'Jupiter','Anuradha':'Saturn','Jyeshtha':'Mercury','Mula':'Ketu','Purva Ashadha':'Venus','Uttara Ashadha':'Sun','Shravana':'Moon','Dhanishta':'Mars','Shatabhisha':'Rahu','Purva Bhadrapada':'Jupiter','Uttara Bhadrapada':'Saturn','Revati':'Mercury'
     }
-    ruler = nakshatra_ruler_map.get(nakshatra, None)
+    ruler = nakshatra_ruler_map.get(nakshatra)
     nature = "bullish" if ruler in BENEFIC else "bearish" if ruler in MALEFIC else "neutral"
     return nakshatra, ruler, nature
 

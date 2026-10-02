@@ -1,8 +1,9 @@
 """Tests for planetary position calculations."""
 
-import pytest
-from sbc.planets import positions, all_planets_with_natures, positioned_planets
-from sbc.nakshatra import tithi_of, paksha_of
+from datetime import UTC
+
+from sbc.nakshatra import paksha_of, tithi_of
+from sbc.planets import all_planets_with_natures, positioned_planets, positions
 
 
 class TestPlanetaryPositions:
@@ -11,13 +12,14 @@ class TestPlanetaryPositions:
     def test_positions_returns_all_planets(self):
         """positions() should return all 9 grahas plus ayanamsa."""
         # Known date: 2026-09-11 09:15 Asia/Kolkata
-        import swisseph as swe
-        from datetime import datetime, timezone, timedelta
         import zoneinfo
+        from datetime import datetime
+
+        import swisseph as swe
 
         tz = zoneinfo.ZoneInfo("Asia/Kolkata")
         local = datetime(2026, 9, 11, 9, 15, tzinfo=tz)
-        utc = local.astimezone(timezone.utc).replace(tzinfo=None)
+        utc = local.astimezone(UTC).replace(tzinfo=None)
         h = utc.hour + utc.minute / 60.0 + utc.second / 3600.0
         jul = swe.julday(utc.year, utc.month, utc.day, h)
 
@@ -30,13 +32,14 @@ class TestPlanetaryPositions:
 
     def test_planet_structure(self):
         """Each planet should have required fields."""
-        import swisseph as swe
-        from datetime import datetime, timezone
         import zoneinfo
+        from datetime import datetime
+
+        import swisseph as swe
 
         tz = zoneinfo.ZoneInfo("Asia/Kolkata")
         local = datetime(2026, 9, 11, 9, 15, tzinfo=tz)
-        utc = local.astimezone(timezone.utc).replace(tzinfo=None)
+        utc = local.astimezone(UTC).replace(tzinfo=None)
         h = utc.hour + utc.minute / 60.0 + utc.second / 3600.0
         jul = swe.julday(utc.year, utc.month, utc.day, h)
 
@@ -54,13 +57,14 @@ class TestPlanetaryPositions:
 
     def test_all_planets_with_natures(self):
         """all_planets_with_natures should add nature and dignity fields."""
-        import swisseph as swe
-        from datetime import datetime, timezone
         import zoneinfo
+        from datetime import datetime
+
+        import swisseph as swe
 
         tz = zoneinfo.ZoneInfo("Asia/Kolkata")
         local = datetime(2026, 9, 11, 9, 15, tzinfo=tz)
-        utc = local.astimezone(timezone.utc).replace(tzinfo=None)
+        utc = local.astimezone(UTC).replace(tzinfo=None)
         h = utc.hour + utc.minute / 60.0 + utc.second / 3600.0
         jul = swe.julday(utc.year, utc.month, utc.day, h)
 
@@ -83,13 +87,14 @@ class TestTithiCalculations:
 
     def test_tithi_range(self):
         """Tithi should be 1-30."""
-        import swisseph as swe
-        from datetime import datetime, timezone
         import zoneinfo
+        from datetime import datetime
+
+        import swisseph as swe
 
         tz = zoneinfo.ZoneInfo("Asia/Kolkata")
         local = datetime(2026, 9, 11, 9, 15, tzinfo=tz)
-        utc = local.astimezone(timezone.utc).replace(tzinfo=None)
+        utc = local.astimezone(UTC).replace(tzinfo=None)
         h = utc.hour + utc.minute / 60.0 + utc.second / 3600.0
         jul = swe.julday(utc.year, utc.month, utc.day, h)
 
@@ -102,13 +107,14 @@ class TestTithiCalculations:
 
     def test_paksha_determination(self):
         """Paksha should be Shukla (1-15) or Krishna (16-30)."""
-        import swisseph as swe
-        from datetime import datetime, timezone
         import zoneinfo
+        from datetime import datetime
+
+        import swisseph as swe
 
         tz = zoneinfo.ZoneInfo("Asia/Kolkata")
         local = datetime(2026, 9, 11, 9, 15, tzinfo=tz)
-        utc = local.astimezone(timezone.utc).replace(tzinfo=None)
+        utc = local.astimezone(UTC).replace(tzinfo=None)
         h = utc.hour + utc.minute / 60.0 + utc.second / 3600.0
         jul = swe.julday(utc.year, utc.month, utc.day, h)
 

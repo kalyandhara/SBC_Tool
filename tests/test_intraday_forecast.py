@@ -1,7 +1,6 @@
 """Forward intraday forecast (sbc.intraday_forecast) and its ledger."""
 
 import datetime as dt
-import json
 
 import pytest
 

@@ -1,6 +1,8 @@
 import sys
+
 sys.path.insert(0, r'D:\SBC_Tool')
-import urllib.request, json
+import json
+import urllib.request
 
 try:
     # Test prediction API which should also load weekly commentary

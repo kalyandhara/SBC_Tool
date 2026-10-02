@@ -1,7 +1,12 @@
-import datetime, pandas as pd, yfinance as yf, swisseph as swe
-from sbc.planets import positions
-from sbc.monthly_heatmap import monthly_heatmap
+import datetime
 from zoneinfo import ZoneInfo
+
+import pandas as pd
+import swisseph as swe
+import yfinance as yf
+
+from sbc.planets import positions
+
 swe.set_sid_mode(swe.SIDM_LAHIRI)
 RASHI_TREND={"Aries":"bullish","Taurus":"bullish","Gemini":"bearish","Cancer":"bearish","Leo":"bullish","Virgo":"bearish","Libra":"bearish","Scorpio":"bullish","Sagittarius":"bullish","Capricorn":"bullish","Aquarius":"bearish","Pisces":"bearish"}
 

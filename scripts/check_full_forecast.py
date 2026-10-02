@@ -1,13 +1,21 @@
-from sbc.market_calendar import reversal_alert, transit_alert, lunar_phase_alert, jupiter_market_analysis, get_all_bullish_reversal_windows
-from sbc.planets import positions, all_planets_with_natures
-from sbc.nakshatra import tithi_of
-import swisseph as swe
 import datetime
 from zoneinfo import ZoneInfo
 
+import swisseph as swe
+
+from sbc.market_calendar import (
+    get_all_bullish_reversal_windows,
+    jupiter_market_analysis,
+    lunar_phase_alert,
+    reversal_alert,
+    transit_alert,
+)
+from sbc.nakshatra import tithi_of
+from sbc.planets import all_planets_with_natures, positions
+
 date = datetime.date(2026, 8, 23)
 local = datetime.datetime.combine(date, datetime.time(12, 0), tzinfo=ZoneInfo('Asia/Kolkata'))
-utc = local.astimezone(datetime.timezone.utc)
+utc = local.astimezone(datetime.UTC)
 jul = swe.julday(utc.year, utc.month, utc.day, utc.hour + utc.minute/60.0)
 
 planets, ayanamsa = positions(jul)
@@ -65,6 +73,7 @@ print(f"Reasons: {jupiter_analysis['reasons']}")
 
 # Check bullish futurecast
 from sbc.backtest import run_bullish_futurecast
+
 bullish = run_bullish_futurecast(center_date="2026-08-23", years=1)
 print("\n=== BULLISH FUTURECAST (clusters near current date) ===")
 for c in bullish.get("clusters", []):
@@ -76,6 +85,7 @@ for c in bullish.get("clusters", []):
 
 # Check bearish futurecast
 from sbc.backtest import run_bearish_futurecast
+
 bearish = run_bearish_futurecast(center_date="2026-08-23", years=1)
 print("\n=== BEARISH FUTURECAST (clusters near current date) ===")
 for c in bearish.get("clusters", []):
@@ -102,12 +112,12 @@ if alert.get("confluence"):
     print(f"Net: {conf['overall']['net']}")
     print(f"Bullish Weight: {conf['overall']['bullish_weight']}")
     print(f"Bearish Weight: {conf['overall']['bearish_weight']}")
-    print(f"\nHighlights:")
+    print("\nHighlights:")
     print(f"  Bullish Confluence Sectors: {conf['highlights']['bullish_confluence_sectors']}")
     print(f"  Bearish Confluence Sectors: {conf['highlights']['bearish_confluence_sectors']}")
     print(f"  Conflicted Sectors: {conf['highlights']['conflicted_sectors']}")
-    
-    print(f"\nComponent Breakdown:")
+
+    print("\nComponent Breakdown:")
     for name, comp in conf['components'].items():
         print(f"  {name}: Bullish={comp['overall']['bullish_weight']}, Bearish={comp['overall']['bearish_weight']}, Signal={comp['overall']['signal']}")
 

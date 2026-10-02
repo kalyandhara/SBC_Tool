@@ -25,16 +25,17 @@ from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 import swisseph as swe
 
-from .planets import positions, all_planets_with_natures
-from .nakshatra import tithi_of, paksha_of
-from .prediction import analyze, compute_vedhas, place_planets, sector_read, planet_sector_read
-from .confluence import build_confluence_report, SECTOR_ALIASES, normalize_sectors
-from .chakra import GRID
-from .market_calendar import (
-    _anchor_nakshatra, transit_alert,
-    jupiter_market_analysis, lunar_phase_alert,
-)
 from .bhadra import bhadra_windows
+from .confluence import build_confluence_report, normalize_sectors
+from .market_calendar import (
+    _anchor_nakshatra,
+    jupiter_market_analysis,
+    lunar_phase_alert,
+    transit_alert,
+)
+from .nakshatra import tithi_of
+from .planets import all_planets_with_natures, positions
+from .prediction import analyze, compute_vedhas, planet_sector_read, sector_read
 
 # Canonical Nifty sector rows: display name -> confluence canonical keys that
 # roll up into it (via SECTOR_ALIASES).  A sector maps to any canonical whose
@@ -76,7 +77,7 @@ def _julian_at_noon(date, tz_name="Asia/Kolkata"):
     except ZoneInfoNotFoundError:
         tz = ZoneInfo("Asia/Kolkata")
     local = datetime.datetime.combine(date, datetime.time(12, 0), tzinfo=tz)
-    utc = local.astimezone(datetime.timezone.utc)
+    utc = local.astimezone(datetime.UTC)
     return swe.julday(utc.year, utc.month, utc.day, utc.hour + utc.minute / 60.0)
 
 

@@ -1,7 +1,10 @@
 import sys
+
 sys.stdout.reconfigure(encoding='utf-8')
-from sector_outlook import generate_sector_outlook
 import datetime
+
+from sector_outlook import generate_sector_outlook
+
 o = generate_sector_outlook(datetime.date(2026, 9, 3))
 for s in o['sectors']:
     infl = s['astrological_influence'][:55]

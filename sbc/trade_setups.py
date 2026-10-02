@@ -13,7 +13,6 @@ Each setup defines:
 from dataclasses import dataclass
 from typing import Literal
 
-
 Direction = Literal["LONG", "SHORT"]
 
 
@@ -280,7 +279,7 @@ def format_setup_for_display(setup: TradeSetup) -> str:
         f"STOP:    {setup.stop}",
         f"TARGET:  {setup.target}",
         f"SIZING:  {setup.sizing}",
-        f"FILTERS: " + "; ".join(setup.filters),
+        "FILTERS: " + "; ".join(setup.filters),
         f"STATS:   {setup.historical['trades']} trades | "
         f"WR: {setup.historical['win_rate']:.0%} | "
         f"Avg R: {setup.historical['avg_r']:.2f} | "

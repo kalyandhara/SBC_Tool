@@ -1,14 +1,13 @@
 """Tests for backtesting engine."""
 
-import pytest
 from sbc.backtest import (
-    run_backtest,
-    run_futurecast,
-    run_bullish_futurecast,
-    run_bearish_futurecast,
-    run_saturn_macro_analysis,
     _bearish_future_score,
     _julian_at_noon,
+    run_backtest,
+    run_bearish_futurecast,
+    run_bullish_futurecast,
+    run_futurecast,
+    run_saturn_macro_analysis,
 )
 
 

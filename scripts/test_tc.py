@@ -1,10 +1,13 @@
 import sys
+
 sys.stdout.reconfigure(encoding='utf-8')
-from sbc.planets import positions, all_planets_with_natures
-from sbc.nakshatra import tithi_of
-from sbc.prediction import compute_vedhas, place_planets, planet_sector_read
-from sbc.chakra import GRID
 import swisseph as swe
+
+from sbc.chakra import GRID
+from sbc.nakshatra import tithi_of
+from sbc.planets import all_planets_with_natures, positions
+from sbc.prediction import compute_vedhas, place_planets, planet_sector_read
+
 jd = swe.julday(2026, 9, 3, 0)
 planets, _ = positions(jd)
 sun = next(p for p in planets if p['name']=='Sun')

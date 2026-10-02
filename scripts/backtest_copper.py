@@ -27,10 +27,10 @@ import os
 
 import pandas as pd
 
+from sbc.backtest import _julian_at_noon
 from sbc.chakra import NAKSHATRA_CELL
 from sbc.planets import positions
 from sbc.prediction import compute_vedhas
-from sbc.backtest import _julian_at_noon
 
 INSTRUMENTS = {
     "Copper HG": ("HG=F", os.path.join("data", "copper_hg.csv")),
@@ -184,7 +184,7 @@ def main():
         for lbl, idx in blocks[1:]:
             resolved.append((lbl, idx if idx is not None else list(range(len(df)))))
         print(f"\n{'=' * 78}")
-        print_table(f"{name} ({INSTRUMENTS[name][0]})", 
+        print_table(f"{name} ({INSTRUMENTS[name][0]})",
                     {n: [stats_block(rdf.iloc[idx], b, n) for b, idx in resolved]
                      for n in HORIZONS})
 

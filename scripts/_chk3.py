@@ -1,4 +1,6 @@
 from html.parser import HTMLParser
+
+
 class P(HTMLParser):
     def __init__(self):
         super().__init__()

@@ -1,10 +1,9 @@
 """Tests for crash analyzer."""
 
-import pytest
 from sbc.crash_analyzer import (
     analyze_crash_risk,
-    daily_crash_briefing,
     backtest_crashes,
+    daily_crash_briefing,
 )
 
 

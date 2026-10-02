@@ -1,5 +1,6 @@
-from sbc.weekly_commentary import generate_weekly_commentary, format_commentary_text
 import datetime
+
+from sbc.weekly_commentary import generate_weekly_commentary
 
 start = datetime.date(2026, 8, 24)
 c = generate_weekly_commentary(start)

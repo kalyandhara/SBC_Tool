@@ -145,7 +145,7 @@ def panchang_signal(planets):
     from a list of planet dicts produced by sbc.planets.positions()."""
     sun = next(p for p in planets if p["name"] == "Sun")
     moon = next(p for p in planets if p["name"] == "Moon")
-    from .nakshatra import tithi_of, paksha_of
+    from .nakshatra import paksha_of, tithi_of
     tithi = tithi_of(sun["longitude"], moon["longitude"])
     paksha = paksha_of(tithi)
     nakshatra = moon["nakshatra"]

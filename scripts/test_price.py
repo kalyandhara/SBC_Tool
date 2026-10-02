@@ -1,4 +1,6 @@
-import urllib.request, urllib.error
+import urllib.error
+import urllib.request
+
 try:
     urllib.request.urlopen('http://localhost:8801/api/price').close()
     print('ok')

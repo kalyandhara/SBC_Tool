@@ -1,8 +1,8 @@
 """Chart & Timing blueprint."""
 
-from flask import Blueprint, jsonify, request, send_file
 import datetime
-from io import BytesIO
+
+from flask import Blueprint, jsonify, request
 
 chart_bp = Blueprint('chart', __name__, url_prefix='')
 
@@ -63,7 +63,7 @@ def prediction_series():
 
     L2: rows already computed by a previous process / worker (SQLite).
     """
-    from app import build_response, ANCHORS
+    from app import ANCHORS, build_response
     from sbc import series_cache
     start = request.args.get("start")
     end = request.args.get("end")
@@ -89,7 +89,7 @@ def prediction_series():
     for ds, payload in series_cache.get_many(wanted, anchor_key, school).items():
         # Rows missing the full shape (an old boot warm-up wrote trimmed ones)
         # count as misses, so they get rebuilt and overwritten below.
-        if SERIES_KEYS <= payload.keys():
+        if payload.keys() >= SERIES_KEYS:
             _series_cache[(ds, anchor_key, school)] = payload
 
     out = []

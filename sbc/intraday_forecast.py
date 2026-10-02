@@ -34,7 +34,10 @@ from functools import lru_cache
 
 from sbc import kp_ephemeris as kpe
 from sbc.kp_intraday import (
-    BENEFIC_HORAS, EXPERIMENTAL_NOTICE, HORA_QUALITY_SCORE, MALEFIC_HORAS,
+    BENEFIC_HORAS,
+    EXPERIMENTAL_NOTICE,
+    HORA_QUALITY_SCORE,
+    MALEFIC_HORAS,
     KPRuleEngine,
 )
 

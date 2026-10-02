@@ -1,4 +1,5 @@
 from sbc.backtest import run_bullish_futurecast
+
 result = run_bullish_futurecast(center_date='2032-06-02', years=2)
 for c in result.get('clusters', []):
     triggers = c.get('triggers', [])

@@ -1,7 +1,9 @@
 """SBC Chakra blueprint."""
 
-from flask import Blueprint, jsonify, request
 import datetime
+from datetime import UTC
+
+from flask import Blueprint, jsonify, request
 
 chakra_bp = Blueprint('chakra', __name__, url_prefix='')
 
@@ -35,10 +37,10 @@ def bhadra_overlap_result(date_str, tz_name, offset):
     windows = result["windows"]
     if windows:
         try:
-            from sbc.market_calendar import reversal_alert
-            from sbc.planets import positions
             from sbc.backtest import _julian_at_noon
+            from sbc.market_calendar import reversal_alert
             from sbc.nakshatra import tithi_of
+            from sbc.planets import positions
 
             # Days covered by this month's Bhadra windows, plus the muhurt
             # (begin/end local time) details for each overlapping window so
@@ -136,6 +138,7 @@ def _tithi_summary(tithi):
 def _bhadra_for_day(date_str, tz_name):
     """Bhadra (Vishti karana) windows touching the given local day, plus the next one."""
     from zoneinfo import ZoneInfo
+
     from sbc.bhadra import bhadra_windows
     try:
         tz = ZoneInfo(tz_name)
@@ -160,7 +163,7 @@ def _bhadra_for_day(date_str, tz_name):
 
 @chakra_bp.route('/api/astro/personal')
 def api_astro_personal():
-    from app import _utc_from_local, _julday, build_response
+    from app import _julday, _utc_from_local, build_response
     from sbc.planets import positions
     date_str = request.args.get("date")
     time_str = request.args.get("time") or "09:15"
@@ -172,13 +175,13 @@ def api_astro_personal():
     try:
         if tz_hours is not None and tz_mins is not None:
             # Build UTC from local using offset
-            from datetime import datetime, timezone, timedelta
+            from datetime import datetime, timedelta
             y, m, d = (int(x) for x in date_str.split("-"))
             hh, mm = (int(x) for x in time_str.split(":"))
             local_dt = datetime(y, m, d, hh, mm)
             offset = timedelta(hours=int(tz_hours), minutes=int(tz_mins))
             # Local time is UTC + offset
-            utc = (local_dt - offset).replace(tzinfo=timezone.utc).replace(tzinfo=None)
+            utc = (local_dt - offset).replace(tzinfo=UTC).replace(tzinfo=None)
         else:
             utc = _utc_from_local(date_str, time_str, tz_name)
         jul = _julday(utc)

@@ -2,25 +2,22 @@
 
 import datetime
 from dataclasses import dataclass
-from typing import Literal
 from urllib.parse import urlencode
-
-from .planets import positions
-from .nakshatra import tithi_of
-from .market_calendar import NAKSHATRA_LORDS
-from .market_calendar import (
-    REVERSAL_WINDOWS, _pushya_reversal_windows, jupiter_market_analysis,
-    reversal_alert
-)
-from .chakra import GRID, NAKSHATRA_CELL, vedha_cells
-from .prediction import (
-    analyze, compute_vedhas, place_planets, sector_read, planet_sector_read
-)
-from .confluence import build_confluence_report
-from .trade_setups import setups_for_confluence
 
 import swisseph as swe
 
+from .confluence import build_confluence_report
+from .market_calendar import (
+    NAKSHATRA_LORDS,
+    REVERSAL_WINDOWS,
+    _pushya_reversal_windows,
+    jupiter_market_analysis,
+    reversal_alert,
+)
+from .nakshatra import tithi_of
+from .planets import positions
+from .prediction import analyze, compute_vedhas, planet_sector_read, sector_read
+from .trade_setups import setups_for_confluence
 
 # =============================================================================
 # TRADINGVIEW INTEGRATION
@@ -31,7 +28,7 @@ TRADINGVIEW_BASE = "https://www.tradingview.com/chart/"
 # Symbol mappings for Indian markets
 TV_SYMBOLS = {
     "NIFTY": "NSE:NIFTY",
-    "BANKNIFTY": "NSE:BANKNIFTY", 
+    "BANKNIFTY": "NSE:BANKNIFTY",
     "FINNIFTY": "NSE:FINNIFTY",
     "SENSEX": "BSE:SENSEX",
     "NIFTY_FUT": "NSE:NIFTY1!",  # Continuous futures
@@ -68,7 +65,7 @@ def build_tradingview_url(
 ) -> str:
     """
     Build a TradingView chart URL for a given symbol and date range.
-    
+
     Args:
         symbol: Key from TV_SYMBOLS (e.g., "NIFTY", "BANKNIFTY")
         start_date: ISO format date "YYYY-MM-DD"
@@ -76,16 +73,16 @@ def build_tradingview_url(
         interval: Chart interval (D, W, M, 60, 15, 5, etc.)
         indicators: List of indicator names to add (e.g., ["EMA20", "RSI", "MACD"])
         layout: "single" or "multi" (for multiple symbols)
-    
+
     Returns:
         TradingView chart URL
     """
     tv_symbol = TV_SYMBOLS.get(symbol.upper(), symbol)
-    
+
     if end_date is None:
         end = datetime.date.fromisoformat(start_date) + datetime.timedelta(days=30)
         end_date = end.isoformat()
-    
+
     # TradingView supports date range via "range" parameter with timestamps
     # But for pre-1970 dates, timestamps don't work on Windows
     # Use a simpler approach: just pass symbol and interval, let user navigate
@@ -96,19 +93,19 @@ def build_tradingview_url(
     except (OSError, ValueError):
         # Pre-1970 dates or other issues - skip range parameter
         use_range = False
-    
+
     params = {
         "symbol": tv_symbol,
         "interval": interval,
         **TV_DEFAULTS,
     }
-    
+
     if use_range:
         params["range"] = f"{start_ts},{end_ts}"
-    
+
     if indicators:
         params["studies"] = ",".join(indicators)
-    
+
     url = TRADINGVIEW_BASE + "?" + urlencode(params)
     return url
 
@@ -117,7 +114,7 @@ def get_crash_chart_links(crash_date: str, window_days: int = 30) -> dict:
     """Get TradingView links for all relevant symbols around a crash date."""
     start = crash_date
     end = (datetime.date.fromisoformat(crash_date) + datetime.timedelta(days=window_days)).isoformat()
-    
+
     links = {}
     for name, symbol in TV_SYMBOLS.items():
         if "_FUT" not in name:  # Skip futures duplicates for simplicity
@@ -138,7 +135,7 @@ def get_crash_research_package(crash_date: str, crash_name: str) -> dict:
         "crash_date": crash_date,
         "chart_links": get_crash_chart_links(crash_date),
         "pre_crash_window": build_tradingview_url(
-            "NIFTY", 
+            "NIFTY",
             (datetime.date.fromisoformat(crash_date) - datetime.timedelta(days=60)).isoformat(),
             crash_date,
             interval="D",
@@ -268,7 +265,7 @@ def _julian_day(date_str: str, time_str: str = "09:15", tz: str = "Asia/Kolkata"
     hh, mm = map(int, time_str.split(":"))
     tz_obj = ZoneInfo(tz)
     local = datetime.datetime(y, m, d, hh, mm, tzinfo=tz_obj)
-    utc = local.astimezone(datetime.timezone.utc)
+    utc = local.astimezone(datetime.UTC)
     h = utc.hour + utc.minute / 60.0 + utc.second / 3600.0
     return swe.julday(utc.year, utc.month, utc.day, h)
 
@@ -346,7 +343,7 @@ def check_jupiter_saturn_trine(planets: list[dict]) -> tuple[bool, str]:
     saturn = next(p for p in planets if p["name"] == "Saturn")
     ang = _angle(jupiter["longitude"], saturn["longitude"])
     active = abs(ang - 120) <= ASPECT_ORB
-    detail = "Jup-Sat angle: {:.1f}° (trine orb: {:.1f}°)".format(ang, abs(ang - 120))
+    detail = f"Jup-Sat angle: {ang:.1f}° (trine orb: {abs(ang - 120):.1f}°)"
     if active:
         detail += " [TRINE]"
     return active, detail
@@ -357,7 +354,7 @@ def check_jupiter_saturn_opposition(planets: list[dict]) -> tuple[bool, str]:
     saturn = next(p for p in planets if p["name"] == "Saturn")
     ang = _angle(jupiter["longitude"], saturn["longitude"])
     active = abs(ang - 180) <= ASPECT_ORB
-    detail = "Jup-Sat angle: {:.1f}° (opp orb: {:.1f}°)".format(ang, abs(ang - 180))
+    detail = f"Jup-Sat angle: {ang:.1f}° (opp orb: {abs(ang - 180):.1f}°)"
     if active:
         detail += " [OPPOSITION]"
     return active, detail
@@ -368,7 +365,7 @@ def check_mars_ketu_conjunction(planets: list[dict]) -> tuple[bool, str]:
     ketu = next(p for p in planets if p["name"] == "Ketu")
     ang = _angle(mars["longitude"], ketu["longitude"])
     active = ang <= 10
-    detail = "Mars-Ketu angle: {:.1f}°".format(ang)
+    detail = f"Mars-Ketu angle: {ang:.1f}°"
     if active:
         detail += " [CONJUNCTION]"
     return active, detail
@@ -379,7 +376,7 @@ def check_saturn_ketu_conjunction(planets: list[dict]) -> tuple[bool, str]:
     ketu = next(p for p in planets if p["name"] == "Ketu")
     ang = _angle(saturn["longitude"], ketu["longitude"])
     active = ang <= 10
-    detail = "Saturn-Ketu angle: {:.1f}°".format(ang)
+    detail = f"Saturn-Ketu angle: {ang:.1f}°"
     if active:
         detail += " [CONJUNCTION]"
     return active, detail
@@ -443,7 +440,7 @@ def check_confluence_extreme_bearish(planets: list[dict], date_str: str) -> tupl
     high_agreement = sum(1 for a in agreements if a >= 0.8)
 
     active = net <= -3.0 and high_agreement >= 4
-    detail = "Confluence net={:.1f}, high_agreement_sectors={}".format(net, high_agreement)
+    detail = f"Confluence net={net:.1f}, high_agreement_sectors={high_agreement}"
     if active:
         detail += " [EXTREME BEARISH]"
     return active, detail
@@ -609,10 +606,10 @@ def print_backtest_results():
 
     crash_risk = [r for r in results if r["condition"] == "CRASH_RISK"]
     correction_risk = [r for r in results if r["condition"] == "CORRECTION_RISK"]
-    print("\nCRASH_RISK (>=60): {}/{}".format(len(crash_risk), len(results)))
+    print(f"\nCRASH_RISK (>=60): {len(crash_risk)}/{len(results)}")
     for r in crash_risk:
         print("  {} ({}): score={}, sigs={}".format(r["name"], r["date"], r["crash_score"], r["active_signatures"]))
-    print("\nCORRECTION_RISK (35-59): {}/{}".format(len(correction_risk), len(results)))
+    print(f"\nCORRECTION_RISK (35-59): {len(correction_risk)}/{len(results)}")
     for r in correction_risk:
         print("  {} ({}): score={}".format(r["name"], r["date"], r["crash_score"]))
 
@@ -620,13 +617,13 @@ def print_backtest_results():
     print("\nSIGNATURE HIT RATES:")
     for sig in CRASH_SIGNATURES:
         hits = sum(1 for r in results if r["active_signatures"] and sig.name in r["active_signatures"])
-        print("  {}: {}/{} ({})".format(sig.name, hits, len(results), sig.hit_rate))
+        print(f"  {sig.name}: {hits}/{len(results)} ({sig.hit_rate})")
 
     # Combined coverage
-    jup_ketu_or_conj = sum(1 for r in results 
-        if "jupiter_ketu_nakshatra" in r.get("active_signatures", []) 
+    jup_ketu_or_conj = sum(1 for r in results
+        if "jupiter_ketu_nakshatra" in r.get("active_signatures", [])
         or "jupiter_saturn_conjunction" in r.get("active_signatures", []))
-    print("\nCOMBINED (Jup-Ketu nak OR Jup-Sat conj): {}/{}".format(jup_ketu_or_conj, len(results)))
+    print(f"\nCOMBINED (Jup-Ketu nak OR Jup-Sat conj): {jup_ketu_or_conj}/{len(results)}")
 
 
 def daily_crash_briefing(date_str: str = None) -> str:
@@ -637,9 +634,9 @@ def daily_crash_briefing(date_str: str = None) -> str:
 
     lines = [
         "==========================================",
-        "  CRASH WATCH DAILY BRIEFING  |  {}".format(date_str),
+        f"  CRASH WATCH DAILY BRIEFING  |  {date_str}",
         "==========================================",
-        "CRASH PROBABILITY: {:.0f}%  ->  {}".format(analysis.crash_score, analysis.market_condition),
+        f"CRASH PROBABILITY: {analysis.crash_score:.0f}%  ->  {analysis.market_condition}",
         "",
         "VALIDATED SIGNATURES:",
     ]
@@ -650,17 +647,17 @@ def daily_crash_briefing(date_str: str = None) -> str:
 
     lines.append("")
     lines.append("JUPITER-SATURN: {:.1f}° [{}] | Mars-Ketu: {:.1f}°".format(
-        analysis.jupiter_saturn_angle, 
+        analysis.jupiter_saturn_angle,
         analysis.jupiter_saturn_aspect or "none",
         analysis.mars_ketu_angle))
 
     lines.append("")
     lines.append("JUPITER ANALYSIS: {} ({})".format(
-        analysis.jupiter_analysis.get("bias", "N/A"), 
+        analysis.jupiter_analysis.get("bias", "N/A"),
         analysis.jupiter_analysis.get("level", "N/A")))
     if analysis.jupiter_analysis.get("reasons"):
         for reason in analysis.jupiter_analysis["reasons"]:
-            lines.append("  * {}".format(reason))
+            lines.append(f"  * {reason}")
 
     lines.append("")
     lines.append("CONFLUENCE: net={:.1f} | signal={} | bullish_wt={:.1f} | bearish_wt={:.1f}".format(
@@ -679,14 +676,14 @@ def daily_crash_briefing(date_str: str = None) -> str:
         lines.append("")
         lines.append("APPLICABLE SETUPS:")
         for setup_name in analysis.applicable_setups:
-            lines.append("  -> {}".format(setup_name))
+            lines.append(f"  -> {setup_name}")
 
     # TradingView chart links for visual research
     lines.append("")
     lines.append("TRADINGVIEW CHARTS (click to open):")
     chart_links = get_crash_chart_links(date_str)
     for name, url in chart_links.items():
-        lines.append("  {}: {}".format(name, url))
+        lines.append(f"  {name}: {url}")
 
     lines.append("")
     lines.append("INVALIDATION WATCH:")

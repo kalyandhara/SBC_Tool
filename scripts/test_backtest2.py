@@ -1,4 +1,5 @@
 from sbc.backtest import run_backtest
+
 result = run_backtest()
 print('Backtest Accuracy:', result['accuracy'], '%')
 print('Matches:', result['matches'], '/', result['total'])

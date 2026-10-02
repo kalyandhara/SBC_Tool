@@ -1,69 +1,89 @@
 """Sarvatobhadra Chakra market prediction - Flask app."""
 
-import os
-import hmac
 import datetime
-import time
-import sqlite3
+import hmac
 import json
-from io import BytesIO
+import os
+import sqlite3
+import time
 from collections import defaultdict
+from io import BytesIO
 from pathlib import Path
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 from flask import Flask, Response, jsonify, render_template, request, send_file
+from werkzeug.exceptions import HTTPException
 
+from research.astro_research import (
+    bradley_barometer_overlay,
+    regime_aware_reports,
+    research_export,
+    solar_lunar_cycle_explorer,
+    unified_daily_forecast_contract,
+)
+from sbc import db as profiles_db
+from sbc.api.engine_bp import engine_bp
+from sbc.api.sector_bp import sector_bp
+from sbc.app_boot import boot
+from sbc.astro_plot import generate_astro_plot, serialize_plot_data
+from sbc.backtest import (
+    _bearish_future_score,
+    _julian_at_noon,
+    run_backtest,
+    run_bearish_futurecast,
+    run_bullish_futurecast,
+    run_futurecast,
+    run_saturn_macro_analysis,
+)
+from sbc.bullion_vedha import (
+    format_bullion_vedha_for_ui,
+    scan_bullion_vedha_matrix,
+    scan_bullion_vedha_week,
+)
+from sbc.cgsp_framework import generate_cgsp_report
 from sbc.chakra import GRID
+from sbc.config import SECTOR_NAME_MAP
+from sbc.crash_analyzer import analyze_crash_risk, backtest_crashes, daily_crash_briefing
+from sbc.market_calendar import reversal_alert, upcoming_yoga_alerts
+from sbc.market_data import get_nifty_ohlc
+from sbc.market_events import lunar_phase_event, planetary_aspect_events, planetary_ingress_events
+from sbc.metrics import _bias_scale, _western_bias
 from sbc.nakshatra import (
-    GROUP_OF_TITHI, GROUP_WEEKDAYS, NAKSHATRAS_27, paksha_of,
+    GROUP_OF_TITHI,
+    GROUP_WEEKDAYS,
+    paksha_of,
     tithi_of,
 )
 from sbc.planets import all_planets_with_natures, positions
 from sbc.prediction import (
-    analyze, compute_vedhas, place_planets, planet_sector_read,
-    recommendation, sector_read, summarize_vedhas,
+    analyze,
+    compute_vedhas,
+    place_planets,
+    planet_sector_read,
+    recommendation,
+    sector_read,
+    summarize_vedhas,
 )
-from sbc.market_calendar import reversal_alert, upcoming_yoga_alerts
-from sbc.backtest import run_backtest, run_futurecast, run_bullish_futurecast, run_bearish_futurecast
-from sbc.backtest import _bearish_future_score, _julian_at_noon, run_saturn_macro_analysis
-from sbc.trade_setups import TRADE_SETUPS
-from sbc.crash_analyzer import analyze_crash_risk, daily_crash_briefing, backtest_crashes
-from sbc.astro_plot import generate_astro_plot, serialize_plot_data
-from sbc.weekly_commentary import generate_weekly_commentary, format_commentary_text
-from sbc.market_data import get_nifty_ohlc, moon_rashi
-from sbc.metrics import _bias_scale, _western_bias
-from sbc.config import RASHI_TREND, SECTOR_NAME_MAP
-from werkzeug.exceptions import HTTPException
 from sbc.sector_keywords import keywords_for
-from sbc.bullion_vedha import scan_bullion_vedha_matrix, scan_bullion_vedha_week, format_bullion_vedha_for_ui
-from sbc.transit_vedha import scan_transit_vedha_matrix, scan_transit_vedha_week, format_transit_vedha_for_ui
-from sbc.cgsp_framework import generate_cgsp_report
-from sbc.market_events import lunar_phase_event, planetary_aspect_events, planetary_ingress_events
-from research.astro_research import (
-    solar_lunar_cycle_explorer,
-    bradley_barometer_overlay,
-    regime_aware_reports,
-    research_export,
-    unified_daily_forecast_contract,
+from sbc.trade_setups import TRADE_SETUPS
+from sbc.transit_vedha import (
+    format_transit_vedha_for_ui,
+    scan_transit_vedha_matrix,
+    scan_transit_vedha_week,
 )
-
-from sbc.api.engine_bp import engine_bp
-from sbc.api.sector_bp import sector_bp
-from sbc.app_boot import boot
-from sbc import db as profiles_db
 
 app = Flask(__name__)
 
 app.register_blueprint(engine_bp)
 app.register_blueprint(sector_bp)
-from sbc.api.blueprints.overview_bp import overview_bp
-from sbc.api.blueprints.chart_bp import chart_bp
-from sbc.api.blueprints.sectors_bp import sectors_bp
-from sbc.api.blueprints.research_bp import research_bp
-from sbc.api.blueprints.kp_bp import kp_bp
 from sbc.api.blueprints.balance_bp import balance_bp
 from sbc.api.blueprints.chakra_bp import chakra_bp
+from sbc.api.blueprints.chart_bp import chart_bp
 from sbc.api.blueprints.forecast_bp import forecast_bp
+from sbc.api.blueprints.kp_bp import kp_bp
+from sbc.api.blueprints.overview_bp import overview_bp
+from sbc.api.blueprints.research_bp import research_bp
+from sbc.api.blueprints.sectors_bp import sectors_bp
 
 app.register_blueprint(overview_bp)
 app.register_blueprint(chart_bp)
@@ -220,7 +240,7 @@ def _utc_from_local(date_str, time_str, tz_name):
     y, m, d = (int(x) for x in date_str.split("-"))
     hh, mm = (int(x) for x in time_str.split(":"))
     local = datetime.datetime(y, m, d, hh, mm, tzinfo=tz)
-    return local.astimezone(datetime.timezone.utc).replace(tzinfo=None)
+    return local.astimezone(datetime.UTC).replace(tzinfo=None)
 
 
 def _anchor_nakshatra(anchor_key):
@@ -311,7 +331,7 @@ def build_response(date_str, time_str, tz_name, anchor_key, school):
     # Get applicable trade setups for current confluence
     trade_setups_data = []
     if calendar_alert.get("confluence"):
-        from sbc.trade_setups import setups_for_confluence, format_setup_for_display
+        from sbc.trade_setups import format_setup_for_display, setups_for_confluence
         applicable = setups_for_confluence(calendar_alert["confluence"])
         for setup in applicable:
             trade_setups_data.append({
@@ -544,7 +564,7 @@ def transit_vedha_week():
 
 @app.route("/api/trade_setups")
 def trade_setups():
-    from sbc.trade_setups import list_setups, get_setup, format_setup_for_display
+    from sbc.trade_setups import format_setup_for_display, get_setup
     name = request.args.get("name")
     if name:
         setup = get_setup(name)
@@ -876,7 +896,7 @@ def crash_analysis():
         datetime.datetime.strptime(date_str, "%Y-%m-%d")
     except ValueError:
         return jsonify({"error": "invalid date"}), 400
-    
+
     analysis = analyze_crash_risk(date_str)
     return jsonify({
         "date": analysis.date,
@@ -946,7 +966,7 @@ def largecap_divergence():
 
     # Check all 10 configurations
     from sbc.cgsp_framework import angular_distance, get_planet
-    
+
     FIRE_SIGNS = {"Aries", "Leo", "Sagittarius"}
     FIXED_SIGNS = {"Taurus", "Leo", "Scorpio", "Aquarius"}
     MUTABLE_SIGNS = {"Gemini", "Virgo", "Sagittarius", "Pisces"}
@@ -964,9 +984,7 @@ def largecap_divergence():
     def is_conj(lon1, lon2, orb=10):
         return angular_distance(lon1, lon2) <= orb
     def check_eclipse(sun, moon, rahu, ketu):
-        if is_new_moon(tithi):
-            return angular_distance(sun["longitude"], rahu["longitude"]) < 15 or angular_distance(sun["longitude"], ketu["longitude"]) < 15
-        elif is_full_moon(tithi):
+        if is_new_moon(tithi) or is_full_moon(tithi):
             return angular_distance(sun["longitude"], rahu["longitude"]) < 15 or angular_distance(sun["longitude"], ketu["longitude"]) < 15
         return False
 
@@ -977,7 +995,7 @@ def largecap_divergence():
         {
             "id": 1,
             "name": "Sun+Saturn in Capricorn/Aquarius",
-            "active": sun["sign"] in {"Capricorn", "Aquarius"} and 
+            "active": sun["sign"] in {"Capricorn", "Aquarius"} and
                       get_planet(planets, "Saturn") and get_planet(planets, "Saturn")["sign"] in {"Capricorn", "Aquarius"} and
                       is_conj(sun["longitude"], get_planet(planets, "Saturn")["longitude"], 15),
             "conviction": "HIGH",
@@ -1003,7 +1021,7 @@ def largecap_divergence():
         {
             "id": 4,
             "name": "Mercury Retro-End + Full Moon",
-            "active": is_full_moon(tithi) and 
+            "active": is_full_moon(tithi) and
                       get_planet(planets, "Mercury") and not get_planet(planets, "Mercury")["retrograde"] and
                       get_planet(planets, "Mercury")["sign"] in MERCURY_FRIENDLY,
             "conviction": "MEDIUM",
@@ -1192,20 +1210,20 @@ def astro_plot():
     latitude = request.args.get("lat", 19.0760, type=float)
     longitude = request.args.get("lon", 72.8777, type=float)
     house_system = request.args.get("house_system", "whole_sign")
-    
+
     try:
         datetime.datetime.strptime(center_date, "%Y-%m-%d")
     except ValueError:
         return jsonify({"error": "invalid date"}), 400
-    
+
     if resolution not in ("daily", "hourly"):
         return jsonify({"error": "resolution must be 'daily' or 'hourly'"}), 400
-    
+
     if house_system not in ("whole_sign", "placidus", "equal", "koch", "regiomontanus", "campanus"):
         return jsonify({"error": "invalid house system"}), 400
-    
+
     window_days = max(1, min(window_days, 180))
-    
+
     plot_data = generate_astro_plot(
         center_date=center_date,
         window_days=window_days,
@@ -1215,7 +1233,7 @@ def astro_plot():
         longitude=longitude,
         house_system=house_system,
     )
-    
+
     return jsonify(serialize_plot_data(plot_data))
 
 
@@ -1233,6 +1251,7 @@ def kp_intraday_sample():
     sanity check (i.e. it is an old random sample) or force=true.
     """
     import csv as _csv
+
     from sbc.kp_ephemeris import generate_kp_month, month_file
     from sbc.kp_intraday import assess_kp_data
 
@@ -1270,7 +1289,7 @@ def api_habits_log():
         log_date = data.get("date")
         if not habit_type or not log_date:
             return jsonify({"error":"habit_type and date required"}),400
-        import sqlite3, datetime
+        import datetime
         conn = profiles_db.connect()
         cur = conn.cursor()
         cur.execute("INSERT INTO habit_logs(user_key, habit_type, log_date, created_at) VALUES(?,?,?,?)",
@@ -1286,7 +1305,7 @@ def api_habits_log():
 def api_habits_streaks():
     try:
         user_key = request.args.get("user_key","default")
-        import sqlite3, datetime as dt
+        import datetime as dt
         conn = profiles_db.connect()
         cur = conn.cursor()
         cur.execute("SELECT habit_type, log_date FROM habit_logs WHERE user_key=?", (user_key,))
@@ -1341,7 +1360,7 @@ def api_habits_history():
     try:
         user_key = request.args.get("user_key","default")
         days = int(request.args.get("days","7"))
-        import sqlite3, datetime as dt
+        import datetime as dt
         conn = profiles_db.connect()
         cur = conn.cursor()
         # Get logs for last N days
@@ -1361,7 +1380,6 @@ def api_habits_history():
 def api_habits_summary():
     try:
         user_key = request.args.get("user_key","default")
-        import sqlite3
         conn = profiles_db.connect()
         cur = conn.cursor()
         cur.execute("SELECT habit_type, COUNT(DISTINCT log_date) as days FROM habit_logs WHERE user_key=? GROUP BY habit_type", (user_key,))
@@ -1381,7 +1399,8 @@ def webhook_sbc():
         data = request.get_json(silent=True)
         if not isinstance(data, dict):
             return jsonify({"error": "body must be a JSON object"}), 400
-        import json, os
+        import json
+        import os
         os.makedirs("data", exist_ok=True)
         with open("data/latest_sbc_signal.json", "w") as f:
             json.dump(data, f)
@@ -1392,7 +1411,6 @@ def webhook_sbc():
 @app.route("/api/vedha_daily", methods=["GET"])
 def api_vedha_daily():
     try:
-        import pandas as pd, math
         sector_name = request.args.get("sector","Nifty Bank")
         days_str = request.args.get("days")
         start_str = request.args.get("start")
@@ -1410,7 +1428,7 @@ def api_vedha_daily():
         # Try real heatmap based scores
         real_scores_used = False
         try:
-            from sbc.monthly_heatmap import monthly_heatmap, NIFTY_SECTOR_ROWS
+            from sbc.monthly_heatmap import NIFTY_SECTOR_ROWS, monthly_heatmap
             end = end_date_req
             # Build map of sector row name
             # NIFTY_SECTOR_ROWS is list of tuples (display_name, tags)
@@ -1483,7 +1501,7 @@ def api_vedha_daily():
         except Exception as e:
             app.logger.exception(f"vedha_daily real heatmap error for {sector_name}: {e}")
             # fallback synthetic
-        
+
         # No real data available – return empty with warning instead of synthetic
         app.logger.warning(f"vedha_daily: no real heatmap data for sector {sector_name}, returning empty")
         out = []
@@ -1499,7 +1517,8 @@ def api_vedha_daily():
 @app.route("/api/price", methods=["GET"])
 def api_price():
     try:
-        import yfinance as yf, pandas as pd
+        import pandas as pd
+        import yfinance as yf
         ticker = request.args.get("ticker","^NSEBANK")
         days = request.args.get("days")
         start_str = request.args.get("start")
@@ -1562,7 +1581,8 @@ def api_price():
 @app.route("/api/sbc/latest", methods=["GET"])
 def api_sbc_latest():
     try:
-        import json, os
+        import json
+        import os
         path = "data/latest_sbc_signal.json"
         if os.path.exists(path):
             with open(path) as f:
@@ -1578,7 +1598,6 @@ def api_sbc_latest():
 def api_astro_profile_export():
     try:
         user_key = request.args.get("user_key", "default")
-        import sqlite3
         conn = profiles_db.connect()
         cur = conn.cursor()
         cur.execute("SELECT id, data, created_at, name, is_default FROM profiles WHERE user_key=?", (user_key,))
@@ -1595,7 +1614,6 @@ def api_astro_profile_import():
     try:
         user_key = request.headers.get("X-User-Key", "default")
         incoming = request.get_json() or []
-        import sqlite3
         conn = profiles_db.connect()
         cur = conn.cursor()
         imported = 0
@@ -1620,7 +1638,7 @@ def api_astro_profile_save():
     try:
         data = request.get_json() or {}
         user_key = request.headers.get("X-User-Key", "default")
-        import sqlite3, datetime
+        import datetime
         conn = profiles_db.connect()
         cur = conn.cursor()
         cur.execute("INSERT INTO profiles(user_key, data, created_at) VALUES(?,?,?)",
@@ -1638,7 +1656,6 @@ def api_astro_profile_update(pid):
     try:
         data = request.get_json() or {}
         name = data.get("name")
-        import sqlite3
         conn = profiles_db.connect()
         cur = conn.cursor()
         if name is not None:
@@ -1653,7 +1670,6 @@ def api_astro_profile_update(pid):
 @app.route("/api/astro/profile/<int:pid>/default", methods=["POST"])
 def api_astro_profile_set_default(pid):
     try:
-        import sqlite3
         conn = profiles_db.connect()
         cur = conn.cursor()
         cur.execute("UPDATE profiles SET is_default=0 WHERE is_default=1")
@@ -1668,7 +1684,6 @@ def api_astro_profile_set_default(pid):
 @app.route("/api/astro/profile/<int:pid>", methods=["DELETE"])
 def api_astro_profile_delete(pid):
     try:
-        import sqlite3
         conn = profiles_db.connect()
         cur = conn.cursor()
         cur.execute("DELETE FROM profiles WHERE id=?", (pid,))
@@ -1683,7 +1698,6 @@ def api_astro_profile_delete(pid):
 def api_astro_profile_load():
     try:
         user_key = request.args.get("user_key", "default")
-        import sqlite3
         conn = profiles_db.connect()
         cur = conn.cursor()
         cur.execute("SELECT id, data, created_at, name, is_default FROM profiles WHERE user_key=? ORDER BY is_default DESC, id DESC", (user_key,))
@@ -1774,7 +1788,7 @@ def api_daily_confluence():
             "vedha_net": current["vedha_net"],
             "direction": current["direction"],
             "forecast": forecast,
-            "generated_at": datetime.datetime.now(datetime.timezone.utc).isoformat(),
+            "generated_at": datetime.datetime.now(datetime.UTC).isoformat(),
             "calculation_version": "daily-confluence-v3",
             "data_source": "Swiss Ephemeris",
             "cache": {"hit": False, "age_seconds": 0},
@@ -1842,7 +1856,7 @@ def api_gann_turbo_zones():
         days = int(request.args.get("days","60"))
         end = datetime.date.today()
         start = end - datetime.timedelta(days=days)
-        import pandas as pd, yfinance as yf
+        import yfinance as yf
         df = yf.download(ticker, start=start, end=end, interval='1d', auto_adjust=True, progress=False)
         if df.empty:
             return jsonify({"error":"no data"}),400
@@ -1872,7 +1886,7 @@ def api_gann_precision():
             return jsonify({"error":"unknown asset_type (stocks/indices/commodities)"}),400
         end = datetime.date.today()
         start = end - datetime.timedelta(days=days)
-        import pandas as pd, yfinance as yf
+        import yfinance as yf
         df = yf.download(ticker, start=start, end=end, interval='1d', auto_adjust=True, progress=False)
         if df.empty:
             return jsonify({"error":"no data"}),400
@@ -1951,7 +1965,7 @@ def api_expiry_range():
         except ValueError:
             return jsonify({"error": "invalid buffer_pct"}), 400
         from_date = datetime.date.fromisoformat(date_str)
-        from sbc.expiry_range import next_expiry, expiry_range_levels
+        from sbc.expiry_range import expiry_range_levels, next_expiry
         expiry = next_expiry(instrument, from_date)
         ticker = "^NSEI" if instrument.upper().replace(" ", "") == "NIFTY" else "^NSEBANK"
         import yfinance as yf
@@ -2065,8 +2079,11 @@ def api_signal_moon():
         days=int(request.args.get("days","30"))
         end=datetime.date.today()
         start=end-datetime.timedelta(days=days)
-        import pandas as pd, yfinance as yf
-        from sbc.market_data import moon_rashi, RASHI_TREND
+        import pandas as pd
+        import yfinance as yf
+
+        from sbc.config import RASHI_TREND
+        from sbc.market_data import moon_rashi
         df=yf.download(ticker,start=start,end=end,interval='1d',auto_adjust=True,progress=False)
         if df.empty:
             return jsonify({"error":"no data"}),400
@@ -2101,8 +2118,11 @@ def api_backtest_walkforward():
             end = datetime.date.fromisoformat(end_str)
         else:
             end = datetime.date.today()
-        import pandas as pd, yfinance as yf
-        from sbc.market_data import moon_rashi, RASHI_TREND
+        import pandas as pd
+        import yfinance as yf
+
+        from sbc.config import RASHI_TREND
+        from sbc.market_data import moon_rashi
         df=yf.download(ticker,start=start,end=end,interval='1d',auto_adjust=True,progress=False)
         if df.empty:
             return jsonify({"error":"no data"}),400
@@ -2240,7 +2260,7 @@ def api_research_event_study():
         result = {
             "ticker": ticker, "event": event, "horizon_days": horizon,
             "start": start.isoformat(), "end": end.isoformat(),
-            "generated_at": datetime.datetime.now(datetime.timezone.utc).isoformat(),
+            "generated_at": datetime.datetime.now(datetime.UTC).isoformat(),
             "sample_size": len(event_returns), "baseline_sample_size": len(baseline),
             "event_mean_return_pct": event_mean, "event_median_return_pct": statistics.median(event_returns) if event_returns else 0.0,
             "event_stddev_pct": event_std, "event_ci95_low_pct": event_mean - margin, "event_ci95_high_pct": event_mean + margin,
@@ -2377,7 +2397,7 @@ def api_research_aspects():
                         "filters": {"planet_a": planet_a, "planet_b": planet_b, "aspect": aspect,
                                     "max_orb": max_orb},
                         "events": events, "groups": rows,
-                        "generated_at": datetime.datetime.now(datetime.timezone.utc).isoformat()})
+                        "generated_at": datetime.datetime.now(datetime.UTC).isoformat()})
     except (TypeError, ValueError):
         return jsonify({"error": "invalid aspect research parameters"}), 400
     except Exception:
@@ -2394,7 +2414,7 @@ def api_research_cycles():
     horizon = min(max(int(request.args.get("horizon", "5")), 1), 20)
     rows = []
     day = start
-    from sbc.bradley import bradley_score, turning_point_candidates, forward_return_validation
+    from sbc.bradley import bradley_score, forward_return_validation, turning_point_candidates
     while day <= end:
         planets, _ = positions(_julday(_utc_from_local(day.isoformat(), "09:15", "Asia/Kolkata")))
         sun = next(planet for planet in planets if planet["name"] == "Sun")
@@ -2428,7 +2448,7 @@ def api_research_cycles():
     return jsonify({"start": start.isoformat(), "end": end.isoformat(), "experimental": True,
                     "rows": rows, "turning_point_candidates": candidates,
                     "validation": validation,
-                    "generated_at": datetime.datetime.now(datetime.timezone.utc).isoformat()})
+                    "generated_at": datetime.datetime.now(datetime.UTC).isoformat()})
 
 
 @app.route("/api/research/walk-forward", methods=["GET"])
@@ -2511,7 +2531,7 @@ def api_research_walk_forward():
             "ticker": ticker, "event": event, "horizon_days": horizon,
             "train_days": train_days, "test_days": test_days, "step_days": step_days,
             "start": requested_start or (end - datetime.timedelta(days=3650)).isoformat(), "end": end.isoformat(),
-            "generated_at": datetime.datetime.now(datetime.timezone.utc).isoformat(),
+            "generated_at": datetime.datetime.now(datetime.UTC).isoformat(),
             "folds": folds, "aggregate_test": aggregate,
         })
     except (TypeError, ValueError):
@@ -2540,8 +2560,11 @@ def api_backtest_moon():
         else:
             end = datetime.date.today()
         # Import backtest engine logic inline
-        import pandas as pd, yfinance as yf
-        from sbc.market_data import moon_rashi, RASHI_TREND
+        import pandas as pd
+        import yfinance as yf
+
+        from sbc.config import RASHI_TREND
+        from sbc.market_data import moon_rashi
         df=yf.download(ticker,start=start,end=end,interval='1d',auto_adjust=True,progress=False)
         if df.empty:
             return jsonify({"error":"no data"}),400
@@ -2573,6 +2596,7 @@ def api_backtest_moon():
                 key=(y,m)
                 if key not in vedha_cache:
                     import calendar
+
                     from sbc.monthly_heatmap import monthly_heatmap
                     start_m=datetime.date(y,m,1)
                     days=calendar.monthrange(y,m)[1]+5

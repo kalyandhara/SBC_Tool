@@ -1,14 +1,14 @@
 import sys
+
 sys.path.insert(0, '.')
-from sbc.planets import positions
-from sbc.nakshatra import tithi_of
-from sbc.market_calendar import NAKSHATRA_LORDS
-from sbc.market_calendar import jupiter_market_analysis
 import swisseph as swe
+
+from sbc.market_calendar import NAKSHATRA_LORDS
+from sbc.planets import positions
 
 crashes = [
     ('1929-10-24', 'Black Thursday'),
-    ('1987-10-19', 'Black Monday'), 
+    ('1987-10-19', 'Black Monday'),
     ('2000-03-10', 'Dot-com Peak'),
     ('2008-09-15', 'Lehman'),
     ('2020-02-19', 'COVID Peak'),
@@ -30,7 +30,7 @@ for date_str, name in crashes:
     mars = next(p for p in planets if p['name'] == 'Mars')
     rahu = next(p for p in planets if p['name'] == 'Rahu')
     ketu = next(p for p in planets if p['name'] == 'Ketu')
-    
+
     jup_nak_lord = NAKSHATRA_LORDS.get(jupiter['nakshatra'])
     jup_sat_angle = angle(jupiter['longitude'], saturn['longitude'])
     jup_rahu_angle = angle(jupiter['longitude'], rahu['longitude'])
@@ -39,7 +39,7 @@ for date_str, name in crashes:
     sat_ketu_angle = angle(saturn['longitude'], ketu['longitude'])
     mars_rahu_angle = angle(mars['longitude'], rahu['longitude'])
     mars_ketu_angle = angle(mars['longitude'], ketu['longitude'])
-    
+
     # Saturn-Jupiter cycle phase
     # Conjunction = 0, Opposition = 180, Square = 90, Trine = 120, Sextile = 60
     phase = "Unknown"
@@ -47,11 +47,11 @@ for date_str, name in crashes:
         if abs(jup_sat_angle - a) < 10:
             phase = label
             break
-    
-    print('{} ({}):'.format(name, date_str))
-    print('  Jup-Sat angle: {:.1f} [{}]'.format(jup_sat_angle, phase))
-    print('  Jup-Rahu: {:.1f}, Jup-Ketu: {:.1f}'.format(jup_rahu_angle, jup_ketu_angle))
-    print('  Sat-Rahu: {:.1f}, Sat-Ketu: {:.1f}'.format(sat_rahu_angle, sat_ketu_angle))
-    print('  Mar-Rahu: {:.1f}, Mar-Ketu: {:.1f}'.format(mars_rahu_angle, mars_ketu_angle))
-    print('  Jupiter nak lord: {}'.format(jup_nak_lord))
+
+    print(f'{name} ({date_str}):')
+    print(f'  Jup-Sat angle: {jup_sat_angle:.1f} [{phase}]')
+    print(f'  Jup-Rahu: {jup_rahu_angle:.1f}, Jup-Ketu: {jup_ketu_angle:.1f}')
+    print(f'  Sat-Rahu: {sat_rahu_angle:.1f}, Sat-Ketu: {sat_ketu_angle:.1f}')
+    print(f'  Mar-Rahu: {mars_rahu_angle:.1f}, Mar-Ketu: {mars_ketu_angle:.1f}')
+    print(f'  Jupiter nak lord: {jup_nak_lord}')
     print()

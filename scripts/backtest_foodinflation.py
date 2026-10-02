@@ -28,10 +28,10 @@ import os
 
 import pandas as pd
 
+from sbc.backtest import _julian_at_noon
 from sbc.chakra import NAKSHATRA_CELL
 from sbc.planets import positions
 from sbc.prediction import compute_vedhas
-from sbc.backtest import _julian_at_noon
 
 FOOD = {
     "Sugar": ("SB=F", os.path.join("data", "food_sugar.csv")),

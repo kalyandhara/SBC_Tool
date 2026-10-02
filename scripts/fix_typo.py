@@ -9,7 +9,7 @@ if idx >= 0:
     broken = b'details)) {dils)) {'
     fixed = b'details)) {'
     content = content[:idx] + fixed + content[idx + len(broken):]
-    
+
     with open('static/app.js', 'wb') as f:
         f.write(content)
     print('Fixed!')
