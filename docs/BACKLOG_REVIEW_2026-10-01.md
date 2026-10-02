@@ -28,6 +28,16 @@ code and tech debt · **P3** = hygiene.
 | B-34 KP report crashed in render (new) | ✅ `timeScale().fit()` → `fitContent()` |
 | Intraday forecast (SBC + KP), steps 1–3 | ✅ `/api/engine/intraday_forecast`, Plotly panel on the KP tab, forecast ledger (freeze before 09:15 IST, score after close). 40-day back-test: 50.8% hit vs 55.4% baseline |
 | B-35 NSE holiday calendar (new) | ✅ `sbc/market_holidays.py` (2024–2026 + special closures + Muhurat); KP generation, forecast, ledger, KP report/path, Rahu–Ketu calendar and date picker use it |
+| B-23 Lint debt / CI | ✅ ruff is the only linter (2,907 → 0 findings); CI runs on `master`; black/isort/flake8 dropped |
+| B-08 Requirements drift | 🟡 runtime deps now match the tested stack and include openpyxl, python-docx, matplotlib; no lock file yet |
+| **B-36 mypy debt** (new) | ⬜ 231 annotation errors; CI type-check job is advisory (non-blocking) |
+
+### B-36 · mypy reports 231 errors (P3, new)
+`mypy sbc/ app.py --ignore-missing-imports`: 68 assignment, 62 var-annotated, 31
+no-untyped-def, 19 index, 18 no-any-return and others. Spot-checking found no runtime bug.
+For example, `app.py`'s "MarketEvent is not indexable" comes from reusing a variable name
+for plain dicts. CI runs mypy as an advisory job. **Fix:** annotate module by module,
+starting with `sbc/api` and the engines, then make the job blocking.
 
 ### B-35 · No NSE trading-holiday calendar (P2, new) — ✅ done 2026-10-02
 Resolved: `sbc/market_holidays.py`, refreshed yearly from NSE's December circular. `is_covered()` flags years beyond the list.
