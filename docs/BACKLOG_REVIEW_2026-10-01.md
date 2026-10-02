@@ -26,6 +26,16 @@ code and tech debt · **P3** = hygiene.
 | **B-33 KP data is random** (new) | ✅ flagged in UI/API, then all files regenerated from Swiss Ephemeris (`sbc/kp_ephemeris.py`) |
 | B-12 random KP sample button | ✅ button/endpoint now generate ephemeris data; won't overwrite real files without `force` |
 | B-34 KP report crashed in render (new) | ✅ `timeScale().fit()` → `fitContent()` |
+| Intraday forecast (SBC + KP), steps 1–3 | ✅ `/api/engine/intraday_forecast`, Plotly panel on the KP tab, forecast ledger (freeze before 09:15 IST, score after close). 40-day back-test: 50.8% hit vs 55.4% baseline |
+| **B-35 No NSE holiday calendar** (new) | ⬜ open |
+
+### B-35 · No NSE trading-holiday calendar (P2, new)
+Weekends are the only closed days the code knows about. KP data files carry rows for
+holidays, the forecast panel defaults to a holiday if it falls on the next weekday, and the
+ledger auto-froze a live forecast for 2026-10-02 (Gandhi Jayanti). These are harmless:
+holidays have no bars, so they never get scored. **Fix:** add `sbc/market_holidays.py` with NSE's
+published list (refreshed yearly), and use it in `kp_ephemeris.trading_days`, the
+forecast date picker, the ledger loop and the futurecast calendars.
 
 ### B-33 · Every KP data file is random sample output (P0, new)
 - **Evidence:** all of `data/kp/KP_Data_{Jan2024,Aug2026,Sep2026,Oct2026,Nov2026}.csv`
