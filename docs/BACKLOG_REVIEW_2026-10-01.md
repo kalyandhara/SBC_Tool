@@ -27,9 +27,11 @@ code and tech debt · **P3** = hygiene.
 | B-12 random KP sample button | ✅ button/endpoint now generate ephemeris data; won't overwrite real files without `force` |
 | B-34 KP report crashed in render (new) | ✅ `timeScale().fit()` → `fitContent()` |
 | Intraday forecast (SBC + KP), steps 1–3 | ✅ `/api/engine/intraday_forecast`, Plotly panel on the KP tab, forecast ledger (freeze before 09:15 IST, score after close). 40-day back-test: 50.8% hit vs 55.4% baseline |
-| **B-35 No NSE holiday calendar** (new) | ⬜ open |
+| B-35 NSE holiday calendar (new) | ✅ `sbc/market_holidays.py` (2024–2026 + special closures + Muhurat); KP generation, forecast, ledger, KP report/path, Rahu–Ketu calendar and date picker use it |
 
-### B-35 · No NSE trading-holiday calendar (P2, new)
+### B-35 · No NSE trading-holiday calendar (P2, new) — ✅ done 2026-10-02
+Resolved: `sbc/market_holidays.py`, refreshed yearly from NSE's December circular. `is_covered()` flags years beyond the list.
+
 Weekends are the only closed days the code knows about. KP data files carry rows for
 holidays, the forecast panel defaults to a holiday if it falls on the next weekday, and the
 ledger auto-froze a live forecast for 2026-10-02 (Gandhi Jayanti). These are harmless:
