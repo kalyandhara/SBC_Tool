@@ -3179,3 +3179,15 @@ a:focus-visible,
   background: var(--panel2); color: var(--muted); font-size: 12px; line-height: 1.5;
 }
 .experimental-note strong { color: var(--text); }
+
+/* Intraday forecast panel */
+.intraday-forecast-controls { display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end; margin: 8px 0; }
+.intraday-forecast-controls label { display: flex; flex-direction: column; gap: 4px; font-size: 11px; color: var(--muted); }
+.ifc-frozen { font-size: 12px; color: var(--muted); }
+.ifc-chart { width: 100%; height: 640px; }
+.ifc-ledger { margin-top: 10px; font-size: 12px; color: var(--muted); }
+.ifc-ledger table { border-collapse: collapse; margin-top: 6px; }
+.ifc-ledger th, .ifc-ledger td { padding: 4px 10px; border-bottom: 1px solid var(--line); text-align: right; }
+.ifc-ledger th:first-child, .ifc-ledger td:first-child { text-align: left; }
+.ifc-ledger .beats { color: var(--green); } .ifc-ledger .lags { color: var(--red); }
+@media (max-width: 700px) { .ifc-chart { height: 520px; } }

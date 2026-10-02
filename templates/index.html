@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <link rel="icon" type="image/svg+xml" href="/static/favicon.svg">
   <title>Sarvatobhadra Chakra - Market Prediction</title>
-  <link rel="stylesheet" href="/static/style.css?v=20">
+  <link rel="stylesheet" href="/static/style.css?v=21">
   <script src="/static/chart.umd.min.js"></script>
   <script src="/static/js/api-token.js"></script>
 </head>
@@ -943,6 +943,26 @@
     <!-- TAB 4: KP INTRADAY -->
     <!-- ============================================================== -->
     <div id="tab-kp" class="tab-pane" role="tabpanel">
+      <!-- Forward intraday forecast: SBC + KP transition confluence (Plotly) -->
+      <section id="intraday-forecast" class="panel intraday-forecast-panel">
+        <div class="panel-head">
+          <h2>Intraday Forecast &middot; SBC + KP Confluence <span class="experimental-badge">Experimental</span></h2>
+          <span class="panel-sub">Forward 5-minute path for the NSE session (09:15&ndash;15:30 IST), computed from the ephemeris; actual NIFTY overlaid once traded</span>
+        </div>
+        <p class="experimental-note"><strong>Not a trading signal.</strong> The KP composite behind this back-tested at chance. Each day&rsquo;s forecast is frozen before the open and scored after the close; the record below is the only evidence that counts.</p>
+        <div class="intraday-forecast-controls">
+          <label>Trading day <input type="date" id="ifc-date"></label>
+          <label>Bucket
+            <select id="ifc-step"><option value="5" selected>5 min</option><option value="15">15 min</option></select>
+          </label>
+          <button id="ifc-load" class="btn">Load forecast</button>
+          <span id="ifc-frozen" class="ifc-frozen"></span>
+        </div>
+        <div id="ifc-status" class="nifty-chart-status" role="status" aria-live="polite"></div>
+        <div id="ifc-chart" class="ifc-chart" aria-label="Intraday forecast chart"></div>
+        <div id="ifc-ledger" class="ifc-ledger" aria-live="polite"></div>
+      </section>
+
       <section id="kp-intraday" class="panel kp-intraday-panel">
         <div class="panel-head">
           <h2>KP Intraday Trend Change Prediction <span class="experimental-badge">Experimental</span></h2>
@@ -1149,6 +1169,7 @@
   <script src="/static/nifty-chart.js?v=16"></script>
   <script src="/static/app.js?v=34"></script>
   <script src="/static/intraday-projection.js?v=2"></script>
+  <script src="/static/intraday-forecast.js?v=5"></script>
   <script>
   document.addEventListener('DOMContentLoaded', function(){
     const cityInput = document.getElementById('bd-city');
