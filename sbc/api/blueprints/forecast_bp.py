@@ -34,7 +34,10 @@ def forecast():
     now = ledger._now_ist()
     frozen = ledger.get_frozen(day)
     # Asking for today's forecast before the open freezes it as a live record.
-    if frozen is None and step == 5 and ledger._kind_for(day, now) == "live" and day == now.date():
+    # This GET writes, so (like the app's write gate) only for local callers;
+    # run_app.py's ledger loop freezes it anyway.
+    local = request.remote_addr in ("127.0.0.1", "::1", "::ffff:127.0.0.1")
+    if local and frozen is None and step == 5 and ledger._kind_for(day, now) == "live"             and day == now.date():
         frozen = ledger.freeze(day, now)
 
     key = (day.isoformat(), step, model_version())

@@ -148,3 +148,15 @@ def test_page_has_forecast_panel(client):
     panel = html[html.index('id="intraday-forecast"'):html.index('id="kp-intraday"')]
     assert 'id="ifc-chart"' in panel and "experimental-badge" in panel
     assert "/static/intraday-forecast.js" in html
+
+
+def test_get_forecast_never_freezes_for_remote_callers(app, monkeypatch):
+    """The auto-freeze on GET is a write; LAN callers must not trigger it."""
+    called = []
+    monkeypatch.setattr(ledger, "freeze", lambda *a, **k: called.append(a) or None)
+    monkeypatch.setattr(ledger, "get_frozen", lambda day: None)
+    monkeypatch.setattr(ledger, "_now_ist",
+                        lambda now=None: dt.datetime(2026, 10, 5, 8, 0, tzinfo=IST))
+    resp = app.test_client().get("/api/engine/intraday_forecast?date=2026-10-05",
+                                 environ_base={"REMOTE_ADDR": "192.168.1.50"})
+    assert resp.status_code == 200 and called == []
