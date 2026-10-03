@@ -38,7 +38,8 @@ def load_history(start: str | None = None, end: str | None = None):
     """(dates, closes, fingerprints) for every NIFTY session in market.db."""
     bars = market_store.get_daily("NIFTY", start, end)
     if not bars:
-        raise RuntimeError("no NIFTY bars in market.db; run scripts/refresh_market_data.py --full")
+        raise market_store.MarketDataMissing(
+            "no NIFTY bars in market.db; run scripts/refresh_market_data.py --full")
     dates = [b["date"] for b in bars]
     stored = {fp["date"]: fp for fp in fingerprint_store.get_range(dates[0], dates[-1])}
     fps = [stored.get(d) or fingerprint_store.get(d) for d in dates]
@@ -55,20 +56,27 @@ def _verdict(res: dict, eras: dict) -> str:
     return "edge" if signs == {np.sign(res["excess"])} else "inconsistent"
 
 
-def run(horizons=HORIZONS, n_perm: int = st.N_PERMUTATIONS,
-        start: str | None = None, end: str | None = None) -> dict:
-    dates, closes, fps = load_history(start, end)
-    signals = signals_for(fps)
-    eras = [_era(d) for d in dates]
-    years = [d[:4] for d in dates]
+def grade(dates: list[str], closes, entries: list[dict], horizons=HORIZONS,
+          n_perm: int = st.N_PERMUTATIONS, start: str | None = None, era=_era) -> list[dict]:
+    """Grade signals against forward returns of `closes`.
+
+    entries: {name, kind, source, description, signal}, where signal is one value per
+    date, or {horizon: values} for signals that differ by horizon (e.g. analogs).
+    start: grade only dates >= start (forward returns still use the full series).
+    """
+    first = 0 if start is None else int(np.searchsorted(dates, start))
+    graded = dates[first:]
+    eras = [era(d) for d in graded]
+    years = [d[:4] for d in graded]
 
     results = []
     for h in horizons:
-        fwd = st.forward_returns(closes, h)
+        fwd = st.forward_returns(closes, h)[first:]
         absret = np.abs(fwd)
-        for rule in RULES:
-            sig = signals[rule.name]
-            if rule.kind == "directional":
+        for entry in entries:
+            sig = entry["signal"]
+            sig = list(sig[h] if isinstance(sig, dict) else sig)[first:]
+            if entry["kind"] == "directional":
                 res = st.evaluate_directional(sig, fwd, n_perm=n_perm)
                 era_stats = st.by_period(sig, fwd, eras)
                 yearly = st.by_period(sig, fwd, years)
@@ -79,8 +87,8 @@ def run(horizons=HORIZONS, n_perm: int = st.N_PERMUTATIONS,
                 yearly = st.by_period(flag, absret, years, st.vol_stat)
             known = [v for v in yearly.values() if v is not None]
             results.append({
-                "rule": rule.name, "kind": rule.kind, "source": rule.source,
-                "description": rule.description, "horizon": h, **res,
+                "rule": entry["name"], "kind": entry["kind"], "source": entry["source"],
+                "description": entry["description"], "horizon": h, **res,
                 "eras": era_stats,
                 "years_right": sum(v > 0 for v in known), "years": len(known),
             })
@@ -89,12 +97,20 @@ def run(horizons=HORIZONS, n_perm: int = st.N_PERMUTATIONS,
     for r, q in zip(results, qs, strict=True):
         r["q"] = q
         r["verdict"] = _verdict(r, r["eras"])
+    return results
 
+
+def run(horizons=HORIZONS, n_perm: int = st.N_PERMUTATIONS,
+        start: str | None = None, end: str | None = None) -> dict:
+    dates, closes, fps = load_history(start, end)
+    signals = signals_for(fps)
+    entries = [{"name": r.name, "kind": r.kind, "source": r.source,
+                "description": r.description, "signal": signals[r.name]} for r in RULES]
     return {
         "generated": dt.datetime.now().isoformat(timespec="seconds"),
         "fingerprint_version": fingerprint_store.current_version(),
         "sample": {"first": dates[0], "last": dates[-1], "sessions": len(dates)},
         "horizons": list(horizons),
         "n_permutations": n_perm,
-        "results": results,
+        "results": grade(dates, closes, entries, horizons, n_perm),
     }
