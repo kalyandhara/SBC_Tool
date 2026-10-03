@@ -246,7 +246,6 @@ def _pushya_reversal_windows(date, planets):
     jupiter = next(p for p in planets if p["name"] == "Jupiter")
     sun = next(p for p in planets if p["name"] == "Sun")
 
-    weekday = date.weekday()  # Monday=0
     moon_in_pushya = moon["nakshatra"] == PUSHYA_NAKSHATRA
 
     # 1. Moon in Pushya - Sentiment Reversal Window
@@ -307,25 +306,35 @@ def _pushya_reversal_windows(date, planets):
             "sectors": ["Large Caps", "Banking", "FMCG", "Financial Services", "Gold"],
         })
 
-    # 4. Ravi Pushya Yoga (Sunday + Moon in Pushya)
-    if weekday == 6 and moon_in_pushya:  # Sunday = 6
+    # 4-5. Ravi / Guru Pushya Yoga: the Moon in Pushya at any time during the
+    # Sunday / Thursday vara (sunrise to next sunrise), not just at the instant
+    # `planets` was computed for. Windows carry the exact IST span.
+    from .muhurta import format_window, guru_pushya_window, ravi_pushya_window
+    ravi = ravi_pushya_window(date)
+    if ravi:
         windows.append({
             "id": f"ravi-pushya-{date.isoformat()}",
             "start": date.isoformat(),
             "end": date.isoformat(),
-            "title": "Ravi Pushya Yoga (Sunday + Moon in Pushya) - Authority/Leadership Reversal",
+            "start_time": ravi[0].isoformat(timespec="minutes"),
+            "end_time": ravi[1].isoformat(timespec="minutes"),
+            "title": f"Ravi Pushya Yoga {format_window(ravi)} (Sunday + Moon in Pushya)"
+                     " - Authority/Leadership Reversal",
             "level": "HIGH",
             "bias": "REVERSAL - LEADERSHIP SHIFT",
             "sectors": ["PSU", "Government-linked", "Banking", "Large Caps"],
         })
 
-    # 5. Guru Pushya Yoga (Thursday + Moon in Pushya)
-    if weekday == 3 and moon_in_pushya:  # Thursday = 3
+    guru = guru_pushya_window(date)
+    if guru:
         windows.append({
             "id": f"guru-pushya-{date.isoformat()}",
             "start": date.isoformat(),
             "end": date.isoformat(),
-            "title": "Guru Pushya Yoga (Thursday + Moon in Pushya) - Wisdom/Expansion Reversal",
+            "start_time": guru[0].isoformat(timespec="minutes"),
+            "end_time": guru[1].isoformat(timespec="minutes"),
+            "title": f"Guru Pushya Yoga {format_window(guru)} (Thursday + Moon in Pushya)"
+                     " - Wisdom/Expansion Reversal",
             "level": "HIGH",
             "bias": "BULLISH REVERSAL",
             "sectors": ["Banking", "FMCG", "Financial Services", "Education", "Large Caps"],
@@ -970,9 +979,12 @@ def daily_yoga_glyphs(date, sun, moon, tithi):
         names.append("Sarvartha Siddhi Yoga")
     if AMRIT_SIDDHI[weekday] == nakshatra:
         names.append("Amrit Siddhi Yoga")
-    if weekday == 6 and nakshatra == "Pushya":
+    # Pushya yogas hold for any part of the vara (sunrise to sunrise), not
+    # only when the Moon is in Pushya at the sampled instant.
+    from .muhurta import guru_pushya_window, ravi_pushya_window
+    if ravi_pushya_window(date):
         names.append("Ravi Pushya Yoga")
-    if weekday == 3 and nakshatra == "Pushya":
+    if guru_pushya_window(date):
         names.append("Guru Pushya Yoga")
     if weekday == 2 and nakshatra == "Anuradha":
         names.append("Maitreya Yoga")
