@@ -222,6 +222,8 @@ GET  /api/engine/market/freshness
 GET  /api/engine/fingerprint?date=YYYY-MM-DD[&vector=1]
 GET  /api/engine/fingerprint/status
 GET  /api/engine/analogs?date=&horizon=1|5|20&variant=overall|slow|medium|fast&k=30
+GET  /api/engine/forecast?date=&horizon=1|5|20
+GET  /api/engine/forecast/ledger?horizon=1|5|20&kind=live|late|backfill
 ```
 `data/market.db` holds NIFTY, SENSEX and India VIX daily bars (yfinance) and NSE
 FII/DII cash flows. `run_app.py` refreshes it after each close; the first backfill is
@@ -236,8 +238,14 @@ versioned by the astro code, so an engine change triggers a rebuild of the stale
 The **Analog Lab** tab (Advanced analysis) finds past NIFTY sessions with the most similar
 sky and shows what followed them, next to the engine's walk-forward track record.
 `python scripts/validate_rules.py` and `python scripts/validate_analogs.py` regenerate
-the validation reports in `docs/research/`. Neither the rules nor the analogs have shown
-an edge so far; treat every output as research, not advice.
+the validation reports in `docs/research/`, and `python scripts/validate_incremental.py`
+tests whether any astro signal adds information beyond market controls (VIX, trend,
+volatility, calendar). None has so far; treat every output as research, not advice.
+
+`/api/engine/forecast` combines all of it into one NIFTY forecast per session and
+horizon. Its probability stays at the historical base rate until a component passes
+both tests. `run_app.py` freezes it before each open into `data/daily_ledger.db` and
+scores it once the outcome is in, building a live track record.
 
 ### Profile Management
 ```

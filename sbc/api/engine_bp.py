@@ -241,6 +241,44 @@ def analogs():
     return jsonify(result), 200
 
 
+@engine_bp.route("/forecast")
+def forecast():
+    """NIFTY forecast for ?date (a trading day; default the next one) over &horizon=1|5|20."""
+    from sbc import forecast as fc
+    from sbc.market_holidays import next_trading_day
+    from sbc.market_store import MarketDataMissing
+
+    raw = request.args.get("date")
+    try:
+        day = (datetime.date.fromisoformat(raw) if raw
+               else next_trading_day(datetime.date.today(), inclusive=False))
+        horizon = int(request.args.get("horizon", "5"))
+    except ValueError:
+        return jsonify({"error": "date must be YYYY-MM-DD and horizon an integer"}), 400
+    try:
+        return jsonify(fc.forecast(day.isoformat(), horizon)), 200
+    except MarketDataMissing:
+        return jsonify({"error": "no NIFTY history yet; run scripts/refresh_market_data.py --full"}), 404
+    except ValueError as exc:  # our own validation messages (horizon, trading day)
+        return jsonify({"error": str(exc)}), 400
+
+
+@engine_bp.route("/forecast/ledger")
+def forecast_ledger():
+    """Live record of the daily forecast: &horizon=1|5|20, &kind=live|late|backfill."""
+    from sbc import daily_ledger
+
+    try:
+        horizon = int(request.args.get("horizon", "5"))
+    except ValueError:
+        return jsonify({"error": "horizon must be an integer"}), 400
+    kind = request.args.get("kind", "live")
+    if horizon not in daily_ledger.HORIZONS or kind not in ("live", "late", "backfill"):
+        return jsonify({"error": "horizon in 1/5/20, kind in live/late/backfill"}), 400
+    return jsonify({"summary": daily_ledger.summary(horizon, kind),
+                    "recent": daily_ledger.recent(horizon)}), 200
+
+
 @engine_bp.route("/fingerprint/status")
 def fingerprint_status():
     from sbc import fingerprint_store

@@ -42,7 +42,7 @@ def forward_returns(closes: Sequence[float], horizon: int) -> np.ndarray:
     return out
 
 
-def _shift_pvalue(signal: np.ndarray, values: np.ndarray, stat: Callable[[np.ndarray, np.ndarray], float],
+def shift_pvalue(signal: np.ndarray, values: np.ndarray, stat: Callable[[np.ndarray, np.ndarray], float],
                   observed: float, n_perm: int, seed: int) -> float:
     n = len(signal)
     if n <= 2 * MIN_SHIFT:
@@ -98,7 +98,7 @@ def evaluate_directional(signal: Sequence[int], fwd: Sequence[float], n_perm: in
         "mean_long": float(r[long_mask].mean()) if long_mask.any() else None,
         "mean_short": float(r[short_mask].mean()) if short_mask.any() else None,
         "mean_all": float(r[valid].mean()),
-        "p": _shift_pvalue(s, r, excess_stat, observed, n_perm, seed),
+        "p": shift_pvalue(s, r, excess_stat, observed, n_perm, seed),
     }
 
 
@@ -130,7 +130,7 @@ def evaluate_event(flag: Sequence[bool], fwd: Sequence[float], n_perm: int = N_P
         "vol_ratio": float(absret[on].mean() / absret[off].mean()),
         "mean_on": float(r[on].mean()),
         "excess": observed,
-        "p": _shift_pvalue(f, absret, vol_stat, observed, n_perm, seed),
+        "p": shift_pvalue(f, absret, vol_stat, observed, n_perm, seed),
     }
 
 

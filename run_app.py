@@ -63,23 +63,28 @@ def _forecast_ledger_loop(interval_s=600):
 
     sbc.forecast_ledger keeps the honest forward record. Freezing is a no-op
     once a day is stored; scoring only touches settled, unscored days.
-    After 16:30 IST on trading days it also refreshes data/market.db
-    (sbc.market_store) until that day's FII/DII figures are in.
+    The daily NIFTY forecast (sbc.daily_ledger) is frozen in the same pre-open
+    window. After 16:30 IST on trading days it refreshes data/market.db
+    (sbc.market_store) until that day's FII/DII figures are in, and scores
+    daily forecasts whose outcome has arrived.
     """
     import time as _time
 
+    from sbc import daily_ledger, market_store
     from sbc import forecast_ledger as ledger
-    from sbc import market_store
     from sbc.market_holidays import is_trading_day
     market_refreshed = None  # date of the last successful EOD market refresh
     while True:
         try:
             now = ledger._now_ist()
             day = now.date()
-            if (is_trading_day(day) and datetime.time(6, 0) <= now.time() < datetime.time(9, 15)
-                    and ledger.get_frozen(day) is None):
-                ledger.freeze(day, now)
-                app.logger.info("forecast ledger: froze %s", day)
+            if is_trading_day(day) and datetime.time(6, 0) <= now.time() < datetime.time(9, 15):
+                if ledger.get_frozen(day) is None:
+                    ledger.freeze(day, now)
+                    app.logger.info("forecast ledger: froze %s", day)
+                frozen = daily_ledger.freeze(day, now)
+                if frozen:
+                    app.logger.info("daily ledger: froze %s horizons %s", day, frozen)
             if now.time() >= datetime.time(16, 15):
                 scored = ledger.score_pending(now)
                 if scored:
@@ -91,6 +96,9 @@ def _forecast_ledger_loop(interval_s=600):
                 if not report["errors"] and day.isoformat() in (report["flows"] or {}).get("dates", []):
                     market_refreshed = day
                 app.logger.info("market refresh: %s", report)
+                scored = daily_ledger.score_pending(now)
+                if scored:
+                    app.logger.info("daily ledger: scored %s", scored)
         except Exception:  # never let the ledger take the server down
             app.logger.exception("forecast ledger loop failed")
         _time.sleep(interval_s)
