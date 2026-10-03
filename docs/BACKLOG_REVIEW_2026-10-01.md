@@ -38,6 +38,9 @@ code and tech debt · **P3** = hygiene.
 | B-10 Placeholder research routes | ✅ removed (2026-10-03, `phase0-market-data`) |
 | B-05 Stale market data | 🟡 NIFTY/SENSEX/VIX in `data/market.db` refresh after each close; sector CSVs and Kota still stale |
 
+| **B-37** Phantom KP vedha school (new) | ✅ removed from fingerprint and README (2026-10-03, `phase2-stats`) |
+| **B-38** `_nakshatra_bullish` misspells U.Phalguni (new) | ⬜ open |
+
 ### B-36 · mypy reports 231 errors (P3, new)
 `mypy sbc/ app.py --ignore-missing-imports`: 68 assignment, 62 var-annotated, 31
 no-untyped-def, 19 index, 18 no-any-return and others. Spot-checking found no runtime bug.
