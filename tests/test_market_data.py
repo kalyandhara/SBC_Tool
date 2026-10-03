@@ -26,6 +26,7 @@ def _fake_yf(frame):
 def data_dir(tmp_path, monkeypatch):
     monkeypatch.setattr(m, "_DATA_DIR", str(tmp_path))
     monkeypatch.setattr(m, "_last_fetch", {})
+    monkeypatch.setattr(m, "_vendor_first", {})
     return tmp_path
 
 
@@ -80,6 +81,38 @@ def test_refetch_cooldown(data_dir, monkeypatch):
     monkeypatch.setitem(sys.modules, "yfinance", yf)
     m.get_nifty_ohlc("2026-09-25", "2026-09-27")
     m.get_nifty_ohlc("2026-09-25", "2026-09-27")
+    assert len(yf.calls) == 1
+
+
+def _frame(dates):
+    idx = pd.to_datetime(dates)
+    idx.name = "Date"
+    n = len(dates)
+    return pd.DataFrame({"Open": [1] * n, "High": [2] * n, "Low": [0] * n,
+                         "Close": [1.5] * n, "Volume": [5] * n}, index=idx)
+
+
+def test_missing_head_is_backfilled(data_dir, monkeypatch):
+    # Cache holds only recent bars; a request from earlier must fetch the head,
+    # not just the tail (this is how nifty_ohlc.csv got stuck at 2 years).
+    monkeypatch.setattr(m, "_settled_date", lambda now=None: datetime.date(2026, 9, 30))
+    _cache(data_dir / "nifty_ohlc.csv", [("2026-09-29", 1, 2, 0.5, 1.5, 10),
+                                         ("2026-09-30", 1, 2, 0.5, 1.5, 10)])
+    yf = _fake_yf(_frame(["2026-09-24", "2026-09-25", "2026-09-29", "2026-09-30"]))
+    monkeypatch.setitem(sys.modules, "yfinance", yf)
+    out = m.get_nifty_ohlc("2026-09-24", "2026-09-30")
+    assert yf.calls[0][1] == "2026-09-24"
+    assert [r["time"] for r in out] == ["2026-09-24", "2026-09-25", "2026-09-29", "2026-09-30"]
+
+
+def test_head_before_vendor_history_not_refetched(data_dir, monkeypatch):
+    # ^NSEI starts in 2007; asking for 2000 must not re-download every time.
+    monkeypatch.setattr(m, "_settled_date", lambda now=None: datetime.date(2026, 9, 30))
+    monkeypatch.setattr(m, "_REFETCH_COOLDOWN_S", 0)
+    yf = _fake_yf(_frame(["2007-09-17", "2026-09-30"]))
+    monkeypatch.setitem(sys.modules, "yfinance", yf)
+    m.get_nifty_ohlc("2000-01-01", "2026-09-30")
+    m.get_nifty_ohlc("2000-01-01", "2026-09-30")
     assert len(yf.calls) == 1
 
 

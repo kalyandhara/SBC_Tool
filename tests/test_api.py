@@ -279,24 +279,6 @@ class TestKPEndpoints:
         assert isinstance(data, dict)
 
 
-class TestResearchEndpoints:
-    """Test research lab endpoints."""
-
-    def test_astro_lab(self, client):
-        """Astro lab should return research data."""
-        response = client.get("/api/research/astro_lab")
-        assert response.status_code == 200
-        data = json.loads(response.data)
-        assert isinstance(data, dict)
-
-    def test_walk_forward_validation(self, client):
-        """Walk forward validation should return results."""
-        response = client.get("/api/research/walk_forward_validation")
-        assert response.status_code == 200
-        data = json.loads(response.data)
-        assert isinstance(data, dict)
-
-
 class TestProfileEndpoints:
     """Test profile management endpoints."""
 

@@ -54,6 +54,10 @@ _IST = ZoneInfo("Asia/Kolkata")
 _SESSION_SETTLED = datetime.time(16, 0)  # NSE closes 15:30 IST; allow a margin
 _REFETCH_COOLDOWN_S = 15 * 60
 _last_fetch = {}  # cache_path -> monotonic time of the last download attempt
+# cache_path -> earliest date the vendor actually has. A request starting
+# before it (e.g. 2000 for ^NSEI, which begins 2007-09-17) can't be filled,
+# so it must not count as a missing head and trigger a full re-download.
+_vendor_first = {}
 _OHLC_COLS = ["Open", "High", "Low", "Close"]
 
 
@@ -85,11 +89,10 @@ def _get_ohlc_cached(ticker, cache_path, start=None, end=None):
     df = _load_cache(cache_path)
     need_cols = ["Date", "Open", "High", "Low", "Close", "Volume"]
 
-    cache_ok = (
-        df is not None and not df.empty
-        and df["Date"].min().date() <= start_d
-        and df["Date"].max().date() >= min(end_d, settled)
+    head_ok = df is not None and not df.empty and (
+        df["Date"].min().date() <= max(start_d, _vendor_first.get(cache_path, start_d))
     )
+    cache_ok = head_ok and df["Date"].max().date() >= min(end_d, settled)
     # Weekends/holidays never produce the "missing" bar; don't hit the
     # network on every request while waiting for it.
     recently_tried = time.monotonic() - _last_fetch.get(cache_path, -1e9) < _REFETCH_COOLDOWN_S
@@ -102,7 +105,7 @@ def _get_ohlc_cached(ticker, cache_path, start=None, end=None):
             # and yfinance just errors out ("Data doesn't exist for startDate...")
             dl_end = min(end_d, today)
             fetch_start = start_d
-            if df is not None and not df.empty:
+            if head_ok:
                 # only fetch the missing tail
                 fetch_start = df["Date"].max().date() + datetime.timedelta(days=1)
             if fetch_start <= dl_end:
@@ -114,6 +117,8 @@ def _get_ohlc_cached(ticker, cache_path, start=None, end=None):
                         new.columns = [c[0] for c in new.columns]
                     new = new.reset_index()
                     new["Date"] = pd.to_datetime(new["Date"]).dt.tz_localize(None)
+                    if not head_ok:
+                        _vendor_first[cache_path] = new["Date"].min().date()
                     new = new[need_cols]
                     # yfinance returns the running session's bar with NaN
                     # fields; only settled, complete bars are kept.
