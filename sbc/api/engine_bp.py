@@ -353,6 +353,78 @@ def calendar_report_file(name):
     return send_from_directory(fcal.REPORT_DIR, name)
 
 
+_MAX_SWING_DAYS = 5 * 366
+
+
+def _swing_args():
+    """(start, end, planets, aspects) from the query string; raises ValueError."""
+    from sbc import helio_aspects as ha
+
+    today = datetime.date.today()
+    start = datetime.date.fromisoformat(request.args.get("start") or (today - datetime.timedelta(days=365)).isoformat())
+    end = datetime.date.fromisoformat(request.args.get("end") or (today + datetime.timedelta(days=90)).isoformat())
+    if end < start or (end - start).days > _MAX_SWING_DAYS:
+        raise ValueError("end must be after start, at most 5 years")
+    planets = [p for p in (request.args.get("planet") or "").split(",") if p] or None
+    aspects = [a.upper() for a in (request.args.get("aspect") or "").split(",") if a] or None
+    bad = [p for p in planets or [] if p not in ha.PLANETS] + [a for a in aspects or [] if a not in ha.ASPECTS]
+    if bad:
+        raise ValueError(f"unknown planet/aspect: {', '.join(bad)}")
+    return start.isoformat(), end.isoformat(), planets, aspects
+
+
+@engine_bp.route("/aspect_windows")
+def aspect_windows():
+    """Heliocentric Earth-planet aspect windows (B-39 ENTRY layer).
+
+    ?start=&end= (max 5 years) &planet=Jupiter[,Saturn] &aspect=SS[,SQ]
+    &format=json (default, full windows) | tv (TradingView payload: {dates, label, skip_holidays}).
+    """
+    from sbc import helio_aspects as ha
+
+    try:
+        start, end, planets, aspects = _swing_args()
+    except ValueError as exc:
+        return jsonify({"error": str(exc)}), 400
+    windows = ha.scan(start, end, planets, aspects)
+    if request.args.get("format") == "tv":
+        label = request.args.get("label") or None
+        return jsonify(ha.tv_payload(windows, label)), 200
+    return jsonify({"start": start, "end": end, "orb": ha.ORB, "count": len(windows), "windows": windows}), 200
+
+
+@engine_bp.route("/swing_windows")
+def swing_windows():
+    """B-39 swing model: aspect ENTRY -> Gann/Fibonacci/indicator confluence EXIT on NIFTY.
+
+    Same filters as /aspect_windows, plus &confluence=3 (strict, default) | 2.
+    """
+    from sbc import research_reports
+    from sbc import swing_model as sm
+    from sbc.market_store import MarketDataMissing
+
+    try:
+        start, end, planets, aspects = _swing_args()
+        need = int(request.args.get("confluence", "3"))
+        if need not in (2, 3):
+            raise ValueError("confluence must be 2 or 3")
+    except ValueError as exc:
+        return jsonify({"error": str(exc)}), 400
+    try:
+        out = sm.build(start, end, planets, aspects, need)
+    except MarketDataMissing:
+        return jsonify({"error": "no NIFTY history yet; run scripts/refresh_market_data.py --full"}), 404
+    report = research_reports.latest("swing_validation")
+    if report:
+        res = report["model"]["models"].get("strict (3 of 3)" if need == 3 else "2 of 3", {})
+        out["validation"] = {"report": report["_file"], "verdict": res.get("verdict"),
+                             "model": res.get("model"), "baselines": res.get("baselines"),
+                             "random": res.get("random"),
+                             "entry_tests": len(report["results"]),
+                             "entry_edges": sum(r["verdict"] == "edge" for r in report["results"])}
+    return jsonify(out), 200
+
+
 @engine_bp.route("/fingerprint/status")
 def fingerprint_status():
     from sbc import fingerprint_store

@@ -40,9 +40,20 @@ code and tech debt · **P3** = hygiene.
 
 | **B-37** Phantom KP vedha school (new) | ✅ removed from fingerprint and README (2026-10-03, `phase2-stats`) |
 | **B-38** `_nakshatra_bullish` misspells U.Phalguni (new) | ⬜ open |
-| **B-39** Astro-quant swing windows: heliocentric aspect ENTRY + Gann/Fib/indicator EXIT (new) | ⬜ open (feature request 2026-10-03) |
+| **B-39** Astro-quant swing windows: heliocentric aspect ENTRY + Gann/Fib/indicator EXIT (new) | ✅ built and validated 2026-10-03 (`b39-swing-windows`): no edge (see below) |
 
-### B-39 · Astro-quant swing-window model (P2, new feature request 2026-10-03)
+### B-39 · Astro-quant swing-window model (P2, new feature request 2026-10-03) — ✅ done 2026-10-03
+**Resolved.** Defaults chosen: heliocentric only, Earth against Mercury..Pluto, daily bars,
+strict 3-of-3 confluence (2-of-3 reported too), max hold 60 sessions.
+- **ENTRY:** `sbc/helio_aspects.py`, checked against known events: the Earth–Jupiter conjunction on 2026-01-10 is Jupiter's opposition.
+- **EXIT:** `sbc/swing_model.py`.
+- **API and chart:** `/api/engine/aspect_windows` (`format=tv`), `/api/engine/swing_windows`, the Swing Windows tab, and `tools/tradingview/astro_swing_windows.pine`. The Pine script is not yet compiled in TradingView.
+- **Results** (`docs/research/swing_validation_2026-10-03.md`):
+  - Entry timing: 0 of 102 tests show an edge, and none adds anything beyond the market. The plain 10-session reversal rule has no edge either.
+  - Full model, 2008 onward (strict exit): 129 trades averaging 0.00%, versus +0.73% for simply holding the same entries for 30 sessions. Random entries with the same exit give p = 0.28.
+  - The 2-of-3 exit gives p = 0.62.
+- **Forecast:** `helio_all_reversal` is a forecast and ledger component, unvalidated.
+
 **Request:** planetary aspects mark ENTRY (hypothetical reversal zones), technical
 confluence marks EXIT (profit-booking zone), and both are plotted as vertical lines on a
 TradingView NIFTY chart.

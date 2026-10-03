@@ -157,6 +157,16 @@ decide on before Phase 4:
 - Across the project that's **0 of 253** tests: Phase 2 rules 60, analogs 15, incremental 75,
   factors 36, sectors 67.
 
+## B-39 swing-window model (branch `b39-swing-windows`)
+
+Heliocentric Earth–planet aspects (8 aspect types, ±2°) as ENTRY, and Gann + Fibonacci +
+indicator confluence as EXIT. The full spec and results are in the backlog (B-39) and in
+`docs/research/swing_validation_*.md`.
+- Entry timing: 0 of 102 tests pass.
+- Full model: no better than random entries (p = 0.28 strict, 0.62 for 2-of-3), and
+  simple holds beat the confluence exit on the same entries.
+- Running total: **0 of 355** astro tests.
+
 ## Target capability (the goal, restated as a pipeline)
 
 ```

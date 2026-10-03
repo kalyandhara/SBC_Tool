@@ -228,6 +228,8 @@ GET  /api/engine/forecast/card?date=
 GET  /api/engine/calendar?start=&weeks=1..8&format=json|html|md
 GET  /api/engine/calendar/reports
 GET  /api/engine/calendar/reports/<file>
+GET  /api/engine/aspect_windows?start=&end=&planet=&aspect=&format=json|tv
+GET  /api/engine/swing_windows?start=&end=&planet=&aspect=&confluence=3|2
 ```
 `data/market.db` holds NIFTY, SENSEX and India VIX daily bars (yfinance) and NSE
 FII/DII cash flows. `run_app.py` refreshes it after each close; the first backfill is
@@ -253,6 +255,14 @@ grades them, and one counts in the forecast only after passing both tests. The s
 vedha scenarios are tested on the years before the window they were picked on:
 `python scripts/refresh_market_data.py --research --full` downloads the commodity and
 sector-stock series, then `python scripts/validate_sectors.py` writes the report.
+
+The **Swing Windows** tab (B-39) marks heliocentric Earth–planet aspect windows as ENTRY
+zones and exits on Gann + Fibonacci + indicator confluence (`sbc/helio_aspects.py`,
+`sbc/swing_model.py`). `/api/engine/aspect_windows?format=tv` returns the
+`{dates, label, skip_holidays}` payload for the TradingView indicator in
+`tools/tradingview/astro_swing_windows.pine`. `python scripts/validate_swing.py` compares
+the entries with random dates and the exit with simple exits. So far the model does no
+better than either.
 
 `/api/engine/forecast` combines all of it into one NIFTY forecast per session and
 horizon. Its probability stays at the historical base rate until a component passes
