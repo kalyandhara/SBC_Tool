@@ -37,8 +37,16 @@ def _warm_series_cache():
     """Pre-compute the chart overlay for the window the UI asks for on load.
 
     Results land in the on-disk series cache, so after the first ever boot this
-    finishes in seconds; the first chart paint no longer waits ~100 s.
+    finishes in seconds; the first chart paint no longer waits ~100 s. Rows
+    from an older engine version are dropped first (sbc.engine_version).
     """
+    try:
+        from sbc import series_cache
+        from sbc.engine_version import engine_version
+        dropped = series_cache.purge_stale()
+        app.logger.info("series cache engine %s: dropped %d stale rows", engine_version(), dropped)
+    except Exception:
+        app.logger.exception("series cache purge failed")
     today = datetime.date.today()
     start = (today - datetime.timedelta(days=366)).isoformat()
     end = (today + datetime.timedelta(days=180)).isoformat()

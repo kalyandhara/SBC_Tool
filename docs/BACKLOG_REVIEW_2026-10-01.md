@@ -31,6 +31,7 @@ code and tech debt · **P3** = hygiene.
 | B-23 Lint debt / CI | ✅ ruff is the only linter (2,907 → 0 findings); CI runs on `master`; black/isort/flake8 dropped |
 | B-08 Requirements drift | 🟡 runtime deps now match the tested stack and include openpyxl, python-docx, matplotlib; no lock file yet |
 | **B-36 mypy debt** (new) | ⬜ 231 annotation errors; CI type-check job is advisory (non-blocking) |
+| B-20 Series cache engine version | ✅ rows carry `sbc.engine_version` (hash of the code behind `build_response` + the payload builder); other versions are ignored and purged on warm-up |
 
 ### B-36 · mypy reports 231 errors (P3, new)
 `mypy sbc/ app.py --ignore-missing-imports`: 68 assignment, 62 var-annotated, 31
@@ -294,7 +295,9 @@ input. The docstring itself says "synthetic".
 **Fix:** Rename the fields to what they measure (e.g. `vedha_extreme`, `benefic_dominance`)
 or feed in real price data.
 
-### B-20 · Series cache has no engine version, so stale predictions persist forever
+### B-20 · Series cache has no engine version, so stale predictions persist forever — ✅ done 2026-10-03
+Resolved: `sbc/engine_version.py` hashes `build_response`, the app.py helpers it reaches, `chart_bp.prediction_series`, and the transitive closure of the sbc modules they import (12 files today). `sbc/series_cache.py` stores the version per row, serves only matching rows, migrates old databases (rows without a version count as stale), and `run_app.py` purges stale rows before warming.
+
 `sbc/series_cache.py` assumes prediction is "a pure function of (date, anchor, school)".
 It is pure, but only for a fixed engine. `prediction.py`, `confluence.py` and
 `market_calendar.py` all changed in the working tree, and cached rows still reflect the old
