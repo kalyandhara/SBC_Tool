@@ -26,13 +26,45 @@ inside `run_app.py`, and `scripts/refresh_market_data.py` also works from Window
 
 | Item | Status |
 |---|---|
-| `sbc/fingerprint.py` | ✅ one call → every factor at 09:15 IST: 12 bodies (9 grahas + Uranus/Neptune/Pluto) with sign, nakshatra, pada, speed, retro, stationary, combust, dignity; angular aspects with orb and applying flag; Vedic drishti; panchang (tithi, yoga, karana, Vishti, weekday lord, hora lord); KP asc/Moon star and sub lords; SBC NIFTY vedha net ×3 schools; Bradley; eclipse distance |
+| `sbc/fingerprint.py` | ✅ one call → every factor at 09:15 IST: 12 bodies (9 grahas + Uranus/Neptune/Pluto) with sign, nakshatra, pada, speed, retro, stationary, combust, dignity; angular aspects with orb and applying flag; Vedic drishti; panchang (tithi, yoga, karana, Vishti, weekday lord, hora lord); KP asc/Moon star and sub lords; SBC NIFTY vedha net (classical, all-three); Bradley; eclipse distance |
 | Tiers | ✅ slow / medium / fast on every planet, aspect (tier of the faster planet) and feature |
 | `feature_vector()` | ✅ 460 named, tiered numbers (143 slow / 195 medium / 122 fast); fixed order across dates |
 | `data/fingerprints.db` | ✅ 16,801 days, 1990-01-01 → 2035-12-31, built in 13 s; rows versioned by `engine_version.module_version("sbc.fingerprint")` |
 | Validation | ✅ 2020-12-21 Jupiter–Saturn conjunction (orb 0.07°); retrograde shares Mercury 19.2%, Venus 7.3%, Mars 9.7%, Jupiter 30.5%, Saturn 36.2%; Vishti 13.3% (8 of 60 karanas); 2009-07-22 solar eclipse; Vishti matches `sbc.bhadra` |
 | API | ✅ `GET /api/engine/fingerprint?date=&vector=1`, `GET /api/engine/fingerprint/status` |
 | Not yet | ⬜ station dates as events, graha yuddha, declination (G8, after the stats harness) |
+
+## Phase 2 status (branch `phase2-stats`)
+
+| Item | Status |
+|---|---|
+| `sbc/stats.py` | ✅ forward returns (prior-close entry), directional and volatility tests against the unconditional market, circular-shift permutation p-values, Benjamini–Hochberg, per-period breakdown, minimum-sample guard |
+| Calibration | ✅ on synthetic data it finds a planted 20 bps/day effect and passes noise. With persistent regime signals it fires on 3.5–5% of nulls (an iid shuffle fires on 37%) |
+| `sbc/rule_signals.py` | ✅ 18 existing rules as one daily NIFTY signal each, taken as stated (no fitting), plus 2 placebo controls |
+| `scripts/validate_rules.py` | ✅ → `docs/research/rule_validation_2026-10-03.md` / `.json` (8 s, 1,000 permutations) |
+
+### Result: none of the existing rules has a measurable edge on NIFTY (2007-09 → 2026-10)
+
+- **0 of 60** rule × horizon tests pass q < 0.05. Both placebos come out clean (p 0.6–0.9).
+- Closest calls are all **wrong-way**:
+  - `bradley_sign`: the market did *worse* than drift when the barometer was positive (1d p 0.001, q 0.06; same sign in both eras, but right in only 7 of 20 years).
+  - `reversal_calendar_bias` at 20d: q 0.14; it is bullish on 98% of days, so it is mostly a constant call.
+  - `moon_gandanta` and `shukla_paksha` are not significant after correction.
+- The SBC vedha net (all-three school) is bearish on 83% of days and has no edge at any horizon.
+  The 2026-09-14 "actionable verdict" (20–40% exposure from net −6) had no measured basis.
+- **Don't flip the wrong-way rules into new rules.** Choosing a direction after seeing the
+  result is data snooping. Pre-register "contrarian Bradley" as a hypothesis and let the
+  live ledger (G6) judge it.
+- **Consequence for the plan:** Phase 4 must not weight these rules by assumption. The
+  analog engine (Phase 3) is the remaining candidate, and it gets graded by this same
+  harness before anything is labelled actionable.
+
+### Defects found on the way
+- **B-37** `school="kp"` was advertised (README "three vedha schools") but `sbc.chakra.vedha_cells`
+  has no KP branch. It silently returned classical results. Removed from the fingerprint
+  and the README; the UI never offered it.
+- **B-38** `sbc.backtest._nakshatra_bullish` lists `"Uttara Phalguni"`, but the codebase spells
+  it `"U.Phalguni"`, so that star never fires (left unchanged; the rule isn't in the tested set).
 
 ## Target capability (the goal, restated as a pipeline)
 

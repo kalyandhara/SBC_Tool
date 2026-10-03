@@ -205,3 +205,5 @@ package-lock.json
 
 data/cities.db.*
 data/forecast_ledger.db.*
+data/gold_ohlc.csv
+data/silver_ohlc.csv

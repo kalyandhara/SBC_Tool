@@ -13,7 +13,7 @@ JSON-safe dict built from the existing calculators:
             weekday, weekday lord, hora lord at the open
   kp        ascendant and Moon star/sub lords at the open (NSE Mumbai,
             sbc.kp_ephemeris), Moon sub-lord house-set strength
-  sbc       NIFTY-anchor vedha net per school (classical, allthree, kp)
+  sbc       NIFTY-anchor vedha net per school (classical, allthree)
   bradley   Bradley barometer value (sbc.bradley)
   eclipse   days since the last / to the next solar or lunar eclipse
 
@@ -48,7 +48,8 @@ from sbc.prediction import analyze, compute_vedhas
 
 OPEN_TIME = "09:15"
 ANCHOR = "nifty"
-SCHOOLS = ("classical", "allthree", "kp")
+# sbc.chakra.vedha_cells implements two schools; "kp" would silently fall back to classical.
+SCHOOLS = ("classical", "allthree")
 
 GRAHAS = ("Sun", "Moon", "Mars", "Mercury", "Jupiter", "Venus", "Saturn", "Rahu", "Ketu")
 OUTERS = (("Uranus", swe.URANUS), ("Neptune", swe.NEPTUNE), ("Pluto", swe.PLUTO))

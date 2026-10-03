@@ -6,7 +6,7 @@ A comprehensive Flask-based web application for Vedic astrological market analys
 
 ### Core Astrological Engine
 - **81-Cell Sarvatobhadra Chakra** with 28 nakshatras, 16 vowels, 20 consonants, 12 rashis, 5 tithi groups
-- **Three Vedha Schools**: Classical (single ray), All-three rays (Narasimha Rao), KP (Krishnamurti Paddhati)
+- **Two Vedha Schools**: Classical (single ray) and All-three rays (Narasimha Rao); KP is used for the intraday layer, not for vedha
 - **Lahiri Ayanamsa** with Swiss Ephemeris (Moshier) precision
 - **Market Anchors**: NSE, BSE, NIFTY 50, SENSEX, India national market
 
