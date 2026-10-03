@@ -32,6 +32,8 @@ code and tech debt · **P3** = hygiene.
 | B-08 Requirements drift | 🟡 runtime deps now match the tested stack and include openpyxl, python-docx, matplotlib; no lock file yet |
 | **B-36 mypy debt** (new) | ⬜ 231 annotation errors; CI type-check job is advisory (non-blocking) |
 | B-20 Series cache engine version | ✅ rows carry `sbc.engine_version` (hash of the code behind `build_response` + the payload builder); other versions are ignored and purged on warm-up |
+| B-15 Two app instances | ✅ engine moved to `sbc/engine.py`; nothing under `sbc/` imports `app`; `python app.py` serves one app on 127.0.0.1:8000; README run steps updated |
+| B-25 Exception text in responses | ✅ 29 handlers use `sbc.api.errors.internal_error()` (logs traceback, generic 500); nested error fields and the crash-series cache no longer echo/cache exceptions; tz endpoints answer 400 for bad input; duplicate global handler removed |
 
 ### B-36 · mypy reports 231 errors (P3, new)
 `mypy sbc/ app.py --ignore-missing-imports`: 68 assignment, 62 var-annotated, 31
@@ -248,7 +250,9 @@ forecast date picker, the ledger loop and the futurecast calendars.
 - **Fix:** Ship a seed script (e.g. GeoNames cities15000 → SQLite), run it on bootstrap,
   and add `LIMIT 20`. Replace `alert()` with a dropdown.
 
-### B-15 · `python app.py` creates two app instances (circular import)
+### B-15 · `python app.py` creates two app instances (circular import) — ✅ done 2026-10-03
+Resolved: `sbc/engine.py` holds `build_response`, `ANCHORS` and the time helpers; blueprints and `sbc.intraday_forecast` import it, `app.py` re-exports it. `tests/test_single_app_instance.py` runs `app.py` as `__main__`, makes requests through the blueprints and asserts one Flask app.
+
 - **Evidence:** Blueprints do `from app import build_response, ANCHORS, …`
   (`overview_bp.py:10,22,42`, `chart_bp.py:58`, `balance_bp.py:19`, `chakra_bp.py:121`). Run
   as a script, `app.py` is `__main__`, so `from app import` re-executes the file: a second
@@ -337,7 +341,9 @@ around 25000. The read path no longer uses them, but they're one call away from 
 **Fix:** Delete the generator (move it to `tests/fixtures` if a test needs it) and resolve
 paths from the package root.
 
-### B-25 · Error responses leak exception text
+### B-25 · Error responses leak exception text — ✅ done 2026-10-03
+Resolved: see `sbc/api/errors.py`; `tests/test_error_leaks.py` forces failures in app and blueprint routes and statically guards against `str(e)` in 500 responses. Intentional 400 validation messages are kept.
+
 Many handlers end with `return jsonify({"error": str(e)}), 500` (e.g. `chakra_bp.py:176`,
 `app.py:1398, 1503`). These bypass the global JSON handler and expose internals.
 **Fix:** Let exceptions propagate to `handle_exception`, and log with `exc_info`.

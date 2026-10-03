@@ -17,7 +17,7 @@ def daily_indication_balance():
     and Western (zodiac-dignity synthetic line). Each day is scored on the
     Vedic net, mapped to a 0..6 bias scale.
     """
-    from app import ANCHORS, build_response
+    from sbc.engine import ANCHORS, build_response
     from sbc.metrics import _bias_scale, _western_bias
     start = request.args.get("start")
     try:

@@ -5,12 +5,10 @@ rows written by a different version, so changing the prediction engine
 invalidates cached days automatically instead of serving stale overlays.
 
 What is hashed (found statically, nothing is imported):
-- app.build_response plus the app.py top-level functions and globals it
-  reaches (e.g. _tithi_info, ANCHORS);
+- sbc/engine.py (build_response, ANCHORS and the time helpers);
 - chart_bp.prediction_series, which shapes the cached payload;
-- every sbc module those functions import from, and, transitively, every
-  first-party module those modules import (module-level or inside functions,
-  e.g. market_calendar -> muhurta -> kp_ephemeris).
+- transitively, every first-party module those import (module-level or
+  inside functions, e.g. market_calendar -> muhurta -> kp_ephemeris).
 
 Unrelated modules (DOCX export, KP intraday, forecast ledger...) are not in the
 closure, so editing them leaves the cache alone.
@@ -25,9 +23,8 @@ from functools import lru_cache
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
-APP_FILE = ROOT / "app.py"
 CHART_BP_FILE = ROOT / "sbc" / "api" / "blueprints" / "chart_bp.py"
-ENTRY_FUNCTION = "build_response"
+ENGINE_MODULE = "sbc.engine"
 PAYLOAD_FUNCTION = "prediction_series"
 FIRST_PARTY = ("sbc",)
 # Storage, not engine: changing how rows are cached must not invalidate them.
@@ -82,43 +79,6 @@ def _first_party_imports(tree: ast.AST, current: str) -> set[str]:
     return found
 
 
-def _app_slice(src: str) -> tuple[str, set[str]]:
-    """Source of build_response and the app.py functions/globals it reaches,
-    plus the sbc modules those names are imported from."""
-    tree = ast.parse(src)
-    funcs = {n.name: n for n in tree.body if isinstance(n, ast.FunctionDef)}
-    assigns = {}
-    for n in tree.body:
-        if isinstance(n, ast.Assign):
-            for t in n.targets:
-                if isinstance(t, ast.Name):
-                    assigns[t.id] = n
-    imported_from = {}
-    for n in tree.body:
-        if isinstance(n, ast.ImportFrom) and n.module:
-            for alias in n.names:
-                imported_from[alias.asname or alias.name] = n.module
-
-    seen, todo, modules, parts = set(), [ENTRY_FUNCTION], set(), []
-    while todo:
-        name = todo.pop()
-        if name in seen:
-            continue
-        seen.add(name)
-        node = funcs.get(name) or assigns.get(name)
-        if node is None:
-            continue
-        parts.append(ast.get_source_segment(src, node) or "")
-        for sub in ast.walk(node):
-            if isinstance(sub, ast.Name):
-                if sub.id in funcs or sub.id in assigns:
-                    todo.append(sub.id)
-                elif sub.id in imported_from:
-                    modules.add(imported_from[sub.id])
-        modules |= _first_party_imports(node, "app")
-    return "\n".join(sorted(parts)), {m for m in modules if m.split(".")[0] in FIRST_PARTY}
-
-
 def _function_source(src: str, name: str) -> str:
     tree = ast.parse(src)
     for n in tree.body:
@@ -128,22 +88,22 @@ def _function_source(src: str, name: str) -> str:
 
 
 def dependency_closure(read: Callable[[Path], str] = _read) -> tuple[str, list[Path]]:
-    """(app/chart_bp source slice, sorted module files in the closure)."""
-    app_src, start = _app_slice(read(APP_FILE))
+    """(chart_bp payload-builder source, sorted module files in the closure)."""
     chart_src = read(CHART_BP_FILE)
     payload_src = _function_source(chart_src, PAYLOAD_FUNCTION)
-    start |= _first_party_imports(ast.parse(payload_src), "sbc.api.blueprints.chart_bp")
+    start = {ENGINE_MODULE} | _first_party_imports(ast.parse(payload_src), "sbc.api.blueprints.chart_bp")
     files, todo = {}, list(start)
     while todo:
         mod = todo.pop()
         path = _module_file(mod)
         # Package __init__ files only re-export (sbc/__init__ imports nearly
         # every module); following them would make the closure the whole repo.
-        if path is None or path.name == "__init__.py" or mod in EXCLUDED_MODULES                 or path in files.values():
+        if (path is None or path.name == "__init__.py" or mod in EXCLUDED_MODULES
+                or path in files.values()):
             continue
         files[mod] = path
         todo.extend(_first_party_imports(ast.parse(read(path)), mod) - set(files))
-    return app_src + "\n" + payload_src, sorted(set(files.values()))
+    return payload_src, sorted(set(files.values()))
 
 
 def compute_engine_version(read: Callable[[Path], str] = _read) -> str:

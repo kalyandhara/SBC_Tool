@@ -57,11 +57,11 @@ uv pip install -r requirements.txt
 ### Run Development Server
 
 ```bash
-# Set Flask environment
-export FLASK_APP=app.py
-export FLASK_DEBUG=1
+# Run (port 8000; warms the chart cache and runs the forecast ledger in the background)
+python run_app.py
+python run_app.py --host 127.0.0.1 --port 8000 --debug   # dev options; --no-warm, --no-ledger
 
-# Run
+# Bare server without the background jobs (127.0.0.1:8000)
 python app.py
 
 # Or with gunicorn (production-like)
@@ -256,17 +256,11 @@ GET  /api/sbc/latest
 ### Code Quality
 
 ```bash
-# Format
-black sbc/ app.py scripts/
+# Lint + import order (the same command CI runs; rules in pyproject.toml)
+ruff check sbc/ app.py run_app.py scripts/ tests/
 
-# Lint
-ruff check sbc/ app.py scripts/
-
-# Type check
-mypy sbc/ app.py
-
-# Sort imports
-isort sbc/ app.py scripts/
+# Type check (advisory in CI)
+mypy sbc/ app.py --ignore-missing-imports
 ```
 
 ### Testing
@@ -309,7 +303,7 @@ SECRET_KEY=your-secret-key  # For production
 DATABASE_URL=sqlite:///data/profiles.db  # Default
 ```
 
-### Market Anchors (app.py:114-150)
+### Market Anchors (sbc/engine.py)
 Modify `ANCHORS` dict to add custom market birth dates:
 ```python
 ANCHORS = {
@@ -378,7 +372,7 @@ services:
 
 1. Fork the repository
 2. Create feature branch: `git checkout -b feature/amazing-feature`
-3. Run code quality checks: `black . && ruff check . && mypy sbc/ app.py`
+3. Run code quality checks: `ruff check sbc/ app.py run_app.py scripts/ tests/`
 4. Write tests for new functionality
 5. Ensure all tests pass: `pytest`
 6. Commit with conventional commits: `feat: add amazing feature`

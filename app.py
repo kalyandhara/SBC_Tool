@@ -9,7 +9,7 @@ import time
 from collections import defaultdict
 from io import BytesIO
 from pathlib import Path
-from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
+from zoneinfo import ZoneInfo
 
 from flask import Flask, Response, jsonify, render_template, request, send_file
 from werkzeug.exceptions import HTTPException
@@ -31,6 +31,7 @@ from sbc.api.blueprints.overview_bp import overview_bp
 from sbc.api.blueprints.research_bp import research_bp
 from sbc.api.blueprints.sectors_bp import sectors_bp
 from sbc.api.engine_bp import engine_bp
+from sbc.api.errors import internal_error
 from sbc.api.sector_bp import sector_bp
 from sbc.app_boot import boot
 from sbc.astro_plot import generate_astro_plot, serialize_plot_data
@@ -49,29 +50,27 @@ from sbc.bullion_vedha import (
     scan_bullion_vedha_week,
 )
 from sbc.cgsp_framework import generate_cgsp_report
-from sbc.chakra import GRID
 from sbc.config import SECTOR_NAME_MAP
 from sbc.crash_analyzer import analyze_crash_risk, backtest_crashes, daily_crash_briefing
-from sbc.market_calendar import reversal_alert, upcoming_yoga_alerts
+
+# The prediction engine lives in sbc/engine.py; re-exported here for callers
+# that use app.build_response, app.ANCHORS, app._utc_from_local, ...
+from sbc.engine import (  # noqa: F401
+    ANCHORS,
+    WEEKDAYS,
+    _anchor_nakshatra,
+    _julday,
+    _tithi_info,
+    _utc_from_local,
+    build_response,
+)
 from sbc.market_data import get_nifty_ohlc
 from sbc.market_events import lunar_phase_event, planetary_aspect_events, planetary_ingress_events
 from sbc.metrics import _bias_scale, _western_bias
 from sbc.nakshatra import (
-    GROUP_OF_TITHI,
-    GROUP_WEEKDAYS,
-    paksha_of,
     tithi_of,
 )
-from sbc.planets import all_planets_with_natures, positions
-from sbc.prediction import (
-    analyze,
-    compute_vedhas,
-    place_planets,
-    planet_sector_read,
-    recommendation,
-    sector_read,
-    summarize_vedhas,
-)
+from sbc.planets import positions
 from sbc.sector_keywords import keywords_for
 from sbc.trade_setups import TRADE_SETUPS
 from sbc.transit_vedha import (
@@ -93,13 +92,6 @@ app.register_blueprint(kp_bp)
 app.register_blueprint(balance_bp)
 app.register_blueprint(chakra_bp)
 app.register_blueprint(forecast_bp)
-
-@app.errorhandler(Exception)
-def handle_exception(e):
-    app.logger.exception("Unhandled error")
-    if isinstance(e, HTTPException):
-        return jsonify({"error": e.description}), e.code
-    return jsonify({"error": "Internal server error"}), 500
 
 _daily_confluence_cache = {}
 # Always render the current template from disk (avoids stale HTML during dev iteration)
@@ -189,220 +181,6 @@ def _csp(response):
     )
     return response
 
-# Market anchors: entity -> (incorporation/base date, description).
-# The Moon's nakshatra at that moment becomes the market's birth star.
-ANCHORS = {
-    "nse": {
-        "name": "NSE (National Stock Exchange)",
-        "date": "1992-11-27",
-        "time": "00:00",
-        "tz": "Asia/Kolkata",
-        "note": "Incorporated 27 Nov 1992",
-    },
-    "bse": {
-        "name": "BSE (Bombay Stock Exchange)",
-        "date": "1875-07-09",
-        "time": "00:00",
-        "tz": "Asia/Kolkata",
-        "note": "Founded 9 Jul 1875",
-    },
-    "nifty": {
-        "name": "NIFTY 50 Index",
-        "date": "1995-11-03",
-        "time": "00:00",
-        "tz": "Asia/Kolkata",
-        "note": "Base date 3 Nov 1995",
-    },
-    "sensex": {
-        "name": "SENSEX Index",
-        "date": "1979-04-01",
-        "time": "00:00",
-        "tz": "Asia/Kolkata",
-        "note": "Base date 1 Apr 1979",
-    },
-    "india": {
-        "name": "India (national market)",
-        "date": "1947-08-15",
-        "time": "00:00",
-        "tz": "Asia/Kolkata",
-        "note": "Independence 15 Aug 1947",
-    },
-}
-
-_anchor_cache = {}
-
-
-def _utc_from_local(date_str, time_str, tz_name):
-    try:
-        tz = ZoneInfo(tz_name)
-    except ZoneInfoNotFoundError:
-        tz = ZoneInfo("Asia/Kolkata")
-    y, m, d = (int(x) for x in date_str.split("-"))
-    hh, mm = (int(x) for x in time_str.split(":"))
-    local = datetime.datetime(y, m, d, hh, mm, tzinfo=tz)
-    return local.astimezone(datetime.UTC).replace(tzinfo=None)
-
-
-def _anchor_nakshatra(anchor_key):
-    if anchor_key in _anchor_cache:
-        return _anchor_cache[anchor_key]
-    info = ANCHORS[anchor_key]
-    utc = _utc_from_local(info["date"], info["time"], info["tz"])
-    jul = _julday(utc)
-    planets, _ = positions(jul)
-    moon = next(p for p in planets if p["name"] == "Moon")
-    _anchor_cache[anchor_key] = moon["nakshatra"]
-    return _anchor_cache[anchor_key]
-
-
-def _julday(utc_dt):
-    import swisseph as swe
-    h = utc_dt.hour + utc_dt.minute / 60.0 + utc_dt.second / 3600.0
-    return swe.julday(utc_dt.year, utc_dt.month, utc_dt.day, h)
-
-
-WEEKDAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday",
-            "Saturday", "Sunday"]
-
-
-def _tithi_info(planets, tithi):
-    from sbc.nakshatra import moon_nature
-    group = GROUP_OF_TITHI.get(tithi, "Purna")
-    pk = paksha_of(tithi)
-    moon_n = moon_nature(tithi)
-    return {
-        "tithi": tithi,
-        "paksha": pk,
-        "group": group,
-        "group_weekdays": GROUP_WEEKDAYS[group],
-        "moon_note": (
-            "ashubha Moon (Krishna Ekadashi through Shukla Chaturthi)"
-            if moon_n == "malefic"
-            else "shubha Moon (Shukla Panchami through Krishna Dashami)"
-        ),
-    }
-
-
-def build_response(date_str, time_str, tz_name, anchor_key, school):
-    utc = _utc_from_local(date_str, time_str, tz_name)
-    jul = _julday(utc)
-    planets, ayanamsa = positions(jul)
-
-    sun = next(p for p in planets if p["name"] == "Sun")
-    moon = next(p for p in planets if p["name"] == "Moon")
-    tithi = tithi_of(sun["longitude"], moon["longitude"])
-    tithi_info = _tithi_info(planets, tithi)
-
-    planets = all_planets_with_natures(planets, tithi, sun["longitude"])
-
-    anchor = ANCHORS[anchor_key]
-    birth_nakshatra = _anchor_nakshatra(anchor_key)
-
-    grid = place_planets(GRID, planets)
-    vedha_map, ray_paths = compute_vedhas(planets, school=school)
-
-    # Analysis
-    analysis = analyze(planets, vedha_map, birth_nakshatra, school)
-
-    weekday = WEEKDAYS[datetime.date.fromisoformat(date_str).weekday()]
-
-    # mark points on grid
-    for pt in analysis["points"]:
-        cell = analysis["point_cells"][pt["name"]]
-        if cell:
-            r, c = cell
-            grid[r - 1][c - 1].setdefault("points", []).append(pt["name"])
-
-    for p in planets:
-        for hit in vedha_map[p["name"]]:
-            r, c = hit["row"], hit["col"]
-            cell = grid[r - 1][c - 1]
-            cell.setdefault("vedha", []).append({
-                "planet": p["name"],
-                "symbol": p["symbol"],
-                "nature": p["nature"],
-                "ray": hit["ray"],
-            })
-
-    rec = recommendation(analysis, anchor, date_str, weekday, tithi_info)
-    calendar_alert = reversal_alert(date_str, planets, tithi)
-    yoga_alerts = upcoming_yoga_alerts(date_str, time_str, tz_name)
-
-    # Get applicable trade setups for current confluence
-    trade_setups_data = []
-    if calendar_alert.get("confluence"):
-        from sbc.trade_setups import format_setup_for_display, setups_for_confluence
-        applicable = setups_for_confluence(calendar_alert["confluence"])
-        for setup in applicable:
-            trade_setups_data.append({
-                "name": setup.name,
-                "direction": setup.direction,
-                "trigger": setup.trigger,
-                "entry": setup.entry,
-                "stop": setup.stop,
-                "target": setup.target,
-                "sizing": setup.sizing,
-                "filters": setup.filters,
-                "historical": setup.historical,
-                "markets": setup.applicable_markets,
-                "timeframes": setup.timeframes,
-                "formatted": format_setup_for_display(setup),
-            })
-
-    # attach ray paths for drawing
-    for p in planets:
-        p["rays"] = ray_paths.get(p["name"], [])
-
-    def _serialize_cell(cell):
-        out = {
-            "row": cell["row"],
-            "col": cell["col"],
-            "type": cell["type"],
-            "label": cell["label"],
-            "weekdays": cell.get("weekdays"),
-        }
-        if "planets" in cell:
-            out["planets"] = [{
-                "name": p["name"],
-                "symbol": p["symbol"],
-                "nature": p["nature"],
-            } for p in cell["planets"]]
-        if "points" in cell:
-            out["points"] = cell["points"]
-        if "vedha" in cell:
-            out["vedha"] = cell["vedha"]
-        return out
-
-    return {
-        "date": date_str,
-        "time": time_str,
-        "timezone": tz_name,
-        "weekday": weekday,
-        "ayanamsa": round(ayanamsa, 4),
-        "school": school,
-        "anchor": {
-            "key": anchor_key,
-            "name": anchor["name"],
-            "note": anchor["note"],
-            "nakshatra": birth_nakshatra,
-        },
-        "tithi": tithi_info,
-        "planets": planets,
-        "grid": [[_serialize_cell(c) for c in row] for row in grid],
-        "points": analysis["points"],
-        "point_hits": analysis["point_hits"],
-        "per_point": analysis["per_point"],
-        "vedhas": summarize_vedhas(vedha_map, planets, analysis["points"]),
-        "sectors": sector_read(vedha_map, planets),
-        "planet_sectors": planet_sector_read(planets),
-        "score": analysis["score"],
-        "net": analysis["net"],
-        "sentiment": {"verdict": rec["verdict"], "strength": rec["strength"]},
-        "recommendation": rec,
-        "market_alert": calendar_alert,
-        "yoga_alerts": yoga_alerts,
-        "trade_setups": trade_setups_data,
-    }
 
 # Boot the app: DB schema, Jinja reload, series warm-up
 boot(app, build_response)
@@ -858,8 +636,12 @@ def crash_score_series():
                 score, reasons, _ = _bearish_future_score(_julian_at_noon(ds))
                 _crash_series_cache[ds] = {"date": ds, "score": score,
                                            "reasons": reasons}
-            except Exception as exc:
-                _crash_series_cache[ds] = {"date": ds, "error": str(exc)}
+            except Exception:
+                # Log, and don't cache the failure: the next request retries.
+                app.logger.exception("crash score failed for %s", ds)
+                out.append({"date": ds, "error": "unavailable"})
+                d += datetime.timedelta(days=1)
+                continue
         out.append(_crash_series_cache[ds])
         d += datetime.timedelta(days=1)
     return jsonify({"series": out})
@@ -1296,8 +1078,8 @@ def api_habits_log():
         conn.commit()
         conn.close()
         return jsonify({"status":"logged"})
-    except Exception as e:
-        return jsonify({"error":str(e)}),500
+    except Exception:
+        return internal_error()
 
 
 @app.route("/api/habits/streaks", methods=["GET"])
@@ -1326,8 +1108,8 @@ def api_habits_streaks():
                     cur_day -= dt.timedelta(days=1)
             result[h] = {"streak": streak, "last": dates[0] if dates else None, "count": len(dates_set)}
         return jsonify(result)
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
+    except Exception:
+        return internal_error()
 
 # Astro Research Lab API endpoints
 
@@ -1370,8 +1152,8 @@ def api_habits_history():
         for h,d,c in rows:
             history.setdefault(h, {})[d] = c
         return jsonify(history)
-    except Exception as e:
-        return jsonify({"error":str(e)}),500
+    except Exception:
+        return internal_error()
 
 
 @app.route("/api/habits/summary", methods=["GET"])
@@ -1385,8 +1167,8 @@ def api_habits_summary():
         conn.close()
         summary = dict(rows)
         return jsonify(summary)
-    except Exception as e:
-        return jsonify({"error":str(e)}),500
+    except Exception:
+        return internal_error()
 
 
 @app.route("/webhook/sbc", methods=["POST"])
@@ -1403,8 +1185,8 @@ def webhook_sbc():
         with open("data/latest_sbc_signal.json", "w") as f:
             json.dump(data, f)
         return jsonify({"status":"ok","received":data})
-    except Exception as e:
-        return jsonify({"error":str(e)}),500
+    except Exception:
+        return internal_error()
 
 @app.route("/api/vedha_daily", methods=["GET"])
 def api_vedha_daily():
@@ -1504,8 +1286,8 @@ def api_vedha_daily():
             out.append({"date":d.isoformat(),"score":None,"nakshatra_idx":None,"source":"missing"})
             d += datetime.timedelta(days=1)
         return jsonify(out)
-    except Exception as e:
-        return jsonify({"error":str(e)}),500
+    except Exception:
+        return internal_error()
 
 
 @app.route("/api/price", methods=["GET"])
@@ -1568,8 +1350,8 @@ def api_price():
             except Exception:
                 continue
         return jsonify(candles)
-    except Exception as e:
-        return jsonify({"error":str(e)}),500
+    except Exception:
+        return internal_error()
 
 
 @app.route("/api/sbc/latest", methods=["GET"])
@@ -1583,8 +1365,8 @@ def api_sbc_latest():
                 data = json.load(f)
             return jsonify(data)
         return jsonify({})
-    except Exception as e:
-        return jsonify({"error":str(e)}),500
+    except Exception:
+        return internal_error()
 
 
 
@@ -1599,8 +1381,8 @@ def api_astro_profile_export():
         conn.close()
         export = [{"id": r[0], "data": json.loads(r[1]), "created_at": r[2], "name": r[3], "is_default": bool(r[4])} for r in rows]
         return jsonify(export)
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
+    except Exception:
+        return internal_error()
 
 
 @app.route("/api/astro/profile/import", methods=["POST"])
@@ -1623,8 +1405,8 @@ def api_astro_profile_import():
         conn.commit()
         conn.close()
         return jsonify({"imported": imported})
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
+    except Exception:
+        return internal_error()
 
 
 @app.route("/api/astro/profile", methods=["POST"])
@@ -1641,8 +1423,8 @@ def api_astro_profile_save():
         pid = cur.lastrowid
         conn.close()
         return jsonify({"id": pid, "status": "saved"})
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
+    except Exception:
+        return internal_error()
 
 
 @app.route("/api/astro/profile/<int:pid>", methods=["PUT"])
@@ -1657,8 +1439,8 @@ def api_astro_profile_update(pid):
         conn.commit()
         conn.close()
         return jsonify({"status":"updated"})
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
+    except Exception:
+        return internal_error()
 
 
 @app.route("/api/astro/profile/<int:pid>/default", methods=["POST"])
@@ -1671,8 +1453,8 @@ def api_astro_profile_set_default(pid):
         conn.commit()
         conn.close()
         return jsonify({"status":"default_set"})
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
+    except Exception:
+        return internal_error()
 
 
 @app.route("/api/astro/profile/<int:pid>", methods=["DELETE"])
@@ -1684,8 +1466,8 @@ def api_astro_profile_delete(pid):
         conn.commit()
         conn.close()
         return jsonify({"status":"deleted"})
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
+    except Exception:
+        return internal_error()
 
 
 @app.route("/api/astro/profile", methods=["GET"])
@@ -1699,8 +1481,8 @@ def api_astro_profile_load():
         conn.close()
         profiles = [{"id": r[0], "data": json.loads(r[1]), "created_at": r[2], "name": r[3], "is_default": bool(r[4])} for r in rows]
         return jsonify(profiles)
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
+    except Exception:
+        return internal_error()
 
 
 @app.route("/api/tz/offset", methods=["GET"])
@@ -1723,8 +1505,10 @@ def api_tz_offset():
         hours = total_minutes // 60
         mins = abs(total_minutes % 60)
         return jsonify({"tz": tz_name, "offset_minutes": total_minutes, "offset_hours": hours, "offset_mins": mins if total_minutes>=0 else -mins})
-    except Exception as e:
-        return jsonify({"error": str(e)}),500
+    except (ValueError, KeyError):  # malformed date/time, unknown tz (ZoneInfoNotFoundError)
+        return jsonify({"error": "invalid tz, date or time"}), 400
+    except Exception:
+        return internal_error()
 
 
 @app.route("/api/tz/from_coords", methods=["GET"])
@@ -1738,8 +1522,10 @@ def api_tz_from_coords():
         if not tz_name:
             return jsonify({"error": "timezone not found"}), 404
         return jsonify({"timezone": tz_name, "lat": lat, "lon": lon})
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
+    except ValueError:  # non-numeric or out-of-range lat/lon
+        return jsonify({"error": "invalid lat/lon"}), 400
+    except Exception:
+        return internal_error()
 
 
 @app.route("/api/daily_confluence", methods=["GET"])
@@ -1865,8 +1651,8 @@ def api_gann_turbo_zones():
             "stop_loss": mid * 0.99
         }
         return jsonify({"ticker":ticker,"zones":zones,"high":high,"low":low})
-    except Exception as e:
-        return jsonify({"error":str(e)}),500
+    except Exception:
+        return internal_error()
 
 
 @app.route("/api/gann/precision", methods=["GET"])
@@ -1900,8 +1686,8 @@ def api_gann_precision():
             "levels":levels,
             "zones":zones,
         })
-    except Exception as e:
-        return jsonify({"error":str(e)}),500
+    except Exception:
+        return internal_error()
 
 
 @app.route("/api/astro/cycles", methods=["GET"])
@@ -1943,8 +1729,8 @@ def api_astro_cycles():
         })
     except ValueError as e:
         return jsonify({"error": str(e)}), 400
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
+    except Exception:
+        return internal_error()
 
 
 @app.route("/api/expiry/range", methods=["GET"])
@@ -1987,8 +1773,8 @@ def api_expiry_range():
         })
     except ValueError as e:
         return jsonify({"error": str(e)}), 400
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
+    except Exception:
+        return internal_error()
 
 
 @app.route("/api/expiry/backtest", methods=["GET"])
@@ -2009,8 +1795,8 @@ def api_expiry_backtest():
         return jsonify(result), 200
     except ValueError as e:
         return jsonify({"error": str(e)}), 400
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
+    except Exception:
+        return internal_error()
 
 
 @app.route("/api/gann/indicators", methods=["GET"])
@@ -2041,8 +1827,8 @@ def api_gann_indicators():
         return jsonify({"kind": kind, "ticker": ticker, "days": days, **result}), 200
     except ValueError as e:
         return jsonify({"error": str(e)}), 400
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
+    except Exception:
+        return internal_error()
 
 
 @app.route("/api/astrogann/signal", methods=["GET"])
@@ -2062,8 +1848,8 @@ def api_astrogann_signal():
         return jsonify(result), 200
     except ValueError as e:
         return jsonify({"error": str(e)}), 400
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
+    except Exception:
+        return internal_error()
 
 
 @app.route("/api/signal/moon", methods=["GET"])
@@ -2092,8 +1878,8 @@ def api_signal_moon():
             trend=RASHI_TREND.get(rashi)
             signals.append({"date":d.isoformat(),"rashi":rashi,"trend":trend,"close":float(df.loc[idx,'Close'])})
         return jsonify({"ticker":ticker,"signals":signals})
-    except Exception as e:
-        return jsonify({"error":str(e)}),500
+    except Exception:
+        return internal_error()
 
 
 @app.route("/api/backtest/walkforward", methods=["GET"])
@@ -2153,8 +1939,8 @@ def api_backtest_walkforward():
             results.append({"train_start":cur.isoformat(),"test_end":test_end.isoformat(),"samples":total,"accuracy":acc})
             cur=cur+datetime.timedelta(days=step)
         return jsonify({"ticker":ticker,"results":results})
-    except Exception as e:
-        return jsonify({"error":str(e)}),500
+    except Exception:
+        return internal_error()
 
 
 def _research_lunar_rows(ticker, start, end, horizon):
@@ -2624,9 +2410,13 @@ def api_backtest_moon():
                 results.append({"date":d.isoformat(),"expected":expected,"actual":actual,"match":bool(match)})
         acc=correct/total if total else 0
         return jsonify({"ticker":ticker,"samples":total,"correct":correct,"accuracy":acc,"results":results})
-    except Exception as e:
-        return jsonify({"error":str(e)}),500
+    except Exception:
+        return internal_error()
 
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=8801, debug=False)
+    # Bare server on the same port as run_app.py, gunicorn and Docker. Use
+    # run_app.py for the cache warm-up, forecast ledger loop and CLI flags.
+    # Nothing under sbc/ imports `app`, so running this file as __main__ no
+    # longer loads it a second time (which used to create two Flask apps).
+    app.run(host="127.0.0.1", port=8000, debug=False)

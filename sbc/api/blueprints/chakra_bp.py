@@ -3,7 +3,9 @@
 import datetime
 from datetime import UTC
 
-from flask import Blueprint, jsonify, request
+from flask import Blueprint, current_app, jsonify, request
+
+from sbc.api.errors import internal_error
 
 chakra_bp = Blueprint('chakra', __name__, url_prefix='')
 
@@ -113,8 +115,9 @@ def bhadra_overlap_result(date_str, tz_name, offset):
             overlap["overlap_count"] = sum(
                 1 for d in overlap["reversal_days"] if d["bhadra_overlap"])
             result["reversal_overlap"] = overlap
-        except Exception as exc:
-            result["reversal_overlap"] = {"error": str(exc)}
+        except Exception:
+            current_app.logger.exception("bhadra/reversal overlap failed")
+            result["reversal_overlap"] = {"error": "unavailable"}
 
     return result
 
@@ -163,7 +166,7 @@ def _bhadra_for_day(date_str, tz_name):
 
 @chakra_bp.route('/api/astro/personal')
 def api_astro_personal():
-    from app import _julday, _utc_from_local, build_response
+    from sbc.engine import _julday, _utc_from_local, build_response
     from sbc.planets import positions
     date_str = request.args.get("date")
     time_str = request.args.get("time") or "09:15"
@@ -228,5 +231,5 @@ def api_astro_personal():
             "sector_reads": market_confluence["sectors"],
             "planets": planets,
         })
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
+    except Exception:
+        return internal_error()
