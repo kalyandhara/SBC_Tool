@@ -29,6 +29,7 @@ import numpy as np
 
 from sbc import analog_validation as av
 from sbc import analogs as an
+from sbc import factors as fx
 from sbc import fingerprint_store, market_store, research_reports
 from sbc import stats as st
 from sbc.market_holidays import is_trading_day
@@ -135,6 +136,21 @@ def forecast(day: str, horizon: int = 5, history: an.History | None = None) -> d
         if ok:
             validated.append(rule.name)
 
+    factor_signals = fx.signals_for([fp])
+    for factor in fx.FACTORS:
+        grade = research_reports.result("factor_validation", factor.name, horizon)
+        extra = (grade or {}).get("beyond_market")
+        ok = bool(grade and grade.get("verdict") == "edge"
+                  and extra and extra.get("verdict") == "adds information")
+        value = factor_signals[factor.name][0]
+        components.append({"name": factor.name, "kind": factor.kind, "description": factor.description,
+                           "source": "factor",
+                           "lean": int(value) if factor.kind == "directional" else None,
+                           "flag": bool(value) if factor.kind == "event" else None,
+                           "validated": ok, **_summary(grade, extra)})
+        if ok:
+            validated.append(factor.name)
+
     for variant, weights in av.VARIANTS.items():
         res = an.find_analogs(history, fp, horizon, None, an.TOP_K, weights=weights)
         grade, extra, ok = _validated(variant, horizon, "analog_validation")
@@ -188,7 +204,11 @@ def _adjustment(component: dict, history: an.History, horizon: int, entry_index:
     n = history.usable_before(entry_index, horizon)
     dates = history.dates[:n]
     stored = {fp["date"]: fp for fp in fingerprint_store.get_range(dates[0], dates[-1])} if dates else {}
-    past = signals_for([stored.get(d) or fingerprint_store.get(d) for d in dates]).get(component["name"])
+    past_fps = [stored.get(d) or fingerprint_store.get(d) for d in dates]
+    if component.get("source") == "factor":
+        past = fx.signals_for(past_fps).get(component["name"])
+    else:
+        past = signals_for(past_fps).get(component["name"])
     if past is None:
         return 0.0
     fwd = history.fwd[horizon][:n]

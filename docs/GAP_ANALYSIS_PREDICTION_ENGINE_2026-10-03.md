@@ -133,6 +133,30 @@ decide on before Phase 4:
 | API | ✅ `GET /api/engine/forecast/card`, `GET /api/engine/calendar?start=&weeks=&format=json\|html\|md`, `GET /api/engine/calendar/reports[/<file>]` (only files the store lists are served) |
 | Not done | Monthly automatic re-validation (the `scripts/validate_*.py` runs take minutes; still manual). The async calendar job (G7) isn't needed: a 4-week build takes ~2 s. Pushing reports out (email) was left out, because it needs your consent per send |
 
+## Phase 6 status (branch `phase6-factors`)
+
+| Item | Status |
+|---|---|
+| G8 factors (`sbc/factors.py`) | ✅ 12 candidates, each with its direction written down before the first test: stations, graha yuddha (< 1°), Moon / planet out-of-bounds declination, ingress within ±1 day, eclipse within 1 day (all "bigger moves"), plus Mercury combust, Jupiter combust, Venus retrograde, 3+ retrogrades, Moon within 12° of a node (bearish) and Jupiter's dignity (as signed). Declination is computed in the module, so the fingerprint store needs no rebuild |
+| Factor test (`sbc/factor_validation.py`, `scripts/validate_factors.py`) | ✅ harness + incremental test in one report, as its own BH family. Event factors are tested on \|return\| after the controls, so they must beat VIX and recent volatility |
+| Forecast wiring | ✅ every factor is a forecast component with both verdicts. It moves the probability only if it shows an "edge" and "adds information". The daily ledger now builds each factor's live record |
+| Sector test (`sbc/sector_validation.py`, `scripts/validate_sectors.py`) | ✅ 67 findings from `sbc/sector_signals.py` (copper, coffee/tea, fertilizer, food, FMCG, agri-chem), graded on the years **before** 2021-08, which the fit never saw. 23 series in `market.db` via `refresh_market_data.py --research` (US futures and NSE stocks back to 2000–2010). A sector disclaimer in the scanner now states the result |
+| Sentiment / news | ⏸ not built. Free sources have no history: NSE serves FII/DII for the latest day only (accumulating in `market.db` since 2026-10-01), PCR has no free archive, and news sentiment needs a paid feed (decision 4: free only). FII/DII can enter the controls and be tested once it has ~2 years |
+
+### Result: nothing new holds up either
+
+- **Factors: 0 of 36** factor × horizon tests show an edge, and none adds information beyond the
+  market (`docs/research/factor_validation_2026-10-03.md`). Near-misses are
+  uncorrected p ≈ 0.025–0.05 out of 72 tests (36 per table), which is chance. Moon–node contact went the
+  traditional way, Jupiter's dignity went the wrong way (like Bradley), and q ≥ 0.44 everywhere.
+- **Sectors: 0 of 67** findings hold out of sample (`docs/research/sector_validation_2026-10-03.md`).
+  The test is measuring the right thing: in the fit window it reproduces the original signal
+  counts and win rates exactly (e.g. Jupiter → Sun on Hindustan Copper: 37 days, 65%; Mars →
+  Saturn on copper: 69 days, 70% / 100%). Before 2021-08 the same pairs average roughly zero.
+  Most of the hand-picked pairs were selection effects of a 5-year window.
+- Across the project that's **0 of 253** tests: Phase 2 rules 60, analogs 15, incremental 75,
+  factors 36, sectors 67.
+
 ## Target capability (the goal, restated as a pipeline)
 
 ```

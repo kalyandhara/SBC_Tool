@@ -52,7 +52,7 @@
     return `
       <div class="analog-table-wrap">
         <table class="analog-table cal-days">
-          <caption>Day by day. Rules: directional rules leaning up / down. Analogs: whole-sky, slow, medium, fast.</caption>
+          <caption>Day by day. Rules: directional rules and factors leaning up / down. Analogs: whole-sky, slow, medium, fast.</caption>
           <thead><tr><th scope="col">Day</th><th scope="col">Moon · tithi</th><th scope="col">Rules</th>
             <th scope="col">Analogs</th><th scope="col">Volatility flags</th><th scope="col">Sky events</th></tr></thead>
           <tbody>${rows}</tbody>

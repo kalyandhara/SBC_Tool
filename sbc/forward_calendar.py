@@ -230,7 +230,7 @@ def render_markdown(cal: dict) -> str:
     lines += ["", "## Day by day", "", "| " + " | ".join(COLUMNS) + " |", "|" + "---|" * len(COLUMNS)]
     for d in cal["days"]:
         lines.append("| " + " | ".join(c.replace("|", "/") for c in _day_cells(d)) + " |")
-    lines += ["", "Rules: how many of the directional rules lean up / down that day. Analogs: lean of the",
+    lines += ["", "Rules: how many directional rules and factors lean up / down that day. Analogs: lean of the",
               "whole-sky, slow, medium and fast analog sets (▲ up, ▼ down, · none).", "", f"_{cal['caveat']}_", ""]
     return "\n".join(lines)
 
@@ -272,7 +272,7 @@ def render_html(cal: dict) -> str:
         _table(["Week", "Sessions", "68% range at week end", "Sky events"], weeks),
         "<h2>Day by day</h2>",
         _table(COLUMNS, days, ["" if d["trading"] else "closed" for d in cal["days"]]),
-        "<p class='muted'>Rules: how many of the directional rules lean up / down that day. "
+        "<p class='muted'>Rules: how many directional rules and factors lean up / down that day. "
         "Analogs: lean of the whole-sky (O), slow (S), medium (M) and fast (F) analog sets.</p>",
         f"<p class='muted'><em>{html.escape(cal['caveat'])}</em></p></body></html>",
     ])

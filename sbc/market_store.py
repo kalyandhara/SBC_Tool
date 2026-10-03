@@ -39,6 +39,24 @@ SYMBOLS = {
     "INDIAVIX": ("^INDIAVIX", "2008-01-01"),
 }
 
+# Series for the sector-rule test (sbc.sector_validation): the instruments the
+# sector scenarios in sbc.sector_signals were fitted on. Fetched on demand by
+# scripts/refresh_market_data.py --research, not in the nightly refresh.
+RESEARCH_SYMBOLS = {
+    "HG": ("HG=F", "2000-01-01"), "KC": ("KC=F", "2000-01-01"), "FCX": ("FCX", "1995-01-01"),
+    "HINDCOPPER": ("HINDCOPPER.NS", "2000-01-01"),
+    "CHAMBLFERT": ("CHAMBLFERT.NS", "2000-01-01"), "COROMANDEL": ("COROMANDEL.NS", "2000-01-01"),
+    "GNFC": ("GNFC.NS", "2000-01-01"), "RCF": ("RCF.NS", "2000-01-01"), "NFL": ("NFL.NS", "2000-01-01"),
+    "DEEPAKFERT": ("DEEPAKFERT.NS", "2000-01-01"),
+    "SB": ("SB=F", "2000-01-01"), "ZW": ("ZW=F", "2000-01-01"), "ZC": ("ZC=F", "2000-01-01"),
+    "ZR": ("ZR=F", "2000-01-01"),
+    "HINDUNILVR": ("HINDUNILVR.NS", "2000-01-01"), "ITC": ("ITC.NS", "2000-01-01"),
+    "NESTLEIND": ("NESTLEIND.NS", "2000-01-01"), "BRITANNIA": ("BRITANNIA.NS", "2000-01-01"),
+    "UPL": ("UPL.NS", "2000-01-01"), "PIIND": ("PIIND.NS", "2000-01-01"),
+    "RALLIS": ("RALLIS.NS", "2000-01-01"), "DHANUKA": ("DHANUKA.NS", "2000-01-01"),
+    "MCLEODRUSS": ("MCLEODRUSS.NS", "2000-01-01"),
+}
+
 NSE_FIIDII_URL = "https://www.nseindia.com/api/fiidiiTradeReact"
 _NSE_HEADERS = {
     "User-Agent": ("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
@@ -149,7 +167,7 @@ def refresh_daily(symbol: str, full: bool = False, now: dt.datetime | None = Non
     otherwise only the tail after the last stored date, re-fetching the last
     5 days so a revised bar replaces the provisional one.
     """
-    ticker, earliest = SYMBOLS[symbol]
+    ticker, earliest = SYMBOLS.get(symbol) or RESEARCH_SYMBOLS[symbol]
     last_settled = settled_date(now)
     first, last, _ = _span(symbol)
     if full or last is None:
@@ -223,6 +241,18 @@ def get_flows(start: str | None = None, end: str | None = None) -> list[dict]:
 
 
 # ── refresh + freshness ────────────────────────────────────────────────────
+
+def refresh_research(full: bool = False, now: dt.datetime | None = None) -> dict:
+    """Refresh the sector-test series (RESEARCH_SYMBOLS); one failure doesn't stop the rest."""
+    report: dict = {"daily": [], "errors": []}
+    for symbol in RESEARCH_SYMBOLS:
+        try:
+            report["daily"].append(refresh_daily(symbol, full=full, now=now))
+        except Exception as exc:
+            log.exception("research refresh failed for %s", symbol)
+            report["errors"].append(f"{symbol}: {type(exc).__name__}")
+    return report
+
 
 def refresh_all(full: bool = False, now: dt.datetime | None = None) -> dict:
     """Refresh every symbol and the flows; one failure doesn't stop the rest."""

@@ -19,8 +19,9 @@ from .chakra import NAKSHATRA_CELL
 from .planets import positions
 from .prediction import compute_vedhas
 
-DISCLAIMER = ("Historical backtest stats 2021-08..2026-08; small samples on some pairs. "
-              "Research aid only - not investment advice.")
+DISCLAIMER = ("Historical backtest stats 2021-08..2026-08 (the window these pairs were picked on). "
+              "Tested on the years before 2021-08, none of the 67 findings held up "
+              "(docs/research/sector_validation_*.md). Research aid only - not investment advice.")
 
 SCAN_AHEAD_DAYS = 21
 

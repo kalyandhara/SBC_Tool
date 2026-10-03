@@ -11,7 +11,8 @@ from functools import lru_cache
 from pathlib import Path
 
 REPORT_DIR = Path(__file__).resolve().parent.parent / "docs" / "research"
-PREFIXES = ("rule_validation", "analog_validation", "incremental_validation")
+PREFIXES = ("rule_validation", "analog_validation", "incremental_validation", "factor_validation",
+            "sector_validation")
 
 
 @lru_cache(maxsize=8)
