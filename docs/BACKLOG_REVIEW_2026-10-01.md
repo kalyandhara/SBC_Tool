@@ -40,6 +40,46 @@ code and tech debt · **P3** = hygiene.
 
 | **B-37** Phantom KP vedha school (new) | ✅ removed from fingerprint and README (2026-10-03, `phase2-stats`) |
 | **B-38** `_nakshatra_bullish` misspells U.Phalguni (new) | ⬜ open |
+| **B-39** Astro-quant swing windows: heliocentric aspect ENTRY + Gann/Fib/indicator EXIT (new) | ⬜ open (feature request 2026-10-03) |
+
+### B-39 · Astro-quant swing-window model (P2, new feature request 2026-10-03)
+**Request:** planetary aspects mark ENTRY (hypothetical reversal zones), technical
+confluence marks EXIT (profit-booking zone), and both are plotted as vertical lines on a
+TradingView NIFTY chart.
+
+**What exists today:** geocentric sidereal aspects in `sbc/fingerprint.py`. There are no
+heliocentric positions (no `FLG_HELCTR`) and no minor aspects (quincunx, sesquiquadrate).
+Semi-square appears only in `lunar_forecast.py`. There are no Gann or Fibonacci levels and
+no TradingView export.
+
+**Scope:**
+1. **ENTRY layer:** `sbc/helio_aspects.py`.
+   - Heliocentric Earth vs Mercury…Pluto, scanned hourly over a date range.
+   - Aspects: 0, 180, 120, 90, 60, 150, 45 and 135°, orb ±2°.
+   - Each window yields `{pair, aspect, entry_ts, exact_ts, exit_ts}` in IST, refined by bisection from the 60-minute step.
+   - Filters by planet and aspect code (CONJ/OPP/TRI/SQ/SXT/QCX/SS/SSQ).
+   - Earth's heliocentric longitude is the geocentric Sun + 180°. Tropical vs sidereal is a parameter, and must not matter for aspects between two bodies.
+2. **Chart payload:** `GET /api/engine/aspect_windows?start=&end=&planet=&aspect=&format=tv`.
+   - Returns `{"dates": [...], "label": "<code>", "skip_holidays": false}`, with dates sorted ascending.
+   - Add a Pine Script indicator under `tools/tradingview/` that draws vertical lines from pasted dates. Pine has no HTTP fetch, so the dates are embedded or pasted as input.
+3. **EXIT layer:** `sbc/swing_exit.py`, run on `market.db` daily bars after each ENTRY.
+   - Gann: Square-of-9 levels, 1x1/2x1/4x1 angles from the entry pivot, and 30/45/60/90/180-day time counts.
+   - Fibonacci: retracements and extensions of the swing leading into ENTRY.
+   - Indicators: RSI 70/30 and divergence, MACD opposite cross or histogram flip, EMA20 break, volume spike (≥2× the 20-day average; NIFTY index volume from yfinance is patchy).
+   - EXIT is the first bar where a Gann hit, a Fib hit and an indicator signal coincide. Each rule needs a precise definition, including the tolerance band and the lookback for "swing", plus a max-hold fallback.
+4. **Output:** an ENTRY→EXIT window list sorted by date, with direction, the move, max adverse excursion and the triggers that fired. Show it in the UI as a table plus chart markers, labelled hypothetical.
+
+**Validation gate (mandatory before any "highly useful" claim):**
+- Grade the ENTRY dates through `sbc/stats.py` like every other rule. Measure absolute 5/20-day move and reversal frequency against circular-shifted dates, then apply BH across pair×aspect combinations. Run `sbc/incremental.py` against the market controls.
+- Back-test the EXIT layer against simple exits (fixed N-day hold, EMA20 break alone, ATR stop) on the same entries, and against random entries with the same EXIT rules. That separates the value of the timing from the value of the exit.
+- Phase 2 found 0/60 rule tests with an edge, including aspect-based Bradley. Expect the same until shown otherwise.
+- Add each pair×aspect as a component in `sbc/forecast.py` and the daily ledger, so it builds a live record.
+
+**Open decisions:**
+- Heliocentric (as requested) or also geocentric?
+- Which pairs are the default set?
+- Daily or intraday bars for EXIT?
+- Strict 3-way confluence, or any 2 of 3?
 
 ### B-36 · mypy reports 231 errors (P3, new)
 `mypy sbc/ app.py --ignore-missing-imports`: 68 assignment, 62 var-annotated, 31
