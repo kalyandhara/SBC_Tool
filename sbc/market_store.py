@@ -50,6 +50,10 @@ _NSE_HEADERS = {
 _lock = threading.Lock()
 
 
+class MarketDataMissing(RuntimeError):
+    """market.db has no bars for a symbol the caller needs."""
+
+
 def _conn():
     DB_PATH.parent.mkdir(parents=True, exist_ok=True)
     conn = sqlite3.connect(str(DB_PATH), timeout=10)

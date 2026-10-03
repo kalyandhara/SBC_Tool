@@ -3191,3 +3191,22 @@ a:focus-visible,
 .ifc-ledger th:first-child, .ifc-ledger td:first-child { text-align: left; }
 .ifc-ledger .beats { color: var(--green); } .ifc-ledger .lags { color: var(--red); }
 @media (max-width: 700px) { .ifc-chart { height: 520px; } }
+
+/* Analog Lab */
+.analog-banner { border: 1px solid var(--accent); border-radius: 8px; padding: 10px 12px; margin-bottom: 12px; font-size: 13px; color: var(--text); background: var(--panel2); }
+.analog-banner strong { color: var(--accent); }
+.analog-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 12px; margin: 12px 0; }
+.analog-card { border: 1px solid var(--line); border-radius: 8px; padding: 12px; background: var(--panel2); }
+.analog-card h3 { font-size: 13px; margin-bottom: 8px; }
+.analog-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 8px 12px; margin: 0; }
+.analog-stats dt { color: var(--muted); font-size: 11px; }
+.analog-stats dd { margin: 0; font-size: 13px; font-variant-numeric: tabular-nums; }
+.analog-note { color: var(--muted); font-size: 12px; margin-top: 8px; }
+.analog-lab .muted { color: var(--muted); font-size: 11px; }
+.analog-lab .pos { color: var(--green); }
+.analog-lab .neg { color: var(--red); }
+.analog-table-wrap { overflow-x: auto; max-width: 100%; }
+.analog-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+.analog-table caption { text-align: left; color: var(--muted); padding-bottom: 6px; }
+.analog-table th, .analog-table td { padding: 6px 8px; border-bottom: 1px solid var(--line); text-align: left; white-space: nowrap; }
+.analog-table td.num, .analog-table th:nth-child(n+2):not(:nth-child(7)) { text-align: right; font-variant-numeric: tabular-nums; }

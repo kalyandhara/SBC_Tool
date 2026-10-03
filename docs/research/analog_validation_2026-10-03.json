@@ -1,0 +1,466 @@
+{
+ "generated": "2026-10-03T11:27:02",
+ "fingerprint_version": "43d3f3f5276a",
+ "sample": {
+  "first": "2012-01-03",
+  "last": "2026-10-01",
+  "sessions": 3622
+ },
+ "horizons": [
+  1,
+  5,
+  20
+ ],
+ "n_permutations": 1000,
+ "k": 30,
+ "best_similarity": {
+  "analog_overall": {
+   "1": {
+    "median_best": 0.45174172078234265,
+    "max_best": 0.6009738924428104
+   },
+   "5": {
+    "median_best": 0.45174172078234265,
+    "max_best": 0.6009738924428104
+   },
+   "20": {
+    "median_best": 0.45174172078234265,
+    "max_best": 0.6009738924428104
+   }
+  },
+  "analog_slow": {
+   "1": {
+    "median_best": 0.8506907182539682,
+    "max_best": 0.9917966666666667
+   },
+   "5": {
+    "median_best": 0.8506907182539682,
+    "max_best": 0.9917966666666667
+   },
+   "20": {
+    "median_best": 0.8503666868686868,
+    "max_best": 0.9917966666666667
+   }
+  },
+  "analog_medium": {
+   "1": {
+    "median_best": 0.4609979814814814,
+    "max_best": 0.6614746666666667
+   },
+   "5": {
+    "median_best": 0.4609979814814814,
+    "max_best": 0.6614746666666667
+   },
+   "20": {
+    "median_best": 0.4609979814814814,
+    "max_best": 0.6614746666666667
+   }
+  },
+  "analog_fast": {
+   "1": {
+    "median_best": 0.6899825396825396,
+    "max_best": 0.9288671111111111
+   },
+   "5": {
+    "median_best": 0.6899825396825396,
+    "max_best": 0.9288671111111111
+   },
+   "20": {
+    "median_best": 0.6899825396825396,
+    "max_best": 0.9288671111111111
+   }
+  }
+ },
+ "results": [
+  {
+   "rule": "analog_overall",
+   "kind": "directional",
+   "source": "sbc.analogs",
+   "description": "Top-30 analogs on the blended sky (slow .35 / medium .35 / fast .30)",
+   "horizon": 1,
+   "n": 3622,
+   "n_long": 1816,
+   "n_short": 1806,
+   "status": "ok",
+   "excess": 0.00024112864975769447,
+   "hit_rate": 0.5149088901159581,
+   "baseline": 0.500098331534908,
+   "mean_long": 0.0007279256985555197,
+   "mean_short": 0.0002456647229578084,
+   "mean_all": 0.00048746094926521965,
+   "p": 0.14485514485514486,
+   "eras": {
+    "2012-2020": 0.00010346001927019975,
+    "2021-2026": 0.0004614701666411348
+   },
+   "years_right": 11,
+   "years": 15,
+   "q": 0.31040388183245327,
+   "verdict": "no edge"
+  },
+  {
+   "rule": "analog_slow",
+   "kind": "directional",
+   "source": "sbc.analogs",
+   "description": "Top-30 analogs on the slow tier only (Jupiter, Saturn, nodes, outers)",
+   "horizon": 1,
+   "n": 3622,
+   "n_long": 1861,
+   "n_short": 1761,
+   "status": "ok",
+   "excess": -1.7494006252182256e-05,
+   "hit_rate": 0.4969630038652678,
+   "baseline": 0.50098331534908,
+   "mean_long": 0.00047043695930138195,
+   "mean_short": 0.0005054516621117285,
+   "mean_all": 0.00048746094926521965,
+   "p": 0.9250749250749251,
+   "eras": {
+    "2012-2020": -1.0192351580097865e-05,
+    "2021-2026": -3.177983393112425e-05
+   },
+   "years_right": 7,
+   "years": 15,
+   "q": 0.9250749250749251,
+   "verdict": "no edge"
+  },
+  {
+   "rule": "analog_medium",
+   "kind": "directional",
+   "source": "sbc.analogs",
+   "description": "Top-30 analogs on the medium tier only (Sun, Mercury, Venus, Mars)",
+   "horizon": 1,
+   "n": 3622,
+   "n_long": 1756,
+   "n_short": 1866,
+   "status": "ok",
+   "excess": -0.00016003671259867235,
+   "hit_rate": 0.48177802319160684,
+   "baseline": 0.498918353116012,
+   "mean_long": 0.0003224116972628303,
+   "mean_short": 0.0006427806097776504,
+   "mean_all": 0.00048746094926521965,
+   "p": 0.33666333666333664,
+   "eras": {
+    "2012-2020": -0.00038811688560749455,
+    "2021-2026": 0.00018067597522376463
+   },
+   "years_right": 6,
+   "years": 15,
+   "q": 0.5611055611055611,
+   "verdict": "no edge"
+  },
+  {
+   "rule": "analog_fast",
+   "kind": "directional",
+   "source": "sbc.analogs",
+   "description": "Top-30 analogs on the fast tier only (Moon, panchang, KP lords)",
+   "horizon": 1,
+   "n": 3622,
+   "n_long": 1823,
+   "n_short": 1799,
+   "status": "ok",
+   "excess": -0.00021460685499448732,
+   "hit_rate": 0.49088901159580345,
+   "baseline": 0.5002359956837792,
+   "mean_long": 0.00027426675596021875,
+   "mean_short": 0.0007034993119083639,
+   "mean_all": 0.00048746094926521965,
+   "p": 0.2047952047952048,
+   "eras": {
+    "2012-2020": -0.0002857281788865305,
+    "2021-2026": -0.00010075372392959192
+   },
+   "years_right": 4,
+   "years": 15,
+   "q": 0.383991008991009,
+   "verdict": "no edge"
+  },
+  {
+   "rule": "analog_random",
+   "kind": "directional",
+   "source": "sbc.analogs",
+   "description": "30 random eligible sessions (control; should show no edge)",
+   "horizon": 1,
+   "n": 3622,
+   "n_long": 1811,
+   "n_short": 1811,
+   "status": "ok",
+   "excess": -0.00032091736597410214,
+   "hit_rate": 0.48812810601877415,
+   "baseline": 0.5,
+   "mean_long": 0.00016654358329111762,
+   "mean_short": 0.0008083783152393217,
+   "mean_all": 0.00048746094926521965,
+   "p": 0.06893106893106893,
+   "eras": {
+    "2012-2020": -0.0002823743939238905,
+    "2021-2026": -0.00038128627326533207
+   },
+   "years_right": 3,
+   "years": 15,
+   "q": 0.20679320679320679,
+   "verdict": "no edge"
+  },
+  {
+   "rule": "analog_overall",
+   "kind": "directional",
+   "source": "sbc.analogs",
+   "description": "Top-30 analogs on the blended sky (slow .35 / medium .35 / fast .30)",
+   "horizon": 5,
+   "n": 3618,
+   "n_long": 1881,
+   "n_short": 1737,
+   "status": "ok",
+   "excess": -0.0011479493530041189,
+   "hit_rate": 0.4881149806522941,
+   "baseline": 0.5027282052974487,
+   "mean_long": 0.001324683953398094,
+   "mean_short": 0.0036242254071859013,
+   "mean_all": 0.002428692661311146,
+   "p": 0.04195804195804196,
+   "eras": {
+    "2012-2020": -0.002009697871885249,
+    "2021-2026": 0.00025090507714017245
+   },
+   "years_right": 2,
+   "years": 15,
+   "q": 0.15734265734265734,
+   "verdict": "no edge"
+  },
+  {
+   "rule": "analog_slow",
+   "kind": "directional",
+   "source": "sbc.analogs",
+   "description": "Top-30 analogs on the slow tier only (Jupiter, Saturn, nodes, outers)",
+   "horizon": 5,
+   "n": 3618,
+   "n_long": 2047,
+   "n_short": 1571,
+   "status": "ok",
+   "excess": -0.001647091582578595,
+   "hit_rate": 0.49364289662797123,
+   "baseline": 0.5090182341776774,
+   "mean_long": 0.0009731046432922505,
+   "mean_short": 0.004325311803822081,
+   "mean_all": 0.002428692661311146,
+   "p": 0.03696303696303696,
+   "eras": {
+    "2012-2020": -0.003373414994689308,
+    "2021-2026": 0.001139303370939087
+   },
+   "years_right": 4,
+   "years": 15,
+   "q": 0.15734265734265734,
+   "verdict": "no edge"
+  },
+  {
+   "rule": "analog_medium",
+   "kind": "directional",
+   "source": "sbc.analogs",
+   "description": "Top-30 analogs on the medium tier only (Sun, Mercury, Venus, Mars)",
+   "horizon": 5,
+   "n": 3618,
+   "n_long": 1800,
+   "n_short": 1818,
+   "status": "ok",
+   "excess": -0.00018663991187885536,
+   "hit_rate": 0.4994472084024323,
+   "baseline": 0.49965897433781886,
+   "mean_long": 0.0022411195498728965,
+   "mean_short": 0.0026144086132302044,
+   "mean_all": 0.002428692661311146,
+   "p": 0.7822177822177823,
+   "eras": {
+    "2012-2020": -0.0011742272506668192,
+    "2021-2026": 0.0013065879169288249
+   },
+   "years_right": 8,
+   "years": 15,
+   "q": 0.9025589794820565,
+   "verdict": "no edge"
+  },
+  {
+   "rule": "analog_fast",
+   "kind": "directional",
+   "source": "sbc.analogs",
+   "description": "Top-30 analogs on the fast tier only (Moon, panchang, KP lords)",
+   "horizon": 5,
+   "n": 3618,
+   "n_long": 1874,
+   "n_short": 1744,
+   "status": "ok",
+   "excess": -0.0003460138216432598,
+   "hit_rate": 0.49889441680486457,
+   "baseline": 0.5024629631157522,
+   "mean_long": 0.0020946803863097284,
+   "mean_short": 0.0027876026402977616,
+   "mean_all": 0.002428692661311146,
+   "p": 0.45354645354645357,
+   "eras": {
+    "2012-2020": 0.00011627095863361219,
+    "2021-2026": -0.0010474409011064325
+   },
+   "years_right": 6,
+   "years": 15,
+   "q": 0.6803196803196803,
+   "verdict": "no edge"
+  },
+  {
+   "rule": "analog_random",
+   "kind": "directional",
+   "source": "sbc.analogs",
+   "description": "30 random eligible sessions (control; should show no edge)",
+   "horizon": 5,
+   "n": 3618,
+   "n_long": 1857,
+   "n_short": 1761,
+   "status": "ok",
+   "excess": 4.3402091738410693e-05,
+   "hit_rate": 0.5074626865671642,
+   "baseline": 0.5018188035316323,
+   "mean_long": 0.0024709728896120534,
+   "mean_short": 0.002384107548332847,
+   "mean_all": 0.002428692661311146,
+   "p": 0.9120879120879121,
+   "eras": {
+    "2012-2020": -0.000519900758422098,
+    "2021-2026": 0.0009179883312374438
+   },
+   "years_right": 10,
+   "years": 15,
+   "q": 0.9250749250749251,
+   "verdict": "no edge"
+  },
+  {
+   "rule": "analog_overall",
+   "kind": "directional",
+   "source": "sbc.analogs",
+   "description": "Top-30 analogs on the blended sky (slow .35 / medium .35 / fast .30)",
+   "horizon": 20,
+   "n": 3603,
+   "n_long": 2131,
+   "n_short": 1472,
+   "status": "ok",
+   "excess": -0.005139367722369082,
+   "hit_rate": 0.47765750763252846,
+   "baseline": 0.5213970779739244,
+   "mean_long": 0.005387213547146918,
+   "mean_short": 0.016021710753088447,
+   "mean_all": 0.009731920704278736,
+   "p": 0.02097902097902098,
+   "eras": {
+    "2012-2020": -0.00921329864251746,
+    "2021-2026": 0.0015709158619764396
+   },
+   "years_right": 2,
+   "years": 15,
+   "q": 0.15734265734265734,
+   "verdict": "no edge"
+  },
+  {
+   "rule": "analog_slow",
+   "kind": "directional",
+   "source": "sbc.analogs",
+   "description": "Top-30 analogs on the slow tier only (Jupiter, Saturn, nodes, outers)",
+   "horizon": 20,
+   "n": 3603,
+   "n_long": 2063,
+   "n_short": 1540,
+   "status": "ok",
+   "excess": -0.006523260996738664,
+   "hit_rate": 0.4665556480710519,
+   "baseline": 0.5169812925346927,
+   "mean_long": 0.00403552967876991,
+   "mean_short": 0.01736286530533374,
+   "mean_all": 0.009731920704278736,
+   "p": 0.028971028971028972,
+   "eras": {
+    "2012-2020": -0.009968089518252983,
+    "2021-2026": -0.0006672488563262555
+   },
+   "years_right": 2,
+   "years": 15,
+   "q": 0.15734265734265734,
+   "verdict": "no edge"
+  },
+  {
+   "rule": "analog_medium",
+   "kind": "directional",
+   "source": "sbc.analogs",
+   "description": "Top-30 analogs on the medium tier only (Sun, Mercury, Venus, Mars)",
+   "horizon": 20,
+   "n": 3603,
+   "n_long": 1816,
+   "n_short": 1787,
+   "status": "ok",
+   "excess": -0.0005709377966316403,
+   "hit_rate": 0.5084651679156259,
+   "baseline": 0.500941601306895,
+   "mean_long": 0.009165541607014473,
+   "mean_short": 0.01030749118028987,
+   "mean_all": 0.009731920704278736,
+   "p": 0.7772227772227772,
+   "eras": {
+    "2012-2020": -0.0024106354664322686,
+    "2021-2026": 0.0024063557299431205
+   },
+   "years_right": 9,
+   "years": 15,
+   "q": 0.9025589794820565,
+   "verdict": "no edge"
+  },
+  {
+   "rule": "analog_fast",
+   "kind": "directional",
+   "source": "sbc.analogs",
+   "description": "Top-30 analogs on the fast tier only (Moon, panchang, KP lords)",
+   "horizon": 20,
+   "n": 3603,
+   "n_long": 1912,
+   "n_short": 1691,
+   "status": "ok",
+   "excess": -0.0017022998149171511,
+   "hit_rate": 0.48404107688037745,
+   "baseline": 0.5071756513387515,
+   "mean_long": 0.00812800171025507,
+   "mean_short": 0.011545458916326782,
+   "mean_all": 0.009731920704278736,
+   "p": 0.13486513486513488,
+   "eras": {
+    "2012-2020": -0.0019086363730973714,
+    "2021-2026": -0.00135407943619962
+   },
+   "years_right": 8,
+   "years": 15,
+   "q": 0.31040388183245327,
+   "verdict": "no edge"
+  },
+  {
+   "rule": "analog_random",
+   "kind": "directional",
+   "source": "sbc.analogs",
+   "description": "30 random eligible sessions (control; should show no edge)",
+   "horizon": 20,
+   "n": 3603,
+   "n_long": 1821,
+   "n_short": 1782,
+   "status": "ok",
+   "excess": 0.0002316270631134233,
+   "hit_rate": 0.5031917846239246,
+   "baseline": 0.5012662914127208,
+   "mean_long": 0.009961067411691603,
+   "mean_short": 0.009497759001585789,
+   "mean_all": 0.009731920704278736,
+   "p": 0.7392607392607392,
+   "eras": {
+    "2012-2020": 0.0005503799442282658,
+    "2021-2026": -0.00031534515693893784
+   },
+   "years_right": 9,
+   "years": 15,
+   "q": 0.9025589794820565,
+   "verdict": "no edge"
+  }
+ ]
+}

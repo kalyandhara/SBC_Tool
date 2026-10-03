@@ -66,6 +66,38 @@ inside `run_app.py`, and `scripts/refresh_market_data.py` also works from Window
 - **B-38** `sbc.backtest._nakshatra_bullish` lists `"Uttara Phalguni"`, but the codebase spells
   it `"U.Phalguni"`, so that star never fires (left unchanged; the rule isn't in the tested set).
 
+## Phase 3 status (branch `phase3-analogs`)
+
+| Item | Status |
+|---|---|
+| `sbc/analogs.py` | ✅ tiered similarity (per planet: sign, nakshatra, longitude within 30°, direction; aspect sets by Jaccard; fast tier adds tithi, yoga, weekday/hora lord, KP sub lords), blended overall score, top-K or ≥ threshold, analogs ≥ 5 sessions apart, **no lookahead** (only sessions whose outcome was complete by the previous close) |
+| Walk-forward (`sbc/analog_validation.py`, `scripts/validate_analogs.py`) | ✅ every session 2012-01 → 2026-10 (3,622) forecast from its top-30 analogs, graded by the Phase 2 harness → `docs/research/analog_validation_2026-10-03.md` |
+| API | ✅ `GET /api/engine/analogs?date=&horizon=1|5|20&variant=overall|slow|medium|fast&k=&min_similarity=`; each response carries the walk-forward track record and `status: experimental` |
+| Analog Lab tab | ✅ Advanced analysis → Analog Lab: outcome stats against all sessions, the setting's track record, and an analogs table (age, tier similarities, shared signs, +1/+5/+20 outcomes). Checked at desktop and phone width |
+
+### Result: no analog variant has an edge, and "90% similar" days don't exist
+
+- **Whole-sky similarity tops out at 60%** over 2007–2026 (median best match 45%). Nothing
+  comes near 90%, because 12 bodies don't repeat their configuration within decades. The
+  engine therefore reports the actual best-match similarity and uses the top 30. The 90%
+  threshold remains available and falls back to top-K.
+- **0 of 15** variant × horizon tests show an edge. The random-analog control is clean.
+- The near-misses (whole sky and slow tier at 5/20d, q 0.16) are wrong-way and turn out
+  to be a **recency confound**: their analogs are a median 0.4–1.0 years old, because the slow
+  sky barely changes within a year. "Follow the analogs" then means "follow the trailing
+  trend", which mean-reverted in 2012–2020. That isn't an astrological effect.
+- The cross-year variants (medium and fast tiers, analogs a median 5–6 years old) are the
+  real "same sky, same market" test. They show nothing (hit rate 49–50% vs 50% by chance).
+
+### What this means for Phases 4–5
+Neither the rules nor the analogs earn weight in a forecast on this evidence. Options to
+decide on before Phase 4:
+1. Build the forecast/ledger anyway as an **honest research instrument**: it shows the evidence
+   and the track record, and keeps scoring live forecasts in case something emerges out of sample.
+2. Add the market-side inputs (VIX regime, FII/DII flows, trend) as **controls**: test whether
+   any astro factor adds information *beyond* them, the only way an astro edge could hide here.
+3. Pre-register specific hypotheses (e.g. contrarian Bradley) and let the live ledger judge.
+
 ## Target capability (the goal, restated as a pipeline)
 
 ```

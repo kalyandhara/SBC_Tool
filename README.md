@@ -221,6 +221,7 @@ GET  /api/research/cycles?start=...&end=...
 GET  /api/engine/market/freshness
 GET  /api/engine/fingerprint?date=YYYY-MM-DD[&vector=1]
 GET  /api/engine/fingerprint/status
+GET  /api/engine/analogs?date=&horizon=1|5|20&variant=overall|slow|medium|fast&k=30
 ```
 `data/market.db` holds NIFTY, SENSEX and India VIX daily bars (yfinance) and NSE
 FII/DII cash flows. `run_app.py` refreshes it after each close; the first backfill is
@@ -231,6 +232,12 @@ session only, so that series grows one day at a time.
 panchang, KP and SBC factor at 09:15 IST) for each day 1990–2035. Build or
 refresh it with `python scripts/build_fingerprints.py` (about 15 s). Rows are
 versioned by the astro code, so an engine change triggers a rebuild of the stale days.
+
+The **Analog Lab** tab (Advanced analysis) finds past NIFTY sessions with the most similar
+sky and shows what followed them, next to the engine's walk-forward track record.
+`python scripts/validate_rules.py` and `python scripts/validate_analogs.py` regenerate
+the validation reports in `docs/research/`. Neither the rules nor the analogs have shown
+an edge so far; treat every output as research, not advice.
 
 ### Profile Management
 ```

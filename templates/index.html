@@ -86,6 +86,9 @@
           <button class="nav-tab" data-tab="tab-balance" role="tab" aria-selected="false" aria-controls="tab-balance">
             <span class="tab-icon">⚖️</span> Monthly Projection
           </button>
+          <button class="nav-tab" data-tab="tab-analogs" role="tab" aria-selected="false" aria-controls="tab-analogs">
+            <span class="tab-icon">🔭</span> Analog Lab
+          </button>
         </div>
       </details>
     </div>
@@ -1156,6 +1159,42 @@
 
 
 
+    <div id="tab-analogs" class="tab-pane" role="tabpanel">
+      <section class="panel analog-lab">
+        <div class="panel-head">
+          <h2>Analog Lab</h2>
+          <span class="panel-sub">Past NIFTY sessions whose sky most resembles the chosen date, and what followed them.</span>
+        </div>
+        <div class="analog-banner" role="note">
+          <strong>Experimental: no validated edge.</strong>
+          In a walk-forward test over 2012–2026 no analog variant beat the market's own drift.
+          Shown for research. Not investment advice.
+        </div>
+        <form id="analog-form" class="research-controls">
+          <label>Date <input type="date" id="analog-date" required></label>
+          <label>Horizon
+            <select id="analog-horizon">
+              <option value="1">1 session</option>
+              <option value="5" selected>5 sessions</option>
+              <option value="20">20 sessions</option>
+            </select>
+          </label>
+          <label>Match on
+            <select id="analog-variant">
+              <option value="overall">Whole sky (blend)</option>
+              <option value="slow">Slow tier: Jupiter, Saturn, nodes</option>
+              <option value="medium">Medium tier: Sun, Mercury, Venus, Mars</option>
+              <option value="fast">Fast tier: Moon, panchang, KP</option>
+            </select>
+          </label>
+          <label>Analogs <input type="number" id="analog-k" value="30" min="5" max="100"></label>
+          <button type="submit" class="btn">Find analogs</button>
+        </form>
+        <div id="analog-status" class="nifty-chart-status" role="status" aria-live="polite"></div>
+        <div id="analog-results"></div>
+      </section>
+    </div>
+
     <!-- Global Disclaimer -->
     <p class="disclaimer">For study and research. Not financial advice. Financial markets involve substantial risk of loss. Trade on your own analysis.</p>
   </main>
@@ -1170,6 +1209,7 @@
   <script src="/static/app.js?v=34"></script>
   <script src="/static/intraday-projection.js?v=2"></script>
   <script src="/static/intraday-forecast.js?v=7"></script>
+  <script src="/static/js/analog-lab.js?v=1"></script>
   <script>
   document.addEventListener('DOMContentLoaded', function(){
     const cityInput = document.getElementById('bd-city');

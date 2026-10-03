@@ -196,6 +196,51 @@ def fingerprint():
     return jsonify(fp), 200
 
 
+@engine_bp.route("/analogs")
+def analogs():
+    """Past NIFTY sessions whose sky most resembles ?date (default today).
+
+    &horizon=1|5|20 (default 5), &variant=overall|slow|medium|fast,
+    &k=5..100 (default 30), &min_similarity=0..1 (optional; default top-k only).
+    Only sessions whose outcome was known before `date` are used.
+    """
+    from sbc import analog_validation as av
+    from sbc import analogs as an
+    from sbc import fingerprint_store
+
+    raw = request.args.get("date") or datetime.date.today().isoformat()
+    try:
+        day = datetime.date.fromisoformat(raw).isoformat()
+        horizon = int(request.args.get("horizon", "5"))
+        k = int(request.args.get("k", str(an.TOP_K)))
+        min_sim = request.args.get("min_similarity")
+        min_sim = float(min_sim) if min_sim not in (None, "") else None
+    except ValueError:
+        return jsonify({"error": "invalid date, horizon, k or min_similarity"}), 400
+    variant = request.args.get("variant", "overall")
+    if (horizon not in an.HORIZONS or f"analog_{variant}" not in av.VARIANTS
+            or not 5 <= k <= 100 or (min_sim is not None and not 0 <= min_sim <= 1)):
+        return jsonify({"error": f"horizon in {list(an.HORIZONS)}, variant in "
+                                 "overall/slow/medium/fast, k 5-100, min_similarity 0-1"}), 400
+
+    from sbc.market_store import MarketDataMissing
+    try:
+        history = an.load_nifty_history()
+    except MarketDataMissing:
+        return jsonify({"error": "no NIFTY history yet; run scripts/refresh_market_data.py --full"}), 404
+    result = an.find_analogs(history, fingerprint_store.get(day), horizon, min_sim, k,
+                             weights=av.VARIANTS[f"analog_{variant}"])
+    result.update({
+        "variant": variant,
+        "data_as_of": history.dates[-1],
+        "track_record": av.track_record(variant, horizon),
+        "status": "experimental",
+        "caveat": ("Research output, not investment advice. In the walk-forward test "
+                   "(2012-2026) no analog variant beat the market's drift after correction."),
+    })
+    return jsonify(result), 200
+
+
 @engine_bp.route("/fingerprint/status")
 def fingerprint_status():
     from sbc import fingerprint_store
