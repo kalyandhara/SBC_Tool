@@ -2,6 +2,7 @@
 
   python scripts/refresh_market_data.py            # tail refresh (daily use)
   python scripts/refresh_market_data.py --full     # re-download full history
+  python scripts/refresh_market_data.py --research # sector-test series (commodities, sector stocks)
 
 run_app.py does the tail refresh after each close; this script is for the
 first backfill and for Windows Task Scheduler if the app isn't running.
@@ -21,8 +22,14 @@ from sbc import market_store  # noqa: E402
 def main():
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("--full", action="store_true", help="re-download full history")
+    parser.add_argument("--research", action="store_true",
+                        help="refresh the sector-test series instead (sbc.sector_validation)")
     args = parser.parse_args()
 
+    if args.research:
+        report = market_store.refresh_research(full=args.full)
+        print(json.dumps(report, indent=2))
+        return 1 if report["errors"] else 0
     report = market_store.refresh_all(full=args.full)
     fresh = market_store.freshness()
     print(json.dumps({"refresh": report, "freshness": fresh}, indent=2))

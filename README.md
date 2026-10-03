@@ -246,6 +246,14 @@ the validation reports in `docs/research/`, and `python scripts/validate_increme
 tests whether any astro signal adds information beyond market controls (VIX, trend,
 volatility, calendar). None has so far; treat every output as research, not advice.
 
+New candidate factors (stations, combustion, planetary war, out-of-bounds declination,
+ingress and eclipse days, retrograde clusters, Moon–node contacts, Jupiter's dignity) live
+in `sbc/factors.py` with their direction fixed in advance; `python scripts/validate_factors.py`
+grades them, and one counts in the forecast only after passing both tests. The sector
+vedha scenarios are tested on the years before the window they were picked on:
+`python scripts/refresh_market_data.py --research --full` downloads the commodity and
+sector-stock series, then `python scripts/validate_sectors.py` writes the report.
+
 `/api/engine/forecast` combines all of it into one NIFTY forecast per session and
 horizon. Its probability stays at the historical base rate until a component passes
 both tests. `run_app.py` freezes it before each open into `data/daily_ledger.db` and
