@@ -63,8 +63,8 @@ def prediction_series():
 
     L2: rows already computed by a previous process / worker (SQLite).
     """
-    from app import ANCHORS, build_response
     from sbc import series_cache
+    from sbc.engine import ANCHORS, build_response
     start = request.args.get("start")
     end = request.args.get("end")
     anchor_key = request.args.get("anchor") or "nifty"

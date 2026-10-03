@@ -23,7 +23,7 @@ def reader_with(path_suffix, transform):
 def test_closure_covers_the_engine_and_skips_unrelated_modules():
     _, paths = ev.dependency_closure()
     files = rel(paths)
-    for must in ("sbc/prediction.py", "sbc/planets.py", "sbc/market_calendar.py",
+    for must in ("sbc/engine.py", "sbc/prediction.py", "sbc/planets.py", "sbc/market_calendar.py",
                  "sbc/muhurta.py", "sbc/kp_ephemeris.py", "sbc/nakshatra.py"):
         assert must in files, must
     for never in ("sbc/kp_docx.py", "sbc/kp_intraday.py", "sbc/forecast_ledger.py",
@@ -38,8 +38,8 @@ def test_version_is_stable():
 @pytest.mark.parametrize("suffix,edit", [
     ("sbc/muhurta.py", lambda t: t + "\n# engine tweak\n"),
     ("sbc/prediction.py", lambda t: t.replace("def place_planets", "def place_planets", 1) + "\nX = 1\n"),
-    ("app.py", lambda t: t.replace("def build_response(date_str, time_str, tz_name, anchor_key, school):",
-                                   "def build_response(date_str, time_str, tz_name, anchor_key, school):\n    pass", 1)),
+    ("sbc/engine.py", lambda t: t.replace("def build_response(date_str, time_str, tz_name, anchor_key, school):",
+                                          "def build_response(date_str, time_str, tz_name, anchor_key, school):\n    pass", 1)),
     ("sbc/api/blueprints/chart_bp.py", lambda t: t.replace('"lunar_phase": lunar_phase,',
                                                            '"lunar_phase": lunar_phase, "x": 1,', 1)),
 ])

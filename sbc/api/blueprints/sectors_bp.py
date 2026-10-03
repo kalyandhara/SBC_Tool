@@ -4,6 +4,8 @@ import datetime
 
 from flask import Blueprint, jsonify, request
 
+from sbc.api.errors import internal_error
+
 sectors_bp = Blueprint('sectors', __name__, url_prefix='')
 
 @sectors_bp.route('/api/monthly_heatmap')
@@ -23,8 +25,8 @@ def monthly_heatmap_endpoint():
         return jsonify({"error": "invalid date"}), 400
     try:
         result = monthly_heatmap(start_date=date_str, days=days, tz_name=tz_name, anchor_key=anchor)
-    except Exception as exc:
-        return jsonify({"error": str(exc)}), 500
+    except Exception:
+        return internal_error()
     return jsonify(result)
 
 @sectors_bp.route('/api/sector_vedha')

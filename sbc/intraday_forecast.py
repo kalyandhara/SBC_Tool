@@ -103,7 +103,7 @@ def _kp_minute(when: dt.datetime) -> dict:
 @lru_cache(maxsize=64)
 def _sbc_readings(day_iso: str) -> tuple:
     """SBC vedha net at session open and every hour after (hh:15)."""
-    from app import build_response  # late import: app imports blueprints
+    from sbc.engine import build_response
     readings = []
     t = dt.datetime.combine(dt.date.fromisoformat(day_iso), SESSION_OPEN)
     end = dt.datetime.combine(t.date(), SESSION_CLOSE)

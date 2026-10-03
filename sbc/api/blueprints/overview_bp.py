@@ -8,7 +8,7 @@ overview_bp = Blueprint('overview', __name__, url_prefix='')
 
 @overview_bp.route('/api/presets')
 def presets():
-    from app import ANCHORS
+    from sbc.engine import ANCHORS
     from sbc.nakshatra import NAKSHATRAS_27
     return jsonify({
         "anchors": [
@@ -31,7 +31,7 @@ def market_holidays():
 
 @overview_bp.route('/api/prediction')
 def prediction():
-    from app import ANCHORS, build_response
+    from sbc.engine import ANCHORS, build_response
     date_str = request.args.get("date") or datetime.date.today().isoformat()
     time_str = request.args.get("time", "09:15")
     tz_name = request.args.get("tz", "Asia/Kolkata")
