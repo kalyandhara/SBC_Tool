@@ -183,6 +183,7 @@ data/latest_sbc_signal.json
 data/series_cache.db
 data/forecast_ledger.db
 data/market.db
+data/fingerprints.db
 sbc/navamsa_pipeline/navamsa.db
 .playwright-mcp/
 

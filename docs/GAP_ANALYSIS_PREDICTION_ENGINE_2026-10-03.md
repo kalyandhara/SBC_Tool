@@ -22,6 +22,18 @@ inside `run_app.py`, and `scripts/refresh_market_data.py` also works from Window
 | B-10 placeholder research routes | ✅ the 10 routes, `research/` and `research_bp` are removed; the real dash-named routes stay |
 | NIFTY before 2007 | ⬜ yfinance starts 2007-09-17. niftyindices.com archives would add 1995–2007 (optional) |
 
+## Phase 1 status (branch `phase1-fingerprint`)
+
+| Item | Status |
+|---|---|
+| `sbc/fingerprint.py` | ✅ one call → every factor at 09:15 IST: 12 bodies (9 grahas + Uranus/Neptune/Pluto) with sign, nakshatra, pada, speed, retro, stationary, combust, dignity; angular aspects with orb and applying flag; Vedic drishti; panchang (tithi, yoga, karana, Vishti, weekday lord, hora lord); KP asc/Moon star and sub lords; SBC NIFTY vedha net ×3 schools; Bradley; eclipse distance |
+| Tiers | ✅ slow / medium / fast on every planet, aspect (tier of the faster planet) and feature |
+| `feature_vector()` | ✅ 460 named, tiered numbers (143 slow / 195 medium / 122 fast); fixed order across dates |
+| `data/fingerprints.db` | ✅ 16,801 days, 1990-01-01 → 2035-12-31, built in 13 s; rows versioned by `engine_version.module_version("sbc.fingerprint")` |
+| Validation | ✅ 2020-12-21 Jupiter–Saturn conjunction (orb 0.07°); retrograde shares Mercury 19.2%, Venus 7.3%, Mars 9.7%, Jupiter 30.5%, Saturn 36.2%; Vishti 13.3% (8 of 60 karanas); 2009-07-22 solar eclipse; Vishti matches `sbc.bhadra` |
+| API | ✅ `GET /api/engine/fingerprint?date=&vector=1`, `GET /api/engine/fingerprint/status` |
+| Not yet | ⬜ station dates as events, graha yuddha, declination (G8, after the stats harness) |
+
 ## Target capability (the goal, restated as a pipeline)
 
 ```
