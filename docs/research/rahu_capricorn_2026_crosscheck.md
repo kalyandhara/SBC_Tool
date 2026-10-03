@@ -1,4 +1,9 @@
-# Cross-check: "December 2026 Rahu–Ketu shift" video vs. ephemeris, history and the SBC tool
+# Cross-checks: astrology forecasts for late 2026 vs. ephemeris, history and the SBC tool
+
+- **Part 1:** "December 2026 Rahu–Ketu shift" video (2026-10-02)
+- **Part 2:** Q4 2026 transit predictions, Mars–Ketu in Leo (2026-10-03)
+
+# Part 1 · "December 2026 Rahu–Ketu shift" video
 
 Date: 2026-10-02. Conventions match the tool: sidereal Lahiri, mean node, Swiss Ephemeris (Moshier).
 Markets: S&P 500 (^GSPC, from 1950), NIFTY (^NSEI, from 2007-09), Sensex (^BSESN, from 1997), via yfinance.
@@ -80,3 +85,77 @@ The video's dates and its 18-year cycle are correct, and most of the historical 
 - **The tool's risk peak** (Jun–Aug 2027) comes from other transits: Saturn into Aries, the 2 Aug 2027 eclipse on Ketu, Jupiter in a Ketu nakshatra. The tool reads the Rahu–Pluto conjunction itself as calm.
 
 None of this is a basis for investment decisions.
+
+---
+
+# Part 2 · Q4 2026 transit predictions (Mars–Ketu in Leo)
+
+Date: 2026-10-03. Same conventions as Part 1. The source said "October to December
+(extending into early 2025)"; the dates only fit 2026, so "2025" is a typo.
+
+## Verdict
+
+| Claim | Check | Result |
+|---|---|---|
+| **Oct 17:** Sun enters debilitation (Libra); Sun–Venus–Mercury conjunction | Ephemeris | ✅ Sun enters Libra 17 Oct 19:52 IST. Mercury (Libra 24°) and Venus (Libra 10°, retrograde) are already there. |
+| **Oct 31:** Jupiter leaves exaltation (Cancer) for Leo, joins Ketu | Ephemeris | ✅ Jupiter enters Leo 31 Oct 12:05. Jupiter–Ketu exact 12 Nov; same sign until 5 Dec. |
+| **Nov 6:** Venus debilitated (Virgo) in Parivartan with Mercury | Ephemeris | ✅ Venus (retrograde) enters Virgo 6 Nov 01:07 with Mercury in Libra. The exchange holds until Venus returns to Libra on 22 Nov. |
+| **Nov 12 – Dec 5:** Mars–Ketu conjunction in a fire sign | Ephemeris | ✅ Mars enters Leo 12 Nov 20:20; exact 15 Nov; same sign until 5 Dec. With Jupiter it's a **triple conjunction** in Leo. |
+| **Dec 5:** nodes change sign | Ephemeris | ✅ 5 Dec 22:35 IST (see Part 1). |
+| Nov 12 – Dec 5 is "high risk" for markets | Tool + history | ⚠️ Partial. The tool flags CORRECTION_RISK every trading day but never CRASH_RISK. History shows a mild bearish tilt for Indian indices only. |
+| "Global economic havoc" | History | ❌ No effect on the S&P 500 across 47 episodes since 1950. |
+| NIFTY: sell on rise at 23,500–24,000; targets 22,000, then 20,000 | Arithmetic + history | ⚠️ NIFTY is ~22,600 (30 Sep), so the "rise" first needs +4–6%. 22,000 (−2.7%) is a normal 3–4 week move; 20,000 (−11.6%) is about three times the median worst drop in a Mars–Ketu episode. |
+| Positive momentum after Dec 5 | Tool | ❌ The tool keeps CORRECTION_RISK on 34 of 39 trading days to 31 Jan 2027, with a negative SBC net. The next bearish cluster is Jan–Apr 2027. |
+| Gold: buy on dip; don't short Nov 12 – Dec 5; record highs | Tool + history | ✅ Aligned. The tool reads gold BULLISH on all 17 trading days (EXTREME "Retrograde Ketu in Leo"). Gold historically rose in these episodes (+2.9% median vs +0.7% base). |
+| Silver range-bound, less volatile than gold | Tool + history | ⚠️ Mixed. The tool reads silver mostly NEUTRAL (11 of 17 days), but historically silver moved with gold (+3.0% median) and was *more* volatile (median worst drop −4.9% vs gold −2.6%). |
+
+## 1. What the tool says, Oct 2026 – Jan 2027
+
+| Period | Crash score (mean / max) | Conditions | SBC net | Bearish vs bullish windows per day |
+|---|---|---|---|---|
+| 1 Oct – 11 Nov | 31.7 / 50 | 12 elevated, 7 correction, 8 normal | −2.76 | 1.33 vs 2.74 |
+| **12 Nov – 5 Dec** (Mars–Ketu) | **50.0 / 50** | **correction risk all 16 days** | −3.25 | 0.69 vs 2.69 |
+| 6 Dec – 31 Jan | 32.8 / 50 | correction 34, normal 5 | −3.28 | 0.38 vs 2.46 |
+
+Crash-analyzer signatures during Mars–Ketu: `mars_ketu_conjunction` and
+`jupiter_ketu_nakshatra` on all 16 days. The only bearish calendar window in that span is
+"Cluster C: Venus and Mercury retrograde overlap" (12–27 Nov, HIGH).
+
+**Bullion vedha** (`sbc/bullion_vedha.py`):
+- Gold BULLISH on 24 of 30 weekdays before 12 Nov, **17 of 17** during Mars–Ketu, and
+  15 of 40 after (mostly NEUTRAL).
+- Silver: BEARISH 19 of 30 before, NEUTRAL 11 of 17 during, NEUTRAL 32 of 40 after.
+
+## 2. Mars–Ketu conjunctions in market history
+
+Episodes: Mars and Ketu in the same sidereal sign within 10°, 1950 – Sep 2026. That gives
+47 episodes with a median length of 22 days. The base rate is every 22-day window of the
+same series.
+
+| Market | Episodes | Median return | Base | Share negative | Base | Median worst drop | Base |
+|---|---|---|---|---|---|---|---|
+| S&P 500 (1950–) | 47 | +1.4% | +0.8% | 38% | 39% | −2.1% | −2.4% |
+| Sensex (1997–) | 18 | +0.7% | +0.8% | 44% | 42% | −3.6% | −3.3% |
+| NIFTY (2007–) | 11 | −1.4% | +0.7% | 55% | 43% | −4.0% | −3.0% |
+| Gold GC=F (2000–) | 16 | +2.9% | +0.7% | 31% | 44% | −2.6% | −3.0% |
+| Silver SI=F (2000–) | 16 | +3.0% | +0.6% | 38% | 46% | −4.9% | −5.1% |
+
+Fire-sign episodes only (Aries/Leo/Sagittarius): S&P 500 +2.1% (12), Sensex −3.4% (5),
+NIFTY −3.3% (3), gold +6.7% (5), silver +4.3% (5). These samples are too small to rely on.
+
+## Bottom line
+
+The astronomy is right on every date. Two of the forecast's calls line up with the tool and
+lean the same way in history:
+- a weaker stretch for Indian equities during Mars–Ketu, which looks like a correction,
+  not a crash;
+- strength in gold.
+
+Three don't hold up:
+- the global-havoc framing (the S&P 500 shows nothing);
+- the 20,000 NIFTY target, far outside typical episode moves;
+- recovery from 5 Dec (the tool sees risk persisting into early 2027).
+
+The tool's signals themselves have no validated edge (Part 1, §3), so agreement with it is
+agreement between two astrological readings, not independent confirmation. None of this is
+a basis for investment decisions.
