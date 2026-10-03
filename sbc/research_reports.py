@@ -37,3 +37,16 @@ def result(prefix: str, rule: str, horizon: int) -> dict | None:
         if r["rule"] == rule and r["horizon"] == horizon:
             return {**r, "_file": report["_file"], "_sample": report.get("sample")}
     return None
+
+
+def counts() -> dict:
+    """Per report kind: how many tests it ran and how many passed (edge / adds information)."""
+    out = {}
+    for prefix in PREFIXES:
+        report = latest(prefix)
+        if not report:
+            continue
+        verdicts = [r.get("verdict") for r in report["results"]]
+        positive = "adds information" if prefix == "incremental_validation" else "edge"
+        out[prefix] = {"tests": len(verdicts), "passed": verdicts.count(positive), "report": report["_file"]}
+    return out

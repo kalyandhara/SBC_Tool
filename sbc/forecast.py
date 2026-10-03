@@ -197,3 +197,56 @@ def _adjustment(component: dict, history: an.History, horizon: int, entry_index:
     if same.sum() < st.MIN_SIGNAL_DAYS:
         return 0.0
     return float((fwd[same] > 0).mean() - (fwd[known] > 0).mean())
+
+
+def card(day: str, history: an.History | None = None) -> dict:
+    """Evidence card for one session: all three horizons, preferring the ledger's frozen copy.
+
+    The frozen copy is what the live record will be scored on, so the card shows
+    exactly that when it exists; otherwise the forecast is computed now.
+    """
+    from sbc import daily_ledger
+
+    history = history or an.load_nifty_history()
+    horizons, base_payload = {}, None
+    for h in HORIZONS:
+        frozen = daily_ledger.get(day, h)
+        f = frozen or forecast(day, h, history=history)
+        if h == 5 or base_payload is None:
+            base_payload = f
+        rng = f["expected_range"]
+        horizons[str(h)] = {
+            "probability_up": f["probability_up"],
+            "base_up": f["base"]["up_share"],
+            "base_mean": f["base"]["mean"],
+            "band_68": rng.get("band_68"),
+            "band_95": rng.get("band_95"),
+            "quantiles": rng.get("historical_quantiles"),
+            "validated": f["validated"],
+            "confidence": f["confidence"],
+            "source": f"frozen {frozen['ledger']['frozen_at']} ({frozen['ledger']['kind']})" if frozen else "computed now",
+            "track_record": daily_ledger.summary(h),
+        }
+    components = []
+    for c in base_payload["components"]:
+        components.append({
+            "name": c["name"], "kind": c["kind"], "description": c["description"],
+            "lean": c.get("lean"), "flag": c.get("flag"), "validated": c["validated"],
+            "verdict": (c.get("validation") or {}).get("verdict"),
+            "beyond_market": (c.get("beyond_market") or {}).get("verdict"),
+        })
+    return {
+        "date": day,
+        "entry_date": base_payload["entry_date"],
+        "entry_close": base_payload["entry_close"],
+        "data_as_of": base_payload["data_as_of"],
+        "vix": base_payload["expected_range"].get("vix"),
+        "model_version": base_payload["model_version"],
+        "status": "research",
+        "horizons": horizons,
+        "components": components,
+        "components_horizon": 5,
+        "sky": base_payload["sky"],
+        "validation": research_reports.counts(),
+        "caveat": CAVEAT,
+    }

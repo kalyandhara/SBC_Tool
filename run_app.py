@@ -66,11 +66,13 @@ def _forecast_ledger_loop(interval_s=600):
     The daily NIFTY forecast (sbc.daily_ledger) is frozen in the same pre-open
     window. After 16:30 IST on trading days it refreshes data/market.db
     (sbc.market_store) until that day's FII/DII figures are in, and scores
-    daily forecasts whose outcome has arrived.
+    daily forecasts whose outcome has arrived. From Saturday 08:00 IST it writes
+    the week's forward calendar to reports/calendar/ (sbc.forward_calendar),
+    once per week; a server that was down on Saturday catches up on its next pass.
     """
     import time as _time
 
-    from sbc import daily_ledger, market_store
+    from sbc import daily_ledger, forward_calendar, market_store
     from sbc import forecast_ledger as ledger
     from sbc.market_holidays import is_trading_day
     market_refreshed = None  # date of the last successful EOD market refresh
@@ -101,6 +103,12 @@ def _forecast_ledger_loop(interval_s=600):
                     app.logger.info("daily ledger: scored %s", scored)
         except Exception:  # never let the ledger take the server down
             app.logger.exception("forecast ledger loop failed")
+        try:
+            written = forward_calendar.generate_if_due()
+            if written:
+                app.logger.info("forward calendar: wrote %s", written["html"])
+        except Exception:
+            app.logger.exception("forward calendar job failed")
         _time.sleep(interval_s)
 
 
