@@ -18,9 +18,6 @@ rules, so the numbers are directly comparable.
 from __future__ import annotations
 
 import datetime as dt
-import json
-from functools import lru_cache
-from pathlib import Path
 
 import numpy as np
 
@@ -49,27 +46,15 @@ DESCRIPTIONS = {
 }
 
 
-REPORT_DIR = Path(__file__).resolve().parent.parent / "docs" / "research"
-
-
-@lru_cache(maxsize=4)
-def _report(path: str, mtime: float) -> dict:
-    return json.loads(Path(path).read_text(encoding="utf-8"))
-
-
 def track_record(variant: str, horizon: int) -> dict | None:
     """Walk-forward grade of one variant/horizon from the newest analog_validation report."""
-    reports = sorted(REPORT_DIR.glob("analog_validation_*.json"))
-    if not reports:
+    from sbc import research_reports
+
+    r = research_reports.result("analog_validation", f"analog_{variant}", horizon)
+    if r is None:
         return None
-    path = reports[-1]
-    report = _report(str(path), path.stat().st_mtime)
-    for r in report["results"]:
-        if r["rule"] == f"analog_{variant}" and r["horizon"] == horizon:
-            keys = ("n", "hit_rate", "baseline", "excess", "p", "q", "verdict", "eras",
-                    "years_right", "years")
-            return {"report": path.name, "sample": report["sample"], **{k: r.get(k) for k in keys}}
-    return None
+    keys = ("n", "hit_rate", "baseline", "excess", "p", "q", "verdict", "eras", "years_right", "years")
+    return {"report": r["_file"], "sample": r["_sample"], **{k: r.get(k) for k in keys}}
 
 
 def _era(date: str) -> str:

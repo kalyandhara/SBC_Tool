@@ -98,6 +98,30 @@ decide on before Phase 4:
    any astro factor adds information *beyond* them, the only way an astro edge could hide here.
 3. Pre-register specific hypotheses (e.g. contrarian Bradley) and let the live ledger judge.
 
+## Phase 4 status (branch `phase4-forecast`) — options 1 + 2
+
+| Item | Status |
+|---|---|
+| `sbc/market_features.py` | ✅ 12 controls known at the previous close: trailing 5/20/60 returns, 20-day realized vol, 200-day MA gap, log VIX and its 5-day change, weekday, turn-of-month. FII/DII is excluded until it has history |
+| `sbc/incremental.py` + `scripts/validate_incremental.py` | ✅ partial regression of each astro signal on forward returns *after* the controls, with circular-shift p-values (2.5% false positives on synthetic noise); yearly walk-forward OLS of the controls alone |
+| `sbc/forecast.py` | ✅ one contract per (session, horizon): probability (base rate unless a component is validated), VIX-implied 68/95% bands and historical quantiles, every rule/analog lean with both verdicts, key sky facts, live track record, model version |
+| `sbc/daily_ledger.py` | ✅ freezes 1/5/20-session forecasts before 09:15 IST (live / late / backfill), scores them from `market.db` (Brier against the base rate, plus each component's live hit rate); runs in the `run_app.py` loop. First live forecast frozen for 2026-10-05 |
+| API | ✅ `GET /api/engine/forecast?date=&horizon=`, `GET /api/engine/forecast/ledger?horizon=&kind=` |
+
+### Result: nothing astro adds information beyond market conditions, and the controls don't predict either
+
+- **0 of 75** signal × horizon tests add information after the controls
+  (`docs/research/incremental_validation_2026-10-03.md`). Bradley's wrong-way effect shrinks
+  once trend is controlled for, so it was partly a trend echo.
+- The controls alone have **negative out-of-sample R²** at 1, 5 and 20 sessions: simple
+  market state doesn't forecast NIFTY's direction better than its drift either. Daily NIFTY
+  direction is close to unpredictable from public, slow-moving information. That is the
+  bar any astro factor has to clear.
+- So the forecast's probability is the **base rate** (5 Oct 2026: 52.9% / 55.9% / 59.9% up
+  over 1 / 5 / 20 sessions), and its useful content is the **range** (VIX-implied) and the
+  **evidence** behind each component. The ledger now builds the live record that a
+  pre-registered hypothesis would need.
+
 ## Target capability (the goal, restated as a pipeline)
 
 ```
