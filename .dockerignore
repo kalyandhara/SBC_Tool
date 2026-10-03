@@ -26,6 +26,5 @@ Financial_Astrology
 SBC-Tool
 scripts/adhoc
 tests
-research/__pycache__
 *.md
 !README.md

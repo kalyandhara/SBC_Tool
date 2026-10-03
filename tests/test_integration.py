@@ -103,29 +103,6 @@ class TestKPIntradayWorkflow:
         assert path_resp.status_code != 500
 
 
-class TestResearchWorkflow:
-    """Test research lab workflow."""
-
-    def test_research_endpoints_chain(self, client):
-        """Chain multiple research endpoints."""
-        endpoints = [
-            "/api/research/astro_lab",
-            "/api/research/canonical_market_event_model",
-            "/api/research/new_moon_efficiency_study",
-            "/api/research/planetary_aspect_grid",
-            "/api/research/solar_lunar_cycle_explorer",
-            "/api/research/bradley_barometer_overlay",
-        ]
-
-        for ep in endpoints:
-            resp = client.get(ep)
-            # Allow 429 (rate limited) during rapid test execution
-            assert resp.status_code in (200, 429), f"Failed: {ep} -> {resp.status_code}"
-            if resp.status_code == 200:
-                data = json.loads(resp.data)
-                assert isinstance(data, dict)
-
-
 class TestProfileWorkflow:
     """Test profile management workflow."""
 

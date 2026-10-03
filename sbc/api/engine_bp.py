@@ -171,6 +171,13 @@ def market_ohlc():
     return jsonify({"symbol": symbol, "days": days, "bars": data}), 200
 
 
+@engine_bp.route("/market/freshness")
+def market_freshness():
+    """Coverage and staleness of data/market.db (NIFTY, SENSEX, VIX, FII/DII)."""
+    from sbc import market_store
+    return jsonify(market_store.freshness()), 200
+
+
 @engine_bp.route("/intraday_path")
 def intraday_path():
     """Predictive intraday path – cumulative KP composite score with overlays."""

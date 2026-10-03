@@ -17,6 +17,7 @@ os.environ.setdefault("SBC_SERIES_CACHE_DB",
 # ...and out of the real birth-data profiles (fresh file per session).
 _PROFILES_DB = os.path.join(tempfile.gettempdir(), f"sbc_test_profiles_{os.getpid()}.db")
 os.environ["SBC_PROFILES_DB"] = _PROFILES_DB
+os.environ["SBC_MARKET_DB"] = os.path.join(tempfile.gettempdir(), f"sbc_test_market_{os.getpid()}.db")
 os.environ["SBC_FORECAST_DB"] = os.path.join(tempfile.gettempdir(), f"sbc_test_forecast_{os.getpid()}.db")
 
 from app import app as flask_app

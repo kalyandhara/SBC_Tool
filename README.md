@@ -210,17 +210,20 @@ GET  /api/engine/intraday_path?date=...&instrument=NIFTY
 
 ### Research Lab
 ```
-GET  /api/research/astro_lab
-GET  /api/research/walk_forward_validation
-GET  /api/research/canonical_market_event_model
-GET  /api/research/new_moon_efficiency_study
-GET  /api/research/planetary_aspect_grid
-GET  /api/research/solar_lunar_cycle_explorer
-GET  /api/research/bradley_barometer_overlay
-GET  /api/research/regime_aware_reports
-GET  /api/research/research_export
-GET  /api/research/unified_daily_forecast_contract
+GET  /api/research/event-study?...
+GET  /api/research/walk-forward?...
+GET  /api/research/aspects?...
+GET  /api/research/cycles?start=...&end=...
 ```
+
+### Market data (prediction engine)
+```
+GET  /api/engine/market/freshness
+```
+`data/market.db` holds NIFTY, SENSEX and India VIX daily bars (yfinance) and NSE
+FII/DII cash flows. `run_app.py` refreshes it after each close; the first backfill is
+`python scripts/refresh_market_data.py --full`. NSE serves FII/DII for the latest
+session only, so that series grows one day at a time.
 
 ### Profile Management
 ```

@@ -39,7 +39,8 @@ def test_no_nifty_bar_on_any_listed_holiday():
     """The list is checked against real data: NSE printed no daily bar on these dates."""
     path = Path(__file__).resolve().parent.parent / "data" / "nifty_ohlc.csv"
     df = pd.read_csv(path, parse_dates=["Date"])
-    bars = set(df["Date"].dt.date)
+    # The list covers recent years only; the cache reaches back to 2007.
+    bars = {d for d in df["Date"].dt.date if mh.is_covered(d)}
     lo, hi = min(bars), max(bars)
     listed = [d for d in mh.NSE_HOLIDAYS if lo <= d <= hi and d not in mh.MUHURAT_SESSIONS]
     assert listed, "no overlap between holiday list and cached bars"

@@ -14,13 +14,6 @@ from zoneinfo import ZoneInfo
 from flask import Flask, Response, jsonify, render_template, request, send_file
 from werkzeug.exceptions import HTTPException
 
-from research.astro_research import (
-    bradley_barometer_overlay,
-    regime_aware_reports,
-    research_export,
-    solar_lunar_cycle_explorer,
-    unified_daily_forecast_contract,
-)
 from sbc import db as profiles_db
 from sbc.api.blueprints.balance_bp import balance_bp
 from sbc.api.blueprints.chakra_bp import chakra_bp
@@ -28,7 +21,6 @@ from sbc.api.blueprints.chart_bp import chart_bp
 from sbc.api.blueprints.forecast_bp import forecast_bp
 from sbc.api.blueprints.kp_bp import kp_bp
 from sbc.api.blueprints.overview_bp import overview_bp
-from sbc.api.blueprints.research_bp import research_bp
 from sbc.api.blueprints.sectors_bp import sectors_bp
 from sbc.api.engine_bp import engine_bp
 from sbc.api.errors import internal_error
@@ -87,7 +79,6 @@ app.register_blueprint(sector_bp)
 app.register_blueprint(overview_bp)
 app.register_blueprint(chart_bp)
 app.register_blueprint(sectors_bp)
-app.register_blueprint(research_bp)
 app.register_blueprint(kp_bp)
 app.register_blueprint(balance_bp)
 app.register_blueprint(chakra_bp)
@@ -1110,29 +1101,6 @@ def api_habits_streaks():
         return jsonify(result)
     except Exception:
         return internal_error()
-
-# Astro Research Lab API endpoints
-
-
-@app.route("/api/research/solar_lunar_cycle_explorer")
-def api_solar_lunar_cycle_explorer():
-    return jsonify(solar_lunar_cycle_explorer())
-
-@app.route("/api/research/bradley_barometer_overlay")
-def api_bradley_barometer_overlay():
-    return jsonify(bradley_barometer_overlay())
-
-@app.route("/api/research/regime_aware_reports")
-def api_regime_aware_reports():
-    return jsonify(regime_aware_reports())
-
-@app.route("/api/research/research_export")
-def api_research_export():
-    return jsonify(research_export())
-
-@app.route("/api/research/unified_daily_forecast_contract")
-def api_unified_daily_forecast_contract():
-    return jsonify(unified_daily_forecast_contract())
 
 
 @app.route("/api/habits/history", methods=["GET"])

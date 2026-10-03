@@ -63,11 +63,15 @@ def _forecast_ledger_loop(interval_s=600):
 
     sbc.forecast_ledger keeps the honest forward record. Freezing is a no-op
     once a day is stored; scoring only touches settled, unscored days.
+    After 16:30 IST on trading days it also refreshes data/market.db
+    (sbc.market_store) until that day's FII/DII figures are in.
     """
     import time as _time
 
     from sbc import forecast_ledger as ledger
+    from sbc import market_store
     from sbc.market_holidays import is_trading_day
+    market_refreshed = None  # date of the last successful EOD market refresh
     while True:
         try:
             now = ledger._now_ist()
@@ -80,6 +84,13 @@ def _forecast_ledger_loop(interval_s=600):
                 scored = ledger.score_pending(now)
                 if scored:
                     app.logger.info("forecast ledger: scored %s", scored)
+            # NSE posts FII/DII figures in the evening; retry each pass until they land.
+            if (is_trading_day(day) and now.time() >= datetime.time(16, 30)
+                    and market_refreshed != day):
+                report = market_store.refresh_all(now=now)
+                if not report["errors"] and day.isoformat() in (report["flows"] or {}).get("dates", []):
+                    market_refreshed = day
+                app.logger.info("market refresh: %s", report)
         except Exception:  # never let the ledger take the server down
             app.logger.exception("forecast ledger loop failed")
         _time.sleep(interval_s)
