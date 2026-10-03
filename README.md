@@ -219,11 +219,18 @@ GET  /api/research/cycles?start=...&end=...
 ### Market data (prediction engine)
 ```
 GET  /api/engine/market/freshness
+GET  /api/engine/fingerprint?date=YYYY-MM-DD[&vector=1]
+GET  /api/engine/fingerprint/status
 ```
 `data/market.db` holds NIFTY, SENSEX and India VIX daily bars (yfinance) and NSE
 FII/DII cash flows. `run_app.py` refreshes it after each close; the first backfill is
 `python scripts/refresh_market_data.py --full`. NSE serves FII/DII for the latest
 session only, so that series grows one day at a time.
+
+`data/fingerprints.db` holds the astro fingerprint (every planet, aspect,
+panchang, KP and SBC factor at 09:15 IST) for each day 1990–2035. Build or
+refresh it with `python scripts/build_fingerprints.py` (about 15 s). Rows are
+versioned by the astro code, so an engine change triggers a rebuild of the stale days.
 
 ### Profile Management
 ```

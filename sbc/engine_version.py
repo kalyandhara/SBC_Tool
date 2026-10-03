@@ -92,18 +92,39 @@ def dependency_closure(read: Callable[[Path], str] = _read) -> tuple[str, list[P
     chart_src = read(CHART_BP_FILE)
     payload_src = _function_source(chart_src, PAYLOAD_FUNCTION)
     start = {ENGINE_MODULE} | _first_party_imports(ast.parse(payload_src), "sbc.api.blueprints.chart_bp")
-    files, todo = {}, list(start)
+    return payload_src, module_closure(start, read)
+
+
+def module_closure(start, read: Callable[[Path], str] = _read,
+                   excluded=frozenset(EXCLUDED_MODULES)) -> list[Path]:
+    """Sorted files of the first-party modules reachable from `start`."""
+    files: dict[str, Path] = {}
+    todo = list(start)
     while todo:
         mod = todo.pop()
         path = _module_file(mod)
         # Package __init__ files only re-export (sbc/__init__ imports nearly
         # every module); following them would make the closure the whole repo.
-        if (path is None or path.name == "__init__.py" or mod in EXCLUDED_MODULES
+        if (path is None or path.name == "__init__.py" or mod in excluded
                 or path in files.values()):
             continue
         files[mod] = path
         todo.extend(_first_party_imports(ast.parse(read(path)), mod) - set(files))
-    return payload_src, sorted(set(files.values()))
+    return sorted(set(files.values()))
+
+
+def module_version(module: str, read: Callable[[Path], str] = _read,
+                   excluded=frozenset()) -> str:
+    """Hash of `module` and every first-party module it imports.
+
+    For stores keyed by something other than the prediction series (e.g. the
+    fingerprint store versions rows by module_version("sbc.fingerprint")).
+    """
+    h = hashlib.sha256(f"module={module}\n".encode())
+    for p in module_closure({module}, read, frozenset(excluded)):
+        h.update(f"\n--- {p.relative_to(ROOT).as_posix()}\n".encode())
+        h.update(read(p).encode())
+    return h.hexdigest()[:12]
 
 
 def compute_engine_version(read: Callable[[Path], str] = _read) -> str:

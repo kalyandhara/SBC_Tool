@@ -178,6 +178,30 @@ def market_freshness():
     return jsonify(market_store.freshness()), 200
 
 
+@engine_bp.route("/fingerprint")
+def fingerprint():
+    """Astro fingerprint at 09:15 IST: ?date=YYYY-MM-DD (default today), &vector=1 adds features."""
+    from sbc import fingerprint as fpmod
+    from sbc import fingerprint_store
+
+    raw = request.args.get("date") or datetime.date.today().isoformat()
+    try:
+        day = datetime.date.fromisoformat(raw).isoformat()
+    except ValueError:
+        return jsonify({"error": "date must be YYYY-MM-DD"}), 400
+    fp = fingerprint_store.get(day)
+    if request.args.get("vector") in ("1", "true"):
+        fp = {**fp, "vector": [{"name": n, "tier": t, "value": round(v, 4)}
+                               for n, t, v in fpmod.feature_vector(fp)]}
+    return jsonify(fp), 200
+
+
+@engine_bp.route("/fingerprint/status")
+def fingerprint_status():
+    from sbc import fingerprint_store
+    return jsonify(fingerprint_store.status()), 200
+
+
 @engine_bp.route("/intraday_path")
 def intraday_path():
     """Predictive intraday path – cumulative KP composite score with overlays."""
