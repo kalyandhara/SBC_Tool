@@ -151,6 +151,23 @@ def forecast(day: str, horizon: int = 5, history: an.History | None = None) -> d
         if ok:
             validated.append(factor.name)
 
+    # B-39: trend reversal on sessions inside a heliocentric Earth-planet aspect window.
+    # Same as swing_validation.reversal: -sign(close[t-1] - close[t-11]), closes known at entry.
+    from sbc import helio_aspects as ha
+    active = ha.active_on(day)
+    trend_rev = -int(np.sign(closes[entry_index] - closes[entry_index - 10])) if entry_index >= 10 else 0
+    grade = research_reports.result("swing_validation", "helio_all_reversal", horizon)
+    extra = (grade or {}).get("beyond_market")
+    ok = bool(grade and grade.get("verdict") == "edge"
+              and extra and extra.get("verdict") == "adds information")
+    components.append({"name": "helio_all_reversal", "kind": "directional", "source": "helio",
+                       "description": "Trend reversal on sessions inside an Earth-planet aspect window (B-39)",
+                       "lean": trend_rev if active else 0, "flag": None,
+                       "windows": [f"Earth-{a['planet']} {a['aspect']}" for a in active],
+                       "validated": ok, **_summary(grade, extra)})
+    if ok:
+        validated.append("helio_all_reversal")
+
     for variant, weights in av.VARIANTS.items():
         res = an.find_analogs(history, fp, horizon, None, an.TOP_K, weights=weights)
         grade, extra, ok = _validated(variant, horizon, "analog_validation")
@@ -205,7 +222,11 @@ def _adjustment(component: dict, history: an.History, horizon: int, entry_index:
     dates = history.dates[:n]
     stored = {fp["date"]: fp for fp in fingerprint_store.get_range(dates[0], dates[-1])} if dates else {}
     past_fps = [stored.get(d) or fingerprint_store.get(d) for d in dates]
-    if component.get("source") == "factor":
+    if component.get("source") == "helio":
+        from sbc import swing_validation as swv
+        in_window = np.array([bool(a) for a in swv.session_windows(dates)])
+        past = np.where(in_window, swv.reversal(np.asarray(history.closes[:n], dtype=float)), 0)
+    elif component.get("source") == "factor":
         past = fx.signals_for(past_fps).get(component["name"])
     else:
         past = signals_for(past_fps).get(component["name"])

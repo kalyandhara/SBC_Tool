@@ -92,6 +92,9 @@
           <button class="nav-tab" data-tab="tab-calendar" role="tab" aria-selected="false" aria-controls="tab-calendar">
             <span class="tab-icon">🗓️</span> Forward Calendar
           </button>
+          <button class="nav-tab" data-tab="tab-swing" role="tab" aria-selected="false" aria-controls="tab-swing">
+            <span class="tab-icon">🌊</span> Swing Windows
+          </button>
         </div>
       </details>
     </div>
@@ -1238,6 +1241,39 @@
       </section>
     </div>
 
+    <div id="tab-swing" class="tab-pane" role="tabpanel">
+      <section class="panel analog-lab">
+        <div class="panel-head">
+          <h2>Swing Windows</h2>
+          <span class="panel-sub">Heliocentric Earth–planet aspects as ENTRY zones; Gann + Fibonacci + indicator confluence as EXIT (B-39).</span>
+        </div>
+        <div class="analog-banner" role="note">
+          <strong>Hypothetical, and not validated.</strong>
+          In a 2008–2026 back-test these entries did no better than random dates, and simple exits did as well as the confluence exit. Shown for research. Not investment advice.
+        </div>
+        <form id="swing-form" class="research-controls">
+          <label>From <input type="date" id="swing-start"></label>
+          <label>To <input type="date" id="swing-end"></label>
+          <label>Planet
+            <select id="swing-planet"><option value="">All planets</option><option value="Mercury">Earth–Mercury</option><option value="Venus">Earth–Venus</option><option value="Mars">Earth–Mars</option><option value="Jupiter">Earth–Jupiter</option><option value="Saturn">Earth–Saturn</option><option value="Uranus">Earth–Uranus</option><option value="Neptune">Earth–Neptune</option><option value="Pluto">Earth–Pluto</option></select>
+          </label>
+          <label>Aspect
+            <select id="swing-aspect"><option value="">All aspects</option><option value="CONJ">Conjunction</option><option value="OPP">Opposition</option><option value="TRI">Trine</option><option value="SQ">Square</option><option value="SXT">Sextile</option><option value="QCX">Quincunx</option><option value="SS">Semi-square</option><option value="SSQ">Sesquiquadrate</option></select>
+          </label>
+          <label>Exit needs
+            <select id="swing-confluence">
+              <option value="3" selected>All 3 layers</option>
+              <option value="2">Any 2 layers</option>
+            </select>
+          </label>
+          <button type="submit" class="btn">Build windows</button>
+        </form>
+        <div id="swing-status" class="nifty-chart-status" role="status" aria-live="polite"></div>
+        <div id="swing-chart" class="swing-chart" aria-label="NIFTY daily candles with ENTRY and EXIT markers"></div>
+        <div id="swing-results"></div>
+      </section>
+    </div>
+
     <!-- Global Disclaimer -->
     <p class="disclaimer">For study and research. Not financial advice. Financial markets involve substantial risk of loss. Trade on your own analysis.</p>
   </main>
@@ -1255,6 +1291,7 @@
   <script src="/static/js/analog-lab.js?v=1"></script>
   <script src="/static/js/forecast-card.js?v=1"></script>
   <script src="/static/js/forward-calendar.js?v=2"></script>
+  <script src="/static/js/swing-windows.js?v=3"></script>
   <script>
   document.addEventListener('DOMContentLoaded', function(){
     const cityInput = document.getElementById('bd-city');

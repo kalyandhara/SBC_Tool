@@ -12,7 +12,7 @@ from pathlib import Path
 
 REPORT_DIR = Path(__file__).resolve().parent.parent / "docs" / "research"
 PREFIXES = ("rule_validation", "analog_validation", "incremental_validation", "factor_validation",
-            "sector_validation")
+            "sector_validation", "swing_validation")
 
 
 @lru_cache(maxsize=8)

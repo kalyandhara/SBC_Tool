@@ -3227,3 +3227,10 @@ a:focus-visible,
 .cal-days td { vertical-align: top; }
 .cal-days .cal-events { white-space: normal; min-width: 220px; }
 .cal-closed td { color: var(--muted); }
+
+/* Swing Windows (B-39) */
+.swing-chart { height: 320px; width: 100%; margin: 8px 0 12px; }
+.swing-chart:empty { display: none; }
+.swing-payload { display: flex; flex-direction: column; gap: 4px; font-size: 11px; color: var(--muted); margin-top: 8px; }
+.swing-payload textarea { width: 100%; font: 11px/1.4 ui-monospace, monospace; background: var(--panel); color: var(--text); border: 1px solid var(--line); border-radius: 6px; padding: 6px; resize: vertical; }
+.swing-table .swing-trig { white-space: normal; min-width: 200px; font-size: 11px; }
