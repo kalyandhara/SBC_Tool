@@ -89,6 +89,9 @@
           <button class="nav-tab" data-tab="tab-analogs" role="tab" aria-selected="false" aria-controls="tab-analogs">
             <span class="tab-icon">🔭</span> Analog Lab
           </button>
+          <button class="nav-tab" data-tab="tab-calendar" role="tab" aria-selected="false" aria-controls="tab-calendar">
+            <span class="tab-icon">🗓️</span> Forward Calendar
+          </button>
         </div>
       </details>
     </div>
@@ -99,10 +102,22 @@
     <!-- TAB 1: EXECUTIVE OVERVIEW -->
     <!-- ============================================================== -->
     <div id="tab-overview" class="tab-pane active" role="tabpanel">
+      <!-- Forecast evidence card (sbc.forecast.card) -->
+      <section id="forecast-evidence" class="panel forecast-evidence" aria-labelledby="forecast-evidence-title">
+        <div class="panel-head">
+          <h2 id="forecast-evidence-title">NIFTY forecast · next session <span id="forecast-evidence-date"></span></h2>
+          <span class="fe-badge">Research · no validated edge</span>
+          <button id="forecast-evidence-calendar" class="btn btn-secondary" type="button">Forward calendar</button>
+        </div>
+        <div id="forecast-evidence-body" class="analog-lab" role="status" aria-live="polite">
+          <p class="fe-note">Loading forecast…</p>
+        </div>
+      </section>
+
       <!-- Executive Summary Action Bar -->
       <section id="exec-action-bar" class="exec-action-bar">
         <div class="exec-card bias-card">
-          <span class="exec-label">Market Outlook</span>
+          <span class="exec-label">SBC Vedha Outlook · unvalidated</span>
           <div class="exec-val" id="exec-bias-badge">
             <span class="dir-badge dir-neutral">Awaiting prediction</span>
           </div>
@@ -1195,6 +1210,34 @@
       </section>
     </div>
 
+    <div id="tab-calendar" class="tab-pane" role="tabpanel">
+      <section class="panel analog-lab">
+        <div class="panel-head">
+          <h2>Forward Calendar</h2>
+          <span class="panel-sub">The coming NIFTY sessions: VIX-implied range, sky events, and what each rule and analog set says.</span>
+        </div>
+        <div class="analog-banner" role="note">
+          <strong>Evidence, not a forecast.</strong>
+          None of these rules or analog sets has beaten the market's drift in testing. Shown for research. Not investment advice.
+        </div>
+        <form id="calendar-form" class="research-controls">
+          <label>Start <input type="date" id="calendar-start"></label>
+          <label>Weeks
+            <select id="calendar-weeks">
+              <option value="2">2</option>
+              <option value="4" selected>4</option>
+              <option value="8">8</option>
+            </select>
+          </label>
+          <button type="submit" class="btn">Build calendar</button>
+          <a id="calendar-open-html" class="btn btn-secondary" href="/api/engine/calendar?format=html" target="_blank" rel="noopener">Open as page</a>
+        </form>
+        <div id="calendar-status" class="nifty-chart-status" role="status" aria-live="polite"></div>
+        <p id="calendar-stored" class="analog-note"></p>
+        <div id="calendar-results"></div>
+      </section>
+    </div>
+
     <!-- Global Disclaimer -->
     <p class="disclaimer">For study and research. Not financial advice. Financial markets involve substantial risk of loss. Trade on your own analysis.</p>
   </main>
@@ -1206,10 +1249,12 @@
   <!-- Client-Side Scripts -->
   <script src="/static/vendor/lightweight-charts.js?v=4"></script>
   <script src="/static/nifty-chart.js?v=16"></script>
-  <script src="/static/app.js?v=34"></script>
+  <script src="/static/app.js?v=35"></script>
   <script src="/static/intraday-projection.js?v=2"></script>
   <script src="/static/intraday-forecast.js?v=7"></script>
   <script src="/static/js/analog-lab.js?v=1"></script>
+  <script src="/static/js/forecast-card.js?v=1"></script>
+  <script src="/static/js/forward-calendar.js?v=1"></script>
   <script>
   document.addEventListener('DOMContentLoaded', function(){
     const cityInput = document.getElementById('bd-city');

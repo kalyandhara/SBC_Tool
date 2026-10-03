@@ -2367,7 +2367,7 @@ function renderReading(d) {
   if (rec.actionable) {
     const a = rec.actionable;
     const hdr = document.createElement("h3");
-    hdr.textContent = "Actionable Investment Directive";
+    hdr.textContent = "Rule-based directive (unvalidated: see the forecast evidence card)";
     hdr.style.marginTop = "16px";
     hdr.style.color = "var(--accent)";
     box.appendChild(hdr);

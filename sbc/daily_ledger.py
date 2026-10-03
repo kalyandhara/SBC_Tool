@@ -157,6 +157,16 @@ def summary(horizon: int, kind: str = "live") -> dict:
     return out
 
 
+def get(day: str, horizon: int) -> dict | None:
+    """The frozen forecast for (day, horizon) with its kind and freeze time, or None."""
+    with _conn() as conn:
+        row = conn.execute("SELECT kind, frozen_at, payload FROM forecasts WHERE date = ? AND horizon = ?",
+                           (day, horizon)).fetchone()
+    if not row:
+        return None
+    return {**json.loads(row[2]), "ledger": {"kind": row[0], "frozen_at": row[1]}}
+
+
 def recent(horizon: int, limit: int = 30) -> list[dict]:
     """Latest frozen forecasts for a horizon with their scores (if any)."""
     with _conn() as conn:

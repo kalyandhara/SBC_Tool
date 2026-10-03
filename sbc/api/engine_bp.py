@@ -279,6 +279,80 @@ def forecast_ledger():
                     "recent": daily_ledger.recent(horizon)}), 200
 
 
+@engine_bp.route("/forecast/card")
+def forecast_card():
+    """Evidence card for ?date (default the next trading day): 1/5/20-session forecast,
+    every component's lean with its verdicts, the range and the live record."""
+    from sbc import forecast as fc
+    from sbc.market_holidays import is_trading_day, next_trading_day
+    from sbc.market_store import MarketDataMissing
+
+    raw = request.args.get("date")
+    try:
+        day = (datetime.date.fromisoformat(raw) if raw
+               else next_trading_day(datetime.date.today(), inclusive=False))
+    except ValueError:
+        return jsonify({"error": "date must be YYYY-MM-DD"}), 400
+    if not is_trading_day(day):
+        return jsonify({"error": f"{day} is not an NSE trading day"}), 400
+    try:
+        return jsonify(fc.card(day.isoformat())), 200
+    except MarketDataMissing:
+        return jsonify({"error": "no NIFTY history yet; run scripts/refresh_market_data.py --full"}), 404
+    except ValueError as exc:
+        return jsonify({"error": str(exc)}), 400
+
+
+@engine_bp.route("/calendar")
+def forward_calendar():
+    """Forward calendar from ?start (default the next trading day) for &weeks=1..8 (default 4).
+
+    &format=json (default) | html | md.
+    """
+    from flask import Response
+
+    from sbc import forward_calendar as fcal
+    from sbc.market_store import MarketDataMissing
+
+    start = request.args.get("start") or None
+    fmt = request.args.get("format", "json")
+    try:
+        if start:
+            datetime.date.fromisoformat(start)
+        weeks = int(request.args.get("weeks", "4"))
+        if fmt not in ("json", "html", "md"):
+            raise ValueError
+        cal = fcal.build(start, weeks)
+    except MarketDataMissing:
+        return jsonify({"error": "no NIFTY history yet; run scripts/refresh_market_data.py --full"}), 404
+    except ValueError:
+        return jsonify({"error": "start must be YYYY-MM-DD, weeks 1-8, format json/html/md"}), 400
+    if fmt == "html":
+        return Response(fcal.render_html(cal), mimetype="text/html")
+    if fmt == "md":
+        return Response(fcal.render_markdown(cal), mimetype="text/markdown")
+    return jsonify(cal), 200
+
+
+@engine_bp.route("/calendar/reports")
+def calendar_reports():
+    """Weekly calendars written by the scheduler, newest first."""
+    from sbc import forward_calendar as fcal
+    return jsonify({"reports": fcal.reports()}), 200
+
+
+@engine_bp.route("/calendar/reports/<name>")
+def calendar_report_file(name):
+    """One stored calendar file (forward_calendar_<key>.html|md)."""
+    from flask import send_from_directory
+
+    from sbc import forward_calendar as fcal
+    known = {n for r in fcal.reports() for n in (r["html"], r["md"])}
+    if name not in known:
+        return jsonify({"error": "no such report"}), 404
+    return send_from_directory(fcal.REPORT_DIR, name)
+
+
 @engine_bp.route("/fingerprint/status")
 def fingerprint_status():
     from sbc import fingerprint_store

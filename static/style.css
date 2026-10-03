@@ -3210,3 +3210,20 @@ a:focus-visible,
 .analog-table caption { text-align: left; color: var(--muted); padding-bottom: 6px; }
 .analog-table th, .analog-table td { padding: 6px 8px; border-bottom: 1px solid var(--line); text-align: left; white-space: nowrap; }
 .analog-table td.num, .analog-table th:nth-child(n+2):not(:nth-child(7)) { text-align: right; font-variant-numeric: tabular-nums; }
+
+/* Forecast evidence card + Forward Calendar */
+.forecast-evidence .panel-head { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; }
+.fe-badge { border: 1px solid var(--accent); color: var(--accent); border-radius: 999px; padding: 2px 10px; font-size: 11px; }
+.fe-tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; margin: 8px 0; }
+.fe-tile { display: flex; flex-direction: column; gap: 3px; border: 1px solid var(--line); border-radius: 8px; padding: 12px; background: var(--panel2); }
+.fe-label { color: var(--muted); font-size: 11px; text-transform: uppercase; letter-spacing: .04em; }
+.fe-prob { font-size: 22px; font-variant-numeric: tabular-nums; }
+.fe-prob small { font-size: 12px; color: var(--muted); font-weight: 400; }
+.fe-sub { font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.fe-note { color: var(--muted); font-size: 12px; margin: 6px 0; }
+.fe-note.error { color: var(--red); }
+.fe-details { margin: 8px 0; }
+.fe-details summary { cursor: pointer; font-size: 13px; }
+.cal-days td { vertical-align: top; }
+.cal-days .cal-events { white-space: normal; min-width: 220px; }
+.cal-closed td { color: var(--muted); }

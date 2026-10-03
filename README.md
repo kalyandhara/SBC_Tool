@@ -224,6 +224,10 @@ GET  /api/engine/fingerprint/status
 GET  /api/engine/analogs?date=&horizon=1|5|20&variant=overall|slow|medium|fast&k=30
 GET  /api/engine/forecast?date=&horizon=1|5|20
 GET  /api/engine/forecast/ledger?horizon=1|5|20&kind=live|late|backfill
+GET  /api/engine/forecast/card?date=
+GET  /api/engine/calendar?start=&weeks=1..8&format=json|html|md
+GET  /api/engine/calendar/reports
+GET  /api/engine/calendar/reports/<file>
 ```
 `data/market.db` holds NIFTY, SENSEX and India VIX daily bars (yfinance) and NSE
 FII/DII cash flows. `run_app.py` refreshes it after each close; the first backfill is
@@ -246,6 +250,15 @@ volatility, calendar). None has so far; treat every output as research, not advi
 horizon. Its probability stays at the historical base rate until a component passes
 both tests. `run_app.py` freezes it before each open into `data/daily_ledger.db` and
 scores it once the outcome is in, building a live track record.
+
+The Executive Overview opens with the forecast **evidence card**
+(`/api/engine/forecast/card`): the next session's 1/5/20-session chance of a rise, the
+VIX-implied range, the live record, and every rule's lean next to its test results. The
+**Forward Calendar** tab (Advanced analysis) lays out the coming weeks: weekly range,
+sky events (ingresses, stations, exact aspects, eclipses, new/full Moon) and each day's
+rule and analog leans. `run_app.py` writes a copy to `reports/calendar/` every Saturday
+from 08:00 IST; without the server, run `python scripts/forward_calendar.py --weekly`
+from Windows Task Scheduler.
 
 ### Profile Management
 ```

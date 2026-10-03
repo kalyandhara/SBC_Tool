@@ -208,3 +208,6 @@ data/cities.db.*
 data/forecast_ledger.db.*
 data/gold_ohlc.csv
 data/silver_ohlc.csv
+
+# Generated forward calendars (sbc.forward_calendar)
+reports/calendar/

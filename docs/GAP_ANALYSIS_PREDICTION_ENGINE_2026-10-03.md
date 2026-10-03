@@ -122,6 +122,17 @@ decide on before Phase 4:
   **evidence** behind each component. The ledger now builds the live record that a
   pre-registered hypothesis would need.
 
+## Phase 5 status (branch `phase5-calendar`)
+
+| Item | Status |
+|---|---|
+| `sbc/forward_calendar.py` | ✅ next 1–8 weeks: next-session forecast (1/5/20), VIX-implied range at each week's end, per-day sky events (ingresses, slow-planet nakshatra changes, stations, exact aspects < 1°, eclipses, new/full Moon), rule lean counts, analog-set leans, volatility flags. Markdown, HTML and JSON |
+| Weekly schedule | ✅ the `run_app.py` loop writes `reports/calendar/forward_calendar_<Saturday>.{md,html,json}` from Saturday 08:00 IST, once a week, after topping up `fingerprints.db` (purge stale + build missing). It catches up if the server was down. `scripts/forward_calendar.py --weekly` does the same from Task Scheduler |
+| Evidence card (G9) | ✅ top of Executive Overview (`/api/engine/forecast/card`). It shows 1/5/20-session chance of a rise against the base rate, 68/95% ranges, live record (Brier vs base rate), sky facts, and every component's lean with its historical and beyond-market verdicts. It uses the ledger's frozen copy when one exists. The old vedha outlook is relabelled "unvalidated", and so is the "Actionable Investment Directive" |
+| Forward Calendar tab | ✅ Advanced analysis: weekly range + day-by-day table, "open as page", and links to the stored weekly copies |
+| API | ✅ `GET /api/engine/forecast/card`, `GET /api/engine/calendar?start=&weeks=&format=json\|html\|md`, `GET /api/engine/calendar/reports[/<file>]` (only files the store lists are served) |
+| Not done | Monthly automatic re-validation (the `scripts/validate_*.py` runs take minutes; still manual). The async calendar job (G7) isn't needed: a 4-week build takes ~2 s. Pushing reports out (email) was left out, because it needs your consent per send |
+
 ## Target capability (the goal, restated as a pipeline)
 
 ```
