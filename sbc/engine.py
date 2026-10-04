@@ -63,7 +63,7 @@ ANCHORS = {
     },
 }
 
-_anchor_cache = {}
+_anchor_cache: dict = {}
 
 
 def _utc_from_local(date_str, time_str, tz_name):

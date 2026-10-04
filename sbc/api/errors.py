@@ -1,9 +1,9 @@
 """JSON error responses that don't leak exception text to the client (B-25)."""
 
-from flask import current_app, jsonify, request
+from flask import Response, current_app, jsonify, request
 
 
-def internal_error(message: str = "internal error"):
+def internal_error(message: str = "internal error") -> tuple[Response, int]:
     """Log the active exception with its traceback; answer a generic JSON 500.
 
     Call from inside an `except` block. The client gets `message`, never the

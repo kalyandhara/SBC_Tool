@@ -84,7 +84,9 @@ def freeze(day: dt.date, now: dt.datetime | None = None, backfill: bool = False,
                   (day.isoformat(), payload["model_version"],
                    now.isoformat(timespec="seconds"), kind, json.dumps(payload)))
         c.execute("DELETE FROM scores WHERE date=?", (day.isoformat(),))
-    return get_frozen(day)
+    frozen = get_frozen(day)
+    assert frozen is not None  # just written
+    return frozen
 
 
 def get_frozen(day: dt.date) -> dict | None:
@@ -247,7 +249,7 @@ def summary(days: int = 60, now: dt.datetime | None = None) -> dict:
         rows = c.execute(
             "SELECT f.date, f.kind, f.model_version, s.metrics FROM forecasts f "
             "JOIN scores s ON s.date=f.date WHERE f.date>=? ORDER BY f.date", (since,)).fetchall()
-    groups = {}
+    groups: dict[str, dict] = {}
     per_day = []
     for d, kind, mv, m in rows:
         m = json.loads(m)

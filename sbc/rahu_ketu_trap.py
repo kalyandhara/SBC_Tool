@@ -7,6 +7,7 @@ Backtestable with configurable rule weights.
 from __future__ import annotations
 
 import datetime
+from collections.abc import Callable
 from dataclasses import asdict, dataclass
 
 from sbc.backtest import _julian_at_noon
@@ -66,8 +67,8 @@ def _angular_distance(a: float, b: float) -> float:
 def _get_planet_longitude(planets: list[dict], name: str) -> float:
     for p in planets:
         if p["name"] == name:
-            return p["longitude"]
-    return None
+            return float(p["longitude"])
+    raise ValueError(f"{name} missing from the planet list")
 
 def _nakshatra_of_longitude(lon: float) -> str:
     # Simplified mapping: 27 nakshatras each 13.333°
@@ -188,7 +189,8 @@ def generate_calendar(start_date: str, end_date: str, industries: list[str] | No
     }
 
 # Backtest stub
-def backtest_trap_correlation(start_date: str, end_date: str, price_data_fn) -> dict:
+def backtest_trap_correlation(start_date: str, end_date: str,
+                              price_data_fn: Callable[[str, str], float]) -> dict:
     """
     price_data_fn(date, industry) -> next_day_return
     Returns correlation metrics.

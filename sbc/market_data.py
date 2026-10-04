@@ -53,11 +53,11 @@ def _load_cache(cache_path):
 _IST = ZoneInfo("Asia/Kolkata")
 _SESSION_SETTLED = datetime.time(16, 0)  # NSE closes 15:30 IST; allow a margin
 _REFETCH_COOLDOWN_S = 15 * 60
-_last_fetch = {}  # cache_path -> monotonic time of the last download attempt
+_last_fetch: dict[str, float] = {}  # cache_path -> monotonic time of the last download attempt
 # cache_path -> earliest date the vendor actually has. A request starting
 # before it (e.g. 2000 for ^NSEI, which begins 2007-09-17) can't be filled,
 # so it must not count as a missing head and trigger a full re-download.
-_vendor_first = {}
+_vendor_first: dict = {}
 _OHLC_COLS = ["Open", "High", "Low", "Close"]
 
 

@@ -17,7 +17,8 @@ PREFIXES = ("rule_validation", "analog_validation", "incremental_validation", "f
 
 @lru_cache(maxsize=8)
 def _load(path: str, mtime: float) -> dict:
-    return json.loads(Path(path).read_text(encoding="utf-8"))
+    report: dict = json.loads(Path(path).read_text(encoding="utf-8"))
+    return report
 
 
 def latest(prefix: str) -> dict | None:

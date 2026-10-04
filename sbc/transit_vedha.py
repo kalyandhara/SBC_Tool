@@ -154,10 +154,10 @@ INTENSITY_DEFAULTS = {
 def _julian_at_noon(date: datetime.date) -> float:
     local = datetime.datetime.combine(date, datetime.time(12, 0), tzinfo=ZoneInfo('Asia/Kolkata'))
     utc = local.astimezone(datetime.UTC)
-    return swe.julday(utc.year, utc.month, utc.day, utc.hour + utc.minute/60.0)
+    return float(swe.julday(utc.year, utc.month, utc.day, utc.hour + utc.minute/60.0))
 
 
-def _get_planets(date: datetime.date):
+def _get_planets(date: datetime.date) -> tuple[list[dict], int, float]:
     jul = _julian_at_noon(date)
     planets, ayanamsa = positions(jul)
     sun = next(p for p in planets if p["name"] == "Sun")
@@ -167,7 +167,7 @@ def _get_planets(date: datetime.date):
     return planets, tithi, ayanamsa
 
 
-def scan_transit_vedha_matrix(date: datetime.date = None) -> dict[str, Any]:
+def scan_transit_vedha_matrix(date: datetime.date | None = None) -> dict[str, Any]:
     """
     Scan all Transit Vedha Matrix signals for a given date.
     """
@@ -256,7 +256,7 @@ def scan_transit_vedha_matrix(date: datetime.date = None) -> dict[str, Any]:
     all_signals.sort(key=lambda s: intensity_order.get(s.intensity, 0), reverse=True)
 
     # Group by sector impact
-    sector_signals = {}
+    sector_signals: dict = {}
     for s in all_signals:
         for sector in s.affected_sectors:
             if sector not in sector_signals:
@@ -305,7 +305,7 @@ def scan_transit_vedha_matrix(date: datetime.date = None) -> dict[str, Any]:
     }
 
 
-def scan_transit_vedha_week(start_date: datetime.date = None) -> dict[str, Any]:
+def scan_transit_vedha_week(start_date: datetime.date | None = None) -> dict[str, Any]:
     """Scan transit vedha matrix for full week (7 days)."""
     if start_date is None:
         start_date = datetime.date.today()
@@ -329,7 +329,7 @@ def scan_transit_vedha_week(start_date: datetime.date = None) -> dict[str, Any]:
             unique_signals[key] = s
 
     # Weekly sector summary
-    sector_summary = {}
+    sector_summary: dict[str, dict[str, Any]] = {}
     for s in unique_signals.values():
         for sector in s["affected_sectors"]:
             if sector not in sector_summary:

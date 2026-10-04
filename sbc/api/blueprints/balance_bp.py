@@ -7,7 +7,7 @@ from flask import Blueprint, jsonify, request
 balance_bp = Blueprint('balance', __name__, url_prefix='')
 
 # In-process cache: (start_iso, anchor) -> payload.
-_balance_cache = {}
+_balance_cache: dict = {}
 
 @balance_bp.route('/api/daily_indication_balance')
 def daily_indication_balance():

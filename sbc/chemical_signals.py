@@ -10,6 +10,8 @@ Validated planetary syntax from 10-year backtest (2015-2024):
 BEARISH (avoid): Mars-Jupiter trine (negative 1-10d), Mercury chemical trade (negative)
 """
 
+from typing import Any
+
 from .cgsp_framework import angular_distance, get_planet
 
 # =============================================================================
@@ -27,7 +29,7 @@ def check_chemical_syntax(planets, tithi, sun, moon):
     ketu = get_planet(planets, "Ketu")
 
 
-    results = {}
+    results: dict[str, Any] = {}
 
     # ---- 1. MARS (Primary for Chemicals) ----
     mars_strong = mars["sign"] in {"Aries", "Scorpio", "Capricorn"}

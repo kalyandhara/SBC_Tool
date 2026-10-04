@@ -17,7 +17,10 @@ Two questions, answered on the same NIFTY sessions:
 
 from __future__ import annotations
 
+from collections.abc import Callable
+
 import numpy as np
+from numpy.typing import ArrayLike
 
 from sbc import stats as st
 
@@ -33,12 +36,13 @@ def _design(controls: np.ndarray) -> np.ndarray:
     return np.column_stack([np.ones(len(z)), z])
 
 
-def _residualizer(x: np.ndarray):
+def _residualizer(x: np.ndarray) -> Callable[[np.ndarray], np.ndarray]:
     q, _ = np.linalg.qr(x)
     return lambda v: v - q @ (q.T @ v)
 
 
-def partial_effect(signal, fwd, controls, n_perm: int = st.N_PERMUTATIONS, seed: int = 0) -> dict:
+def partial_effect(signal: ArrayLike, fwd: ArrayLike, controls: ArrayLike,
+                   n_perm: int = st.N_PERMUTATIONS, seed: int = 0) -> dict:
     """Effect of `signal` on `fwd` after the controls, with a circular-shift p-value.
 
     beta     return per unit of signal (for a ±1 signal: half the long-minus-short gap)
@@ -71,7 +75,7 @@ def _with_intercept(m: np.ndarray, mu: np.ndarray, sd: np.ndarray) -> np.ndarray
     return np.column_stack([np.ones(len(m)), (m - mu) / sd])
 
 
-def controls_walk_forward(dates: list[str], fwd, controls, horizon: int,
+def controls_walk_forward(dates: list[str], fwd: ArrayLike, controls: ArrayLike, horizon: int,
                           first_year: int = 2012) -> dict:
     """Yearly refit OLS of fwd on controls; out-of-sample hit rate and R² vs the drift."""
     y = np.asarray(fwd, dtype=float)
@@ -110,7 +114,7 @@ def controls_walk_forward(dates: list[str], fwd, controls, horizon: int,
     }
 
 
-def run(n_perm: int = st.N_PERMUTATIONS, horizons=(1, 5, 20)) -> dict:
+def run(n_perm: int = st.N_PERMUTATIONS, horizons: tuple[int, ...] = (1, 5, 20)) -> dict:
     """Partial-effect test of every rule and analog variant, plus the controls' own skill."""
     import datetime as dt
 

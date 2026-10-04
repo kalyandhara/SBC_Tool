@@ -2,6 +2,7 @@
 
 import datetime
 from datetime import UTC
+from typing import Any
 
 from flask import Blueprint, current_app, jsonify, request
 
@@ -49,7 +50,7 @@ def bhadra_overlap_result(date_str, tz_name, offset):
             # the reversal-day cross-reference can show the exact Bhadra
             # inauspicious span.
             covered_days = set()
-            day_windows = {}  # date_str -> list of Bhadra window details
+            day_windows: dict[str, list[dict]] = {}  # date_str -> list of Bhadra window details
             for w in windows:
                 b = datetime.date.fromisoformat(w["begin_iso"][:10])
                 e = datetime.date.fromisoformat(w["end_iso"][:10])
@@ -93,7 +94,7 @@ def bhadra_overlap_result(date_str, tz_name, offset):
                 day=28) + datetime.timedelta(days=4)
             month_end = month_end.replace(day=1) - datetime.timedelta(days=1)
 
-            overlap = {
+            overlap: dict[str, Any] = {
                 "reversal_days": [],
             }
             for wd in rev.get("watch_days", []):

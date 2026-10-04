@@ -21,6 +21,7 @@ import logging
 import os
 import sqlite3
 import threading
+from collections.abc import Callable
 from pathlib import Path
 from zoneinfo import ZoneInfo
 
@@ -131,9 +132,10 @@ def get_daily(symbol: str, start: str | None = None, end: str | None = None) -> 
 
 def _span(symbol: str) -> tuple[str | None, str | None, int]:
     with _conn() as conn:
-        return conn.execute(
+        first, last, count = conn.execute(
             "SELECT MIN(date), MAX(date), COUNT(*) FROM daily WHERE symbol = ?", (symbol,)
         ).fetchone()
+    return first, last, int(count)
 
 
 def _yf_download(ticker: str, start: dt.date, end: dt.date) -> list[dict]:
@@ -160,7 +162,7 @@ def _yf_download(ticker: str, start: dt.date, end: dt.date) -> list[dict]:
 
 
 def refresh_daily(symbol: str, full: bool = False, now: dt.datetime | None = None,
-                  fetch=None) -> dict:
+                  fetch: Callable[[str, dt.date, dt.date], list[dict]] | None = None) -> dict:
     """Fetch what is missing for one symbol and store it.
 
     full=True re-downloads the whole history (fills gaps and the head);
@@ -190,17 +192,19 @@ def _nse_fiidii() -> list[dict]:
     session = requests.Session()
     resp = session.get(NSE_FIIDII_URL, headers=_NSE_HEADERS, timeout=20)
     resp.raise_for_status()
-    return resp.json()
+    data: list[dict] = resp.json()
+    return data
 
 
-def _num(value) -> float | None:
+def _num(value: object) -> float | None:
     try:
         return float(str(value).replace(",", ""))
     except (TypeError, ValueError):
         return None
 
 
-def refresh_flows(now: dt.datetime | None = None, fetch=None) -> dict:
+def refresh_flows(now: dt.datetime | None = None,
+                  fetch: Callable[[], list[dict]] | None = None) -> dict:
     """Store NSE's latest FII/DII cash-market session (INR crore)."""
     fetched_at = (now or dt.datetime.now(IST)).astimezone(IST).isoformat(timespec="seconds")
     rows = []

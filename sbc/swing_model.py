@@ -141,7 +141,7 @@ def layer_events(b: Bars, e: int, direction: int, until: int) -> dict[str, dict[
     """{layer: {bar: [trigger names]}} for bars e+1..until."""
     events: dict[str, dict[int, list[str]]] = {k: {} for k in LAYERS}
 
-    def fire(layer: str, t: int, name: str):
+    def fire(layer: str, t: int, name: str) -> None:
         events[layer].setdefault(t, []).append(name)
 
     entry = b.close[e]
@@ -295,7 +295,8 @@ def swing_windows(windows: list[dict], b: Bars, need: int = 3, exit_rule: str = 
     return out
 
 
-def build(start: str, end: str, planets=None, aspects=None, need: int = 3, bars: Bars | None = None) -> dict:
+def build(start: str, end: str, planets: list[str] | None = None, aspects: list[str] | None = None,
+          need: int = 3, bars: Bars | None = None) -> dict:
     """ENTRY windows, EXIT confluence and the resulting swing windows for [start, end]."""
     windows = ha.scan(start, end, planets, aspects)
     b = bars or Bars.nifty()

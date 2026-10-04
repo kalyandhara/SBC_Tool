@@ -28,7 +28,7 @@ def find_kp_file(month_date):
     return None
 
 def load_kp_for_day(kp_path, target_date):
-    rows = []
+    rows: list[dict[str, str]] = []
     if not kp_path or not kp_path.exists():
         return rows
     with open(kp_path, newline='', encoding='utf-8') as f:

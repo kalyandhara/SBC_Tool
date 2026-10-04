@@ -62,7 +62,7 @@ def _era(date: str) -> str:
 
 
 def walk_forward(history: an.History, start: str = START, k: int = an.TOP_K,
-                 horizons=an.HORIZONS) -> tuple[dict, dict]:
+                 horizons: tuple[int, ...] = an.HORIZONS) -> tuple[dict, dict]:
     """({variant: {h: signal per session}}, {variant: {h: best similarity per session}})."""
     n = len(history.dates)
     first = int(np.searchsorted(history.dates, start))

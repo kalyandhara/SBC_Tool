@@ -37,8 +37,8 @@ def place_planets(grid, planets):
 def compute_vedhas(planets, school="classical"):
     """Return a dict mapping planet name -> list of hit cells with rays,
     plus the full ray paths for drawing."""
-    vedha_map = {}
-    ray_paths = {}
+    vedha_map: dict = {}
+    ray_paths: dict = {}
     for p in planets:
         key = p["nakshatra"]
         cell = NAKSHATRA_CELL.get(key)
@@ -97,7 +97,7 @@ def analyze(planets, vedha_map, birth_nakshatra, school):
 
     # Score on the five Pancha-Shakha points.
     score = {"benefic": 0.0, "malefic": 0.0}
-    per_point = {name: [] for name in PS_POINT_NAMES}
+    per_point: dict[str, list] = {name: [] for name in PS_POINT_NAMES}
     for hit in point_hits:
         if hit["point"] in PS_POINT_NAMES:
             score[hit["nature"]] += abs(hit["strength"])
@@ -128,7 +128,7 @@ def summarize_vedhas(vedha_map, planets, points):
     out = []
     for p in planets:
         hits = vedha_map.get(p["name"], [])
-        rays = []
+        rays: list = []
         for h in hits:
             point = star_to_point.get(h["label"])
             last = rays[-1] if rays else None
@@ -319,7 +319,7 @@ def sector_read(vedha_map, planets):
     rashi is classified into BULLISH / BEARISH / NEUTRAL and mapped onto the
     market sectors associated with that rashi.
     """
-    rashi_hits = {}
+    rashi_hits: dict = {}
     for p in planets:
         for hit in vedha_map.get(p["name"], []):
             if hit["type"] != "rashi":

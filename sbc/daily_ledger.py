@@ -21,6 +21,7 @@ import json
 import os
 import sqlite3
 import threading
+from collections.abc import Callable
 from pathlib import Path
 
 from sbc import market_store
@@ -62,7 +63,8 @@ def _kind(day: dt.date, now: dt.datetime, backfill: bool) -> str:
 
 
 def freeze(day: dt.date, now: dt.datetime | None = None, backfill: bool = False,
-           horizons=HORIZONS, make=None) -> list[int]:
+           horizons: tuple[int, ...] = HORIZONS,
+           make: Callable[[str, int], dict] | None = None) -> list[int]:
     """Store today's forecast for each horizon not already frozen; returns the horizons stored."""
     from sbc import forecast as fc
 
@@ -94,7 +96,7 @@ def _outcome(day: str, horizon: int, bars: list[dict]) -> float | None:
     t = dates.index(day)
     if t == 0 or t + horizon - 1 >= len(bars):
         return None
-    return bars[t + horizon - 1]["close"] / bars[t - 1]["close"] - 1.0
+    return float(bars[t + horizon - 1]["close"] / bars[t - 1]["close"] - 1.0)
 
 
 def score_pending(now: dt.datetime | None = None) -> list[tuple[str, int]]:

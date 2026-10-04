@@ -4,6 +4,8 @@ Combines lunar cycles (tithi, nakshatra, paksha), SBC vedha analysis,
 and planetary nakshatra confluence to generate sector bullish/bearish forecasts.
 """
 
+from typing import Any
+
 from .nakshatra import moon_nature, nakshatra_of, paksha_of, tithi_of
 from .prediction import compute_vedhas, sector_read, sentiment_of
 from .sector_keywords import (
@@ -16,15 +18,6 @@ from .sector_keywords import (
 # =============================================================================
 # LUNAR CYCLE ANALYSIS
 # =============================================================================
-
-# Tithi groups and their market implications
-TITHI_GROUPS = {
-    # Nanda: 1, 6, 11, 16, 21, 26 - Growth, initiation
-    # Bhadra: 2, 7, 12, 17, 22, 27 - Auspicious, prosperity
-    # Jaya: 3, 8, 13, 18, 23, 28 - Victory, success
-    # Rikta: 4, 9, 14, 19, 24, 29 - Empty, avoid new ventures
-    # Purna: 5, 10, 15, 20, 25, 30 - Completion, fullness
-}
 
 # Nakshatra -> sector mapping used for scoring.
 #
@@ -98,7 +91,7 @@ TITHI_EFFECTS = {
 # Facets that named the same sector twice have been collapsed to one entry --
 # Mercury's "Technology" and "Communication" are both IT, and listing both
 # would hand IT double weight now that they share a score key.
-PLANET_NAKSHATRA_SECTOR_WEIGHT = {
+PLANET_NAKSHATRA_SECTOR_WEIGHT: dict[str, dict[str, Any]] = {
     "Sun": {"weight": 1.0, "sectors": ["PSU", "Energy", "Gold"]},
     "Moon": {"weight": 1.2, "sectors": ["Liquids", "FMCG", "Hospitality", "Public Sentiment"]},
     "Mars": {"weight": 1.0, "sectors": ["Metals", "Infra", "Defence", "Energy"]},
@@ -161,7 +154,7 @@ def get_lunar_cycle_analysis(sun_lon, moon_lon, planets):
 
 def get_planetary_nakshatra_confluence(planets):
     """Calculate planetary nakshatra confluence for sectors."""
-    sector_scores = {}
+    sector_scores: dict = {}
     details = []
 
     for p in planets:
@@ -225,7 +218,7 @@ def get_sbc_sector_vedha(planets):
         # and the SBC term of every lunar score was silently zero. Each rashi's
         # net is credited to every canonical sector that rashi signifies.
         rashi_vedha = {}
-        sector_vedha = {}
+        sector_vedha: dict = {}
         for proj in sector_projections:
             rashi = proj["rashi"]
             net = proj["net"]
@@ -336,7 +329,7 @@ def generate_lunar_sector_forecast(date_str, planets, tithi, sun, moon, current_
     sector_forecasts = {}
 
     for sector in all_sectors:
-        score = 0
+        score: float = 0
         signals = []
         risks = []
 

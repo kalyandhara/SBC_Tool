@@ -226,12 +226,12 @@ def _adjustment(component: dict, history: an.History, horizon: int, entry_index:
         from sbc import swing_validation as swv
         in_window = np.array([bool(a) for a in swv.session_windows(dates)])
         past = np.where(in_window, swv.reversal(np.asarray(history.closes[:n], dtype=float)), 0)
-    elif component.get("source") == "factor":
-        past = fx.signals_for(past_fps).get(component["name"])
     else:
-        past = signals_for(past_fps).get(component["name"])
-    if past is None:
-        return 0.0
+        source = fx.signals_for if component.get("source") == "factor" else signals_for
+        found = source(past_fps).get(component["name"])
+        if found is None:
+            return 0.0
+        past = np.asarray(found)
     fwd = history.fwd[horizon][:n]
     known = np.isfinite(fwd)
     same = (np.asarray(past) == lean) & known
@@ -249,12 +249,12 @@ def card(day: str, history: an.History | None = None) -> dict:
     from sbc import daily_ledger
 
     history = history or an.load_nifty_history()
-    horizons, base_payload = {}, None
+    horizons: dict[str, dict] = {}
+    payloads: dict[int, dict] = {}
     for h in HORIZONS:
         frozen = daily_ledger.get(day, h)
         f = frozen or forecast(day, h, history=history)
-        if h == 5 or base_payload is None:
-            base_payload = f
+        payloads[h] = f
         rng = f["expected_range"]
         horizons[str(h)] = {
             "probability_up": f["probability_up"],
@@ -268,6 +268,7 @@ def card(day: str, history: an.History | None = None) -> dict:
             "source": f"frozen {frozen['ledger']['frozen_at']} ({frozen['ledger']['kind']})" if frozen else "computed now",
             "track_record": daily_ledger.summary(h),
         }
+    base_payload = payloads[5]  # components and sky are reported at the 5-session horizon
     components = []
     for c in base_payload["components"]:
         components.append({

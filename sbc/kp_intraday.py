@@ -191,7 +191,7 @@ def build_cumulative_path(
         raise ValueError("step_minutes must be a positive number of minutes")
 
     ds = report.day_signature
-    hora_slots = list(getattr(ds, "hora_slots", []) or [])
+    hora_slots: list[HoraSlot] = list(getattr(ds, "hora_slots", []) or [])
     hora_by_start = {hs.start: hs for hs in hora_slots}
     day_lord = ds.day_lord
 
@@ -417,7 +417,8 @@ class KPDataParser:
         """Extract and structure data for a specific trading day."""
         day_rows = [r for r in rows if self._parse_date(r.get('timestamp', '')) == target_date]
         if not day_rows and rows:
-            dates_in_file = sorted({self._parse_date(r.get('timestamp', '')) for r in rows if self._parse_date(r.get('timestamp', ''))})
+            dates_in_file = sorted({d for r in rows
+                                    if (d := self._parse_date(r.get('timestamp', ''))) is not None})
             if dates_in_file:
                 nearest_date = min(dates_in_file, key=lambda d: abs((d - target_date).days))
                 day_rows = [r for r in rows if self._parse_date(r.get('timestamp', '')) == nearest_date]
@@ -499,7 +500,7 @@ class KPRuleEngine:
         'regime_shift_min_strength': 1.5,
     }
 
-    HORA_QUALITY_MAP = {
+    HORA_QUALITY_MAP: dict[str, dict[str, Any]] = {
         'Sun': {'base': HoraQuality.AGGRESSIVE, 'nature': 'malefic'},
         'Moon': {'base': HoraQuality.FRUITFUL, 'nature': 'benefic'},
         'Mars': {'base': HoraQuality.AGGRESSIVE, 'nature': 'malefic'},
@@ -625,6 +626,8 @@ class KPRuleEngine:
             curr = moon_rows[i]
             if prev.get('sublord') != curr.get('sublord'):
                 ts = self._parse_time(curr.get('timestamp', ''))
+                if ts is None:  # unparseable row: no time to attach the shift to
+                    continue
                 old_sub = prev.get('sublord', '')
                 new_sub = curr.get('sublord', '')
                 hs_strength = float(curr.get('house_set_strength', 0))
@@ -647,6 +650,8 @@ class KPRuleEngine:
             curr = asc_rows[i]
             if prev.get('sublord') != curr.get('sublord'):
                 ts = self._parse_time(curr.get('timestamp', ''))
+                if ts is None:  # unparseable row: no time to attach the shift to
+                    continue
                 old_sub = prev.get('sublord', '')
                 new_sub = curr.get('sublord', '')
                 hs_strength = float(curr.get('house_set_strength', 0))
@@ -834,13 +839,13 @@ class KPRuleEngine:
         if regime_aligned:
             score += 1.0
 
-        return round(score, 2)
+        return round(float(score), 2)
 
     def _get_hora_at_time(self, day_rows: list[dict], ts: time) -> str:
         for r in day_rows:
             rt = self._parse_time(r.get('timestamp', ''))
             if rt and rt == ts and r.get('hora_lord'):
-                return r.get('hora_lord', '')
+                return str(r.get('hora_lord', ''))
         return ''
 
     def score_windows(self, signals: list[TrendChangeSignal], day_rows: list[dict]) -> tuple[list[WindowScore], list[WindowScore]]:
@@ -848,7 +853,7 @@ class KPRuleEngine:
         bullish_windows = []
         bearish_windows = []
 
-        window_signals = {}
+        window_signals: dict = {}
         for s in signals:
             if s.grade in [SignalGrade.PURE_SET_ALARM, SignalGrade.TIER_1, SignalGrade.REGIME_SHIFT]:
                 window_start = self._window_start(s.timestamp)
@@ -1273,7 +1278,7 @@ def enrich_report_v15(report: KPIntradayReport, day_rows: list[dict]) -> None:
         ds.nadi = {"error": str(exc), "text": f"SBC Nadi Classification (v15.1): not computed ({exc})."}
 
 
-def generate_sample_kp_csv(output_path: Path, start_date, days: int = 31):
+def generate_sample_kp_csv(output_path: Path, start_date: date | str, days: int = 31) -> None:
     """Generate sample KP data CSV for testing."""
     import random
     from datetime import date, datetime

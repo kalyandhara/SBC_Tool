@@ -9,6 +9,8 @@ Validated planetary syntax from 10-year backtest (2015-2024):
 6. Mercury Tourism Support (Vir/Gem + Jup/Ven trine) - 55.8% win at 10d, Sharpe 1.49
 """
 
+from typing import Any
+
 from .cgsp_framework import angular_distance, get_planet
 
 # =============================================================================
@@ -28,7 +30,7 @@ def check_tourism_syntax(planets, tithi, sun, moon):
 
     from .nakshatra import paksha_of
 
-    results = {}
+    results: dict[str, Any] = {}
 
     # ---- 1. MOON (STRONGEST PER BACKTEST) ----
     moon_strong = moon["sign"] in {"Taurus", "Cancer"}

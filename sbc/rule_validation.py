@@ -18,8 +18,10 @@ Verdict (per rule and horizon):
 from __future__ import annotations
 
 import datetime as dt
+from collections.abc import Callable
 
 import numpy as np
+from numpy.typing import ArrayLike
 
 from sbc import fingerprint_store, market_store
 from sbc import stats as st
@@ -34,7 +36,8 @@ def _era(date: str) -> str:
     return "2007-2020" if date < ERA_SPLIT else "2021-2026"
 
 
-def load_history(start: str | None = None, end: str | None = None):
+def load_history(start: str | None = None,
+                 end: str | None = None) -> tuple[list[str], list[float], list[dict]]:
     """(dates, closes, fingerprints) for every NIFTY session in market.db."""
     bars = market_store.get_daily("NIFTY", start, end)
     if not bars:
@@ -56,8 +59,9 @@ def _verdict(res: dict, eras: dict) -> str:
     return "edge" if signs == {np.sign(res["excess"])} else "inconsistent"
 
 
-def grade(dates: list[str], closes, entries: list[dict], horizons=HORIZONS,
-          n_perm: int = st.N_PERMUTATIONS, start: str | None = None, era=_era) -> list[dict]:
+def grade(dates: list[str], closes: ArrayLike, entries: list[dict], horizons: tuple[int, ...] = HORIZONS,
+          n_perm: int = st.N_PERMUTATIONS, start: str | None = None,
+          era: Callable[[str], str] = _era) -> list[dict]:
     """Grade signals against forward returns of `closes`.
 
     entries: {name, kind, source, description, signal}, where signal is one value per
@@ -100,7 +104,7 @@ def grade(dates: list[str], closes, entries: list[dict], horizons=HORIZONS,
     return results
 
 
-def run(horizons=HORIZONS, n_perm: int = st.N_PERMUTATIONS,
+def run(horizons: tuple[int, ...] = HORIZONS, n_perm: int = st.N_PERMUTATIONS,
         start: str | None = None, end: str | None = None) -> dict:
     dates, closes, fps = load_history(start, end)
     signals = signals_for(fps)

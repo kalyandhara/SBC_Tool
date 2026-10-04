@@ -26,15 +26,15 @@ def _kota_excel_path():
 engine_bp = Blueprint("engine", __name__, url_prefix="/api/engine")
 
 # Simple in-memory cache for intraday_path: key -> (timestamp, data)
-_intraday_path_cache = {}
+_intraday_path_cache: dict = {}
 _CACHE_TTL_SECONDS = 24 * 60 * 60
 
 # Kota cache
-_kota_cache = {}
+_kota_cache: dict = {}
 _KOTA_TTL_SECONDS = 24 * 60 * 60
 
 # Unified daily forecast contract cache
-_confluence_cache = {}
+_confluence_cache: dict = {}
 
 
 @engine_bp.route("/version")
@@ -213,8 +213,8 @@ def analogs():
         day = datetime.date.fromisoformat(raw).isoformat()
         horizon = int(request.args.get("horizon", "5"))
         k = int(request.args.get("k", str(an.TOP_K)))
-        min_sim = request.args.get("min_similarity")
-        min_sim = float(min_sim) if min_sim not in (None, "") else None
+        raw_sim = request.args.get("min_similarity")
+        min_sim = float(raw_sim) if raw_sim else None
     except ValueError:
         return jsonify({"error": "invalid date, horizon, k or min_similarity"}), 400
     variant = request.args.get("variant", "overall")
@@ -815,7 +815,7 @@ def confluence_daily():
             cache_meta = {"cached": True, "cache_age_seconds": round(now_ts - ts, 1)}
             return jsonify({**data, "cache": cache_meta}), 200
 
-    components = {}
+    components: dict[str, float | None] = {}
 
     # SBC daily net (normalised -1..1)
     try:

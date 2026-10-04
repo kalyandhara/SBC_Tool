@@ -17,6 +17,7 @@ every one.
 from __future__ import annotations
 
 import datetime as dt
+from collections.abc import Iterable
 from functools import lru_cache
 
 import numpy as np
@@ -37,7 +38,7 @@ _FLAGS = swe.FLG_MOSEPH | swe.FLG_HELCTR
 
 def _jd(t: dt.datetime) -> float:
     t = t.astimezone(dt.UTC)
-    return swe.julday(t.year, t.month, t.day, t.hour + t.minute / 60 + t.second / 3600)
+    return float(swe.julday(t.year, t.month, t.day, t.hour + t.minute / 60 + t.second / 3600))
 
 
 def _to_ist(jd: float) -> dt.datetime:
@@ -47,7 +48,7 @@ def _to_ist(jd: float) -> dt.datetime:
 
 
 def helio_longitude(body: int, jd: float) -> float:
-    return swe.calc_ut(jd, body, _FLAGS)[0][0] % 360.0
+    return float(swe.calc_ut(jd, body, _FLAGS)[0][0]) % 360.0
 
 
 def separation(planet: str, jd: float) -> float:
@@ -114,7 +115,8 @@ def _windows(planet: str, code: str, jd0: float, jd1: float, step: float, orb: f
     return tuple(out)
 
 
-def scan(start: str, end: str, planets=None, aspects=None, orb: float = ORB,
+def scan(start: str, end: str, planets: Iterable[str] | None = None,
+         aspects: Iterable[str] | None = None, orb: float = ORB,
          step_minutes: int = 60) -> list[dict]:
     """Earth-planet aspect windows overlapping [start, end] (dates, IST), sorted by entry."""
     planets = list(planets or PLANETS)
@@ -155,7 +157,8 @@ def tv_payload(windows: list[dict], label: str | None = None) -> dict:
     return {"dates": dates, "label": label, "skip_holidays": False}
 
 
-def active_on(day: str, planets=None, aspects=None, orb: float = ORB) -> list[dict]:
+def active_on(day: str, planets: Iterable[str] | None = None, aspects: Iterable[str] | None = None,
+              orb: float = ORB) -> list[dict]:
     """Windows in force at 09:15 IST on `day` (for the daily forecast component)."""
     t = dt.datetime.combine(dt.date.fromisoformat(day), dt.time(9, 15), IST)
     jd = _jd(t)

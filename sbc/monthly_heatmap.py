@@ -190,10 +190,10 @@ def monthly_heatmap(start_date=None, days=30, tz_name="Asia/Kolkata", anchor_key
     days_list = [start_date + datetime.timedelta(days=i) for i in range(days)]
     day_strs = [d.isoformat() for d in days_list]
 
-    matrix = {name: {} for name, _ in NIFTY_SECTOR_ROWS}
+    matrix: dict[str, dict] = {name: {} for name, _ in NIFTY_SECTOR_ROWS}
     overall_by_day = {}
     lunar_events = {}
-    bhadra_map = {}
+    bhadra_map: dict[str, list[dict]] = {}
 
     for d in days_list:
         planets, tithi = _day_planets(d, tz_name)

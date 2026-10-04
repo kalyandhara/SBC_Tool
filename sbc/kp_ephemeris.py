@@ -125,8 +125,8 @@ def kp_point(lon: float) -> dict:
 
 def _julday_ist(when: dt.datetime) -> float:
     utc = when - IST
-    return swe.julday(utc.year, utc.month, utc.day,
-                      utc.hour + utc.minute / 60.0 + utc.second / 3600.0)
+    return float(swe.julday(utc.year, utc.month, utc.day,
+                            utc.hour + utc.minute / 60.0 + utc.second / 3600.0))
 
 
 def _house_of(lon: float, cusps: list[float]) -> int:
@@ -218,7 +218,7 @@ def hora_schedule(day: dt.date) -> list[tuple[dt.datetime, str]]:
     return [(rise + length * k, CHALDEAN[(i0 + k) % 7]) for k in range(12)]
 
 
-def _hora_at(schedule, when: dt.datetime) -> str:
+def _hora_at(schedule: list[tuple[dt.datetime, str]], when: dt.datetime) -> str:
     lord = schedule[0][1]
     for start, hora_lord in schedule:
         if when >= start:

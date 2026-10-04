@@ -9,6 +9,7 @@ import time
 from collections import defaultdict
 from io import BytesIO
 from pathlib import Path
+from typing import Any
 from zoneinfo import ZoneInfo
 
 from flask import Flask, Response, jsonify, render_template, request, send_file
@@ -84,14 +85,14 @@ app.register_blueprint(balance_bp)
 app.register_blueprint(chakra_bp)
 app.register_blueprint(forecast_bp)
 
-_daily_confluence_cache = {}
+_daily_confluence_cache: dict = {}
 # Always render the current template from disk (avoids stale HTML during dev iteration)
 app.config["TEMPLATES_AUTO_RELOAD"] = True
 app.jinja_env.auto_reload = True
 app.jinja_env.cache = {}
 
 # Simple in-memory rate limiter
-_request_times = defaultdict(list)
+_request_times: defaultdict[str, list[float]] = defaultdict(list)
 
 
 # A page load fires ~30 requests, so the old 60/min ceiling throttled the
@@ -103,7 +104,7 @@ _RATE_LIMIT_PER_MIN = 240
 def _rate_limit():
     if app.testing:
         return None
-    ip = request.remote_addr
+    ip = request.remote_addr or "unknown"
     now = time.time()
     _request_times[ip] = [t for t in _request_times[ip] if now - t < 60]
     if len(_request_times[ip]) > _RATE_LIMIT_PER_MIN:
@@ -442,7 +443,7 @@ def nakshatra_chart():
 
 
 # Contra signals: (start_iso, anchor) -> payload (own namespace)
-_contra_cache = {}
+_contra_cache: dict = {}
 
 
 @app.route("/api/contra_signals")
@@ -605,8 +606,8 @@ def crash_score_series():
 
     Uses the same _bearish_future_score engine as the Crash Futurecast panel.
     """
-    start = request.args.get("start")
-    end = request.args.get("end")
+    start = request.args.get("start") or ""
+    end = request.args.get("end") or ""
     try:
         start_d = datetime.date.fromisoformat(start)
         end_d = datetime.date.fromisoformat(end)
@@ -1116,7 +1117,7 @@ def api_habits_history():
         cur.execute("SELECT habit_type, log_date, COUNT(*) FROM habit_logs WHERE user_key=? AND log_date>=? GROUP BY habit_type, log_date", (user_key, start_date))
         rows = cur.fetchall()
         conn.close()
-        history = {}
+        history: dict = {}
         for h,d,c in rows:
             history.setdefault(h, {})[d] = c
         return jsonify(history)
@@ -1272,9 +1273,8 @@ def api_price():
             start = datetime.date.fromisoformat(start_str)
             end = datetime.date.fromisoformat(end_str) + datetime.timedelta(days=1)
         elif days:
-            days = int(days)
             end = datetime.date.today()
-            start = end - datetime.timedelta(days=days)
+            start = end - datetime.timedelta(days=int(days))
         else:
             end = datetime.date.today()
             start = end - datetime.timedelta(days=180)
@@ -1468,7 +1468,7 @@ def api_tz_offset():
         dt_naive = datetime.datetime(y,m,d,hh,mm)
         tz = ZoneInfo(tz_name)
         dt_local = dt_naive.replace(tzinfo=tz)
-        offset = dt_local.utcoffset()
+        offset = dt_local.utcoffset() or datetime.timedelta(0)
         total_minutes = int(offset.total_seconds() // 60)
         hours = total_minutes // 60
         mins = abs(total_minutes % 60)
@@ -1518,7 +1518,7 @@ def api_daily_confluence():
         for offset in range(days):
             day = start + datetime.timedelta(days=offset)
             result = build_response(day.isoformat(), "09:15", "Asia/Kolkata", "nifty", "allthree")
-            moon = next((planet for planet in result["planets"] if planet["name"] == "Moon"), {})
+            moon: dict = next((planet for planet in result["planets"] if planet["name"] == "Moon"), {})
             net = float(result.get("net", 0))
             nakshatra = moon.get("nakshatra", "Unknown")
             forecast.append({
@@ -2005,7 +2005,7 @@ def api_research_event_study():
         event_mean = mean(event_returns)
         event_std = statistics.stdev(event_returns) if len(event_returns) > 1 else 0.0
         margin = 1.96 * event_std / math.sqrt(len(event_returns)) if event_returns else 0.0
-        result = {
+        result: dict[str, Any] = {
             "ticker": ticker, "event": event, "horizon_days": horizon,
             "start": start.isoformat(), "end": end.isoformat(),
             "generated_at": datetime.datetime.now(datetime.UTC).isoformat(),
@@ -2030,7 +2030,7 @@ def api_research_event_study():
         # high/low volatility regimes from the median volatility split.
         import statistics as _statistics
         vol_median = _statistics.median([row["volatility_pct"] for row in rows]) if rows else 0.0
-        regime_groups = {}
+        regime_groups: dict = {}
         for row in event_rows:
             trend_regime = row.get("regime", "range")
             vol_regime = "high_vol" if row["volatility_pct"] >= vol_median else "low_vol"
@@ -2131,11 +2131,11 @@ def api_research_aspects():
                 base = float(close.iloc[index])
                 future = float(close.iloc[index + horizon])
                 events.append({**event_record.to_dict(), "return_pct": (future / base - 1) * 100})
-        grouped = {}
-        for event_record in events:
-            key = (event_record["planet_a"], event_record["planet_b"],
-                   event_record["metadata"]["aspect"], event_record["metadata"].get("state"))
-            grouped.setdefault(key, []).append(event_record["return_pct"])
+        grouped: dict = {}
+        for rec in events:
+            key = (rec["planet_a"], rec["planet_b"],
+                   rec["metadata"]["aspect"], rec["metadata"].get("state"))
+            grouped.setdefault(key, []).append(rec["return_pct"])
         rows = [{"planet_a": key[0], "planet_b": key[1], "aspect": key[2], "state": key[3],
                  "samples": len(values),
                  "mean_return_pct": sum(values) / len(values),
