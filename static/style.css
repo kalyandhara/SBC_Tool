@@ -3242,3 +3242,12 @@ a:focus-visible,
 .city-results li:hover, .city-results li:focus { background: var(--panel); outline: none; }
 .city-results .muted { color: var(--muted); font-size: 12px; }
 .city-results .city-pop { margin-left: auto; color: var(--muted); font-size: 11px; font-variant-numeric: tabular-nums; }
+
+/* Data-as-of badges (B-05): green when current, amber from one session behind */
+.asof-slot { margin: 4px 0 8px; }
+.asof-badge {
+  display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 11px;
+  font-weight: 600; vertical-align: middle; border: 1px solid currentColor;
+}
+.asof-badge.ok { color: var(--green); background: color-mix(in srgb, var(--green) 10%, transparent); }
+.asof-badge.stale { color: var(--accent); background: color-mix(in srgb, var(--accent) 14%, transparent); }

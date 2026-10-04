@@ -167,8 +167,13 @@ def market_ohlc():
     except ValueError:
         return jsonify({"error": "invalid days"}), 400
     days = max(1, min(60, days))
+    from sbc import data_freshness
     data = load_week_ohlc(symbol, days)
-    return jsonify({"symbol": symbol, "days": days, "bars": data}), 200
+    last = data[-1].get("date") if data else None
+    return jsonify({"symbol": symbol, "days": days, "bars": data,
+                    "freshness": data_freshness.stamp(last),
+                    "note": None if data else "no 3-minute bar source is configured; "
+                                              "data/ohlc/ is empty"}), 200
 
 
 @engine_bp.route("/market/freshness")
@@ -206,7 +211,7 @@ def analogs():
     """
     from sbc import analog_validation as av
     from sbc import analogs as an
-    from sbc import fingerprint_store
+    from sbc import data_freshness, fingerprint_store
 
     raw = request.args.get("date") or datetime.date.today().isoformat()
     try:
@@ -233,6 +238,7 @@ def analogs():
     result.update({
         "variant": variant,
         "data_as_of": history.dates[-1],
+        "freshness": data_freshness.stamp(history.dates[-1]),
         "track_record": av.track_record(variant, horizon),
         "status": "experimental",
         "caveat": ("Research output, not investment advice. In the walk-forward test "
@@ -296,11 +302,14 @@ def forecast_card():
     if not is_trading_day(day):
         return jsonify({"error": f"{day} is not an NSE trading day"}), 400
     try:
-        return jsonify(fc.card(day.isoformat())), 200
+        card = fc.card(day.isoformat())
     except MarketDataMissing:
         return jsonify({"error": "no NIFTY history yet; run scripts/refresh_market_data.py --full"}), 404
     except ValueError as exc:
         return jsonify({"error": str(exc)}), 400
+    from sbc import data_freshness
+    card["freshness"] = data_freshness.stamp(card.get("data_as_of"), before=day)
+    return jsonify(card), 200
 
 
 @engine_bp.route("/calendar")
@@ -331,7 +340,8 @@ def forward_calendar():
         return Response(fcal.render_html(cal), mimetype="text/html")
     if fmt == "md":
         return Response(fcal.render_markdown(cal), mimetype="text/markdown")
-    return jsonify(cal), 200
+    from sbc import data_freshness
+    return jsonify({**cal, "freshness": data_freshness.stamp(cal.get("data_as_of"))}), 200
 
 
 @engine_bp.route("/calendar/reports")
@@ -414,6 +424,8 @@ def swing_windows():
         out = sm.build(start, end, planets, aspects, need)
     except MarketDataMissing:
         return jsonify({"error": "no NIFTY history yet; run scripts/refresh_market_data.py --full"}), 404
+    from sbc import data_freshness
+    out["freshness"] = data_freshness.stamp(out.get("data_as_of"))
     report = research_reports.latest("swing_validation")
     if report:
         res = report["model"]["models"].get("strict (3 of 3)" if need == 3 else "2 of 3", {})
@@ -708,6 +720,11 @@ def intraday_path():
     return jsonify(response_data), 200
 
 
+def _kota_coverage(path):
+    from sbc import data_freshness
+    return data_freshness.kota_coverage(path)
+
+
 @engine_bp.route("/kota/daily")
 def kota_daily():
     import datetime
@@ -741,7 +758,8 @@ def kota_daily():
     result = {
         "date": date_str,
         "instrument": instrument,
-        "records": filtered.to_dict(orient="records")
+        "records": filtered.to_dict(orient="records"),
+        "coverage": _kota_coverage(excel_path),
     }
     return jsonify(result), 200
 
@@ -767,7 +785,8 @@ def kota_weekly():
     filtered = df[df[date_col].astype(str).str.contains(week_start, na=False)]
     result = {
         "week_start": week_start,
-        "records": filtered.to_dict(orient="records")
+        "records": filtered.to_dict(orient="records"),
+        "coverage": _kota_coverage(excel_path),
     }
     return jsonify(result), 200
 
@@ -790,7 +809,8 @@ def kota_monthly():
     filtered = df[df.astype(str).apply(lambda row: row.str.contains(month, na=False)).any(axis=1)]
     result = {
         "month": month,
-        "summary": filtered.to_dict(orient="records")
+        "summary": filtered.to_dict(orient="records"),
+        "coverage": _kota_coverage(excel_path),
     }
     return jsonify(result), 200
 

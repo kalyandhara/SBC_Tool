@@ -23,7 +23,7 @@
     return `
       <div class="analog-table-wrap">
         <table class="analog-table">
-          <caption>Weekly 68% range (VIX ${c.vix == null ? "–" : c.vix.toFixed(2)}, from the ${esc(c.data_as_of)} close of ${num(c.entry_close)})</caption>
+          <caption>${window.SBCFreshness ? SBCFreshness.badge(c.freshness, "NIFTY") + " " : ""}Weekly 68% range (VIX ${c.vix == null ? "–" : c.vix.toFixed(2)}, from the ${esc(c.data_as_of)} close of ${num(c.entry_close)})</caption>
           <thead><tr><th scope="col">Week</th><th scope="col">Sessions</th><th scope="col">68% range at week end</th>
             <th scope="col">Sky events</th></tr></thead>
           <tbody>${rows}</tbody>

@@ -4047,6 +4047,7 @@ function initWorkspaceTabs() {
       fetch(`/api/engine/market/ohlc?symbol=NIFTY&days=7`).then(r=>r.json()).then(data=>{
         // expose to global for nifty-chart.js fallback
         window._cachedOHLC = data.bars;
+        window._cachedOHLCFreshness = data.freshness;
         console.log("OHLC cache loaded", data.bars.length, "bars");
       }).catch(()=>{});
     }
@@ -5449,10 +5450,12 @@ document.addEventListener("DOMContentLoaded", () => {
       btns.forEach((b) => { if (b) b.disabled = true; });
       const wrap = $("kota-table-wrap");
       if (wrap) wrap.innerHTML = '<div class="exec-empty">Loading Kota Chakra data...</div>';
+      if (window.SBCFreshness) SBCFreshness.show("kota-asof", "");
       try {
         const res = await fetchWithTimeout(url);
         const data = await res.json();
         if (data.error) throw new Error(data.error);
+        if (window.SBCFreshness) SBCFreshness.show("kota-asof", SBCFreshness.kotaBadge(data.coverage));
         renderKotaTable(data.records || data.summary);
       } catch (e) {
         console.error("Kota Chakra load failed:", e);

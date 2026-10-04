@@ -51,7 +51,7 @@
           <div><dt>Best match</dt><dd>${pct(d.best_similarity, 0)} similar</dd></div>
         </dl>
         <p class="analog-note">${d.mode === "threshold" ? "All sessions above the similarity threshold." : `The ${s.n} most similar sessions, at least 5 sessions apart.`}
-          Searched ${d.pool.toLocaleString()} sessions whose outcome was known before ${esc(d.target)}. Market data as of ${esc(d.data_as_of)}.</p>
+          Searched ${d.pool.toLocaleString()} sessions whose outcome was known before ${esc(d.target)}. ${window.SBCFreshness ? SBCFreshness.badge(d.freshness, "Market") : "Market data as of " + esc(d.data_as_of)}</p>
       </div>`;
   }
 

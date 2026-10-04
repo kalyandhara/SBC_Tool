@@ -52,7 +52,12 @@ def nifty_chart():
                 datetime.datetime.strptime(d, "%Y-%m-%d")
     except ValueError:
         return jsonify({"error": "invalid date"}), 400
-    return jsonify({"candles": get_nifty_ohlc(start, end), "symbol": "^NSEI"})
+    from sbc import data_freshness
+    from sbc.market_data import _CACHE_PATH
+    candles = get_nifty_ohlc(start, end)
+    # As of the whole cached series (refreshed by the call above), not the range asked for.
+    freshness = data_freshness.stamp(data_freshness.csv_last_date(_CACHE_PATH))
+    return jsonify({"candles": candles, "symbol": "^NSEI", "freshness": freshness})
 
 @chart_bp.route('/api/prediction_series')
 def prediction_series():

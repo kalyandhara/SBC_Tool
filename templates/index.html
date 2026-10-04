@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <link rel="icon" type="image/svg+xml" href="/static/favicon.svg">
   <title>Sarvatobhadra Chakra - Market Prediction</title>
-  <link rel="stylesheet" href="/static/style.css?v=21">
+  <link rel="stylesheet" href="/static/style.css?v=22">
   <script src="/static/chart.umd.min.js"></script>
   <script src="/static/js/api-token.js"></script>
 </head>
@@ -594,6 +594,7 @@
           <span class="gann-legend"><i class="mk mk-gann-target"></i> Gann target (red)</span>
           <span class="gann-legend"><i class="mk mk-gann-sl"></i> Gann SL / trailing (black)</span>
         </div>
+        <div id="nifty-chart-asof" class="asof-slot"></div>
         <div id="nifty-chart-status" class="nifty-chart-status"></div>
         <div id="nifty-chart" class="nifty-chart"></div>
         <div id="nifty-chart-tip" class="nifty-chart-tip hidden"></div>
@@ -1040,6 +1041,7 @@
           <button id="kota-load-weekly" class="btn btn-secondary">Load Weekly</button>
           <button id="kota-load-monthly" class="btn btn-secondary">Load Monthly</button>
         </div>
+        <div id="kota-asof" class="asof-slot"></div>
         <div id="kota-table-wrap"></div>
       </div>
 
@@ -1281,15 +1283,16 @@
   </footer>
 
   <!-- Client-Side Scripts -->
+  <script src="/static/js/freshness.js?v=1"></script>
   <script src="/static/vendor/lightweight-charts.js?v=4"></script>
-  <script src="/static/nifty-chart.js?v=16"></script>
-  <script src="/static/app.js?v=36"></script>
+  <script src="/static/nifty-chart.js?v=17"></script>
+  <script src="/static/app.js?v=37"></script>
   <script src="/static/intraday-projection.js?v=2"></script>
   <script src="/static/intraday-forecast.js?v=7"></script>
-  <script src="/static/js/analog-lab.js?v=1"></script>
-  <script src="/static/js/forecast-card.js?v=1"></script>
-  <script src="/static/js/forward-calendar.js?v=2"></script>
-  <script src="/static/js/swing-windows.js?v=3"></script>
+  <script src="/static/js/analog-lab.js?v=2"></script>
+  <script src="/static/js/forecast-card.js?v=2"></script>
+  <script src="/static/js/forward-calendar.js?v=3"></script>
+  <script src="/static/js/swing-windows.js?v=4"></script>
   <script>
   document.addEventListener('DOMContentLoaded', function(){
     const cityInput = document.getElementById('bd-city');
@@ -2238,6 +2241,11 @@ document.addEventListener('DOMContentLoaded', async ()=>{
       if(!res.ok) throw new Error('Price fetch failed');
       candles = await res.json();
       if(!candles.length) throw new Error('No price data for '+ticker);
+      // Data-as-of stamp from the response headers (B-05)
+      const priceAsOf = res.headers.get('X-Data-As-Of');
+      const priceFresh = priceAsOf ? {as_of: priceAsOf, stale: res.headers.get('X-Data-Stale') === '1',
+        expected: res.headers.get('X-Data-Expected'),
+        sessions_behind: Number(res.headers.get('X-Data-Sessions-Behind') || 0)} : null;
       // Create lightweight chart if available
       if(window.LightweightCharts && container){
         container.innerHTML = '';
@@ -2260,6 +2268,12 @@ document.addEventListener('DOMContentLoaded', async ()=>{
           <span style="margin-left:8px;opacity:.7">Crash score</span>
         `;
         container.appendChild(controlsBar);
+        if(priceFresh && window.SBCFreshness){
+          const asof = document.createElement('div');
+          asof.className = 'asof-slot';
+          asof.innerHTML = SBCFreshness.badge(priceFresh, ticker);
+          container.appendChild(asof);
+        }
         // Wire Load Chart button to re-apply visible range
         const tsLoadBtn = controlsBar.querySelector('#ts-load');
         const tsStart = controlsBar.querySelector('#ts-start');

@@ -36,7 +36,7 @@ code and tech debt · **P3** = hygiene.
 | B-25 Exception text in responses | ✅ 29 handlers use `sbc.api.errors.internal_error()` (logs traceback, generic 500); nested error fields and the crash-series cache no longer echo/cache exceptions; tz endpoints answer 400 for bad input; duplicate global handler removed |
 
 | B-10 Placeholder research routes | ✅ removed (2026-10-03, `phase0-market-data`) |
-| B-05 Stale market data | 🟡 NIFTY/SENSEX/VIX in `data/market.db` refresh after each close; sector CSVs and Kota still stale |
+| B-05 Stale market data | ✅ NIFTY/SENSEX/VIX in `data/market.db` refresh after each close and `get_nifty_ohlc` refreshes its CSV; `sbc/data_freshness.py` stamps every price/Kota response (`freshness`: as-of, expected session, sessions behind), and the NIFTY chart, sector price chart, forecast card, Analog Lab, Forward Calendar, Swing Windows and Kota panel show a badge that turns amber from one trading session behind. Kota shows the workbook's date range (supplied by hand; it ends 2026-09-15). `/api/engine/market/ohlc` says no 3-minute bar source is configured. The sector CSVs in `data/` are read only by `scripts/adhoc/` (2026-10-04, `b05-staleness`) |
 
 | **B-37** Phantom KP vedha school (new) | ✅ removed from fingerprint and README (2026-10-03, `phase2-stats`) |
 | **B-38** `_nakshatra_bullish` misspells U.Phalguni (new) | ✅ fixed, plus the same misspelling in the intraday-path `NADI_MAP` (6 nakshatras fell back to "Madhya"); rule and incremental reports re-run: still no edge (2026-10-03, `backlog-sprint3`) |
@@ -231,7 +231,7 @@ forecast date picker, the ledger loop and the futurecast calendars.
   junk rows.
 - **Done when:** The `profiles` row count is the same before and after `pytest`.
 
-### B-05 · Market data is stale: NIFTY daily ends 2026-09-21; Kota covers only 1–15 Sep
+### B-05 · Market data is stale: NIFTY daily ends 2026-09-21; Kota covers only 1–15 Sep — ✅ done 2026-10-04
 - **Evidence:** `data/nifty_ohlc.csv` last row is `2026-09-21` (10 days old; some rows have
   volume 0). `data/kota/` holds only `Prediction_Kota_Chakra_01.09.2026 till 15.09.2026.xlsx`.
   `data/ohlc/` (3-min bars) is now empty because the sample files were deleted, so
