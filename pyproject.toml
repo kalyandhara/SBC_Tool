@@ -130,7 +130,8 @@ ignore = [
 known-first-party = ["sbc", "app"]
 
 [tool.mypy]
-python_version = "3.11"
+# CI and the Docker image run 3.12; numpy >= 2.5 ships stubs with 3.12-only syntax.
+python_version = "3.12"
 warn_return_any = true
 warn_unused_configs = true
 disallow_untyped_defs = false
