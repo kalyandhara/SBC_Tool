@@ -8,6 +8,7 @@ import app as app_module
 from sbc import backtest as bt
 from sbc import fingerprint as fpm
 from sbc import market_ohlc
+from sbc.api.blueprints import signals_bp
 from sbc.nakshatra import NAKSHATRAS_27
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -16,7 +17,7 @@ ROOT = Path(__file__).resolve().parent.parent
 # ── B-11 ───────────────────────────────────────────────────────────────────
 
 def test_vedha_daily_uses_the_real_moon_nakshatra(client, monkeypatch):
-    monkeypatch.setattr(app_module, "_heatmap_month_row", lambda month, row: {"2026-09-02": 1.5})
+    monkeypatch.setattr(signals_bp, "_heatmap_month_row", lambda month, row: {"2026-09-02": 1.5})
     rows = client.get("/api/vedha_daily?sector=Nifty%20Bank&start=2026-09-01&end=2026-09-03").get_json()
     assert [r["date"] for r in rows] == ["2026-09-01", "2026-09-02", "2026-09-03"]
     for r in rows:
@@ -27,7 +28,7 @@ def test_vedha_daily_uses_the_real_moon_nakshatra(client, monkeypatch):
 
 def test_vedha_daily_computes_only_the_months_in_range(client, monkeypatch):
     seen = []
-    monkeypatch.setattr(app_module, "_heatmap_month_row", lambda month, row: seen.append(month) or {})
+    monkeypatch.setattr(signals_bp, "_heatmap_month_row", lambda month, row: seen.append(month) or {})
     client.get("/api/vedha_daily?sector=Nifty%20Bank&start=2026-08-20&end=2026-10-05")
     assert seen == ["2026-08-01", "2026-09-01", "2026-10-01"]
     assert client.get("/api/vedha_daily?start=2020-01-01&end=2026-01-01").status_code == 400
@@ -45,9 +46,10 @@ def test_no_fake_bar_generator():
 
 def test_rate_limiter_sweeps_idle_clients(client, monkeypatch):
     stale = time.time() - 120
-    table = app_module._request_times
+    from sbc import app_factory
+    table = app_factory._request_times
     table.clear()
-    for i in range(app_module._RATE_LIMIT_MAX_CLIENTS + 5):
+    for i in range(app_factory._RATE_LIMIT_MAX_CLIENTS + 5):
         table[f"10.0.{i // 256}.{i % 256}"] = [stale]
     monkeypatch.setitem(app_module.app.config, "TESTING", False)
     client.get("/healthz")

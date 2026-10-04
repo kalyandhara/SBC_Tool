@@ -57,6 +57,7 @@ code and tech debt · **P3** = hygiene.
 | B-31 Stale docs | ✅ README feature table rebuilt from the actual tabs with a research-only note and API-only section; dated notes moved to `docs/archive/` (2026-10-04) |
 | B-32 Line endings | ✅ `.gitattributes` (`* text=auto eol=lf`, CRLF for `.bat`, binaries marked); the index was already LF, so renormalising changed nothing (2026-10-04) |
 | B-18 Routes with no UI caller | ✅ "cut the noise" (2026-10-04, `b18-prune-routes`): 18 routes deleted — astrogann/signal, bearish_futurecast, cgsp_backtest, cgsp_framework, contra_signals, crash_analysis, crash_backtest, engine/confluence/daily, engine/summary, engine/trace, gann/indicators, gann/turbo_zones, habits/summary, kp_intraday_config, saturn_macro, sector/planet_read, sector/vedha_read, trade_setups — with the code only they used (`crash_analyzer`, `astrogann`, `gann_indicators`, `sector_bp`, `blend_forecast_scores`, `run_saturn_macro_analysis`, `generate_cgsp_report`, `backtest_cgsp`, `get_setup`). 11 kept as API-only (healthz, TradingView webhook + latest, aspect_windows for Pine, engine ops). `tests/test_route_pruning.py` fails on any new route that has neither a UI caller nor an API-only entry |
+| B-16 `app.py` monolith | ✅ `app.py` is 30 lines: `app = create_app()` plus the engine re-exports. `sbc/app_factory.py` registers 13 blueprints and holds the rate limit, write gate, JSON error handler, cache/CSP headers and `/healthz`. The 50 routes left in `app.py` moved to five new blueprints (research, signals, timing, profile, integrations); the route table is identical (86 rules) and leftover imports are gone (2026-10-04, `b16-split-app`) |
 | **B-39** Astro-quant swing windows: heliocentric aspect ENTRY + Gann/Fib/indicator EXIT (new) | ✅ built and validated 2026-10-03 (`b39-swing-windows`): no edge (see below) |
 
 ### B-39 · Astro-quant swing-window model (P2, new feature request 2026-10-03) — ✅ done 2026-10-03
@@ -356,7 +357,7 @@ Resolved: `sbc/engine.py` holds `build_response`, `ANCHORS` and the time helpers
 
 ## P2 — Design debt and stale code
 
-### B-16 · `app.py` is still a 2,631-line monolith; the blueprint migration stalled halfway
+### B-16 · `app.py` is still a 2,631-line monolith; the blueprint migration stalled halfway — ✅ done 2026-10-04
 About 75 routes are still in `app.py`, while 7 blueprints + `engine_bp` + `sector_bp` hold the
 rest. `app.py` also still carries leftover imports from the moved routes (ruff F401:
 `NAKSHATRAS_27`, `generate_weekly_commentary`, `format_commentary_text`, `moon_rashi`,

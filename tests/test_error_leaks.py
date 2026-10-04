@@ -22,8 +22,8 @@ def assert_generic_500(resp):
 
 
 def test_app_route_failure_is_generic(client, monkeypatch, caplog):
-    import app
-    monkeypatch.setattr(app.profiles_db, "connect", boom)
+    from sbc.api.blueprints import profile_bp
+    monkeypatch.setattr(profile_bp.profiles_db, "connect", boom)
     with caplog.at_level(logging.ERROR):
         resp = client.get("/api/habits/streaks?user_key=default")
     assert_generic_500(resp)
