@@ -47,6 +47,7 @@ code and tech debt · **P3** = hygiene.
 | B-22 Duplicate definitions | ✅ verified: ruff F811/F601 clean, single `get_sign_type` / `get_jupiter_transit_table` / Krittika key |
 | B-24 Fake-bar generator | ✅ removed; `data/ohlc` resolved from the package root and no longer created at import |
 | B-26 Rate limiter growth | ✅ idle clients are swept once the table passes 1,000 entries (per-worker limits remain; nginx `limit_req` is the real limiter) |
+| B-14 City search | ✅ `scripts/seed_cities.py` builds `data/cities.db` from GeoNames (34,152 cities ≥ 15,000 people, with state and time zone); `sbc/cities.py` ranks exact → prefix → substring then population, `LIMIT 20`; the UI shows a results list instead of `alert()`; Docker image seeds at build; boot warns if the DB is missing (2026-10-03, `fix-b14-cities`) |
 | **B-39** Astro-quant swing windows: heliocentric aspect ENTRY + Gann/Fib/indicator EXIT (new) | ✅ built and validated 2026-10-03 (`b39-swing-windows`): no edge (see below) |
 
 ### B-39 · Astro-quant swing-window model (P2, new feature request 2026-10-03) — ✅ done 2026-10-03
@@ -323,7 +324,7 @@ forecast date picker, the ledger loop and the futurecast calendars.
 - **Fix:** Per-call timeouts (heavy ones 60–120 s), or async job plus polling for heavy
   computations. Show "computing…" rather than a generic failure.
 
-### B-14 · City search has 5 rows
+### B-14 · City search has 5 rows — ✅ done 2026-10-03
 - **Evidence:** `data/cities.db` → `cities: 5` rows, and it's gitignored, so a fresh clone has
   no DB. Birth-data city lookup is effectively broken. The inline UI also uses `alert()`
   for results (`index.html:1197-1205`).

@@ -4,7 +4,6 @@ import datetime
 import hmac
 import json
 import os
-import sqlite3
 import time
 from collections import defaultdict
 from functools import lru_cache
@@ -1521,51 +1520,17 @@ def api_daily_confluence():
 
 @app.route("/api/cities/search", methods=["GET"])
 def api_cities_search():
-    q = request.args.get("q", "").strip()
-    country = request.args.get("country", "").strip()
-    if not q or len(q) < 2:
-        return jsonify([])
-    db_path = Path("data/cities.db")
-    if not db_path.exists():
-        return jsonify([])
-    conn = sqlite3.connect(str(db_path))
-    conn.row_factory = sqlite3.Row
-    cur = conn.cursor()
-    # Simple LIKE search, case-insensitive
-    pattern = f"%{q}%"
-    if country.lower() in ("usa", "us", "united states", "united states of america"):
-        sql = "SELECT name, country, lat, lon, admin_name FROM cities WHERE name LIKE ? AND lower(country) IN ('united states','usa')"
-    elif country:
-        sql = "SELECT name, country, lat, lon, admin_name FROM cities WHERE name LIKE ? AND lower(country) LIKE lower(?)"
-        cur.execute(sql, (pattern, f"%{country}%"))
-    else:
-        sql = "SELECT name, country, lat, lon, admin_name FROM cities WHERE name LIKE ?"
-        cur.execute(sql, (pattern,))
-    if country and country.lower() not in ("usa","us","united states","united states of america"):
-        # already executed above
-        rows = cur.fetchall()
-    else:
-        if country and country.lower() not in ("usa","us","united states","united states of america"):
-            pass
-        else:
-            # re-execute for generic
-            if country.lower() in ("usa","us","united states","united states of america"):
-                cur.execute("SELECT name, country, lat, lon, admin_name FROM cities WHERE name LIKE ? AND lower(country) IN ('united states','usa')", (pattern,))
-            else:
-                cur.execute("SELECT name, country, lat, lon, admin_name FROM cities WHERE name LIKE ?", (pattern,))
-            rows = cur.fetchall()
-    # Fallback for non-USA country param already handled
-    results = []
-    for r in rows:
-        results.append({
-            "name": r["name"],
-            "country": r["country"],
-            "admin": r["admin_name"],
-            "lat": r["lat"],
-            "lon": r["lon"]
-        })
-    conn.close()
-    return jsonify(results)
+    """City lookup for birth data: ?q= (2+ chars) &country= (name, ISO code or USA) &limit= (1-50).
+
+    Backed by data/cities.db (GeoNames cities >= 15,000 people; scripts/seed_cities.py).
+    """
+    from sbc import cities
+
+    try:
+        limit = int(request.args.get("limit", "20"))
+    except ValueError:
+        return jsonify({"error": "limit must be an integer"}), 400
+    return jsonify(cities.search(request.args.get("q", ""), request.args.get("country", ""), limit))
 
 
 @app.route("/api/gann/turbo_zones", methods=["GET"])

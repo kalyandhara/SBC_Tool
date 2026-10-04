@@ -34,6 +34,10 @@ COPY --chown=appuser:appuser . .
 # Writable data directory (SQLite caches, profiles, forecast ledger)
 RUN mkdir -p data/kp data/output && chown -R appuser:appuser data
 
+# City search database (GeoNames, cities >= 15,000 people). Uses data/geonames/ when it
+# was copied in; otherwise downloads about 3.5 MB.
+RUN python scripts/seed_cities.py && chown appuser:appuser data/cities.db
+
 # Switch to non-root user
 USER appuser
 

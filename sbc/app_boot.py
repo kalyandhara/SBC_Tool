@@ -14,3 +14,7 @@ def boot(app, build_response=None):
     app.config["TEMPLATES_AUTO_RELOAD"] = True
     app.jinja_env.auto_reload = True
     app.jinja_env.cache = {}
+    from sbc import cities
+    if cities.count() < 1000:
+        app.logger.warning("City search has %d cities; run python scripts/seed_cities.py "
+                           "to load GeoNames (B-14)", cities.count())

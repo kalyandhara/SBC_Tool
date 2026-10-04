@@ -3234,3 +3234,11 @@ a:focus-visible,
 .swing-payload { display: flex; flex-direction: column; gap: 4px; font-size: 11px; color: var(--muted); margin-top: 8px; }
 .swing-payload textarea { width: 100%; font: 11px/1.4 ui-monospace, monospace; background: var(--panel); color: var(--text); border: 1px solid var(--line); border-radius: 6px; padding: 6px; resize: vertical; }
 .swing-table .swing-trig { white-space: normal; min-width: 200px; font-size: 11px; }
+
+/* City search results (B-14) */
+.city-status { font-size: 12px; color: var(--muted); margin-top: 4px; min-height: 1em; }
+.city-results { list-style: none; margin: 4px 0 0; padding: 0; max-height: 240px; overflow-y: auto; border: 1px solid var(--line); border-radius: 8px; background: var(--panel2); }
+.city-results li { display: flex; gap: 8px; align-items: baseline; padding: 6px 10px; cursor: pointer; font-size: 13px; }
+.city-results li:hover, .city-results li:focus { background: var(--panel); outline: none; }
+.city-results .muted { color: var(--muted); font-size: 12px; }
+.city-results .city-pop { margin-left: auto; color: var(--muted); font-size: 11px; font-variant-numeric: tabular-nums; }
