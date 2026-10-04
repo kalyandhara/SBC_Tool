@@ -26,8 +26,6 @@ SKIP = {
     "/api/backtest/moon": "downloads market data (yfinance)",
     "/api/backtest/walkforward": "downloads market data (yfinance)",
     "/api/price": "downloads market data (yfinance)",
-    "/api/cgsp_backtest": "downloads market data (yfinance)",
-    "/api/crash_backtest": "downloads market data (yfinance)",
     "/api/research/walk-forward": "downloads market data (yfinance)",
     "/api/research/event-study": "downloads market data (yfinance)",
 }

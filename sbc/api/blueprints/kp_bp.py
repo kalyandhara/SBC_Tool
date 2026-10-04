@@ -56,8 +56,3 @@ def kp_intraday_report():
         return send_file(BytesIO(buf), as_attachment=True, download_name=filename, mimetype=_DOCX_MIME)
     return jsonify({"error": "unsupported format"}), 400
 
-@kp_bp.route('/api/kp_intraday_config')
-def kp_intraday_config():
-    from sbc.kp_config import get_config
-    config = get_config()
-    return jsonify(config.to_dict())

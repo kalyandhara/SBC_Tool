@@ -159,14 +159,6 @@ class TestFuturecastEndpoints:
         assert "scan_window" in data
         assert "clusters" in data
 
-    def test_bearish_futurecast(self, client):
-        """Bearish futurecast should return clusters."""
-        response = client.get("/api/bearish_futurecast?date=2026-09-11&years=1")
-        assert response.status_code == 200
-        data = json.loads(response.data)
-        assert "scan_window" in data
-        assert "clusters" in data
-
 
 class TestBacktestEndpoints:
     """Test backtest endpoints."""
@@ -178,14 +170,6 @@ class TestBacktestEndpoints:
         data = json.loads(response.data)
         # API returns flat structure with accuracy, matches, etc.
         assert "accuracy" in data or "total" in data or "matches" in data
-
-    def test_crash_backtest(self, client):
-        """Crash backtest should return summary."""
-        response = client.get("/api/crash_backtest")
-        assert response.status_code == 200
-        data = json.loads(response.data)
-        assert "summary" in data
-        assert "results" in data
 
 
 class TestSectorEndpoints:
@@ -271,13 +255,6 @@ class TestKPEndpoints:
         assert "trading_day" in data
         assert "instrument" in data
 
-    def test_kp_intraday_config(self, client):
-        """KP config should return config dict."""
-        response = client.get("/api/kp_intraday_config")
-        assert response.status_code == 200
-        data = json.loads(response.data)
-        assert isinstance(data, dict)
-
 
 class TestProfileEndpoints:
     """Test profile management endpoints."""
@@ -334,13 +311,6 @@ class TestUtilitiesEndpoints:
         data = json.loads(response.data)
         assert isinstance(data, list)
 
-    def test_gann_turbo_zones(self, client):
-        """Gann turbo zones should return levels."""
-        response = client.get("/api/gann/turbo_zones?ticker=^NSEI&days=60")
-        assert response.status_code == 200
-        data = json.loads(response.data)
-        assert "ticker" in data
-        assert "zones" in data
 
     def test_gann_precision(self, client):
         """Gann precision should return levels and classified zones."""
@@ -412,20 +382,6 @@ class TestUtilitiesEndpoints:
         assert "expiry_days_evaluated" in data
         assert "containment_rate" in data
         assert isinstance(data["results"], list)
-
-    def test_gann_indicators(self, client):
-        """Gann toolkit should run each kind and reject unknown kinds."""
-        for kind in ("momentum", "apex_reversal", "harmonic_opens",
-                     "harmonic_vibrations", "wave_levels", "lightning_scalper",
-                     "mega_trend"):
-            response = client.get(f"/api/gann/indicators?kind={kind}&ticker=^NSEI&days=120")
-            assert response.status_code == 200, kind
-            data = json.loads(response.data)
-            assert data["kind"] == kind
-
-        bad = client.get("/api/gann/indicators?kind=nope&ticker=^NSEI&days=120")
-        assert bad.status_code == 400
-        assert "error" in json.loads(bad.data)
 
 
 class TestRateLimiting:

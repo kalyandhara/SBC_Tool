@@ -334,35 +334,6 @@ def analyze_lunar_confluence(lunar_phase):
     }
 
 
-def blend_forecast_scores(components, weights):
-    """Blend available component scores (normalised -1..1) into one verdict.
-
-    Components with a None score are excluded and their weight is
-    redistributed across the available components. Returns the net score,
-    verdict (BULLISH/BEARISH/NEUTRAL), the per-component breakdown, and the
-    renormalised weights actually used.
-    """
-    available = {k: v for k, v in components.items() if v is not None and weights.get(k, 0.0) > 0}
-    used_weights = {k: weights[k] for k in available}
-    total = sum(used_weights.values())
-    net = (sum(available[k] * used_weights[k] for k in available) / total) if total else 0.0
-    net = round(net, 4)
-
-    if net >= 0.25:
-        verdict = "BULLISH"
-    elif net <= -0.25:
-        verdict = "BEARISH"
-    else:
-        verdict = "NEUTRAL"
-
-    return {
-        "net": net,
-        "verdict": verdict,
-        "components": {k: round(v, 4) for k, v in available.items()},
-        "weights_used": {k: round(w / total, 4) if total else 0.0 for k, w in used_weights.items()},
-    }
-
-
 def combine_confluence(*analyses):
     """Combine multiple confluence analyses into unified sector scores."""
     all_sectors = set()

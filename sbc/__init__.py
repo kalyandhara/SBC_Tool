@@ -8,10 +8,8 @@ from .alcohol_signals import (
 )
 from .astro_plot import AstroPlotData, generate_astro_plot, serialize_plot_data
 from .cgsp_framework import (
-    backtest_cgsp,
     check_panchaka,
     compute_cgsp_score,
-    generate_cgsp_report,
     get_price_levels,
     get_sector_bias,
 )
@@ -23,12 +21,6 @@ from .chemical_signals import (
 )
 from .config import RASHI_TREND
 from .confluence import build_confluence_report
-from .crash_analyzer import (
-    CrashAnalysis,
-    analyze_crash_risk,
-    backtest_crashes,
-    daily_crash_briefing,
-)
 from .db import PROFILES_DB_PATH, _bootstrap, get_db
 from .fmcg_signals import (
     check_fmcg_syntax,
@@ -53,7 +45,6 @@ from .tourism_signals import (
 from .trade_setups import (
     TRADE_SETUPS,
     format_setup_for_display,
-    get_setup,
     list_setups,
     setups_for_confluence,
 )
@@ -62,23 +53,16 @@ __version__ = "1.0.0"
 __all__ = [
     "build_confluence_report",
     "TRADE_SETUPS",
-    "get_setup",
     "list_setups",
     "setups_for_confluence",
     "format_setup_for_display",
-    "analyze_crash_risk",
-    "daily_crash_briefing",
-    "backtest_crashes",
-    "CrashAnalysis",
     "generate_astro_plot",
     "serialize_plot_data",
     "AstroPlotData",
     "compute_cgsp_score",
-    "generate_cgsp_report",
     "get_price_levels",
     "get_sector_bias",
     "check_panchaka",
-    "backtest_cgsp",
     "check_fmcg_syntax",
     "scan_fmcg_signals",
     "get_fmcg_summary",

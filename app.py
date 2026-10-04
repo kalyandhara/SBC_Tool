@@ -25,26 +25,21 @@ from sbc.api.blueprints.overview_bp import overview_bp
 from sbc.api.blueprints.sectors_bp import sectors_bp
 from sbc.api.engine_bp import engine_bp
 from sbc.api.errors import internal_error
-from sbc.api.sector_bp import sector_bp
 from sbc.app_boot import boot
 from sbc.astro_plot import generate_astro_plot, serialize_plot_data
 from sbc.backtest import (
     _bearish_future_score,
     _julian_at_noon,
     run_backtest,
-    run_bearish_futurecast,
     run_bullish_futurecast,
     run_futurecast,
-    run_saturn_macro_analysis,
 )
 from sbc.bullion_vedha import (
     format_bullion_vedha_for_ui,
     scan_bullion_vedha_matrix,
     scan_bullion_vedha_week,
 )
-from sbc.cgsp_framework import generate_cgsp_report
 from sbc.config import SECTOR_NAME_MAP
-from sbc.crash_analyzer import analyze_crash_risk, backtest_crashes, daily_crash_briefing
 
 # The prediction engine lives in sbc/engine.py; re-exported here for callers
 # that use app.build_response, app.ANCHORS, app._utc_from_local, ...
@@ -59,13 +54,11 @@ from sbc.engine import (  # noqa: F401
 )
 from sbc.market_data import get_nifty_ohlc
 from sbc.market_events import lunar_phase_event, planetary_aspect_events, planetary_ingress_events
-from sbc.metrics import _bias_scale, _western_bias
 from sbc.nakshatra import (
     tithi_of,
 )
 from sbc.planets import positions
 from sbc.sector_keywords import keywords_for
-from sbc.trade_setups import TRADE_SETUPS
 from sbc.transit_vedha import (
     format_transit_vedha_for_ui,
     scan_transit_vedha_matrix,
@@ -75,7 +68,6 @@ from sbc.transit_vedha import (
 app = Flask(__name__)
 
 app.register_blueprint(engine_bp)
-app.register_blueprint(sector_bp)
 
 app.register_blueprint(overview_bp)
 app.register_blueprint(chart_bp)
@@ -183,9 +175,6 @@ def index():
     return render_template("index.html")
 
 
-
-
-
 @app.route("/api/backtest")
 def backtest():
     return jsonify(run_backtest())
@@ -213,37 +202,6 @@ def bullish_futurecast():
         return jsonify(run_bullish_futurecast(center_date=center_date, years=years))
     except ValueError:
         return jsonify({"error": "invalid date"}), 400
-
-
-@app.route("/api/bearish_futurecast")
-def bearish_futurecast():
-    center_date = request.args.get("date")
-    years = request.args.get("years", type=int, default=1)
-    try:
-        if center_date:
-            datetime.datetime.strptime(center_date, "%Y-%m-%d")
-        years = min(max(years, 1), 10)
-        return jsonify(run_bearish_futurecast(center_date=center_date, years=years))
-    except ValueError:
-        return jsonify({"error": "invalid date"}), 400
-
-
-@app.route("/api/saturn_macro")
-def saturn_macro():
-    center_date = request.args.get("date")
-    years_back = request.args.get("years_back", type=int, default=100)
-    years_forward = request.args.get("years_forward", type=int, default=10)
-    try:
-        if center_date:
-            datetime.datetime.strptime(center_date, "%Y-%m-%d")
-        years_back = min(max(years_back, 10), 150)
-        years_forward = min(max(years_forward, 1), 30)
-        return jsonify(run_saturn_macro_analysis(center_date=center_date, years_back=years_back, years_forward=years_forward))
-    except ValueError:
-        return jsonify({"error": "invalid date"}), 400
-
-
-
 
 
 @app.route("/api/bullion_vedha")
@@ -333,45 +291,6 @@ def transit_vedha_week():
         return jsonify({"error": "invalid date"}), 400
 
 
-@app.route("/api/trade_setups")
-def trade_setups():
-    from sbc.trade_setups import format_setup_for_display, get_setup
-    name = request.args.get("name")
-    if name:
-        setup = get_setup(name)
-        if not setup:
-            return jsonify({"error": "setup not found"}), 404
-        return jsonify({
-            "name": setup.name,
-            "direction": setup.direction,
-            "trigger": setup.trigger,
-            "entry": setup.entry,
-            "stop": setup.stop,
-            "target": setup.target,
-            "sizing": setup.sizing,
-            "filters": setup.filters,
-            "historical": setup.historical,
-            "markets": setup.applicable_markets,
-            "timeframes": setup.timeframes,
-            "formatted": format_setup_for_display(setup),
-        })
-    return jsonify({
-        "setups": [
-            {
-                "name": s.name,
-                "direction": s.direction,
-                "markets": s.applicable_markets,
-                "timeframes": s.timeframes,
-                "historical": s.historical,
-            }
-            for s in TRADE_SETUPS.values()
-        ]
-    })
-
-
-
-
-
 @app.route("/api/nakshatra_chart")
 def nakshatra_chart():
     """Render a native Python NIFTY chart with the selected forecast bias."""
@@ -432,8 +351,6 @@ def nakshatra_chart():
         return jsonify({"error": "native chart generation failed"}), 500
 
 
-
-
 # ---------------------------------------------------------------
 # Contra Strategy Confluence endpoint
 # Returns 3-layer confluence + cheat‑sheet signals for the given
@@ -441,163 +358,6 @@ def nakshatra_chart():
 # and synthesises the three layers from confluence, drivers, and
 # planetary dignity.
 # ---------------------------------------------------------------
-
-
-# Contra signals: (start_iso, anchor) -> payload (own namespace)
-_contra_cache: dict = {}
-
-
-@app.route("/api/contra_signals")
-def contra_signals():
-    """Contra-signal checklist built from astro inputs only.
-
-    Nothing here reads price or volume. Every field is named for what it
-    measures (B-19; it used to borrow market-structure labels such as
-    "POC trap" and "price confirmation"):
-
-    vedha_weights — benefic vs malefic confluence weights and how weak the
-      top drivers of each nature are.
-    school_bias   — Jyotish (classical), KP (allthree) and Western
-      (zodiac-dignity) bias on a 0–6 scale, with bearish-extreme flags.
-    blend         — the three-school average against the bull/bear thresholds
-      used by daily_indication_balance.
-    """
-    start = request.args.get("start")
-    try:
-        start_d = datetime.date.fromisoformat(start) if start else datetime.date.today()
-    except ValueError:
-        return jsonify({"error": "invalid start date"}), 400
-
-    anchor_key = request.args.get("anchor") or "nifty"
-    if anchor_key not in ANCHORS:
-        return jsonify({"error": "unknown anchor"}), 400
-
-    key = (start_d.isoformat(), anchor_key)
-    # Simple in-process cache (own namespace; never shared with other routes)
-    if key in _contra_cache:
-        return jsonify(_contra_cache[key])
-
-    # Jyotish (classical) pass; KP (allthree) pass — two ephemeris passes total.
-    rj = build_response(start_d.isoformat(), "09:15", "Asia/Kolkata", anchor_key, "classical")
-    rk = build_response(start_d.isoformat(), "09:15", "Asia/Kolkata", anchor_key, "allthree")
-
-    # --- Vedha weights ---
-    # build_response nests the confluence snapshot under market_alert.confluence,
-    # with weights in the "overall" sub-dict.
-    alert = rj.get("market_alert") or {}
-    confluence = alert.get("confluence") or {}
-    conf_overall = confluence.get("overall") or {}
-    bull_w = conf_overall.get("bullish_weight", 0) or 0
-    bear_w = conf_overall.get("bearish_weight", 0) or 0
-    net_c = bull_w - bear_w
-    # Extreme: a large net tilt with at least one side carrying 3+ weight
-    vedha_extreme = abs(net_c) >= 3 and (bull_w >= 3 or bear_w >= 3)
-    weight_tilt = "benefic" if bull_w > bear_w else "malefic"
-    # Weak drivers: the top 3 point hits of a nature all have strength < 1.5
-    hits = rj.get("point_hits") or []
-    benefic_drivers = sorted(
-        (h for h in hits if h["nature"] == "benefic"),
-        key=lambda x: -x["strength"])[:3]
-    malefic_drivers = sorted(
-        (h for h in hits if h["nature"] == "malefic"),
-        key=lambda x: x["strength"])[:3]
-    weak_malefic_drivers = len(malefic_drivers) >= 3 and all(
-        h.get("strength", 0) < 1.5 for h in malefic_drivers[:3])
-    weak_benefic_drivers = len(benefic_drivers) >= 3 and all(
-        h.get("strength", 0) < 1.5 for h in benefic_drivers[:3])
-
-    # --- School bias ---
-    # Jyotish = classical single-ray, KP = allthree, Western = synthetic dignity
-    jyotish_net = rj.get("net", 0.0)
-    kp_net = rk.get("net", 0.0)
-    western_net = _western_bias(rj.get("planets", []))
-
-    jyotish_bias = _bias_scale(jyotish_net)
-    kp_bias = _bias_scale(kp_net)
-    western_bias = _bias_scale(western_net)
-
-    # Bearish-extreme flags (contra-buy candidates)
-    jyotish_bearish = jyotish_net <= -2.0
-    kp_bearish = kp_net <= -2.0
-    western_bearish = western_net <= 2.0
-
-    # --- Blend ---
-    # Same 3-school blend the daily_indication_balance endpoint serves.
-    blend = round((jyotish_bias + kp_bias + western_bias) / 3.0, 4)
-    bullish_threshold = 4.0
-    bearish_threshold = 2.0
-    above_bullish = blend > bullish_threshold
-    below_bearish = blend < bearish_threshold
-
-    # -------------------------------------------------------------------------
-    # Cheat‑Sheet generation (ultra‑short format per the spec)
-    # -------------------------------------------------------------------------
-    buy_signals = []
-    sell_signals = []
-
-    if vedha_extreme:
-        buy_signals.append("Vedha weights at an extreme")
-    if weak_malefic_drivers:
-        buy_signals.append("Malefic drivers weak")
-    if weak_benefic_drivers:
-        sell_signals.append("Benefic drivers weak")
-    if weight_tilt == "benefic":
-        buy_signals.append("Benefic vedha weight leads")
-    else:
-        sell_signals.append("Malefic vedha weight leads")
-
-    if jyotish_bearish:
-        buy_signals.append("Jyotish net bearish extreme")
-    if kp_bearish:
-        buy_signals.append("KP net bearish extreme")
-    if western_bearish:
-        buy_signals.append("Western bias bearish")
-    if not jyotish_bearish and not kp_bearish and not western_bearish:
-        sell_signals.append("No school bearish")
-
-    if above_bullish:
-        buy_signals.append("Blend above bullish threshold")
-    if below_bearish:
-        sell_signals.append("Blend below bearish threshold")
-
-    # Deduplicate & limit
-    buy_signals = list(dict.fromkeys(buy_signals))[:5]
-    sell_signals = list(dict.fromkeys(sell_signals))[:5]
-
-    out = {
-        "basis": "astro only: no price or volume input",
-        "vedha_weights": {
-            "bullish_weight": bull_w,
-            "bearish_weight": bear_w,
-            "vedha_extreme": vedha_extreme,
-            "weight_tilt": weight_tilt,
-            "weak_malefic_drivers": weak_malefic_drivers,
-            "weak_benefic_drivers": weak_benefic_drivers,
-        },
-        "school_bias": {
-            "jyotish_bias": jyotish_bias,
-            "kp_bias": kp_bias,
-            "western_bias": western_bias,
-            "jyotish_bearish": jyotish_bearish,
-            "kp_bearish": kp_bearish,
-            "western_bearish": western_bearish,
-        },
-        "blend": {
-            "value": blend,
-            "bullish_threshold": bullish_threshold,
-            "bearish_threshold": bearish_threshold,
-            "above_bullish": above_bullish,
-            "below_bearish": below_bearish,
-        },
-        "cheat_sheet": {
-            "buy": buy_signals,
-            "sell": sell_signals,
-        },
-        "anchor": anchor_key,
-        "date": start_d.isoformat(),
-    }
-    _contra_cache[key] = out
-    return jsonify(out)
 
 
 _crash_series_cache = {}
@@ -641,8 +401,6 @@ def crash_score_series():
     return jsonify({"series": out})
 
 
-
-
 @app.route("/api/rahu_ketu_trap_calendar")
 def rahu_ketu_trap_calendar():
     """Industry-wise daily Rahu/Ketu trap calendar."""
@@ -662,67 +420,6 @@ def rahu_ketu_trap_calendar():
     from sbc.rahu_ketu_trap import generate_calendar
     result = generate_calendar(start, end, industries_list)
     return jsonify(result)
-
-
-@app.route("/api/crash_analysis")
-def crash_analysis():
-    date_str = request.args.get("date") or datetime.date.today().isoformat()
-    try:
-        datetime.datetime.strptime(date_str, "%Y-%m-%d")
-    except ValueError:
-        return jsonify({"error": "invalid date"}), 400
-
-    analysis = analyze_crash_risk(date_str)
-    return jsonify({
-        "date": analysis.date,
-        "crash_score": analysis.crash_score,
-        "condition": analysis.market_condition,
-        "signatures": analysis.signatures,
-        "signature_details": analysis.signature_details,
-        "jupiter_analysis": analysis.jupiter_analysis,
-        "jupiter_saturn_angle": analysis.jupiter_saturn_angle,
-        "jupiter_saturn_aspect": analysis.jupiter_saturn_aspect,
-        "mars_ketu_angle": analysis.mars_ketu_angle,
-        "confluence": analysis.confluence,
-        "applicable_setups": analysis.applicable_setups,
-        "tradingview_links": analysis.tradingview_links,
-        "research_package": analysis.research_package,
-        "briefing": daily_crash_briefing(date_str),
-    })
-
-
-@app.route("/api/crash_backtest")
-def crash_backtest():
-    results = backtest_crashes()
-    return jsonify({
-        "summary": {
-            "total": len(results),
-            "crash_risk": len([r for r in results if r["condition"] == "CRASH_RISK"]),
-            "correction_risk": len([r for r in results if r["condition"] == "CORRECTION_RISK"]),
-            "elevated_risk": len([r for r in results if r["condition"] == "ELEVATED_RISK"]),
-            "normal": len([r for r in results if r["condition"] == "NORMAL"]),
-        },
-        "results": results,
-    })
-
-
-@app.route("/api/cgsp_framework")
-def cgsp_framework():
-    """Cruel-Gentle Sign-Pada (CGSP) framework prediction."""
-    date_str = request.args.get("date") or datetime.date.today().isoformat()
-    price = request.args.get("price", type=float)
-    try:
-        datetime.datetime.strptime(date_str, "%Y-%m-%d")
-    except ValueError:
-        return jsonify({"error": "invalid date"}), 400
-
-    # Get positioned planets + tithi
-    from sbc.planets import positioned_planets
-
-    planets, ayanamsa, sun, moon, tithi = positioned_planets(date_str)
-
-    report = generate_cgsp_report(date_str, planets, tithi, price)
-    return jsonify(report)
 
 
 @app.route("/api/largecap_divergence")
@@ -934,8 +631,6 @@ def alcohol_signals():
     return jsonify(result)
 
 
-
-
 @app.route("/api/fmcg_signals")
 def fmcg_signals():
     """FMCG/Food sector bullish planetary syntax signals."""
@@ -953,26 +648,6 @@ def fmcg_signals():
 
     from sbc.fmcg_signals import scan_fmcg_signals
     result = scan_fmcg_signals(date_str, planets, tithi, sun, moon, price)
-    return jsonify(result)
-
-
-@app.route("/api/cgsp_backtest")
-def cgsp_backtest():
-    """Backtest CGSP framework over a date range."""
-    start = request.args.get("start")
-    end = request.args.get("end")
-    try:
-        if start:
-            datetime.datetime.strptime(start, "%Y-%m-%d")
-        if end:
-            datetime.datetime.strptime(end, "%Y-%m-%d")
-    except ValueError:
-        return jsonify({"error": "invalid date"}), 400
-    if not start or not end:
-        return jsonify({"error": "start and end required"}), 400
-
-    from sbc.cgsp_framework import backtest_cgsp
-    result = backtest_cgsp(start, end)
     return jsonify(result)
 
 
@@ -1123,21 +798,6 @@ def api_habits_history():
         for h,d,c in rows:
             history.setdefault(h, {})[d] = c
         return jsonify(history)
-    except Exception:
-        return internal_error()
-
-
-@app.route("/api/habits/summary", methods=["GET"])
-def api_habits_summary():
-    try:
-        user_key = request.args.get("user_key","default")
-        conn = profiles_db.connect()
-        cur = conn.cursor()
-        cur.execute("SELECT habit_type, COUNT(DISTINCT log_date) as days FROM habit_logs WHERE user_key=? GROUP BY habit_type", (user_key,))
-        rows = cur.fetchall()
-        conn.close()
-        summary = dict(rows)
-        return jsonify(summary)
     except Exception:
         return internal_error()
 
@@ -1312,7 +972,6 @@ def api_sbc_latest():
         return jsonify({})
     except Exception:
         return internal_error()
-
 
 
 @app.route("/api/astro/profile/export", methods=["GET"])
@@ -1540,32 +1199,6 @@ def api_cities_search():
     return jsonify(cities.search(request.args.get("q", ""), request.args.get("country", ""), limit))
 
 
-@app.route("/api/gann/turbo_zones", methods=["GET"])
-def api_gann_turbo_zones():
-    try:
-        ticker = request.args.get("ticker","^NSEI")
-        days = int(request.args.get("days","60"))
-        end = datetime.date.today()
-        start = end - datetime.timedelta(days=days)
-        import yfinance as yf
-        df = yf.download(ticker, start=start, end=end, interval='1d', auto_adjust=True, progress=False)
-        if df.empty:
-            return jsonify({"error":"no data"}),400
-        df.columns = [c[0] if isinstance(c,tuple) else c for c in df.columns]
-        high = float(df['High'].max())
-        low = float(df['Low'].min())
-        mid = (high+low)/2
-        # Turbo zones: initiation at 0.5, target at 0.618/0.786, SL 1%
-        zones = {
-            "initiation_green": mid,
-            "target_dotted": high - (high-low)*0.382,
-            "stop_loss": mid * 0.99
-        }
-        return jsonify({"ticker":ticker,"zones":zones,"high":high,"low":low})
-    except Exception:
-        return internal_error()
-
-
 @app.route("/api/gann/precision", methods=["GET"])
 def api_gann_precision():
     try:
@@ -1703,59 +1336,6 @@ def api_expiry_backtest():
             return jsonify({"error": "invalid buffer_pct"}), 400
         from sbc.expiry_range import backtest_expiry
         result = backtest_expiry(instrument, months, buffer_pct)
-        return jsonify(result), 200
-    except ValueError as e:
-        return jsonify({"error": str(e)}), 400
-    except Exception:
-        return internal_error()
-
-
-@app.route("/api/gann/indicators", methods=["GET"])
-def api_gann_indicators():
-    """Gann indicator toolkit: momentum, apex reversal, harmonic opens,
-    harmonic vibrations, wave levels, lightning scalper, mega trend."""
-    try:
-        kind = request.args.get("kind", "momentum")
-        ticker = request.args.get("ticker", "^NSEI")
-        try:
-            days = int(request.args.get("days", "120"))
-        except ValueError:
-            return jsonify({"error": "invalid days"}), 400
-        days = max(5, min(730, days))
-        import yfinance as yf
-        end = datetime.date.today()
-        start = end - datetime.timedelta(days=days)
-        df = yf.download(ticker, start=start, end=end, interval="1d", auto_adjust=True, progress=False)
-        if df.empty:
-            return jsonify({"error": "no data"}), 400
-        df.columns = [c[0] if isinstance(c, tuple) else c for c in df.columns]
-        bars = [{"date": (idx.isoformat() if hasattr(idx, "isoformat") else str(idx))[:10],
-                 "open": float(r["Open"]), "high": float(r["High"]),
-                 "low": float(r["Low"]), "close": float(r["Close"])}
-                for idx, r in df.iterrows()]
-        from sbc.gann_indicators import run_indicator
-        result = run_indicator(kind, bars)
-        return jsonify({"kind": kind, "ticker": ticker, "days": days, **result}), 200
-    except ValueError as e:
-        return jsonify({"error": str(e)}), 400
-    except Exception:
-        return internal_error()
-
-
-@app.route("/api/astrogann/signal", methods=["GET"])
-def api_astrogann_signal():
-    """Unified AstroGann Pro signal: SBC astro bias + Gann zone confluence."""
-    try:
-        date_str = request.args.get("date") or datetime.date.today().isoformat()
-        datetime.date.fromisoformat(date_str)
-        instrument = request.args.get("instrument", "NIFTY")
-        try:
-            astro_weight = float(request.args.get("astro_weight", "0.6"))
-            gann_weight = float(request.args.get("gann_weight", "0.4"))
-        except ValueError:
-            return jsonify({"error": "invalid weights"}), 400
-        from sbc.astrogann import astrogann_signal
-        result = astrogann_signal(date_str, instrument, astro_weight=astro_weight, gann_weight=gann_weight)
         return jsonify(result), 200
     except ValueError as e:
         return jsonify({"error": str(e)}), 400

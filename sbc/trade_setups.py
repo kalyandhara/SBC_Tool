@@ -232,10 +232,6 @@ TRADE_SETUPS = {
 }
 
 
-def get_setup(setup_name: str) -> TradeSetup | None:
-    return TRADE_SETUPS.get(setup_name)
-
-
 def list_setups() -> list[str]:
     return list(TRADE_SETUPS.keys())
 
