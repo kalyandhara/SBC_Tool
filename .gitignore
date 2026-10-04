@@ -211,3 +211,6 @@ data/silver_ohlc.csv
 
 # Generated forward calendars (sbc.forward_calendar)
 reports/calendar/
+
+# GeoNames source files for data/cities.db (scripts/seed_cities.py)
+data/geonames/

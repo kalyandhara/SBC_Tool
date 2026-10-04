@@ -52,7 +52,12 @@ pip install -r requirements.txt
 
 # Or with uv (faster)
 uv pip install -r requirements.txt
+
+# City search for birth data: ~34k GeoNames cities (downloads ~3.5 MB once)
+python scripts/seed_cities.py
 ```
+
+City data © [GeoNames](https://www.geonames.org/), CC BY 4.0.
 
 ### Run Development Server
 
@@ -294,7 +299,7 @@ POST   /api/astro/profile/import       [{data, name, is_default}]
 GET  /api/tz/offset?tz=...&date=...&time=...
 GET  /api/tz/from_coords?lat=...&lon=...
 GET  /api/price?ticker=^NSEI&days=180
-GET  /api/cities/search?q=...&country=...
+GET  /api/cities/search?q=...&country=...&limit=20   # GeoNames, best match first
 GET  /api/gann/turbo_zones?ticker=...&days=60
 GET  /api/gann/precision?ticker=...&days=90
 GET  /api/signal/moon?ticker=...&days=30

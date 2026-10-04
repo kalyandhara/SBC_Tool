@@ -247,9 +247,11 @@
                   <input type="text" id="bd-city" placeholder="City name">
                 </label>
                 <div class="city-buttons">
-                  <button type="button" class="btn btn-secondary">Search Worldwide</button>
-                  <button type="button" class="btn btn-secondary">Search USA</button>
+                  <button type="button" class="btn btn-secondary" data-country="">Search Worldwide</button>
+                  <button type="button" class="btn btn-secondary" data-country="USA">Search USA</button>
                 </div>
+                <div id="bd-city-status" class="city-status" role="status" aria-live="polite"></div>
+                <ul id="bd-city-results" class="city-results hidden" role="listbox" aria-label="Matching cities"></ul>
                 <div class="coords-grid">
                   <div class="coord-block">
                     <span class="coord-label">Longitude</span>
@@ -1327,20 +1329,52 @@
       if(!res.ok) return [];
       return await res.json();
     }
-    // Buttons
-    document.querySelectorAll('.city-buttons button').forEach(btn=>{
-      btn.addEventListener('click', async ()=>{
-        const q = cityInput?.value?.trim();
-        if(!q) { alert('Enter city name first'); return; }
-        const isUSA = btn.textContent.includes('USA');
-        const results = await searchCities(q, isUSA ? 'USA' : '');
-        if(results.length === 0){ alert('No results found'); return; }
-        // Pick first result
-        const r = results[0];
-        cityInput.value = r.name + ', ' + r.country;
-        fillCoords(r.lat, r.lon);
-        alert('Selected: ' + r.name + ' ' + r.country + ' lat:'+r.lat+' lon:'+r.lon);
+    // B-14: results list instead of alert(); click (or Enter) picks a city.
+    const cityStatus = document.getElementById('bd-city-status');
+    const cityList = document.getElementById('bd-city-results');
+    const escHtml = (v) => String(v ?? '').replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+    function setCityStatus(msg){ if(cityStatus) cityStatus.textContent = msg; }
+    function hideCities(){ if(cityList){ cityList.classList.add('hidden'); cityList.innerHTML = ''; } }
+    function pickCity(r){
+      const parts = [r.name, r.admin, r.country].filter(Boolean);
+      cityInput.value = parts.join(', ');
+      fillCoords(r.lat, r.lon);
+      setCityStatus(`Selected ${parts.join(', ')} (${r.lat.toFixed(4)}, ${r.lon.toFixed(4)}${r.timezone ? ', ' + r.timezone : ''})`);
+      hideCities();
+    }
+    function showCities(results){
+      if(!cityList) return;
+      if(!results.length){ hideCities(); setCityStatus('No matching city with 15,000+ people. Enter the coordinates by hand.'); return; }
+      setCityStatus(`${results.length} match${results.length === 1 ? '' : 'es'}`);
+      cityList.innerHTML = results.map((r, i) => `
+        <li role="option" tabindex="0" data-i="${i}">
+          <strong>${escHtml(r.name)}</strong> <span class="muted">${escHtml([r.admin, r.country].filter(Boolean).join(', '))}</span>
+          <span class="city-pop">${Number(r.population || 0).toLocaleString()}</span>
+        </li>`).join('');
+      cityList.classList.remove('hidden');
+      cityList.querySelectorAll('li').forEach(li => {
+        const r = results[Number(li.dataset.i)];
+        li.addEventListener('click', () => pickCity(r));
+        li.addEventListener('keydown', (e) => { if(e.key === 'Enter'){ e.preventDefault(); pickCity(r); } });
       });
+    }
+    async function runCitySearch(country){
+      const q = cityInput?.value?.trim();
+      if(!q || q.length < 2){ hideCities(); setCityStatus('Type at least 2 letters of the city name.'); return; }
+      try { showCities(await searchCities(q, country)); }
+      catch { hideCities(); setCityStatus('City search failed. Try again.'); }
+    }
+    document.querySelectorAll('.city-buttons button').forEach(btn=>{
+      btn.addEventListener('click', () => runCitySearch(btn.dataset.country || ''));
+    });
+    let cityTimer = null;
+    cityInput?.addEventListener('input', () => {
+      clearTimeout(cityTimer);
+      cityTimer = setTimeout(() => runCitySearch(''), 300);
+    });
+    cityInput?.addEventListener('keydown', (e) => {
+      if(e.key === 'Escape') hideCities();
+      if(e.key === 'ArrowDown'){ const first = cityList?.querySelector('li'); if(first){ e.preventDefault(); first.focus(); } }
     });
   });
   </script>
