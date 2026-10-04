@@ -49,7 +49,7 @@ def test_engine_edits_change_the_version(suffix, edit):
 
 @pytest.mark.parametrize("suffix,edit", [
     ("sbc/kp_docx.py", lambda t: t + "\n# unrelated\n"),
-    ("app.py", lambda t: t.replace("def api_cities_search():", "def api_cities_search():\n    pass", 1)),
+    ("sbc/api/blueprints/profile_bp.py", lambda t: t.replace("def api_cities_search():", "def api_cities_search():\n    pass", 1)),
     ("sbc/api/blueprints/chart_bp.py", lambda t: t.replace("def nifty_chart():", "def nifty_chart():\n    pass", 1)),
 ])
 def test_unrelated_edits_keep_the_version(suffix, edit):

@@ -102,7 +102,7 @@ Open http://localhost:8000 in your browser.
 
 ```
 SBC_Tool/
-├── app.py                 # Flask application factory & routes
+├── app.py                 # `app = create_app()` (gunicorn app:app) + engine re-exports
 ├── requirements.txt       # Python dependencies
 ├── pyproject.toml         # Project config (ruff, mypy, pytest)
 ├── sbc/                   # Core astrological engine
@@ -136,8 +136,10 @@ SBC_Tool/
 │   ├── market_data.py         # NIFTY OHLC, moon rashi
 │   ├── confluence.py          # Multi-factor confluence
 │   ├── db.py                  # SQLite schema & bootstrap
+│   ├── app_factory.py         # create_app(): blueprints, rate limit, write gate, errors, headers
 │   ├── navamsa_pipeline/      # Navamsa/KP data pipeline
-│   └── api/                   # API blueprints (engine, sector)
+│   └── api/                   # Every route: engine_bp + blueprints/ (overview, chart, timing, sectors,
+│                              #   signals, kp, balance, chakra, forecast, research, profile, integrations)
 ├── templates/
 │   └── index.html         # Main SPA template
 ├── static/
