@@ -1,0 +1,15 @@
+# Store text with LF in the repository and check it out with LF everywhere (B-32).
+* text=auto eol=lf
+
+# Windows batch files need CRLF for cmd.exe labels and goto.
+*.bat text eol=crlf
+
+# Binary formats
+*.ico binary
+*.png binary
+*.jpg binary
+*.pdf binary
+*.xlsx binary
+*.docx binary
+*.db binary
+*.zip binary

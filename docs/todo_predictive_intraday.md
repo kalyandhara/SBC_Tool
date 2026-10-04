@@ -10,7 +10,14 @@
 - [x] Validation against historical NIFTY intraday (`docs/INTRADAY_PATH_VALIDATION.md`,
       script `scripts/validate_intraday_path.py`, 31 days 2026-08-03..2026-09-15)
 
-## Implementation Tasks — STATUS: COMPLETE (2026-09-19)
+> **Status (2026-10-04): built, not validated.** The plumbing below is done, but the
+> path shows no edge on real KP data: direction hit 50.8%, regime-shift hit 49.7%,
+> correlation +0.004 over 41 days (see `INTRADAY_PATH_VALIDATION.md` and backlog B-21).
+> The UI labels it "Experimental — no validated edge". Re-weighting is research, not a
+> remaining implementation task. A rolling live hit-rate badge needs a real 3-minute
+> bar source first (B-05).
+
+## Implementation Tasks — built 2026-09-19 (no validated edge)
 1. **API – Cumulative Path** ✅
    - `GET /api/engine/intraday_path` implemented in `sbc/api/engine_bp.py`
    - Canonical builder `build_cumulative_path(report)` in `sbc/kp_intraday.py`

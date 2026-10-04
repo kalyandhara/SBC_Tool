@@ -52,6 +52,23 @@ def test_get_route_does_not_crash(client, path):
     )
 
 
+# Core pages must answer 200, not just "not 5xx" (merged from test_route_smoke.py, B-30).
+MUST_BE_200 = [
+    "/",
+    "/healthz",
+    "/api/prediction",
+    "/api/prediction_series?start=2025-01-01&end=2025-01-02",
+    "/api/monthly_heatmap?year=2025",
+    "/api/bhadra_calendar",
+]
+
+
+@pytest.mark.parametrize("path", MUST_BE_200)
+def test_core_routes_200(client, path):
+    resp = client.get(path)
+    assert resp.status_code == 200, f"{path} returned {resp.status_code}"
+
+
 def test_write_routes_reject_remote_callers_without_token(app):
     """Binding to 0.0.0.0 must not let a LAN device rewrite data."""
     remote = app.test_client()

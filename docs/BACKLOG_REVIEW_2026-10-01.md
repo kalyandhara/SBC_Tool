@@ -29,7 +29,7 @@ code and tech debt · **P3** = hygiene.
 | Intraday forecast (SBC + KP), steps 1–3 | ✅ `/api/engine/intraday_forecast`, Plotly panel on the KP tab, forecast ledger (freeze before 09:15 IST, score after close). 40-day back-test: 50.8% hit vs 55.4% baseline |
 | B-35 NSE holiday calendar (new) | ✅ `sbc/market_holidays.py` (2024–2026 + special closures + Muhurat); KP generation, forecast, ledger, KP report/path, Rahu–Ketu calendar and date picker use it |
 | B-23 Lint debt / CI | ✅ ruff is the only linter (2,907 → 0 findings); CI runs on `master`; black/isort/flake8 dropped |
-| B-08 Requirements drift | 🟡 runtime deps now match the tested stack and include openpyxl, python-docx, matplotlib; no lock file yet |
+| B-08 Requirements drift | ✅ runtime deps match the tested stack (openpyxl, python-docx, matplotlib included); `requirements.lock` pins exact Python 3.12/Linux versions and Docker, CI tests and pip-audit install from it (2026-10-04, `backlog-sprint4`) |
 | **B-36 mypy debt** (new) | ✅ 0 errors (was 312 by 2026-10-03); the CI type check now blocks (2026-10-03, `fix-b36-mypy`) |
 | B-20 Series cache engine version | ✅ rows carry `sbc.engine_version` (hash of the code behind `build_response` + the payload builder); other versions are ignored and purged on warm-up |
 | B-15 Two app instances | ✅ engine moved to `sbc/engine.py`; nothing under `sbc/` imports `app`; `python app.py` serves one app on 127.0.0.1:8000; README run steps updated |
@@ -48,6 +48,14 @@ code and tech debt · **P3** = hygiene.
 | B-24 Fake-bar generator | ✅ removed; `data/ohlc` resolved from the package root and no longer created at import |
 | B-26 Rate limiter growth | ✅ idle clients are swept once the table passes 1,000 entries (per-worker limits remain; nginx `limit_req` is the real limiter) |
 | B-14 City search | ✅ `scripts/seed_cities.py` builds `data/cities.db` from GeoNames (34,152 cities ≥ 15,000 people, with state and time zone); `sbc/cities.py` ranks exact → prefix → substring then population, `LIMIT 20`; the UI shows a results list instead of `alert()`; Docker image seeds at build; boot warns if the DB is missing (2026-10-03, `fix-b14-cities`) |
+| B-19 Contra-signal labels | ✅ `/api/contra_signals` fields renamed to what they measure (`vedha_weights`, `school_bias`, `blend`, `basis: "astro only"`); no POC/accumulation/exhaustion/confirmation wording (2026-10-04) |
+| B-21 Intraday path "COMPLETE" | ✅ KP report Section 3 carries the experimental badge and the real-data hit rates, like the panel; `todo_predictive_intraday.md` now says built, not validated. A rolling live hit-rate badge waits on a 3-min bar source (B-05) (2026-10-04) |
+| B-27 Template reload | ✅ forced `TEMPLATES_AUTO_RELOAD`/`jinja_env.cache = {}` removed from `app.py` and `app_boot.py`; Flask reloads only under debug (2026-10-04) |
+| B-28 `.dockerignore` | ✅ verified: venvs, node_modules, local DBs, vaults, tests and notes are excluded |
+| B-29 Stray Node project | ✅ verified: `package.json`/`node_modules` are untracked, gitignored and docker-ignored |
+| B-30 Clutter | ✅ root is clean, one-off scripts live in `scripts/adhoc/`, vaults are gitignored; the 30 tracked `data/output/` artefacts are untracked (local copies kept); the two smoke tests are merged into `test_routes_smoke.py` (2026-10-04) |
+| B-31 Stale docs | ✅ README feature table rebuilt from the actual tabs with a research-only note and API-only section; dated notes moved to `docs/archive/` (2026-10-04) |
+| B-32 Line endings | ✅ `.gitattributes` (`* text=auto eol=lf`, CRLF for `.bat`, binaries marked); the index was already LF, so renormalising changed nothing (2026-10-04) |
 | **B-39** Astro-quant swing windows: heliocentric aspect ENTRY + Gann/Fib/indicator EXIT (new) | ✅ built and validated 2026-10-03 (`b39-swing-windows`): no edge (see below) |
 
 ### B-39 · Astro-quant swing-window model (P2, new feature request 2026-10-03) — ✅ done 2026-10-03
@@ -265,7 +273,7 @@ forecast date picker, the ledger loop and the futurecast calendars.
 - **Done when:** `import app` takes under 3 s with an empty cache, and the container reports
   healthy.
 
-### B-08 · Requirements don't match the stack that actually runs; 3 runtime deps missing
+### B-08 · Requirements don't match the stack that actually runs; 3 runtime deps missing — ✅ done 2026-10-04
 - **Evidence:** The venv has numpy 2.4, pandas 3.0, pytest 9.1, timezonefinder 8.3 and
   yfinance 1.6. `requirements.txt` pins `numpy<2`, `pandas<3`, `pytest<8`,
   `timezonefinder<7` and `yfinance<1`. `openpyxl` (Kota), `python-docx` (`kp_docx`) and
@@ -373,7 +381,7 @@ neither has a panel.
 **Decision needed:** For each route, either expose it in the UI, keep it as a documented
 API-only route, or delete it.
 
-### B-19 · `/api/contra_signals` uses market-structure labels for astro signals
+### B-19 · `/api/contra_signals` uses market-structure labels for astro signals — ✅ done 2026-10-04
 `app.py:664-760`: "POC trap", "distribution/accumulation", "selling exhaustion" and "Layer 3
 Price Confirmation" are all derived from **vedha weights only**, with no price or volume
 input. The docstring itself says "synthetic".
@@ -390,7 +398,7 @@ engine until someone remembers to call `clear()`.
 **Fix:** Add an `engine_version` column (hash of the relevant module sources, or a constant
 bumped manually), and miss on mismatch.
 
-### B-21 · Intraday path is marked "COMPLETE" but shows no edge (confirmed on real KP data 2026-10-01)
+### B-21 · Intraday path is marked "COMPLETE" but shows no edge (confirmed on real KP data 2026-10-01) — ✅ done 2026-10-04
 `docs/INTRADAY_PATH_VALIDATION.md`: regime-shift direction hit rate **49.8%** (3345
 shifts), and pooled score hit rate **54.8%** on 217 windows (not significant). Per-day
 correlation swings between −0.77 and +0.69. `docs/todo_predictive_intraday.md` still says
@@ -434,7 +442,7 @@ Many handlers end with `return jsonify({"error": str(e)}), 500` (e.g. `chakra_bp
 counts separately (4×240/min effective).
 **Fix:** Evict empty keys, or rely on nginx `limit_req` only.
 
-### B-27 · Leftover template/jinja reload settings repeated 3×
+### B-27 · Leftover template/jinja reload settings repeated 3× — ✅ done 2026-10-04
 `TEMPLATES_AUTO_RELOAD`, `jinja_env.auto_reload` and `jinja_env.cache = {}` are set in
 `app.py:84-86` and `app_boot.py:41-45`. Turning off the jinja cache in production costs a
 template re-parse on every request.
@@ -444,16 +452,16 @@ template re-parse on every request.
 
 ## P3 — Repo hygiene
 
-### B-28 · Dockerfile copies everything
+### B-28 · Dockerfile copies everything — ✅ done 2026-10-04
 There's no `.dockerignore`, so `venv/`, `venv-py314/`, `node_modules/`, `data/*.db`,
 `Financial_Astrology/`, `SBC-Tool/` and PDFs all go into the image. Add a `.dockerignore`.
 
-### B-29 · Stray Node project
+### B-29 · Stray Node project — ✅ done 2026-10-04
 `package.json` / `package-lock.json` / `node_modules/` contain only
 `opencode-models-discovery`, which is unrelated to the app. Remove them, or move them out
 of the repo.
 
-### B-30 · Root and scripts clutter (again)
+### B-30 · Root and scripts clutter (again) — ✅ done 2026-10-04
 - Root: `check_kota.py`, `create_summary.py`, `export_excel.py`, `extract_book.py`,
   `extract_pdf*.py`, `test_api.py`, `test_yf*.py` (4), `kota_*.txt`,
   `kn_rao_planets_children.txt`, `actionable_verdict_2026-09-14.md`.
@@ -465,7 +473,7 @@ of the repo.
 **Fix:** Move scripts to `scripts/adhoc/` or delete them. Move vaults outside the repo or
 gitignore them. Gitignore `data/output/`. Merge the smoke tests.
 
-### B-31 · Stale docs
+### B-31 · Stale docs — ✅ done 2026-10-04
 - `README.md`: says `python app.py` (see B-15), lists Crash Analyzer/CGSP/clipboard-share as
   features (B-09, B-18), and doesn't mention Gann/AstroGann/Bradley/Expiry/Rahu-Ketu trap.
 - `docs/ASTRO_GANN_BACKLOG.md` is a generic proposal template (asks you to "confirm
@@ -475,7 +483,7 @@ gitignore them. Gitignore `data/output/`. Merge the smoke tests.
 **Fix:** Rewrite the README feature table from the actual tabs. Archive dated notes under
 `docs/archive/`.
 
-### B-32 · Mixed line endings
+### B-32 · Mixed line endings — ✅ done 2026-10-04
 Git warns "LF will be replaced by CRLF" on 14 files. Add a `.gitattributes`
 (`* text=auto eol=lf`) and renormalize once.
 

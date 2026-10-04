@@ -200,7 +200,7 @@ finds **no edge so far**:
 
 - Intraday forecast (real ephemeris KP data, 41 days): 50.8% hit rate against a 55.4%
   constant baseline. Day direction was 28/41, against a 60.8% baseline (B-21, B-33).
-- Crash/turn backtest (`docs/backtest_summary.md`): 3 of 7 events, 42.9%.
+- Crash/turn backtest (`docs/archive/backtest_summary.md`): 3 of 7 events, 42.9%.
 - The 2026-09-14 "actionable verdict" sets 20–40% exposure from a vedha net of −6.0,
   without any measured hit rate behind that number.
 

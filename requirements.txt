@@ -2,6 +2,7 @@
 # Runtime dependencies. Ranges cover the versions the test suite runs on
 # (numpy 2.4, pandas 3.0, yfinance 1.6, timezonefinder 8.3 as of 2026-10).
 # Dev tools (pytest, ruff, mypy) live in pyproject.toml's [dev] extra.
+# Docker and CI install the exact versions in requirements.lock, generated from this file.
 flask>=3.0.0,<4.0.0
 pyswisseph>=2.10.0,<3.0.0  # import name: swisseph
 pandas>=2.1.0,<4.0.0
