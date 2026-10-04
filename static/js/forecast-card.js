@@ -76,7 +76,7 @@
       <div class="fe-tiles">${tiles(d)}</div>
       <p class="fe-note"><strong>${passed} of ${tests}</strong> astro tests have passed so far, so the chance shown is the
         historical base rate. The range comes from India VIX (${d.vix == null ? "–" : d.vix.toFixed(2)}) and NIFTY's close of ${num(d.entry_close)}
-        on ${esc(d.entry_date)}. Data as of ${esc(d.data_as_of)}.</p>
+        on ${esc(d.entry_date)}. ${window.SBCFreshness ? SBCFreshness.badge(d.freshness, "NIFTY") : "Data as of " + esc(d.data_as_of)}</p>
       <p class="fe-note">Sky: ${sky(d.sky)}</p>
       ${evidence(d)}
       <p class="fe-note">${esc(d.caveat)}</p>`;

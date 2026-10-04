@@ -152,7 +152,7 @@
               <div><dt>Confluence exits</dt><dd>${s.confluence_exits}</dd></div>
               <div><dt>Median bars</dt><dd>${s.median_bars ?? "–"}</dd></div>
             </dl>
-            <p class="analog-note">NIFTY data as of ${esc(d.data_as_of)}. ${esc(d.caveat)}</p>
+            <p class="analog-note">${window.SBCFreshness ? SBCFreshness.badge(d.freshness, "NIFTY") : "NIFTY data as of " + esc(d.data_as_of)}. ${esc(d.caveat)}</p>
           </div>
           ${verdict(d.validation)}
         </div>

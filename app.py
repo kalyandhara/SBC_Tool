@@ -1284,7 +1284,17 @@ def api_price():
                 })
             except Exception:
                 continue
-        return jsonify(candles)
+        resp = jsonify(candles)
+        if candles and interval == "1d":
+            from sbc import data_freshness
+            # Daily bars are stamped at local midnight; read the date in IST.
+            last = datetime.datetime.fromtimestamp(candles[-1]["time"], ZoneInfo("Asia/Kolkata")).date()
+            fresh = data_freshness.stamp(last)
+            resp.headers["X-Data-As-Of"] = fresh["as_of"]
+            resp.headers["X-Data-Stale"] = "1" if fresh["stale"] else "0"
+            resp.headers["X-Data-Expected"] = fresh["expected"]
+            resp.headers["X-Data-Sessions-Behind"] = str(fresh["sessions_behind"])
+        return resp
     except Exception:
         return internal_error()
 

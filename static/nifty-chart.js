@@ -575,6 +575,9 @@ function bizDay(iso) { return iso; } // lightweight-charts accepts YYYY-MM-DD
     var cResp = await fetchWithTimeout("/api/nifty_chart?start=" + from + "&end=" + to, 120000);
     var cData = await cResp.json();
     var candles = [];
+    if (window.SBCFreshness) {
+      SBCFreshness.show("nifty-chart-asof", SBCFreshness.badge(cData.freshness, "NIFTY"));
+    }
     if (!cResp.ok || !cData.candles || !cData.candles.length) {
       // Fallback to cached OHLC from /api/engine/market/ohlc
       if (window._cachedOHLC && window._cachedOHLC.length) {
@@ -588,6 +591,9 @@ function bizDay(iso) { return iso; } // lightweight-charts accepts YYYY-MM-DD
           };
         });
         setStatus("Using cached OHLC fallback (" + candles.length + " bars).");
+        if (window.SBCFreshness && window._cachedOHLCFreshness) {
+          SBCFreshness.show("nifty-chart-asof", SBCFreshness.badge(window._cachedOHLCFreshness, "Cached OHLC"));
+        }
       } else {
         setStatus("No price data for this range (network offline and cache empty?).", true);
         return;
