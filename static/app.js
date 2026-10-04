@@ -11,6 +11,11 @@ const HEAVY_ENDPOINTS = [
   "/api/prediction", "/api/futurecast", "/api/bullish_futurecast", "/api/sector_vedha",
   "/api/largecap_divergence", "/api/kp_intraday_report", "/api/engine/intraday_path",
   "/api/monthly_heatmap", "/api/weekly_commentary", "/api/lunar_forecast",
+  // Called from static/js (formerly inline in index.html, which used plain fetch):
+  // yfinance downloads, per-month heatmaps and chart rendering can exceed 8 s.
+  "/api/astro/personal", "/api/backtest", "/api/signal/moon", "/api/price",
+  "/api/vedha_daily", "/api/daily_confluence", "/api/nakshatra_chart",
+  "/api/intraday_projection", "/api/rahu_ketu_trap_calendar",
 ];
 
 // fetchWithTimeout(url), (url, options), (url, timeoutMs) or (url, options, timeoutMs).
@@ -1644,6 +1649,7 @@ function copyLunarForecast() {
     return;
   }
   const text = window.currentLunarClipboardText;
+  if (!navigator.clipboard) { showToast("Clipboard isn't available in this browser"); return; }
   navigator.clipboard.writeText(text).then(() => {
     showToast("Copied to clipboard!");
   }).catch(() => {
@@ -1658,11 +1664,16 @@ function shareLunarForecast() {
   }
   const text = window.currentLunarSocialText || "";
   if (navigator.share) {
-    navigator.share({ title: "Lunar Cycle Sector Forecast", text: text });
-  } else {
+    // Rejects when the user cancels the share sheet; nothing to report then.
+    navigator.share({ title: "Lunar Cycle Sector Forecast", text: text }).catch(() => {});
+  } else if (navigator.clipboard) {
     navigator.clipboard.writeText(text).then(() => {
       showToast("Copied for sharing!");
+    }).catch(() => {
+      showToast("Couldn't copy (clipboard blocked); select the text instead");
     });
+  } else {
+    showToast("Sharing isn't available in this browser");
   }
 }
 
@@ -3736,7 +3747,7 @@ function renderKPIntradayReport(data) {
   $("kp-intraday").classList.remove("hidden");
 }
 
-async function loadKPIntradayReport(date, instrument, format) {
+async function loadKPIntradayReport(date, instrument, format, closedNote) {
   if (format === 'docx') {
     // Word export is a file download, not something to render in the panel.
     window.open('/api/kp_intraday_report?date=' + encodeURIComponent(date) +
@@ -3745,6 +3756,8 @@ async function loadKPIntradayReport(date, instrument, format) {
   }
 
   const content = $("kp-intraday-content");
+  // The date asked for; a closed day loads the next session but stays "asked for".
+  if (content && !closedNote) content.dataset.requestedDate = date;
   if (content) {
     content.className = "kp-intraday-content panel-loading";
     content.textContent = `Generating KP Intraday Trend Change Prediction Report for ${date} (${instrument})...`;
@@ -3752,17 +3765,29 @@ async function loadKPIntradayReport(date, instrument, format) {
   try {
     const url = `/api/kp_intraday_report?date=${encodeURIComponent(date)}&instrument=${encodeURIComponent(instrument)}&format=${encodeURIComponent(format)}`;
     const response = await fetchWithTimeout(url);
+    if (response.status === 400 && !closedNote) {
+      // NSE closed (weekend/holiday): show the next session instead of an error.
+      const err = await response.clone().json().catch(() => ({}));
+      if (err.next_trading_day) {
+        const dateEl = $("kp-intraday-date");
+        if (dateEl) dateEl.value = err.next_trading_day;
+        return loadKPIntradayReport(err.next_trading_day, instrument, format,
+          `${err.error}; showing the next session, ${err.next_trading_day}.`);
+      }
+    }
     if (format === 'html') {
       if (!response.ok) throw new Error("unavailable (HTTP " + response.status + ")");
       const html = await response.text();
       $("kp-intraday-content").className = "kp-intraday-content";
       $("kp-intraday-content").innerHTML = html;
       $("kp-intraday-content").dataset.reportDate = date;
+      if (closedNote) showKPClosedNote(closedNote);
     } else {
       const data = await response.json();
       if (data.error) throw new Error(data.error);
       renderKPIntradayReport(data);
       content.dataset.reportDate = date;
+      if (closedNote) showKPClosedNote(closedNote);
     }
   } catch (e) {
     console.error("KP Intraday report failed:", e);
@@ -3771,6 +3796,15 @@ async function loadKPIntradayReport(date, instrument, format) {
       content.textContent = "KP Intraday report is unavailable. Try running the report again.";
     }
   }
+}
+
+function showKPClosedNote(text) {
+  const content = $("kp-intraday-content");
+  if (!content) return;
+  const note = document.createElement("p");
+  note.className = "experimental-note";
+  note.textContent = text;
+  content.prepend(note);
 }
 
 // Computes the month's KP data from Swiss Ephemeris on the server, then loads
@@ -4061,8 +4095,8 @@ function initWorkspaceTabs() {
       }
       const targetDate = (dateEl && dateEl.value) || globalDate;
       const content = $("kp-intraday-content");
-      const kpStale = content && targetDate && content.dataset.reportDate &&
-                      content.dataset.reportDate !== targetDate;
+      const shownFor = content && (content.dataset.requestedDate || content.dataset.reportDate);
+      const kpStale = content && targetDate && shownFor && shownFor !== targetDate;
       if (content && (kpStale || !content.innerHTML.trim() || content.querySelector(".kp-error"))) {
         const inst = $("kp-intraday-instrument") ? $("kp-intraday-instrument").value : "NIFTY";
         const fmt = $("kp-intraday-format") ? $("kp-intraday-format").value : "html";

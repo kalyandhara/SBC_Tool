@@ -503,6 +503,19 @@ Git warns "LF will be replaced by CRLF" on 14 files. Add a `.gitattributes`
 | 5 | B-18, B-19, B-21, B-24…B-32 | Dead routes pruned, honest labels, clean repo and docs |
 
 ## Tests to add along the way
+
+Status 2026-10-04 (`backlog-followups`): all five exist. B-02's payload contract is in
+`tests/test_api.py`, B-04's isolation in `tests/test_db_isolation.py`, and B-08's install
+from `requirements.lock` runs in every CI job. New: `tests/test_content_guards.py` (no
+placeholder text in route modules, no hard-coded dates in `index.html`) and
+`tests/ui/test_ui_smoke.py` (Playwright: every tab, every visible button, fails on
+uncaught JS errors; CI job "UI smoke"). Running the same click-through by hand found and
+fixed two bugs: the birth-data form's OK button reloaded the whole page, and Share left
+an unhandled clipboard rejection. The large-cap "Adhik Masa" configuration was removed
+(it never checked Adhik Masa), the KP report moves to the next session on closed days,
+the unattached "Run Moon Backtest" button is wired in, and the scripts moved out of
+`index.html` use `fetchWithTimeout`.
+
 - Payload-shape contract test for `/api/prediction_series` across both warm and cold paths (B-02).
 - `profiles` row count unchanged across the test session (B-04).
 - Clean-venv install + route smoke in CI (B-08).

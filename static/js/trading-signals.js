@@ -6,7 +6,7 @@ document.addEventListener('DOMContentLoaded', async ()=>{
   const today = localTodayISO();
   let astro = null;
   try {
-    const res = await fetch(`/api/astro/personal?date=${today}`);
+    const res = await fetchWithTimeout(`/api/astro/personal?date=${today}`);
     if(res.ok) astro = await res.json();
   } catch(e){}
   const scoreLabel = document.getElementById('astro-score-label');
@@ -92,7 +92,7 @@ document.addEventListener('DOMContentLoaded', async ()=>{
   async function refreshAstroAccuracy(){
     if(!astroScoreSub) return;
     try{
-      const res = await fetch(`/api/backtest/moon?ticker=^NSEI&multi_tf=true&regime=true&volume=true&vedha=false`);
+      const res = await fetchWithTimeout(`/api/backtest/moon?ticker=^NSEI&multi_tf=true&regime=true&volume=true&vedha=false`);
       const data = await res.json();
       if(!data.error && data.samples>0){
         let acc = document.getElementById('astro-score-accuracy');
@@ -132,7 +132,7 @@ document.addEventListener('DOMContentLoaded', async ()=>{
   wfBtn.addEventListener('click', async ()=>{
     walkforwardDiv.textContent='Loading...';
     try{
-      const res=await fetch('/api/backtest/walkforward?ticker=^NSEI&window=365&step=90');
+      const res=await fetchWithTimeout('/api/backtest/walkforward?ticker=^NSEI&window=365&step=90');
       const data=await res.json();
       if(data.error){walkforwardDiv.textContent='Error: '+data.error; return;}
       let html='<table style="width:100%;border-collapse:collapse"><tr><th>Train Start</th><th>Test End</th><th>Samples</th><th>Accuracy</th></tr>';
@@ -165,7 +165,7 @@ document.addEventListener('DOMContentLoaded', async ()=>{
         'Nifty Large Caps':'^NSEI'
       };
       const tickerSig = sectorMapSig[sectorSelect.value] || '^NSEI';
-      const res=await fetch(`/api/signal/moon?ticker=${encodeURIComponent(tickerSig)}&days=30`);
+      const res=await fetchWithTimeout(`/api/signal/moon?ticker=${encodeURIComponent(tickerSig)}&days=30`);
       const data=await res.json();
       if(data.error){signalDiv.textContent='Error: '+data.error; return;}
       let html='<table style="width:100%;border-collapse:collapse"><tr><th>Date</th><th>Rashi</th><th>Trend</th><th>Close</th></tr>';
@@ -192,6 +192,8 @@ document.addEventListener('DOMContentLoaded', async ()=>{
   const vedhaCb=makeToggle('Vedha','vedha',false);
   if(controlsContainer){
     controlsContainer.insertBefore(togglesDiv, backtestResult);
+    // The button and its handler existed but the button was never added to the page.
+    controlsContainer.insertBefore(backtestBtn, togglesDiv);
   }
   let lastData=null;
   const exportBtn=document.createElement('button');
@@ -233,7 +235,7 @@ document.addEventListener('DOMContentLoaded', async ()=>{
       };
       const sector = sectorSelect.value;
       const ticker = sectorMap[sector] || '^NSEBANK';
-      const res = await fetch(`/api/backtest/moon?ticker=${encodeURIComponent(ticker)}&multi_tf=${multiCb.checked}&regime=${regimeCb.checked}&volume=${volCb.checked}&vedha=${vedhaCb.checked}`);
+      const res = await fetchWithTimeout(`/api/backtest/moon?ticker=${encodeURIComponent(ticker)}&multi_tf=${multiCb.checked}&regime=${regimeCb.checked}&volume=${volCb.checked}&vedha=${vedhaCb.checked}`);
       const data = await res.json();
       if(data.error){
         backtestResult.textContent='Error: '+data.error;
@@ -284,14 +286,14 @@ document.addEventListener('DOMContentLoaded', async ()=>{
         '^CNXREALTY':'^NSEREALTY'
       };
       let ticker = tickerMap[sector] || '^NSEBANK';
-      let res = await fetch(`/api/price?ticker=${encodeURIComponent(ticker)}&days=90`);
+      let res = await fetchWithTimeout(`/api/price?ticker=${encodeURIComponent(ticker)}&days=90`);
       let candles = [];
       if(!res.ok || (await res.clone().json()).length===0){
         // try fallback
         const fb = tickerFallback[ticker];
         if(fb){
           ticker = fb;
-          res = await fetch(`/api/price?ticker=${encodeURIComponent(ticker)}&days=90`);
+          res = await fetchWithTimeout(`/api/price?ticker=${encodeURIComponent(ticker)}&days=90`);
         }
       }
       if(!res.ok) throw new Error('Price fetch failed');
@@ -391,7 +393,7 @@ document.addEventListener('DOMContentLoaded', async ()=>{
         const candlestickSeries = chart.addCandlestickSeries();
         candlestickSeries.setData(candles);
         // Fetch SBC vedha daily for selected sector
-        const vedhaRes = await fetch(`/api/vedha_daily?sector=${encodeURIComponent(sector)}&days=90`);
+        const vedhaRes = await fetchWithTimeout(`/api/vedha_daily?sector=${encodeURIComponent(sector)}&days=90`);
         const vedhaData = await vedhaRes.json();
         // Vedha line disabled to avoid scale distortion; use markers only
         // const vedhaSeries = chart.addLineSeries({color:'#22c55e', lineWidth:2});
@@ -465,14 +467,14 @@ document.addEventListener('DOMContentLoaded', async ()=>{
             try{
               // Re-fetch price
               let priceUrl = `/api/price?ticker=${encodeURIComponent(ticker)}&start=${encodeURIComponent(startParam)}&end=${encodeURIComponent(endParam)}`;
-              let resP = await fetch(priceUrl);
+              let resP = await fetchWithTimeout(priceUrl);
               if(!resP.ok) throw new Error('Price re-fetch failed');
               const newCandles = await resP.json();
               if(!newCandles.length) throw new Error('No price data for range');
               candlestickSeries.setData(newCandles);
               // Re-fetch vedha
               const vedhaUrl = `/api/vedha_daily?sector=${encodeURIComponent(sector)}&start=${encodeURIComponent(startParam)}&end=${encodeURIComponent(endParam)}`;
-              const resV = await fetch(vedhaUrl);
+              const resV = await fetchWithTimeout(vedhaUrl);
               const vedhaDataNew = await resV.json();
               // Update markers
               const markersNew = newCandles.map((c,i)=>{
@@ -564,7 +566,7 @@ document.addEventListener('DOMContentLoaded', async ()=>{
 
   // Sector map live from monthly heatmap
   try {
-    const hmRes = await fetch(`/api/monthly_heatmap?date=${today}&days=1`);
+    const hmRes = await fetchWithTimeout(`/api/monthly_heatmap?date=${today}&days=1`);
     if(hmRes.ok){
       const hm = await hmRes.json();
       const sectors = [];
@@ -615,7 +617,7 @@ document.addEventListener('DOMContentLoaded', ()=>{
     statusEl.textContent='Computing...';
     try{
       const date = dateEl.value;
-      const res = await fetch(`/api/daily_confluence?date=${encodeURIComponent(date)}&days=7`);
+      const res = await fetchWithTimeout(`/api/daily_confluence?date=${encodeURIComponent(date)}&days=7`);
       if(!res.ok) throw new Error('API error');
       const data = await res.json();
       const nak = data.moon_nakshatra || 'Unknown';
@@ -682,7 +684,7 @@ document.addEventListener('DOMContentLoaded', ()=>{
       chartStatus.className = 'nifty-chart-status';
       chartBtn.disabled = true;
       try{
-        const res = await fetch(`/api/nakshatra_chart?date=${encodeURIComponent(date)}&months=${encodeURIComponent(chartRange.value)}`);
+        const res = await fetchWithTimeout(`/api/nakshatra_chart?date=${encodeURIComponent(date)}&months=${encodeURIComponent(chartRange.value)}`);
         if(!res.ok) throw new Error('chart unavailable');
         const blob = await res.blob();
         if(chartImg.dataset.objectUrl) URL.revokeObjectURL(chartImg.dataset.objectUrl);
@@ -717,9 +719,9 @@ document.addEventListener('DOMContentLoaded', ()=>{
         const ticker = tickerMap[sector] || '^NSEI';
         const dateEl = document.getElementById('date');
         const selDate = dateEl?.value || localTodayISO();
-        const priceRes = await fetch(`/api/price?ticker=${encodeURIComponent(ticker)}&start=${encodeURIComponent(selDate)}&end=${encodeURIComponent(selDate)}&interval=3m`);
+        const priceRes = await fetchWithTimeout(`/api/price?ticker=${encodeURIComponent(ticker)}&start=${encodeURIComponent(selDate)}&end=${encodeURIComponent(selDate)}&interval=3m`);
         const candles = await priceRes.json();
-        const projRes = await fetch(`/api/intraday_projection?sector=${encodeURIComponent(sector)}&date=${selDate}`);
+        const projRes = await fetchWithTimeout(`/api/intraday_projection?sector=${encodeURIComponent(sector)}&date=${selDate}`);
         let proj = [];
         try{ proj = await projRes.json(); }catch(e){ proj = []; }
         if(!topChart && window.LightweightCharts && topDiv && bottomDiv){
@@ -750,7 +752,7 @@ document.addEventListener('DOMContentLoaded', ()=>{
         const rawPoints = Array.isArray(proj.points) ? proj.points : (Array.isArray(proj.hours) ? proj.hours : []);
         const predPoints = rawPoints.map(p=>{const t = typeof p.time==='number' ? p.time : Math.floor(new Date(p.time).getTime()/1000); const v = p.score ?? p.projection ?? 0; return {time:t,open:v,high:v,low:v,close:v};});
         if(predPoints.length){ topSeries.setData(predPoints); }else{
-          const vedhaRes = await fetch(`/api/vedha_daily?sector=${encodeURIComponent(sector)}&days=90`);
+          const vedhaRes = await fetchWithTimeout(`/api/vedha_daily?sector=${encodeURIComponent(sector)}&days=90`);
           const vedha = await vedhaRes.json();
           const placeholder = candles.slice(0,100).map((c,i)=>{const v=(vedha[i]?.score||0)*100; return {time:c.time,open:v,high:v,low:v,close:v};});
           topSeries.setData(placeholder);

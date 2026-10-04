@@ -31,7 +31,7 @@ document.addEventListener('DOMContentLoaded',()=>{
     try{
       const start=startEl.value; const end=endEl.value;
       if(!start||!end){ heatDiv.innerHTML='Select start and end dates.'; return; }
-      const res=await fetch(`/api/rahu_ketu_trap_calendar?start=${encodeURIComponent(start)}&end=${encodeURIComponent(end)}`);
+      const res=await fetchWithTimeout(`/api/rahu_ketu_trap_calendar?start=${encodeURIComponent(start)}&end=${encodeURIComponent(end)}`);
       if(!res.ok) throw new Error('API error');
       const data=await res.json();
       const calendar=data.calendar||[];

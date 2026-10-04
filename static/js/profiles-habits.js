@@ -14,7 +14,7 @@
     const profileImportInput = document.getElementById('bd-profile-import');
     async function refreshProfileList(){
       try{
-        const res = await fetch('/api/astro/profile?user_key=default');
+        const res = await fetchWithTimeout('/api/astro/profile?user_key=default');
         if(res.ok){
           const profiles = await res.json();
           profileSelect.innerHTML = '<option value="">-- Select saved profile --</option>';
@@ -34,7 +34,7 @@
     refreshProfileList().then(async ()=>{
       // Auto-load default profile if exists
       try{
-        const res = await fetch('/api/astro/profile?user_key=default');
+        const res = await fetchWithTimeout('/api/astro/profile?user_key=default');
         if(res.ok){
           const profiles = await res.json();
           const def = profiles.find(p=>p.is_default);
@@ -83,7 +83,7 @@
         const name = prompt('Enter profile name');
         if(!name) return;
         try{
-          const res = await fetch('/api/astro/profile/'+id, {method:'PUT', headers:{'Content-Type':'application/json'}, body: JSON.stringify({name})});
+          const res = await fetchWithTimeout('/api/astro/profile/'+id, {method:'PUT', headers:{'Content-Type':'application/json'}, body: JSON.stringify({name})});
           if(res.ok){
             await refreshProfileList();
             alert('Profile renamed');
@@ -96,7 +96,7 @@
         const id = profileSelect.value;
         if(!id) { alert('Select a profile first'); return; }
         try{
-          const res = await fetch('/api/astro/profile/'+id+'/default', {method:'POST'});
+          const res = await fetchWithTimeout('/api/astro/profile/'+id+'/default', {method:'POST'});
           if(res.ok){ alert('Set as default'); } else { alert('Failed'); }
         }catch{ alert('Failed'); }
       });
@@ -104,7 +104,7 @@
     if(profileExportBtn){
       profileExportBtn.addEventListener('click', async function(){
         try{
-          const res = await fetch('/api/astro/profile/export?user_key=default');
+          const res = await fetchWithTimeout('/api/astro/profile/export?user_key=default');
           if(res.ok){
             const data = await res.json();
             const blob = new Blob([JSON.stringify(data, null, 2)], {type:'application/json'});
@@ -126,7 +126,7 @@
         const text = await file.text();
         try{
           const data = JSON.parse(text);
-          const res = await fetch('/api/astro/profile/import', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(data)});
+          const res = await fetchWithTimeout('/api/astro/profile/import', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(data)});
           if(res.ok){
             alert('Import successful');
             await refreshProfileList();
@@ -141,7 +141,7 @@
         if(!id) { alert('Select a profile first'); return; }
         if(!confirm('Delete selected profile?')) return;
         try{
-          const res = await fetch('/api/astro/profile/'+id, {method:'DELETE'});
+          const res = await fetchWithTimeout('/api/astro/profile/'+id, {method:'DELETE'});
           if(res.ok){
             await refreshProfileList();
             alert('Profile deleted');
@@ -154,7 +154,7 @@
     if(loadBtn){
       loadBtn.addEventListener('click', async function(){
         try{
-          const res = await fetch('/api/astro/profile?user_key=default');
+          const res = await fetchWithTimeout('/api/astro/profile?user_key=default');
           if(res.ok){
             const profiles = await res.json();
             if(profiles.length>0){
@@ -197,7 +197,7 @@
         };
         localStorage.setItem('sbc_birth_profile', JSON.stringify(data));
         try{
-          const res = await fetch('/api/astro/profile', {
+          const res = await fetchWithTimeout('/api/astro/profile', {
             method:'POST',
             headers:{'Content-Type':'application/json'},
             body: JSON.stringify(data)
@@ -232,7 +232,7 @@
     }catch{}
     // Sync habit streaks from server on load
     try{
-      fetch('/api/habits/streaks?user_key=default').then(r=>r.json()).then(data=>{
+      fetchWithTimeout('/api/habits/streaks?user_key=default').then(r=>r.json()).then(data=>{
         window.sbc_habit_server = data;
         // Reminder for missed habits
         if('Notification' in window && Notification.permission === 'granted'){
@@ -321,14 +321,14 @@
           const lonFinal = lonSign*lonDec;
           if(Math.abs(latFinal)>0.1 && Math.abs(lonFinal)>0.1){
             try{
-              const tzRes = await fetch('/api/tz/from_coords?lat='+latFinal+'&lon='+lonFinal);
+              const tzRes = await fetchWithTimeout('/api/tz/from_coords?lat='+latFinal+'&lon='+lonFinal);
               if(tzRes.ok){
                 const tzData = await tzRes.json();
                 tzName = tzData.timezone;
                 // Get accurate offset from server
                 if(dateVal && timeVal && tzName){
                   try{
-                    const offRes = await fetch(`/api/tz/offset?tz=${encodeURIComponent(tzName)}&date=${encodeURIComponent(dateVal)}&time=${encodeURIComponent(timeVal)}`);
+                    const offRes = await fetchWithTimeout(`/api/tz/offset?tz=${encodeURIComponent(tzName)}&date=${encodeURIComponent(dateVal)}&time=${encodeURIComponent(timeVal)}`);
                     if(offRes.ok){
                       const offData = await offRes.json();
                       if(document.getElementById('tz-hours')) document.getElementById('tz-hours').value = offData.offset_hours;
@@ -347,7 +347,7 @@
             const tzM = document.getElementById('tz-mins')?.value || '30';
             params = new URLSearchParams({date:dateVal,time:timeVal,tz_hours:tzH,tz_mins:tzM});
           }
-          const res = await fetch('/api/astro/personal?'+params.toString());
+          const res = await fetchWithTimeout('/api/astro/personal?'+params.toString());
           if(res.ok){
             const data = await res.json();
             html += '<p><b>Vedic positions (sidereal):</b> Sun '+ (data.sun?.sign||'-') +' Nakshatra '+ (data.sun?.nakshatra||'-') +', Moon '+ (data.moon?.sign||'-') +' '+ (data.moon?.nakshatra||'-') +'</p>';
@@ -455,7 +455,7 @@
               medData.last = now;
               localStorage.setItem(medKey, JSON.stringify(medData));
               updateStreak(medData, streakSpan);
-              try{ await fetch('/api/habits/log', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({habit_type:'meditation', date:now})}); }catch{}
+              try{ await fetchWithTimeout('/api/habits/log', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({habit_type:'meditation', date:now})}); }catch{}
               alert('Meditation logged! Keep the streak going.');
             }else{
               alert('Already logged today.');
@@ -477,7 +477,7 @@
               stepsData.last = now;
               localStorage.setItem(stepsKey, JSON.stringify(stepsData));
               updateStreak(stepsData, stepsSpan);
-              try{ await fetch('/api/habits/log', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({habit_type:'steps', date:now})}); }catch{}
+              try{ await fetchWithTimeout('/api/habits/log', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({habit_type:'steps', date:now})}); }catch{}
               alert('Steps logged! Rahu balance maintained.');
             }else{
               alert('Already logged today.');
@@ -499,7 +499,7 @@
               colourData.last = now;
               localStorage.setItem(colourKey, JSON.stringify(colourData));
               updateStreak(colourData, colourSpan);
-              try{ await fetch('/api/habits/log', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({habit_type:'colour', date:now})}); }catch{}
+              try{ await fetchWithTimeout('/api/habits/log', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({habit_type:'colour', date:now})}); }catch{}
               alert('Today’s colour logged!');
             }else{
               alert('Already logged today.');
@@ -533,7 +533,7 @@ Colour streak: ${colourData.streak} days, last: ${colourData.last||'never'}`);
         if(chartBtn && chartDiv){
           chartBtn.addEventListener('click', async ()=>{
             try{
-              const res = await fetch('/api/habits/history?user_key=default&days=7');
+              const res = await fetchWithTimeout('/api/habits/history?user_key=default&days=7');
               if(!res.ok) return;
               const hist = await res.json();
               let html = '<div style="display:flex;gap:12px;margin-top:8px">';
@@ -558,5 +558,17 @@ Colour streak: ${colourData.streak} days, last: ${colourData.last||'never'}`);
 }
     }catch{}
     out.scrollIntoView({behavior:'smooth'});
+  });
+});
+
+// The form's OK button (and Enter in any field) used to submit natively and reload the
+// whole page. Submitting now runs "Generate Recommendations".
+document.addEventListener('DOMContentLoaded', function(){
+  const form = document.getElementById('birth-data-form');
+  if (!form) return;
+  form.addEventListener('submit', function(e){
+    e.preventDefault();
+    const gen = document.getElementById('bd-generate');
+    if (gen) gen.click();
   });
 });
