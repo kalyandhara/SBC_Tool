@@ -1,3 +1,0 @@
-       Date Session Nifty Score Nifty Signal BN Score BankNifty Signal
-01-Sep-2026 9:15 AM           3    CAUTION 🟡        2           SELL 🔴
-01-Sep-2026 1:00 PM           3    CAUTION 🟡        2           SELL 🔴

@@ -11,9 +11,8 @@ def boot(app, build_response=None):
     risk bands or windows) into the same cache the chart reads.
     """
     _bootstrap()
-    app.config["TEMPLATES_AUTO_RELOAD"] = True
-    app.jinja_env.auto_reload = True
-    app.jinja_env.cache = {}
+    # Template auto-reload is left to Flask: on under debug (run_app.py --debug or
+    # FLASK_DEBUG=1), off in production so templates are parsed once and cached.
     from sbc import cities
     if cities.count() < 1000:
         app.logger.warning("City search has %d cities; run python scripts/seed_cities.py "

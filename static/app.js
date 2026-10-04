@@ -3637,8 +3637,9 @@ function renderKPIntradayReport(data) {
   const sec3 = document.createElement("section");
   sec3.className = "kp-section";
   sec3.innerHTML = `
-    <h2>SECTION 3 &mdash; PREDICTIVE INTRADAY PATH</h2>
+    <h2>SECTION 3 &mdash; PREDICTIVE INTRADAY PATH <span class="experimental-badge">Experimental</span></h2>
     <div class="kp-path-box">
+      <p class="experimental-note"><strong>Experimental &mdash; no validated edge.</strong> On real KP data (4 Aug&ndash;30 Sep 2026) the path's direction hit rate was 50.8% and regime shifts 49.7%: chance level. Research only.</p>
       <p>Orange markers = Tier-1 / regime-shift timestamps. Path is directional shape, not price target. Windows are candidates until price confirms.</p>
     </div>
   `;

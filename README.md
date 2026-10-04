@@ -4,32 +4,35 @@ A comprehensive Flask-based web application for Vedic astrological market analys
 
 ## Features
 
-### Core Astrological Engine
-- **81-Cell Sarvatobhadra Chakra** with 28 nakshatras, 16 vowels, 20 consonants, 12 rashis, 5 tithi groups
-- **Two Vedha Schools**: Classical (single ray) and All-three rays (Narasimha Rao); KP is used for the intraday layer, not for vedha
-- **Lahiri Ayanamsa** with Swiss Ephemeris (Moshier) precision
-- **Market Anchors**: NSE, BSE, NIFTY 50, SENSEX, India national market
+> **Research tool, not investment advice.** Every astro signal here has been tested
+> out of sample against NIFTY (rules, analogs, factors, sectors, swing entries) and
+> none has shown an edge so far. The forecast card stays at the base rate unless a
+> component passes both the permutation test and the incremental test against market
+> controls. Reports: `docs/research/`; running tally: `docs/GAP_ANALYSIS_PREDICTION_ENGINE_2026-10-03.md`.
 
-### Analysis Panels
-| Panel | Description |
-|-------|-------------|
-| **Executive Overview** | Market bias, crash risk, reversal windows, sector leaders |
-| **Chart & Timing** | NIFTY 50 astro-price chart with prediction overlay, intraday projection, crash/bullish futurecast |
-| **Sector Heatmap** | Monthly sector × day confluence heatmap with lunar timing strip |
-| **KP Intraday** | Rule-based intraday trend change predictions for NIFTY/BANKNIFTY/FINNIFTY |
-| **Daily Balance** | 30-day blended bias (Jyotish/KP/Western) with SBC confluence line |
-| **Research Lab** | Event studies, walk-forward validation, planetary aspect grids, solar/lunar cycles |
-| **SBC Chakra** | Interactive 81-cell grid with ray drawing, planetary ephemeris, sector projections |
-| **Specialized Sector Signals** | FMCG, Tourism, Chemical, Alcohol, Bullion, Transit Vedha, Large-cap divergence |
+### Core astrological engine
+- **81-cell Sarvatobhadra Chakra** with 28 nakshatras, 16 vowels, 20 consonants, 12 rashis, 5 tithi groups
+- **Two vedha schools**: Classical (single ray) and All-three rays (Narasimha Rao); KP is used for the intraday layer, not for vedha
+- **Lahiri ayanamsa** with Swiss Ephemeris (Moshier); KP ayanamsa and Placidus cusps for the KP data files
+- **Market anchors**: NSE, BSE, NIFTY 50, SENSEX, India national market
+- **NSE holiday calendar** (2024–2026, special closures, Muhurat) used by forecasts, the ledger and KP generation
 
-### Advanced Features
-- **Crash Analyzer** with Jupiter-Saturn, Mars-Ketu signatures
-- **CGSP Framework** (Cruel-Gentle Sign-Pada) for large-cap divergence
-- **Bhadra Calendar** (Vishti Karana) with reversal-calendar cross-reference
-- **Lunar Cycle Forecast** with infographic cards (clipboard/share ready)
-- **Weekly Commentary** multi-factor synthesis
-- **KP Intraday Reports** with regime shifts, trend changes, trading playbook
-- **Profile Management** for birth data with export/import
+### Workspaces (tabs)
+| Tab | What it shows |
+|-----|---------------|
+| **Executive Overview** | Next-session NIFTY forecast card (probability, VIX bands, evidence with verdicts), crash/volatility risk, reversal watch, the interactive SBC Chakra with birth-data profiles, Bhadra calendar, weekly confluence commentary, Rahu/Ketu trap calendar, yoga alerts, trading signals from live tithi/Bhadra/reversal windows |
+| **Chart & Timing** | NIFTY 50 astro-price chart (prediction overlay, crash score, Gann zones and Gann initiation/target/SL markers), intraday astro-projection, AstroCycle Pro Mercury/Moon bars, expiry range indicator, crash and bullish futurecasts |
+| **Sector Heatmap** | SBC sector dashboard, monthly sector confluence heatmap, sector vedha radar, bullion and transit vedha matrices, large-cap divergence (CGSP), FMCG/tourism/chemical/alcohol sector signals, lunar cycle sector forecast, daily nakshatra confluence |
+| **Research Lab** | Event studies, walk-forward validation, planetary aspect grid, solar/lunar cycles |
+| **KP Intraday** | SBC + KP intraday forecast, KP trend-change report (DOCX export) and intraday path — all labelled *experimental, no validated edge*; Kota Chakra prediction |
+| **Monthly Projection** | Daily indication balance (Jyotish/KP/Western blend) and confluence calendar matrix |
+| **Analog Lab** | Tiered sky-similarity analogs with forward-return distributions |
+| **Forward Calendar** | Next weeks' astro events with the frozen forecast for each session (also as weekly HTML/Markdown reports) |
+| **Swing Windows** | Heliocentric Earth–planet aspect windows as entries, Gann + Fibonacci + indicator confluence as exits; TradingView Pine script in `tools/tradingview/` |
+
+### API-only
+- **Crash Analyzer** (`/api/crash_analysis`, `/api/crash_backtest`) and **CGSP Framework** (`/api/cgsp_framework`, `/api/cgsp_backtest`) have no panel of their own; see the API reference below.
+- **Live forecast ledger** freezes each session's forecast before the open and scores it after the close (`scripts/forecast_ledger.py`, run by `run_app.py`).
 
 ## Quick Start
 
@@ -101,7 +104,7 @@ Open http://localhost:8000 in your browser.
 SBC_Tool/
 ├── app.py                 # Flask application factory & routes
 ├── requirements.txt       # Python dependencies
-├── pyproject.toml         # Project config (black, ruff, mypy, pytest)
+├── pyproject.toml         # Project config (ruff, mypy, pytest)
 ├── sbc/                   # Core astrological engine
 │   ├── __init__.py
 │   ├── chakra.py          # 81-cell grid definition
@@ -320,7 +323,7 @@ GET  /api/sbc/latest
 # Lint + import order (the same command CI runs; rules in pyproject.toml)
 ruff check sbc/ app.py run_app.py scripts/ tests/
 
-# Type check (advisory in CI)
+# Type check (blocking in CI)
 mypy sbc/ app.py --ignore-missing-imports
 ```
 

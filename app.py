@@ -86,10 +86,6 @@ app.register_blueprint(chakra_bp)
 app.register_blueprint(forecast_bp)
 
 _daily_confluence_cache: dict = {}
-# Always render the current template from disk (avoids stale HTML during dev iteration)
-app.config["TEMPLATES_AUTO_RELOAD"] = True
-app.jinja_env.auto_reload = True
-app.jinja_env.cache = {}
 
 # Simple in-memory rate limiter
 _request_times: defaultdict[str, list[float]] = defaultdict(list)
@@ -453,15 +449,18 @@ _contra_cache: dict = {}
 
 @app.route("/api/contra_signals")
 def contra_signals():
-    """3‑layer contra‑investment confluence evaluation.
+    """Contra-signal checklist built from astro inputs only.
 
-    Layer 1 — Market Structure: POC trap, distribution/accumulation,
-      selling/buying exhaustion from confluence + driver analysis.
-    Layer 2 — Astro Timing: Jyotish (classical), KP (allthree),
-      Western (zodiac‑dignity synthetic) bias + reversal windows.
-    Layer 3 — Price Confirmation: blend‑bias thresholds, VWAP‑style
-      confirmations, reversal‑candle flags (synthetic, derived from
-      blend bias crossing the bullish/bearish thresholds).
+    Nothing here reads price or volume. Every field is named for what it
+    measures (B-19; it used to borrow market-structure labels such as
+    "POC trap" and "price confirmation"):
+
+    vedha_weights — benefic vs malefic confluence weights and how weak the
+      top drivers of each nature are.
+    school_bias   — Jyotish (classical), KP (allthree) and Western
+      (zodiac-dignity) bias on a 0–6 scale, with bearish-extreme flags.
+    blend         — the three-school average against the bull/bear thresholds
+      used by daily_indication_balance.
     """
     start = request.args.get("start")
     try:
@@ -482,7 +481,7 @@ def contra_signals():
     rj = build_response(start_d.isoformat(), "09:15", "Asia/Kolkata", anchor_key, "classical")
     rk = build_response(start_d.isoformat(), "09:15", "Asia/Kolkata", anchor_key, "allthree")
 
-    # --- Layer 1: Market Structure ---
+    # --- Vedha weights ---
     # build_response nests the confluence snapshot under market_alert.confluence,
     # with weights in the "overall" sub-dict.
     alert = rj.get("market_alert") or {}
@@ -491,11 +490,10 @@ def contra_signals():
     bull_w = conf_overall.get("bullish_weight", 0) or 0
     bear_w = conf_overall.get("bearish_weight", 0) or 0
     net_c = bull_w - bear_w
-    # POC trap: extreme net + many bull/bear sectors
-    poc_trap = abs(net_c) >= 3 and (bull_w >= 3 or bear_w >= 3)
-    # Distribution/Accumulation
-    dist_accum = "accumulation" if bull_w > bear_w else "distribution"
-    # Exhaustion: 3+ weak drivers of a nature among the point hits
+    # Extreme: a large net tilt with at least one side carrying 3+ weight
+    vedha_extreme = abs(net_c) >= 3 and (bull_w >= 3 or bear_w >= 3)
+    weight_tilt = "benefic" if bull_w > bear_w else "malefic"
+    # Weak drivers: the top 3 point hits of a nature all have strength < 1.5
     hits = rj.get("point_hits") or []
     benefic_drivers = sorted(
         (h for h in hits if h["nature"] == "benefic"),
@@ -503,12 +501,12 @@ def contra_signals():
     malefic_drivers = sorted(
         (h for h in hits if h["nature"] == "malefic"),
         key=lambda x: x["strength"])[:3]
-    selling_exhaustion = len(malefic_drivers) >= 3 and all(
+    weak_malefic_drivers = len(malefic_drivers) >= 3 and all(
         h.get("strength", 0) < 1.5 for h in malefic_drivers[:3])
-    buying_exhaustion = len(benefic_drivers) >= 3 and all(
+    weak_benefic_drivers = len(benefic_drivers) >= 3 and all(
         h.get("strength", 0) < 1.5 for h in benefic_drivers[:3])
 
-    # --- Layer 2: Astro Timing ---
+    # --- School bias ---
     # Jyotish = classical single-ray, KP = allthree, Western = synthetic dignity
     jyotish_net = rj.get("net", 0.0)
     kp_net = rk.get("net", 0.0)
@@ -518,20 +516,18 @@ def contra_signals():
     kp_bias = _bias_scale(kp_net)
     western_bias = _bias_scale(western_net)
 
-    # Reversal window flags
-    jyotish_reversal = jyotish_net <= -2.0  # bearish net → possible reversal short
-    kp_reversal = kp_net <= -2.0
-    western_reversal = western_net <= 2.0  # western bearish‑ish → reversal candidate
+    # Bearish-extreme flags (contra-buy candidates)
+    jyotish_bearish = jyotish_net <= -2.0
+    kp_bearish = kp_net <= -2.0
+    western_bearish = western_net <= 2.0
 
-    # --- Layer 3: Price Confirmation (synthetic from blend bias) ---
-    # Same 3-school blend the daily_indication_balance endpoint serves:
-    # confirmation from crossing the bull/bear thresholds.
+    # --- Blend ---
+    # Same 3-school blend the daily_indication_balance endpoint serves.
     blend = round((jyotish_bias + kp_bias + western_bias) / 3.0, 4)
     bullish_threshold = 4.0
     bearish_threshold = 2.0
-    blend_buy = blend > bullish_threshold
-    blend_sell = blend < bearish_threshold
-    blend_neutral = bearish_threshold <= blend <= bullish_threshold
+    above_bullish = blend > bullish_threshold
+    below_bearish = blend < bearish_threshold
 
     # -------------------------------------------------------------------------
     # Cheat‑Sheet generation (ultra‑short format per the spec)
@@ -539,58 +535,59 @@ def contra_signals():
     buy_signals = []
     sell_signals = []
 
-    # Layer 1
-    if poc_trap:
-        buy_signals.append("POC trap holds")
-    if selling_exhaustion:
-        buy_signals.append("Selling exhaustion")
-    if buying_exhaustion:
-        sell_signals.append("Buying exhaustion")
-    if dist_accum == "accumulation":
-        buy_signals.append("Accumulation detected")
+    if vedha_extreme:
+        buy_signals.append("Vedha weights at an extreme")
+    if weak_malefic_drivers:
+        buy_signals.append("Malefic drivers weak")
+    if weak_benefic_drivers:
+        sell_signals.append("Benefic drivers weak")
+    if weight_tilt == "benefic":
+        buy_signals.append("Benefic vedha weight leads")
     else:
-        sell_signals.append("Distribution detected")
+        sell_signals.append("Malefic vedha weight leads")
 
-    # Layer 2
-    if jyotish_reversal:
-        buy_signals.append("SBC benefic vedha on bearish day")
-    if kp_reversal:
-        buy_signals.append("KP reversal window")
-    if western_reversal:
-        buy_signals.append("Western bearish bias")
-    if not jyotish_reversal and not kp_reversal and not western_reversal:
-        # If none of the reversal flags fire, the contra‑sell conditions apply
-        sell_signals.append("KP/SRC bullish window holds")
+    if jyotish_bearish:
+        buy_signals.append("Jyotish net bearish extreme")
+    if kp_bearish:
+        buy_signals.append("KP net bearish extreme")
+    if western_bearish:
+        buy_signals.append("Western bias bearish")
+    if not jyotish_bearish and not kp_bearish and not western_bearish:
+        sell_signals.append("No school bearish")
 
-    # Layer 3
-    if blend_buy:
-        buy_signals.append("Blend > bullish threshold")
-    if blend_sell:
-        sell_signals.append("Blend < bearish threshold")
+    if above_bullish:
+        buy_signals.append("Blend above bullish threshold")
+    if below_bearish:
+        sell_signals.append("Blend below bearish threshold")
 
     # Deduplicate & limit
     buy_signals = list(dict.fromkeys(buy_signals))[:5]
     sell_signals = list(dict.fromkeys(sell_signals))[:5]
 
     out = {
-        "layer1": {
-            "poc_trap": poc_trap,
-            "dist_accum": dist_accum,
-            "selling_exhaustion": selling_exhaustion,
-            "buying_exhaustion": buying_exhaustion,
+        "basis": "astro only: no price or volume input",
+        "vedha_weights": {
+            "bullish_weight": bull_w,
+            "bearish_weight": bear_w,
+            "vedha_extreme": vedha_extreme,
+            "weight_tilt": weight_tilt,
+            "weak_malefic_drivers": weak_malefic_drivers,
+            "weak_benefic_drivers": weak_benefic_drivers,
         },
-        "layer2": {
+        "school_bias": {
             "jyotish_bias": jyotish_bias,
             "kp_bias": kp_bias,
             "western_bias": western_bias,
-            "jyotish_reversal": jyotish_reversal,
-            "kp_reversal": kp_reversal,
-            "western_reversal": western_reversal,
+            "jyotish_bearish": jyotish_bearish,
+            "kp_bearish": kp_bearish,
+            "western_bearish": western_bearish,
         },
-        "layer3": {
-            "blend_buy": blend_buy,
-            "blend_sell": blend_sell,
-            "blend_neutral": blend_neutral,
+        "blend": {
+            "value": blend,
+            "bullish_threshold": bullish_threshold,
+            "bearish_threshold": bearish_threshold,
+            "above_bullish": above_bullish,
+            "below_bearish": below_bearish,
         },
         "cheat_sheet": {
             "buy": buy_signals,
