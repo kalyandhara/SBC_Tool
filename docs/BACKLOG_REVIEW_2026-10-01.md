@@ -56,6 +56,7 @@ code and tech debt · **P3** = hygiene.
 | B-30 Clutter | ✅ root is clean, one-off scripts live in `scripts/adhoc/`, vaults are gitignored; the 30 tracked `data/output/` artefacts are untracked (local copies kept); the two smoke tests are merged into `test_routes_smoke.py` (2026-10-04) |
 | B-31 Stale docs | ✅ README feature table rebuilt from the actual tabs with a research-only note and API-only section; dated notes moved to `docs/archive/` (2026-10-04) |
 | B-32 Line endings | ✅ `.gitattributes` (`* text=auto eol=lf`, CRLF for `.bat`, binaries marked); the index was already LF, so renormalising changed nothing (2026-10-04) |
+| B-18 Routes with no UI caller | ✅ "cut the noise" (2026-10-04, `b18-prune-routes`): 18 routes deleted — astrogann/signal, bearish_futurecast, cgsp_backtest, cgsp_framework, contra_signals, crash_analysis, crash_backtest, engine/confluence/daily, engine/summary, engine/trace, gann/indicators, gann/turbo_zones, habits/summary, kp_intraday_config, saturn_macro, sector/planet_read, sector/vedha_read, trade_setups — with the code only they used (`crash_analyzer`, `astrogann`, `gann_indicators`, `sector_bp`, `blend_forecast_scores`, `run_saturn_macro_analysis`, `generate_cgsp_report`, `backtest_cgsp`, `get_setup`). 11 kept as API-only (healthz, TradingView webhook + latest, aspect_windows for Pine, engine ops). `tests/test_route_pruning.py` fails on any new route that has neither a UI caller nor an API-only entry |
 | **B-39** Astro-quant swing windows: heliocentric aspect ENTRY + Gann/Fib/indicator EXIT (new) | ✅ built and validated 2026-10-03 (`b39-swing-windows`): no edge (see below) |
 
 ### B-39 · Astro-quant swing-window model (P2, new feature request 2026-10-03) — ✅ done 2026-10-03
@@ -370,7 +371,7 @@ backtests, price/vedha charts and nakshatra. It duplicates helpers (`localTodayI
 logic), bypasses `fetchWithTimeout` and error handling, and can't be linted or cached.
 **Fix:** Move it into `static/js/*.js` modules; keep the template markup-only.
 
-### B-18 · 23 backend routes have no UI caller
+### B-18 · 23 backend routes have no UI caller — ✅ done 2026-10-04
 `/api/backtest`, `bearish_futurecast`, `cgsp_backtest`, `cgsp_framework`, `contra_signals`,
 `crash_analysis`, `crash_backtest`, `saturn_macro`, `trade_setups`, `gann/indicators`,
 `gann/turbo_zones`, `astrogann/signal`, `habits/summary`, `kp_intraday_config`,

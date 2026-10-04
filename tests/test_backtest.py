@@ -7,7 +7,6 @@ from sbc.backtest import (
     run_bearish_futurecast,
     run_bullish_futurecast,
     run_futurecast,
-    run_saturn_macro_analysis,
 )
 
 
@@ -68,17 +67,6 @@ class TestFuturecast:
 class TestSaturnMacro:
     """Test Saturn macro analysis."""
 
-    def test_run_saturn_macro_analysis(self):
-        """run_saturn_macro_analysis should return long-term cycles."""
-        result = run_saturn_macro_analysis(
-            center_date="2026-09-11",
-            years_back=30,
-            years_forward=10
-        )
-
-        assert isinstance(result, dict)
-        assert "center_date" in result
-        assert "saturn_cycle" in result or "current_state" in result
 
 
 class TestBearishFutureScore:

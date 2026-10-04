@@ -31,7 +31,7 @@ A comprehensive Flask-based web application for Vedic astrological market analys
 | **Swing Windows** | Heliocentric Earth–planet aspect windows as entries, Gann + Fibonacci + indicator confluence as exits; TradingView Pine script in `tools/tradingview/` |
 
 ### API-only
-- **Crash Analyzer** (`/api/crash_analysis`, `/api/crash_backtest`) and **CGSP Framework** (`/api/cgsp_framework`, `/api/cgsp_backtest`) have no panel of their own; see the API reference below.
+- Routes with no panel are kept only when something else uses them: `/healthz` (Docker), `/webhook/sbc` and `/api/sbc/latest` (TradingView alerts), `/api/engine/aspect_windows?format=tv` (the Pine script), and the engine's operational endpoints (fingerprint status, forecast ledger, intraday freeze/score, market freshness, version). `tests/test_route_pruning.py` fails if a new route has neither a UI caller nor a place on that list.
 - **Live forecast ledger** freezes each session's forecast before the open and scores it after the close (`scripts/forecast_ledger.py`, run by `run_app.py`).
 
 ## Quick Start
@@ -114,7 +114,6 @@ SBC_Tool/
 │   ├── market_calendar.py # Reversal alerts, yoga alerts
 │   ├── backtest.py        # Historical backtesting engine
 │   ├── trade_setups.py    # Trade setup definitions
-│   ├── crash_analyzer.py  # Crash risk signatures
 │   ├── sector_signals.py  # Plantation/fertilizer vedha signals
 │   ├── monthly_heatmap.py # Sector × day confluence matrix
 │   ├── intraday_projection.py # Hourly NIFTY astro-projection
@@ -182,12 +181,7 @@ GET  /api/astro_plot?date=...&window=30&resolution=daily&tz=...&lat=...&lon=...
 GET  /api/backtest
 GET  /api/futurecast?date=...
 GET  /api/bullish_futurecast?date=...&years=1
-GET  /api/bearish_futurecast?date=...&years=1
-GET  /api/saturn_macro?date=...&years_back=100&years_forward=10
-GET  /api/crash_backtest
-GET  /api/crash_analysis?date=...
 GET  /api/crash_score_series?start=...&end=...
-GET  /api/cgsp_backtest?start=...&end=...
 ```
 
 ### Sector & Specialized Signals
@@ -211,7 +205,6 @@ GET  /api/weekly_commentary?date=...
 ### KP Intraday
 ```
 GET  /api/kp_intraday_report?date=...&instrument=NIFTY&format=json
-GET  /api/kp_intraday_config
 POST /api/kp_intraday_sample  {date, days}
 GET  /api/engine/intraday_path?date=...&instrument=NIFTY
 ```
@@ -303,14 +296,12 @@ GET  /api/tz/offset?tz=...&date=...&time=...
 GET  /api/tz/from_coords?lat=...&lon=...
 GET  /api/price?ticker=^NSEI&days=180
 GET  /api/cities/search?q=...&country=...&limit=20   # GeoNames, best match first
-GET  /api/gann/turbo_zones?ticker=...&days=60
 GET  /api/gann/precision?ticker=...&days=90
 GET  /api/signal/moon?ticker=...&days=30
 GET  /api/backtest/walkforward?ticker=...&window=365&step=90
 POST /api/habits/log     {habit_type, date}
 GET  /api/habits/streaks?user_key=...
 GET  /api/habits/history?user_key=...&days=7
-GET  /api/habits/summary?user_key=...
 POST /webhook/sbc        {signal_data}
 GET  /api/sbc/latest
 ```
@@ -350,7 +341,6 @@ tests/
 ├── test_chakra.py           # Grid, vedha computation tests
 ├── test_prediction.py       # Analysis, recommendation tests
 ├── test_backtest.py         # Backtest engine tests
-├── test_crash_analyzer.py   # Crash signature tests
 ├── test_kp_intraday.py      # KP intraday tests
 ├── test_api.py              # Flask API endpoint tests
 └── test_integration.py      # End-to-end integration tests

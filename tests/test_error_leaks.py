@@ -25,7 +25,7 @@ def test_app_route_failure_is_generic(client, monkeypatch, caplog):
     import app
     monkeypatch.setattr(app.profiles_db, "connect", boom)
     with caplog.at_level(logging.ERROR):
-        resp = client.get("/api/habits/summary?user_key=default")
+        resp = client.get("/api/habits/streaks?user_key=default")
     assert_generic_500(resp)
     assert SECRET in caplog.text  # the traceback still reaches the server log
 
@@ -44,11 +44,9 @@ def test_astro_personal_failure_is_generic(client, monkeypatch):
 
 def test_unhandled_exception_is_generic(client, monkeypatch):
     """Routes without their own try/except fall through to the global handler."""
-    import app
-    monkeypatch.setattr(app, "build_response", boom)
-    monkeypatch.setattr(app, "_contra_cache", {}, raising=False)
-    resp = client.get("/api/contra_signals?start=2026-10-05")
-    assert_generic_500(resp)
+    import sbc.market_store
+    monkeypatch.setattr(sbc.market_store, "freshness", boom)
+    assert_generic_500(client.get("/api/engine/market/freshness"))
 
 
 @pytest.mark.parametrize("url", [

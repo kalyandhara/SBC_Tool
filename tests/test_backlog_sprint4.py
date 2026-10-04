@@ -1,4 +1,4 @@
-"""Backlog sprint 4: B-08 lock file, B-19 contra-signal labels, B-27 template cache."""
+"""Backlog sprint 4: B-08 lock file, B-27 template cache, B-32 line endings."""
 
 import re
 from pathlib import Path
@@ -29,19 +29,6 @@ def test_docker_and_ci_install_the_lock():
     ci = (ROOT / ".github" / "workflows" / "ci.yml").read_text(encoding="utf-8")
     assert "pip install -r requirements.txt" not in ci
     assert "pip install -r requirements.lock" in ci
-
-
-def test_contra_signals_use_honest_labels(client):
-    """B-19: astro-only inputs, so no market-structure vocabulary in the payload."""
-    resp = client.get("/api/contra_signals?start=2026-09-14")
-    assert resp.status_code == 200
-    body = resp.get_json()
-    assert body["basis"].startswith("astro only")
-    assert set(body) >= {"vedha_weights", "school_bias", "blend", "cheat_sheet"}
-    assert body["vedha_weights"]["weight_tilt"] in ("benefic", "malefic")
-    text = resp.get_data(as_text=True).lower()
-    for banned in ("poc", "accumulation", "distribution", "exhaustion", "confirmation"):
-        assert banned not in text, banned
 
 
 def test_template_reload_follows_debug(app):
