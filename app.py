@@ -7,6 +7,7 @@ import os
 import sqlite3
 import time
 from collections import defaultdict
+from functools import lru_cache
 from io import BytesIO
 from pathlib import Path
 from typing import Any
@@ -98,6 +99,7 @@ _request_times: defaultdict[str, list[float]] = defaultdict(list)
 # A page load fires ~30 requests, so the old 60/min ceiling throttled the
 # second refresh in a minute. nginx.conf enforces the real limit in production.
 _RATE_LIMIT_PER_MIN = 240
+_RATE_LIMIT_MAX_CLIENTS = 1000  # sweep idle clients beyond this many
 
 
 @app.before_request
@@ -106,6 +108,10 @@ def _rate_limit():
         return None
     ip = request.remote_addr or "unknown"
     now = time.time()
+    if len(_request_times) > _RATE_LIMIT_MAX_CLIENTS:
+        # Drop clients idle for a minute so the table can't grow without bound (B-26).
+        for key in [k for k, ts in _request_times.items() if not ts or now - ts[-1] >= 60]:
+            del _request_times[key]
     _request_times[ip] = [t for t in _request_times[ip] if now - t < 60]
     if len(_request_times[ip]) > _RATE_LIMIT_PER_MIN:
         return jsonify({"error": "rate limit"}), 429
@@ -1157,6 +1163,19 @@ def webhook_sbc():
     except Exception:
         return internal_error()
 
+@lru_cache(maxsize=64)
+def _heatmap_month_row(month_start: str, row: str) -> dict[str, float]:
+    """{date: net} for one sector row of the monthly heatmap (cached per month)."""
+    import calendar
+
+    from sbc.monthly_heatmap import monthly_heatmap
+    first = datetime.date.fromisoformat(month_start)
+    days = calendar.monthrange(first.year, first.month)[1]
+    data = monthly_heatmap(start_date=first, days=days, tz_name="Asia/Kolkata", anchor_key="nse")
+    return {day: float(net) for day, net in (data.get("matrix", {}).get(row) or {}).items()
+            if net is not None}
+
+
 @app.route("/api/vedha_daily", methods=["GET"])
 def api_vedha_daily():
     try:
@@ -1174,85 +1193,37 @@ def api_vedha_daily():
         else:
             end_date_req = datetime.date.today()
             start_date_req = end_date_req - datetime.timedelta(days=179)
-        # Try real heatmap based scores
-        try:
-            from sbc.monthly_heatmap import NIFTY_SECTOR_ROWS, monthly_heatmap
-            end = end_date_req
-            # Build map of sector row name
-            # NIFTY_SECTOR_ROWS is list of tuples (display_name, tags)
-            target_row = None
-            for display_name, tags in NIFTY_SECTOR_ROWS:
-                if sector_name.lower() in display_name.lower():
-                    target_row = display_name
-                    break
-                # also check tags
-                if any(sector_name.lower() in tag.lower() for tag in tags):
-                    target_row = display_name
-                    break
-            if target_row:
-                cur = end
-                collected = []
-                shape_logs = []
-                for _ in range(6):
-                    # monthly_heatmap expects start_date and days
-                    start_date = datetime.date(cur.year, cur.month, 1)
-                    data = monthly_heatmap(start_date=start_date, days=31, tz_name='Asia/Kolkata', anchor_key='nse')
-                    # Validate shape - monthly_heatmap returns dict with 'dates' and 'matrix'
-                    if not isinstance(data, dict) or 'matrix' not in data:
-                        shape_logs.append(f"{cur.year}-{cur.month}: unexpected return shape")
-                        # move to previous month
-                        if cur.month == 1:
-                            cur = datetime.date(cur.year-1, 12, 1)
-                        else:
-                            cur = datetime.date(cur.year, cur.month-1, 1)
-                        continue
-                    matrix = data.get('matrix', {})
-                    # matrix is sector -> {date: score}
-                    for sector_name_key, day_map in matrix.items():
-                        # find matching row
-                        # We need row by display name. Simpler: use target_row as sector key
-                        if isinstance(day_map, dict):
-                            for day_str, score in day_map.items():
-                                try:
-                                    d = datetime.datetime.strptime(day_str,"%Y-%m-%d").date()
-                                    # Only collect for target sector row
-                                    # Map sector display name to key
-                                    # Assume matrix keys are sector display names
-                                    if sector_name_key == target_row:
-                                        collected.append((d, float(score)))
-                                except Exception as e:
-                                    shape_logs.append(f"{day_str} parse error: {e}")
-                    # move to previous month
-                    if cur.month == 1:
-                        cur = datetime.date(cur.year-1, 12, 1)
-                    else:
-                        cur = datetime.date(cur.year, cur.month-1, 1)
-                if shape_logs:
-                    app.logger.warning(f"vedha_daily shape logs for {sector_name}: {shape_logs}")
-                if collected:
-                    collected.sort(key=lambda x:x[0])
-                    # Generate output for requested date range
-                    out = []
-                    day_to_score = dict(collected)
-                    d = start_date_req
-                    while d <= end_date_req:
-                        score = day_to_score.get(d,0)
-                        # nakshatra index based on days since start
-                        days_since = (d - start_date_req).days
-                        nak_idx = days_since % 27
-                        out.append({"date":d.isoformat(),"score":float(score),"nakshatra_idx":int(nak_idx),"source":"real"})
-                        d += datetime.timedelta(days=1)
-                    return jsonify(out)
-        except Exception as e:
-            app.logger.exception(f"vedha_daily real heatmap error for {sector_name}: {e}")
-            # fallback synthetic
-
-        # No real data available – return empty with warning instead of synthetic
-        app.logger.warning(f"vedha_daily: no real heatmap data for sector {sector_name}, returning empty")
+        if end_date_req < start_date_req or (end_date_req - start_date_req).days > 731:
+            return jsonify({"error": "end must be on/after start, at most 2 years"}), 400
+        from sbc.monthly_heatmap import NIFTY_SECTOR_ROWS
+        target_row = None
+        for display_name, tags in NIFTY_SECTOR_ROWS:
+            if (sector_name.lower() in display_name.lower()
+                    or any(sector_name.lower() in tag.lower() for tag in tags)):
+                target_row = display_name
+                break
+        scores: dict[str, float] = {}
+        if target_row:
+            # Only the months the range covers, each computed once per process.
+            month = datetime.date(start_date_req.year, start_date_req.month, 1)
+            while month <= end_date_req:
+                try:
+                    scores.update(_heatmap_month_row(month.isoformat(), target_row))
+                except Exception:
+                    app.logger.exception("vedha_daily heatmap failed for %s %s", sector_name, month)
+                month = (month + datetime.timedelta(days=32)).replace(day=1)
+        else:
+            app.logger.warning("vedha_daily: no heatmap row matches sector %r", sector_name)
+        from sbc import fingerprint_store
         out = []
         d = start_date_req
         while d <= end_date_req:
-            out.append({"date":d.isoformat(),"score":None,"nakshatra_idx":None,"source":"missing"})
+            iso = d.isoformat()
+            score = scores.get(iso)
+            # The Moon's nakshatra (0 = Ashwini) at the 09:15 IST open.
+            nak_idx = fingerprint_store.get(iso)["planets"]["Moon"]["nakshatra"]
+            out.append({"date": iso, "score": score, "nakshatra_idx": int(nak_idx),
+                        "source": "real" if score is not None else "missing"})
             d += datetime.timedelta(days=1)
         return jsonify(out)
     except Exception:

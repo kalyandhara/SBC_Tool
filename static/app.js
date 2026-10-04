@@ -5,11 +5,32 @@ const FETCH_TIMEOUT = 8000;
 const $ = (id) => document.getElementById(id);
 function esc(s){ return String(s ?? '').replace(/[&<>"']/g, m=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[m])); }
 
-async function fetchWithTimeout(url, options = {}) {
+// Endpoints that compute on demand and can take a minute or more on a cold cache (B-13).
+const HEAVY_TIMEOUT = 120000;
+const HEAVY_ENDPOINTS = [
+  "/api/prediction", "/api/futurecast", "/api/bullish_futurecast", "/api/sector_vedha",
+  "/api/largecap_divergence", "/api/kp_intraday_report", "/api/engine/intraday_path",
+  "/api/monthly_heatmap", "/api/weekly_commentary", "/api/lunar_forecast",
+];
+
+// fetchWithTimeout(url), (url, options), (url, timeoutMs) or (url, options, timeoutMs).
+async function fetchWithTimeout(url, options = {}, timeoutMs) {
+  if (typeof options === "number") {
+    timeoutMs = options;
+    options = {};
+  }
+  if (timeoutMs == null) {
+    timeoutMs = HEAVY_ENDPOINTS.some((p) => String(url).startsWith(p)) ? HEAVY_TIMEOUT : FETCH_TIMEOUT;
+  }
   const controller = new AbortController();
-  const id = setTimeout(() => controller.abort(), FETCH_TIMEOUT);
+  const id = setTimeout(() => controller.abort(), timeoutMs);
   try {
     return await fetch(url, { ...options, signal: controller.signal });
+  } catch (e) {
+    if (e && e.name === "AbortError") {
+      throw new Error(`Timed out after ${Math.round(timeoutMs / 1000)} s. The server may still be computing; try again in a moment.`);
+    }
+    throw e;
   } finally {
     clearTimeout(id);
   }
@@ -1618,7 +1639,10 @@ async function loadLunarForecast(date) {
 }
 
 function copyLunarForecast() {
-  if (!window.currentLunarClipboardText) return;
+  if (!window.currentLunarClipboardText) {
+    showToast("Generate a forecast first");
+    return;
+  }
   const text = window.currentLunarClipboardText;
   navigator.clipboard.writeText(text).then(() => {
     showToast("Copied to clipboard!");
@@ -1628,7 +1652,10 @@ function copyLunarForecast() {
 }
 
 function shareLunarForecast() {
-  if (!window.currentLunarCard && !window.currentLunarSocialText) return;
+  if (!window.currentLunarCard && !window.currentLunarSocialText) {
+    showToast("Generate a forecast first");
+    return;
+  }
   const text = window.currentLunarSocialText || "";
   if (navigator.share) {
     navigator.share({ title: "Lunar Cycle Sector Forecast", text: text });
@@ -3487,6 +3514,10 @@ if ($("alcohol-signals-run")) {
 }
 
 // Lunar forecast run button
+// B-09: the lunar card's Copy / Share buttons.
+if ($("lunar-forecast-copy")) $("lunar-forecast-copy").addEventListener("click", copyLunarForecast);
+if ($("lunar-forecast-share")) $("lunar-forecast-share").addEventListener("click", shareLunarForecast);
+
 if ($("lunar-forecast-run")) {
   $("lunar-forecast-run").addEventListener("click", () => {
     const date = $("lunar-forecast-date") ? $("lunar-forecast-date").value : "";

@@ -183,8 +183,12 @@ def _moon_sentiment_sign(moon):
 
 
 def _nakshatra_bullish(moon):
-    """Moon in Punarvasu, Pushya, Uttara Phalguni, Revati, Vishakha → +1"""
-    return moon["nakshatra"] in ("Punarvasu", "Pushya", "Uttara Phalguni", "Revati", "Vishakha")
+    """Moon in Punarvasu, Pushya, Uttara Phalguni, Revati, Vishakha → +1
+
+    Names as sbc.nakshatra.NAKSHATRAS_27 spells them ("U.Phalguni"); the long form
+    never matched, so the trigger silently skipped Uttara Phalguni (B-38).
+    """
+    return moon["nakshatra"] in ("Punarvasu", "Pushya", "U.Phalguni", "Revati", "Vishakha")
 
 
 # =================================================================================================

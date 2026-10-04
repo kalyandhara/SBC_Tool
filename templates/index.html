@@ -529,10 +529,6 @@
                 <option>Nifty Realty</option>
               </select>
             </label>
-            <label>Gann Start
-              <input type="date" id="gann-start-date" style="width:150px">
-            </label>
-            <label style="margin-left:8px"><input type="checkbox" id="gann-toggle"> Gann Fan</label>
             <button id="trading-predicted-actual-load" class="btn" style="margin-left:8px" title="Experimental: not validated">Load Projection vs Actual <span class="experimental-badge">Experimental</span></button>
           </div>
           <div id="trading-signals-predicted-actual" style="height:650px;margin-top:24px">
@@ -1285,7 +1281,7 @@
   <!-- Client-Side Scripts -->
   <script src="/static/vendor/lightweight-charts.js?v=4"></script>
   <script src="/static/nifty-chart.js?v=16"></script>
-  <script src="/static/app.js?v=35"></script>
+  <script src="/static/app.js?v=36"></script>
   <script src="/static/intraday-projection.js?v=2"></script>
   <script src="/static/intraday-forecast.js?v=7"></script>
   <script src="/static/js/analog-lab.js?v=1"></script>
@@ -2327,7 +2323,7 @@ document.addEventListener('DOMContentLoaded', async ()=>{
         const nakshatras = ['Ashwini','Bharani','Krittika','Rohini','Mrigashira','Ardra','Punarvasu','Pushya','Ashlesha','Magha','Purva Phalguni','Uttara Phalguni','Hasta','Chitra','Swati','Vishakha','Anuradha','Jyeshtha','Mula','Purva Ashadha','Uttara Ashadha','Shravana','Dhanishta','Shatabhisha','Purva Bhadrapada','Uttara Bhadrapada','Revati'];
         const markers = candles.map((c,i)=>{
           const v = vedhaData[i];
-          if(!v || v.nakshatra_idx==null) return null;
+          if(!v || v.score==null || v.nakshatra_idx==null) return null;
           // One marker per candle, arrow up/down based on vedha score
           return {
             time: c.time,
@@ -2377,7 +2373,7 @@ document.addEventListener('DOMContentLoaded', async ()=>{
               // Update markers
               const markersNew = newCandles.map((c,i)=>{
                 const v = vedhaDataNew[i];
-                if(!v || v.nakshatra_idx==null) return null;
+                if(!v || v.score==null || v.nakshatra_idx==null) return null;
                 return {
                   time: c.time,
                   position: v.score>=0 ? 'aboveBar' : 'belowBar',
