@@ -504,13 +504,13 @@ def intraday_path():
         return None
 
     from sbc.planets import positioned_planets
-    # Nadi mapping for 27 nakshatras – simplified
+    # Nadi mapping for 27 nakshatras – simplified; keys spelled as sbc.nakshatra does ("P.Phalguni")
     NADI_MAP = {
         "Ashwini":"Antya","Bharani":"Madhya","Krittika":"Aadi","Rohini":"Aadi","Mrigashira":"Madhya","Ardra":"Antya",
-        "Punarvasu":"Antya","Pushya":"Aadi","Ashlesha":"Madhya","Magha":"Antya","Purva Phalguni":"Aadi","Uttara Phalguni":"Madhya",
+        "Punarvasu":"Antya","Pushya":"Aadi","Ashlesha":"Madhya","Magha":"Antya","P.Phalguni":"Aadi","U.Phalguni":"Madhya",
         "Hasta":"Antya","Chitra":"Aadi","Swati":"Madhya","Vishakha":"Antya","Anuradha":"Aadi","Jyeshtha":"Madhya",
-        "Mula":"Antya","Purva Ashadha":"Aadi","Uttara Ashadha":"Madhya","Shravana":"Antya","Dhanishta":"Aadi",
-        "Shatabhisha":"Madhya","Purva Bhadrapada":"Antya","Uttara Bhadrapada":"Aadi","Revati":"Madhya"
+        "Mula":"Antya","P.Ashadha":"Aadi","U.Ashadha":"Madhya","Shravana":"Antya","Dhanishta":"Aadi",
+        "Shatabhisha":"Madhya","P.Bhadrapada":"Antya","U.Bhadrapada":"Aadi","Revati":"Madhya"
     }
     NADI_MULTIPLIER = {"Neer":1.05,"Agni":0.95,"Vayu":1.0,"Prithvi":1.0}
     # Simplified Nadi element mapping

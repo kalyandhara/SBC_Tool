@@ -39,7 +39,14 @@ code and tech debt · **P3** = hygiene.
 | B-05 Stale market data | 🟡 NIFTY/SENSEX/VIX in `data/market.db` refresh after each close; sector CSVs and Kota still stale |
 
 | **B-37** Phantom KP vedha school (new) | ✅ removed from fingerprint and README (2026-10-03, `phase2-stats`) |
-| **B-38** `_nakshatra_bullish` misspells U.Phalguni (new) | ⬜ open |
+| **B-38** `_nakshatra_bullish` misspells U.Phalguni (new) | ✅ fixed, plus the same misspelling in the intraday-path `NADI_MAP` (6 nakshatras fell back to "Madhya"); rule and incremental reports re-run: still no edge (2026-10-03, `backlog-sprint3`) |
+| B-07 Cold start / health check | ✅ verified: `import app` 0.36 s, Python-based `HEALTHCHECK` with a 30 s start period |
+| B-09 Dead UI controls | ✅ lunar Copy/Share wired up (with a "generate first" hint); the dead Gann Fan toggle and Gann Start input removed; the KP week calendar was already populated |
+| B-11 `/api/vedha_daily` | ✅ real Moon nakshatra at 09:15 IST, `null` for missing days, only the months in range (cached per month), 2-year cap |
+| B-13 Fetch timeouts | ✅ `fetchWithTimeout` honours a timeout argument (the 120 s/300 s calls were silently getting 8 s); heavy endpoints default to 120 s; timeouts say the server may still be computing |
+| B-22 Duplicate definitions | ✅ verified: ruff F811/F601 clean, single `get_sign_type` / `get_jupiter_transit_table` / Krittika key |
+| B-24 Fake-bar generator | ✅ removed; `data/ohlc` resolved from the package root and no longer created at import |
+| B-26 Rate limiter growth | ✅ idle clients are swept once the table passes 1,000 entries (per-worker limits remain; nginx `limit_req` is the real limiter) |
 | **B-39** Astro-quant swing windows: heliocentric aspect ENTRY + Gann/Fib/indicator EXIT (new) | ✅ built and validated 2026-10-03 (`b39-swing-windows`): no edge (see below) |
 
 ### B-39 · Astro-quant swing-window model (P2, new feature request 2026-10-03) — ✅ done 2026-10-03
@@ -245,7 +252,7 @@ forecast date picker, the ledger loop and the futurecast calendars.
 - **Done when:** Only one `before_request` auth hook exists, with tests covering
   header/no-header/remote cases.
 
-### B-07 · Cold start blocks import for minutes; Docker health check can't pass
+### B-07 · Cold start blocks import for minutes; Docker health check can't pass — ✅ done 2026-10-03
 - **Evidence:** `boot()` runs at import (`app.py:395`) and computes up to 4×181
   `build_response` calls in the foreground. Importing with a cold cache took **131 s**
   in this review. Under gunicorn (`-w 4`, no `--preload`) every worker repeats it. The
@@ -269,7 +276,7 @@ forecast date picker, the ledger loop and the futurecast calendars.
   image).
 - **Done when:** A clean venv from `requirements.txt` passes `pytest` and the route smoke test.
 
-### B-09 · Advertised UI controls have no handlers
+### B-09 · Advertised UI controls have no handlers — ✅ done 2026-10-03
 | Control | Location | State |
 |---|---|---|
 | Lunar forecast **Copy to Clipboard** / **Share** (README: "clipboard/share ready") | `index.html:859-860` | No JS listener |
@@ -291,7 +298,7 @@ forecast date picker, the ledger loop and the futurecast calendars.
 - **Fix:** Delete the placeholder routes and module, or point them at the real ones.
 - **Done when:** No route returns a body containing "placeholder".
 
-### B-11 · `/api/vedha_daily` returns a fabricated `nakshatra_idx`, hides gaps, and is slow
+### B-11 · `/api/vedha_daily` returns a fabricated `nakshatra_idx`, hides gaps, and is slow — ✅ done 2026-10-03
 - **Evidence:** `app.py:~1487` sets `nakshatra_idx = days_since_start % 27`, which counts
   days rather than computing the Moon's nakshatra. Missing days default to `score 0` (reads
   as "neutral") instead of `null`. Every call builds 6 full `monthly_heatmap` months no
@@ -310,7 +317,7 @@ forecast date picker, the ledger loop and the futurecast calendars.
 - **Fix:** Write samples to `data/kp/samples/` with a `SAMPLE_` prefix, flag reports built
   from them (`is_sample: true`), and add a banner in the UI. Or drop the button.
 
-### B-13 · Front-end 8 s fetch timeout is shorter than heavy endpoints
+### B-13 · Front-end 8 s fetch timeout is shorter than heavy endpoints — ✅ done 2026-10-03
 - **Evidence:** `static/app.js:3` `FETCH_TIMEOUT = 8000`, used by 29 calls, including the
   KP report, prediction_series (about 100 s cold), heatmap and futurecasts.
 - **Fix:** Per-call timeouts (heavy ones 60–120 s), or async job plus polling for heavy
@@ -390,7 +397,7 @@ correlation swings between −0.77 and +0.69. `docs/todo_predictive_intraday.md`
 **Fix:** Label the panel "Experimental — no validated edge" and add a rolling hit-rate badge.
 Track re-weighting work as research rather than calling it done.
 
-### B-22 · Duplicate and shadowed definitions (ruff F811/F601)
+### B-22 · Duplicate and shadowed definitions (ruff F811/F601) — ✅ done 2026-10-03
 - `sbc/cgsp_framework.py:49` — `"Krittika"` key repeated, so the earlier pada mapping is
   silently overwritten. `get_sign_type` (`:98` vs `:107`) and `get_jupiter_transit_table`
   (`:134` vs `:191`) are each defined twice; the second wins.
@@ -407,7 +414,7 @@ happens on `master`. `pyproject.toml` uses deprecated top-level ruff keys.
 **Fix:** `ruff check --fix`, then fix the rest by hand. Point CI at `master` (or rename the
 branch). Drop the overlapping flake8/isort in favor of ruff. Move the config to `[tool.ruff.lint]`.
 
-### B-24 · `sbc/market_ohlc.py` still contains the fake-bar generator
+### B-24 · `sbc/market_ohlc.py` still contains the fake-bar generator — ✅ done 2026-10-03
 `ensure_week_cache` / `generate_sample_ohlc` (`:14-48`) fabricate random 3-min NIFTY bars
 around 25000. The read path no longer uses them, but they're one call away from coming back.
 `DATA_DIR = Path("data/ohlc")` is cwd-relative and is created as an import-time side effect.
@@ -421,7 +428,7 @@ Many handlers end with `return jsonify({"error": str(e)}), 500` (e.g. `chakra_bp
 `app.py:1398, 1503`). These bypass the global JSON handler and expose internals.
 **Fix:** Let exceptions propagate to `handle_exception`, and log with `exc_info`.
 
-### B-26 · Rate limiter grows without bound
+### B-26 · Rate limiter grows without bound — ✅ done 2026-10-03
 `app.py:88-101` keeps `_request_times` keyed by IP forever, per worker, and each worker
 counts separately (4×240/min effective).
 **Fix:** Evict empty keys, or rely on nginx `limit_req` only.

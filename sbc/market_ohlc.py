@@ -1,51 +1,15 @@
-"""OHLC cache + fallback for NIFTY/BANK NIFTY backtesting."""
+"""Read cached 3-min NIFTY/BANK NIFTY bars from data/ohlc/ (never fabricated).
+
+The random sample-bar generator that used to live here was removed (B-24).
+"""
 import csv
-import random
-from datetime import UTC, date, datetime, timedelta
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
-DATA_DIR = Path("data/ohlc")
-DATA_DIR.mkdir(parents=True, exist_ok=True)
+DATA_DIR = Path(__file__).resolve().parent.parent / "data" / "ohlc"  # read-only; not created here
 
 def _file_path(symbol: str, date: datetime) -> Path:
     return DATA_DIR / f"{symbol}_{date.strftime('%Y-%m-%d')}.csv"
-
-def ensure_week_cache(symbol: str = "NIFTY", days: int = 7) -> list[Path]:
-    """Explicitly generate sample 3-min bars for the last `days` weekdays (CLI/test use)."""
-    files = []
-    for i in range(days):
-        d = datetime.now(UTC).date() - timedelta(days=i+1)
-        # skip weekends
-        # simple check
-        if d.weekday() >= 5:
-            continue
-        fp = _file_path(symbol, datetime.combine(d, datetime.min.time()))
-        if not fp.exists():
-            generate_sample_ohlc(fp, d)
-        files.append(fp)
-    return files
-
-def generate_sample_ohlc(fp: Path, day: date) -> None:
-    """Generate 3-min bars for a trading day 09:15-15:30."""
-    start_price = 25000 + random.randint(-500, 500)
-    price: float = start_price
-    rows = []
-    minutes = list(range(9*60+15, 15*60+30, 3))
-    for m in minutes:
-        open_p = price
-        change = random.uniform(-10, 10)
-        close_p = open_p + change
-        high_p = max(open_p, close_p) + random.uniform(0, 5)
-        low_p = min(open_p, close_p) - random.uniform(0, 5)
-        price = close_p
-        hh = m // 60
-        mm = m % 60
-        time_str = f"{hh:02d}:{mm:02d}"
-        rows.append([day.isoformat(), time_str, round(open_p,2), round(high_p,2), round(low_p,2), round(close_p,2), random.randint(1000,10000)])
-    with open(fp, 'w', newline='') as f:
-        w = csv.writer(f)
-        w.writerow(["date","time","open","high","low","close","volume"])
-        w.writerows(rows)
 
 def load_week_ohlc(symbol: str = "NIFTY", days: int = 7) -> list[dict[str, str]]:
     """Read cached 3-min bars for the last `days` weekdays (read-only).
