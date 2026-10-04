@@ -477,7 +477,7 @@ MAX_CACHE_SIZE = 5000
 
 # Caching: score cache keyed by (julian_day mod 7) for weekly scans
 # In production, this would be a persistent cache (Redis, etc.)
-_score_cache = {}
+_score_cache: dict = {}
 
 def _cached_score(julian_day, cache=_score_cache):
     """Simple in-memory cache for weekly scan scores with size limit."""
@@ -604,7 +604,7 @@ def run_futurecast(center_date=None, years=5):
         if score >= 4:
             flagged.append({"date": date, "score": score, "reasons": reasons})
         date += datetime.timedelta(days=7)
-    windows = []
+    windows: list = []
     for item in flagged:
         if windows and (item["date"] - windows[-1]["end"]).days <= 21:
             current = windows[-1]

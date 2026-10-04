@@ -1,6 +1,6 @@
 """Confluence analysis - combining multiple bullish/bearish signals to find alignment zones."""
 
-
+from typing import Any
 
 # The sector vocabulary lives in sbc.sector_keywords -- one canonical table for
 # the whole tool. Re-exported here because callers (monthly_heatmap, the
@@ -78,7 +78,7 @@ def analyze_vedha_confluence(analysis):
 
 def analyze_sector_confluence(sector_read, planet_sector_read):
     """Combine rashi-sector and planet-sector reads."""
-    sector_scores = {}
+    sector_scores: dict[str, dict[str, Any]] = {}
 
     for rashi_data in sector_read:
         for sector in rashi_data.get("sectors", []):
@@ -119,7 +119,7 @@ def analyze_sector_confluence(sector_read, planet_sector_read):
 def analyze_reversal_window_confluence(windows, active_only=True):
     """Score reversal windows by bias and level."""
     target = [w for w in windows if (w.get("active", True) if active_only else True)]
-    sector_scores = {}
+    sector_scores: dict[str, dict[str, Any]] = {}
     total_bullish = 0.0
     total_bearish = 0.0
 
@@ -169,7 +169,7 @@ def analyze_reversal_window_confluence(windows, active_only=True):
 
 def analyze_transit_confluence(transits):
     """Score major transits."""
-    sector_scores = {}
+    sector_scores: dict[str, dict[str, Any]] = {}
     total_bullish = 0.0
     total_bearish = 0.0
 
@@ -428,7 +428,7 @@ def build_confluence_report(
     venus_vedha_confluence = analyze_venus_vedha_confluence(venus_vedha)
 
     # Convert vedha confluence (point-based) to sector-based for combination
-    vedha_sector_map = {}
+    vedha_sector_map: dict[str, dict[str, Any]] = {}
     for point, data in vedha_confluence.items():
         # Map points to sectors they influence
         point_sectors = _point_to_sectors(point)

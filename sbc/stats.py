@@ -25,13 +25,14 @@ from __future__ import annotations
 from collections.abc import Callable, Sequence
 
 import numpy as np
+from numpy.typing import ArrayLike
 
 MIN_SIGNAL_DAYS = 30
 N_PERMUTATIONS = 1000
 MIN_SHIFT = 60  # sessions; rotations shorter than this barely decorrelate anything
 
 
-def forward_returns(closes: Sequence[float], horizon: int) -> np.ndarray:
+def forward_returns(closes: ArrayLike, horizon: int) -> np.ndarray:
     """r[t] = close[t+h-1] / close[t-1] - 1; NaN where the window runs off either end."""
     c = np.asarray(closes, dtype=float)
     out = np.full(len(c), np.nan)
@@ -66,7 +67,7 @@ def excess_stat(signal: np.ndarray, fwd: np.ndarray) -> float:
     return float(np.mean(signal[mask] * (fwd[mask] - mu)))
 
 
-def evaluate_directional(signal: Sequence[int], fwd: Sequence[float], n_perm: int = N_PERMUTATIONS,
+def evaluate_directional(signal: ArrayLike, fwd: ArrayLike, n_perm: int = N_PERMUTATIONS,
                          seed: int = 0, min_n: int = MIN_SIGNAL_DAYS) -> dict:
     """Score a directional signal (+1 bullish, -1 bearish, 0 no call) against forward returns.
 
@@ -110,7 +111,7 @@ def vol_stat(flag: np.ndarray, absret: np.ndarray) -> float:
     return float(absret[on].mean() - absret[off].mean())
 
 
-def evaluate_event(flag: Sequence[bool], fwd: Sequence[float], n_perm: int = N_PERMUTATIONS,
+def evaluate_event(flag: ArrayLike, fwd: ArrayLike, n_perm: int = N_PERMUTATIONS,
                    seed: int = 0, min_n: int = MIN_SIGNAL_DAYS) -> dict:
     """Do flagged days move more than unflagged ones? Compares mean |return|."""
     f = np.asarray(flag, dtype=float)
@@ -134,7 +135,7 @@ def evaluate_event(flag: Sequence[bool], fwd: Sequence[float], n_perm: int = N_P
     }
 
 
-def bh_adjust(pvalues: Sequence[float]) -> list[float]:
+def bh_adjust(pvalues: ArrayLike) -> list[float]:
     """Benjamini-Hochberg q-values (NaN p-values stay NaN and are not counted)."""
     p = np.asarray(pvalues, dtype=float)
     q = np.full(len(p), np.nan)
@@ -149,7 +150,7 @@ def bh_adjust(pvalues: Sequence[float]) -> list[float]:
     return q.tolist()
 
 
-def by_period(signal: Sequence[int], fwd: Sequence[float], periods: Sequence[str],
+def by_period(signal: ArrayLike, fwd: ArrayLike, periods: Sequence[str],
               stat: Callable[[np.ndarray, np.ndarray], float] = excess_stat) -> dict[str, float | None]:
     """The statistic computed separately within each period label (e.g. year or era)."""
     s = np.asarray(signal, dtype=float)

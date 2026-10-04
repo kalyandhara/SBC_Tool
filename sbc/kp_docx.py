@@ -9,9 +9,13 @@ from __future__ import annotations
 
 import io
 from collections.abc import Iterable
+from typing import TYPE_CHECKING, Any
 
 from docx import Document
 from docx.shared import Pt, RGBColor
+
+if TYPE_CHECKING:
+    from sbc.kp_intraday import KPIntradayReport
 
 _GREY = RGBColor(0x55, 0x5B, 0x66)
 
@@ -49,7 +53,7 @@ def _para(doc, text, size=10.5):
     return p
 
 
-def _table(doc, header: Iterable[str], rows: Iterable[Iterable[str]], size=8.5):
+def _table(doc: Any, header: Iterable[str], rows: Iterable[Iterable[object]], size: float = 8.5) -> Any:
     header = list(header)
     t = doc.add_table(rows=1, cols=len(header))
     t.style = "Light Grid Accent 1"
@@ -68,7 +72,7 @@ def _table(doc, header: Iterable[str], rows: Iterable[Iterable[str]], size=8.5):
     return t
 
 
-def render_docx(report) -> bytes:
+def render_docx(report: KPIntradayReport) -> bytes:
     ds = report.day_signature
     doc = Document()
     for s in doc.sections:

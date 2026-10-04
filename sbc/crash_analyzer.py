@@ -58,9 +58,9 @@ TV_DEFAULTS = {
 def build_tradingview_url(
     symbol: str,
     start_date: str,
-    end_date: str = None,
+    end_date: str | None = None,
     interval: str = "D",
-    indicators: list = None,
+    indicators: list | None = None,
     layout: str = "single",
 ) -> str:
     """
@@ -267,14 +267,14 @@ def _julian_day(date_str: str, time_str: str = "09:15", tz: str = "Asia/Kolkata"
     local = datetime.datetime(y, m, d, hh, mm, tzinfo=tz_obj)
     utc = local.astimezone(datetime.UTC)
     h = utc.hour + utc.minute / 60.0 + utc.second / 3600.0
-    return swe.julday(utc.year, utc.month, utc.day, h)
+    return float(swe.julday(utc.year, utc.month, utc.day, h))
 
 
 def _get_anchor_nakshatra() -> str:
     jul = _julian_day(NSE_ANCHOR_DATE, NSE_ANCHOR_TIME, NSE_ANCHOR_TZ)
     planets, _ = positions(jul)
     moon = next(p for p in planets if p["name"] == "Moon")
-    return moon["nakshatra"]
+    return str(moon["nakshatra"])
 
 
 def _get_anchor_nodal_positions():
@@ -297,8 +297,8 @@ def _get_planets(date_str: str) -> list[dict]:
     moon = next(p for p in planets if p["name"] == "Moon")
     tithi = tithi_of(sun["longitude"], moon["longitude"])
     from .planets import all_planets_with_natures
-    planets = all_planets_with_natures(planets, tithi, sun["longitude"])
-    return planets
+    natured: list[dict] = all_planets_with_natures(planets, tithi, sun["longitude"])
+    return natured
 
 
 def _angle(lon1: float, lon2: float) -> float:
@@ -465,8 +465,8 @@ class CrashAnalysis:
     jupiter_saturn_angle: float
     jupiter_saturn_aspect: str
     mars_ketu_angle: float
-    tradingview_links: dict = None
-    research_package: dict = None
+    tradingview_links: dict | None = None
+    research_package: dict | None = None
 
 
 def analyze_crash_risk(date_str: str) -> CrashAnalysis:
@@ -626,7 +626,7 @@ def print_backtest_results():
     print(f"\nCOMBINED (Jup-Ketu nak OR Jup-Sat conj): {jup_ketu_or_conj}/{len(results)}")
 
 
-def daily_crash_briefing(date_str: str = None) -> str:
+def daily_crash_briefing(date_str: str | None = None) -> str:
     if date_str is None:
         date_str = datetime.date.today().isoformat()
 
@@ -659,14 +659,16 @@ def daily_crash_briefing(date_str: str = None) -> str:
         for reason in analysis.jupiter_analysis["reasons"]:
             lines.append(f"  * {reason}")
 
+    confluence = analysis.confluence or {"overall": {
+        "net": 0.0, "signal": "N/A", "bullish_weight": 0.0, "bearish_weight": 0.0}}
     lines.append("")
     lines.append("CONFLUENCE: net={:.1f} | signal={} | bullish_wt={:.1f} | bearish_wt={:.1f}".format(
-        analysis.confluence["overall"]["net"],
-        analysis.confluence["overall"]["signal"],
-        analysis.confluence["overall"]["bullish_weight"],
-        analysis.confluence["overall"]["bearish_weight"]))
+        confluence["overall"]["net"],
+        confluence["overall"]["signal"],
+        confluence["overall"]["bullish_weight"],
+        confluence["overall"]["bearish_weight"]))
 
-    highlights = analysis.confluence.get("highlights", {})
+    highlights = confluence.get("highlights", {})
     if highlights.get("bearish_confluence_sectors"):
         lines.append("  Bearish sectors: {}".format(", ".join(highlights["bearish_confluence_sectors"])))
     if highlights.get("conflicted_sectors"):
@@ -687,7 +689,7 @@ def daily_crash_briefing(date_str: str = None) -> str:
 
     lines.append("")
     lines.append("INVALIDATION WATCH:")
-    if analysis.confluence["overall"]["signal"] == "BEARISH":
+    if confluence["overall"]["signal"] == "BEARISH":
         lines.append("  * Nifty close above 20 EMA + Jupiter direct station")
         lines.append("  * Confluence net flips to > -1.0")
     else:

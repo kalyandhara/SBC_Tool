@@ -347,7 +347,7 @@ def scan_sector_vedhas(date_str):
         })
 
     # Upcoming: merge consecutive firing dates into per-pair windows
-    fired = {}
+    fired: dict = {}
     for offset in range(1, SCAN_AHEAD_DAYS + 1):
         ds = date + datetime.timedelta(days=offset)
         for pair in _active_pairs(ds.isoformat()):

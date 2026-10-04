@@ -65,8 +65,8 @@ def prediction_series():
     """
     from sbc import series_cache
     from sbc.engine import ANCHORS, build_response
-    start = request.args.get("start")
-    end = request.args.get("end")
+    start = request.args.get("start") or ""
+    end = request.args.get("end") or ""
     anchor_key = request.args.get("anchor") or "nifty"
     school = request.args.get("school", "classical")
     try:

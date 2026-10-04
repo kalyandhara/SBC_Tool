@@ -247,7 +247,7 @@ def describe_placement(planet: str, nav: Navamsa) -> str:
 def _jd(trading_day: _dt.date, t: _dt.time) -> float:
     local = _dt.datetime.combine(trading_day, t, tzinfo=IST)
     u = local.astimezone(_dt.UTC)
-    return swe.julday(u.year, u.month, u.day, u.hour + u.minute / 60 + u.second / 3600)
+    return float(swe.julday(u.year, u.month, u.day, u.hour + u.minute / 60 + u.second / 3600))
 
 
 def sidereal_ascendant(trading_day: _dt.date, t: _dt.time,
@@ -255,7 +255,7 @@ def sidereal_ascendant(trading_day: _dt.date, t: _dt.time,
     """Sidereal (Lahiri) Placidus ascendant for Mumbai at a local time."""
     swe.set_sid_mode(swe.SIDM_LAHIRI, 0, 0)
     _, ascmc = swe.houses_ex(_jd(trading_day, t), lat, lon, b"P", swe.FLG_SIDEREAL)
-    return ascmc[0] % 360.0
+    return float(ascmc[0]) % 360.0
 
 
 def planets_at(trading_day: _dt.date, t: _dt.time) -> dict[str, dict]:

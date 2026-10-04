@@ -42,9 +42,9 @@ class Context:
     def __init__(self, date: str):
         self.date = date
         self.noon_jd = bt._julian_at_noon(date)
-        self._noon = None
-        self._open = None
-        self._windows = None
+        self._noon: dict | None = None
+        self._open: tuple[list[dict], dict] | None = None
+        self._windows: list[dict] | None = None
 
     @property
     def noon_planets(self) -> dict:

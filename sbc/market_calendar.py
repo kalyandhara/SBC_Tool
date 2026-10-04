@@ -1,6 +1,7 @@
 """Research-only market reversal windows from the 2026-2027 calendar."""
 
 import datetime
+from typing import Any
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 import swisseph as swe
@@ -23,7 +24,7 @@ ANCHORS = {
     "india": {"date": "1947-08-15", "time": "00:00", "tz": "Asia/Kolkata"},
 }
 
-_anchor_cache = {}
+_anchor_cache: dict[str, str] = {}
 
 
 def _utc_from_local(date_str, time_str, tz_name):
@@ -54,7 +55,7 @@ def _anchor_nakshatra(anchor_key):
     return _anchor_cache[anchor_key]
 
 
-REVERSAL_WINDOWS = [
+REVERSAL_WINDOWS: list[dict[str, Any]] = [
     {
         "id": "cluster-a-2026",
         "start": "2026-02-17",
@@ -240,7 +241,7 @@ def _pushya_reversal_windows(date, planets):
     Returns list of reversal window dicts compatible with REVERSAL_WINDOWS format.
     These are dynamic single-day or multi-day windows based on planetary positions.
     """
-    windows = []
+    windows: list[dict] = []
     moon = next(p for p in planets if p["name"] == "Moon")
     saturn = next(p for p in planets if p["name"] == "Saturn")
     jupiter = next(p for p in planets if p["name"] == "Jupiter")
@@ -434,7 +435,7 @@ NAKSHATRA_MEANINGS = {
 
 def _detect_bullish_nakshatra_transits(planets, date):
     """Detect bullish nakshatra transits for all planets."""
-    windows = []
+    windows: list[dict] = []
 
     for planet_name, bullish_naks in BULLISH_NAKSHATRAS.items():
         planet = next((p for p in planets if p["name"] == planet_name), None)
@@ -477,7 +478,7 @@ def _detect_bullish_nakshatra_transits(planets, date):
 
 def _detect_venus_exiting_virgo(planets, date):
     """Venus exiting Virgo (debilitated) = bullish."""
-    windows = []
+    windows: list[dict] = []
     venus = next((p for p in planets if p["name"] == "Venus"), None)
     if not venus:
         return windows
@@ -499,7 +500,7 @@ def _detect_venus_exiting_virgo(planets, date):
 
 def _detect_mercury_in_own_nakshatra(planets, date):
     """Mercury in Mercury-ruled nakshatras (Ashlesha, Jyeshtha, Revati)."""
-    windows = []
+    windows: list[dict] = []
     mercury = next((p for p in planets if p["name"] == "Mercury"), None)
     if not mercury:
         return windows
@@ -520,7 +521,7 @@ def _detect_mercury_in_own_nakshatra(planets, date):
 
 def _detect_moon_bullish_nakshatra(planets, date):
     """Moon in Taurus/Cancer/Pisces or bullish nakshatras."""
-    windows = []
+    windows: list[dict] = []
     moon = next((p for p in planets if p["name"] == "Moon"), None)
     if not moon:
         return windows
@@ -556,13 +557,13 @@ def _detect_moon_bullish_nakshatra(planets, date):
 
 def _detect_rahu_ketu_separation(planets, date):
     """Rahu/Ketu moving away from Sun/Moon = sentiment stabilizes."""
-    windows = []
+    windows: list[dict] = []
     rahu = next((p for p in planets if p["name"] == "Rahu"), None)
     ketu = next((p for p in planets if p["name"] == "Ketu"), None)
     sun = next((p for p in planets if p["name"] == "Sun"), None)
     moon = next((p for p in planets if p["name"] == "Moon"), None)
 
-    if not all([rahu, ketu, sun, moon]):
+    if rahu is None or ketu is None or sun is None or moon is None:
         return windows
 
     def angle(lon1, lon2):
@@ -599,7 +600,7 @@ def _detect_rahu_ketu_separation(planets, date):
 
 def _detect_ketu_leaving_market_degrees(planets, date):
     """Ketu leaving market-sensitive degrees (0° Aries, 0° Cancer, 0° Libra, 0° Capricorn)."""
-    windows = []
+    windows: list[dict] = []
     ketu = next((p for p in planets if p["name"] == "Ketu"), None)
     if not ketu:
         return windows
@@ -621,7 +622,7 @@ def _detect_ketu_leaving_market_degrees(planets, date):
 
 def _detect_full_moon_stable_signs(planets, date, tithi):
     """Full Moon in stable signs (Taurus, Cancer, Leo, Scorpio, Capricorn, Pisces)."""
-    windows = []
+    windows: list[dict] = []
     if tithi not in (14, 15, 16):  # Only near Full Moon
         return windows
 
@@ -645,7 +646,7 @@ def _detect_full_moon_stable_signs(planets, date, tithi):
 
 def _detect_jupiter_saturn_trine(planets, date):
     """Jupiter trine Saturn (120°) - stable expansion, multi-year bull runs."""
-    windows = []
+    windows: list[dict] = []
     jupiter = next((p for p in planets if p["name"] == "Jupiter"), None)
     saturn = next((p for p in planets if p["name"] == "Saturn"), None)
     if not jupiter or not saturn:
@@ -686,7 +687,7 @@ def _detect_jupiter_saturn_trine(planets, date):
 
 def _detect_rahu_jupiter_trine(planets, date):
     """Rahu trine Jupiter — mass optimism + new narratives."""
-    windows = []
+    windows: list[dict] = []
     rahu = next((p for p in planets if p["name"] == "Rahu"), None)
     jupiter = next((p for p in planets if p["name"] == "Jupiter"), None)
     if not rahu or not jupiter:
@@ -712,7 +713,7 @@ def _detect_rahu_jupiter_trine(planets, date):
 
 def _detect_venus_jupiter_trine(planets, date):
     """Venus trine Jupiter — liquidity + optimism."""
-    windows = []
+    windows: list[dict] = []
     venus = next((p for p in planets if p["name"] == "Venus"), None)
     jupiter = next((p for p in planets if p["name"] == "Jupiter"), None)
     if not venus or not jupiter:
@@ -738,7 +739,7 @@ def _detect_venus_jupiter_trine(planets, date):
 
 def _detect_mercury_jupiter_trine(planets, date):
     """Mercury trine Jupiter — bullish for tech + banking."""
-    windows = []
+    windows: list[dict] = []
     mercury = next((p for p in planets if p["name"] == "Mercury"), None)
     jupiter = next((p for p in planets if p["name"] == "Jupiter"), None)
     if not mercury or not jupiter:
@@ -764,7 +765,7 @@ def _detect_mercury_jupiter_trine(planets, date):
 
 def _detect_jupiter_direct_after_retro(planets, date):
     """Jupiter direct after retrograde — risk appetite returns."""
-    windows = []
+    windows: list[dict] = []
     jupiter = next((p for p in planets if p["name"] == "Jupiter"), None)
     if not jupiter:
         return windows
@@ -786,7 +787,7 @@ def _detect_jupiter_direct_after_retro(planets, date):
 
 def _detect_saturn_direct_after_retro(planets, date):
     """Saturn direct after retrograde — fear cycles end, accumulation begins."""
-    windows = []
+    windows: list[dict] = []
     saturn = next((p for p in planets if p["name"] == "Saturn"), None)
     if not saturn:
         return windows
@@ -806,7 +807,7 @@ def _detect_saturn_direct_after_retro(planets, date):
 
 def _detect_mercury_direct_after_retro(planets, date):
     """Mercury direct after retrograde — clarity returns."""
-    windows = []
+    windows: list[dict] = []
     mercury = next((p for p in planets if p["name"] == "Mercury"), None)
     if not mercury:
         return windows
@@ -826,7 +827,7 @@ def _detect_mercury_direct_after_retro(planets, date):
 
 def _detect_jupiter_combustion_end(planets, date):
     """Jupiter emerging from combustion — liquidity returns."""
-    windows = []
+    windows: list[dict] = []
     jupiter = next((p for p in planets if p["name"] == "Jupiter"), None)
     sun = next((p for p in planets if p["name"] == "Sun"), None)
     if not jupiter or not sun:
@@ -1083,7 +1084,7 @@ def _bhadra_events(start, days, tz_name):
     last_month = datetime.datetime(end.year, end.month, 1, tzinfo=tz)
     start_dt = datetime.datetime(start.year, start.month, start.day, tzinfo=tz)
 
-    windows = []
+    windows: list[dict] = []
     seen = set()
     # Cover first and last month (windows crossing month boundaries handled too).
     cursor = first_month

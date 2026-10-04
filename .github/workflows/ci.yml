@@ -31,10 +31,8 @@ jobs:
         run: ruff check sbc/ app.py run_app.py scripts/ tests/
 
   typecheck:
-    name: Type Check (advisory)
+    name: Type Check
     runs-on: ubuntu-latest
-    # ~230 existing annotation errors (backlog B-36); reported, not blocking.
-    continue-on-error: true
     steps:
       - name: Checkout code
         uses: actions/checkout@v4

@@ -254,7 +254,7 @@ def compute_cgsp_score(planets: list, tithi: int) -> dict:
         element_counts[get_sign_element(p["sign"])] += 1
 
     # Determine dominant element and strength modifier
-    dominant_element = max(element_counts, key=element_counts.get)
+    dominant_element = max(element_counts, key=lambda e: element_counts[e])
     if element_counts[dominant_element] >= 3:
         # Strong elemental influence
         if dominant_element == "fire":
@@ -385,7 +385,7 @@ def compute_cgsp_score(planets: list, tithi: int) -> dict:
     }
 
 
-def get_price_levels(center_date: str, bias: str, current_price: float = None) -> dict:
+def get_price_levels(center_date: str, bias: str, current_price: float | None = None) -> dict:
     """
     Generate price targets based on CGSP framework.
 
@@ -438,7 +438,7 @@ def get_sector_bias(planets: list, tithi: int) -> list:
         "Ketu": ["Pharma", "Spiritual", "Research", "Healthcare"],
     }
 
-    sector_scores = {}
+    sector_scores: dict = {}
     for p in planets:
         p_type = get_planet_type(p["name"], planets, tithi)
         s_type = get_sign_type(p["sign"])
@@ -482,7 +482,7 @@ def get_sector_bias(planets: list, tithi: int) -> list:
     return out
 
 
-def check_panchaka(date_str: str, planets: list = None) -> dict:
+def check_panchaka(date_str: str, planets: list | None = None) -> dict:
     """Check for Panchaka (5 inauspicious nakshatras) period."""
     panchaka_naks = {"Dhanishta", "Shatabhisha", "P.Bhadrapada", "U.Bhadrapada", "Revati"}
 
@@ -528,7 +528,7 @@ def check_adhik_masa(date_str: str) -> dict:
     }
 
 
-def generate_cgsp_report(date_str: str, planets: list, tithi: int, current_price: float = None) -> dict:
+def generate_cgsp_report(date_str: str, planets: list, tithi: int, current_price: float | None = None) -> dict:
     """Generate complete CGSP framework report for a date."""
     score_data = compute_cgsp_score(planets, tithi)
     price_levels = get_price_levels(date_str, score_data["bias"], current_price)
@@ -562,7 +562,7 @@ def generate_cgsp_report(date_str: str, planets: list, tithi: int, current_price
     }
 
 
-def backtest_cgsp(start_date: str, end_date: str, price_data: dict = None) -> dict:
+def backtest_cgsp(start_date: str, end_date: str, price_data: dict | None = None) -> dict:
     """
     Backtest CGSP framework against historical price data.
 
@@ -635,7 +635,7 @@ def backtest_cgsp(start_date: str, end_date: str, price_data: dict = None) -> di
         d += datetime.timedelta(days=1)
 
     # Summary stats
-    bias_counts = {}
+    bias_counts: dict = {}
     for r in results:
         if "bias" in r:
             bias_counts[r["bias"]] = bias_counts.get(r["bias"], 0) + 1
@@ -654,6 +654,10 @@ def angular_distance(lon1: float, lon2: float) -> float:
     return abs((lon1 - lon2 + 180) % 360 - 180)
 
 
-def get_planet(planets: list, name: str):
-    """Find planet by name."""
-    return next((p for p in planets if p["name"] == name), None)
+def get_planet(planets: list, name: str) -> dict:
+    """Find planet by name; every chart carries all nine grahas, so a miss is a bug."""
+    for p in planets:
+        if p["name"] == name:
+            found: dict = p
+            return found
+    raise ValueError(f"{name} missing from the planet list")

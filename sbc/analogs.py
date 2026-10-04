@@ -28,6 +28,7 @@ from dataclasses import dataclass
 from functools import lru_cache
 
 import numpy as np
+from numpy.typing import ArrayLike
 
 from sbc import fingerprint as fpm
 from sbc import stats as st
@@ -116,7 +117,8 @@ def _planet_score(target: SkyArrays, pool: SkyArrays, body_mask: np.ndarray) -> 
         same = (pool.retro[:, body_mask] == target.retro[0, body_mask]).astype(float)
         score = score + same * retro_cols
         count = count + retro_cols
-    return (score / count).mean(axis=1)
+    result: np.ndarray = (score / count).mean(axis=1)
+    return result
 
 
 def _jaccard(target: SkyArrays, pool: SkyArrays, key_mask: np.ndarray) -> np.ndarray:
@@ -156,7 +158,11 @@ def blend(tiers: dict[str, np.ndarray], weights: dict[str, float] | None = None)
     """Weighted mean of tier similarities (weights need not sum to 1)."""
     weights = weights or TIER_WEIGHTS
     total = sum(weights.values())
-    return sum(w * tiers[t] for t, w in weights.items() if w) / total
+    out = np.zeros_like(next(iter(tiers.values())), dtype=float)
+    for t, w in weights.items():
+        if w:
+            out = out + w * tiers[t]
+    return out / total
 
 
 def similarity(target: SkyArrays, pool: SkyArrays,
@@ -208,7 +214,8 @@ class History:
     ordinals: np.ndarray
 
     @classmethod
-    def build(cls, dates: list[str], closes, fps: list[dict], horizons=HORIZONS) -> History:
+    def build(cls, dates: list[str], closes: ArrayLike, fps: list[dict],
+              horizons: tuple[int, ...] = HORIZONS) -> History:
         closes = np.asarray(closes, dtype=float)
         return cls(dates, closes, SkyArrays.from_fingerprints(fps),
                    {h: st.forward_returns(closes, h) for h in horizons},

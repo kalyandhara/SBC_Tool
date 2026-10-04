@@ -17,6 +17,7 @@ import json
 import os
 import sqlite3
 import threading
+from collections.abc import Callable
 from functools import lru_cache
 from pathlib import Path
 
@@ -63,7 +64,7 @@ def missing(start: str, end: str, version: str | None = None) -> list[str]:
 
 
 def build(start: str = DEFAULT_RANGE[0], end: str = DEFAULT_RANGE[1],
-          batch: int = 500, progress=None) -> dict:
+          batch: int = 500, progress: Callable[[int, int], None] | None = None) -> dict:
     """Compute and store every missing or stale date in [start, end]."""
     version = current_version()
     todo = missing(start, end, version)
@@ -86,7 +87,8 @@ def get(day: str) -> dict:
         row = conn.execute("SELECT payload FROM fingerprints WHERE date = ? AND version = ?",
                            (day, version)).fetchone()
     if row:
-        return json.loads(row[0])
+        stored: dict = json.loads(row[0])
+        return stored
     fp = fpmod.fingerprint(day)
     with _lock, _conn() as conn:
         conn.execute("INSERT OR REPLACE INTO fingerprints VALUES (?,?,?)",
@@ -106,8 +108,8 @@ def get_range(start: str, end: str) -> list[dict]:
 def purge_stale() -> int:
     """Delete rows written by another version; returns how many."""
     with _lock, _conn() as conn:
-        return conn.execute("DELETE FROM fingerprints WHERE version != ?",
-                            (current_version(),)).rowcount
+        return int(conn.execute("DELETE FROM fingerprints WHERE version != ?",
+                                (current_version(),)).rowcount)
 
 
 def status() -> dict:

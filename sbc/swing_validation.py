@@ -57,14 +57,14 @@ def reversal(closes: np.ndarray) -> np.ndarray:
 
 def entry_entries(dates: list[str], closes: np.ndarray, active: list[list[dict]]) -> list[dict]:
     rev = reversal(closes)
-    groups = {"all": lambda a: bool(a)}
-    for code in ha.ASPECTS:
-        groups[f"aspect_{code}"] = lambda a, c=code: any(x["aspect"] == c for x in a)
-    for planet in ha.PLANETS:
-        groups[f"planet_{planet}"] = lambda a, p=planet: any(x["planet"] == p for x in a)
+    # group name -> (window field to match, value); "all" matches any window
+    groups: dict[str, tuple[str, str] | None] = {"all": None}
+    groups.update({f"aspect_{code}": ("aspect", code) for code in ha.ASPECTS})
+    groups.update({f"planet_{planet}": ("planet", planet) for planet in ha.PLANETS})
     entries = []
-    for name, test in groups.items():
-        flag = np.array([test(a) for a in active])
+    for name, match in groups.items():
+        flag = np.array([bool(a) if match is None else any(x[match[0]] == match[1] for x in a)
+                         for a in active])
         entries.append({"name": f"helio_{name}_reversal", "kind": "directional", "source": "sbc.helio_aspects",
                         "description": f"Trend reversal on sessions in a {name.replace('_', ' ')} window",
                         "signal": np.where(flag, rev, 0.0)})
@@ -77,7 +77,7 @@ CONTROL = {"name": "reversal_every_day", "kind": "directional", "source": "contr
            "description": "10-session trend reversal on every session (no astro)"}
 
 
-def part_a(dates, closes, n_perm) -> dict:
+def part_a(dates: list[str], closes: np.ndarray, n_perm: int) -> dict:
     active = session_windows(dates)
     entries = entry_entries(dates, closes, active)
     results = rv.grade(dates, closes, entries, HORIZONS, n_perm)
@@ -129,7 +129,7 @@ def part_b(bars: sm.Bars, n_sets: int = RANDOM_SETS, seed: int = 0) -> dict:
     out: dict = {"windows": len(windows), "drift_per_bar": drift, "models": {}}
     cache: dict[tuple, dict | None] = {}
 
-    def cached(e: int, direction: int, rule: str, need: int = 3, hold: int = 10):
+    def cached(e: int, direction: int, rule: str, need: int = 3, hold: int = 10) -> dict | None:
         key = (e, direction, rule, need, hold)
         if key not in cache:
             cache[key] = sm.trade(bars, e, direction, rule, need, hold)
@@ -150,13 +150,13 @@ def part_b(bars: sm.Bars, n_sets: int = RANDOM_SETS, seed: int = 0) -> dict:
             "2xATR trailing stop": [cached(e, d, "atr_stop") for e, d in entries],
         }
         base_stats = {k: _stats([t for t in v if t], drift) for k, v in baselines.items()}
-        random_means = []
+        random_list: list[float] = []
         for _ in range(n_sets):
             pick = np.sort(rng.choice(eligible, size=min(len(entries), len(eligible)), replace=False))
-            trades = [cached(int(e), sm.direction_at(bars, int(e)), "confluence", need) for e in pick]
-            trades = [t for t in trades if t and t["exit_reason"] != "open"]
-            random_means.append(float(_excess(trades, drift).mean()) if trades else 0.0)
-        random_means = np.array(random_means)
+            maybe = [cached(int(e), sm.direction_at(bars, int(e)), "confluence", need) for e in pick]
+            trades = [t for t in maybe if t and t["exit_reason"] != "open"]
+            random_list.append(float(_excess(trades, drift).mean()) if trades else 0.0)
+        random_means = np.array(random_list)
         p = float((np.sum(random_means >= model.get("mean_excess", np.inf)) + 1) / (n_sets + 1)) if swings else None
         label = "strict (3 of 3)" if need == 3 else "2 of 3"
         out["models"][label] = {
@@ -172,8 +172,8 @@ def part_b(bars: sm.Bars, n_sets: int = RANDOM_SETS, seed: int = 0) -> dict:
 
 
 def run(n_perm: int = st.N_PERMUTATIONS, n_sets: int = RANDOM_SETS) -> dict:
-    dates, closes, _fps = rv.load_history()
-    closes = np.asarray(closes, dtype=float)
+    dates, close_list, _fps = rv.load_history()
+    closes = np.asarray(close_list, dtype=float)
     bars = sm.Bars.nifty()
     a = part_a(dates, closes, n_perm)
     b = part_b(bars, n_sets)

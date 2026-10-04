@@ -6,7 +6,7 @@ All values can be overridden via environment variables or config file.
 
 import json
 import os
-from dataclasses import asdict, dataclass
+from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from typing import Any
 
@@ -16,16 +16,16 @@ class KPConfig:
     """Complete KP Intraday configuration."""
 
     # Rule weights for signal scoring
-    weights: dict[str, float] = None
+    weights: dict[str, float] = field(default_factory=dict)
 
     # Signal classification thresholds
-    thresholds: dict[str, float] = None
+    thresholds: dict[str, float] = field(default_factory=dict)
 
     # Hora quality base mappings
-    hora_base_quality: dict[str, str] = None
+    hora_base_quality: dict[str, str] = field(default_factory=dict)
 
     # Planet nature classifications
-    planet_nature: dict[str, str] = None
+    planet_nature: dict[str, str] = field(default_factory=dict)
 
     # Trading rules
     max_tier1_trades: int = 3
@@ -48,27 +48,27 @@ class KPConfig:
     include_css: bool = True
 
     def __post_init__(self):
-        if self.weights is None:
+        if not self.weights:
             self.weights = {
                 'hora_weight': 0.3,
                 'house_set_weight': 0.4,
                 'moon_sub_weight': 0.2,
                 'asc_sub_weight': 0.1,
             }
-        if self.thresholds is None:
+        if not self.thresholds:
             self.thresholds = {
                 'tier1_min_score': 5.0,
                 'tier2_min_score': 3.0,
                 'pure_set_min_score': 7.0,
                 'regime_shift_min_strength': 1.5,
             }
-        if self.hora_base_quality is None:
+        if not self.hora_base_quality:
             self.hora_base_quality = {
                 'Sun': 'Aggressive', 'Moon': 'Fruitful', 'Mars': 'Aggressive',
                 'Mercury': 'Neutral', 'Jupiter': 'Fruitful', 'Venus': 'Fruitful',
                 'Saturn': 'Sluggish', 'Rahu': 'Volatile', 'Ketu': 'Volatile',
             }
-        if self.planet_nature is None:
+        if not self.planet_nature:
             self.planet_nature = {
                 'Sun': 'malefic', 'Moon': 'benefic', 'Mars': 'malefic',
                 'Mercury': 'neutral', 'Jupiter': 'benefic', 'Venus': 'benefic',
@@ -133,7 +133,7 @@ def load_config(config_path: Path | None = None) -> KPConfig:
     return config
 
 
-def save_config(config: KPConfig, config_path: Path | None = None):
+def save_config(config: KPConfig, config_path: Path | None = None) -> None:
     """Save configuration to file."""
     path = config_path or CONFIG_FILE
     CONFIG_DIR.mkdir(exist_ok=True)
@@ -141,16 +141,21 @@ def save_config(config: KPConfig, config_path: Path | None = None):
         json.dump(config.to_dict(), f, indent=2)
 
 
+_active_config: KPConfig | None = None
+
+
 def get_config() -> KPConfig:
     """Get the active configuration (singleton pattern)."""
-    if not hasattr(get_config, '_config'):
-        get_config._config = load_config()
-    return get_config._config
+    global _active_config
+    if _active_config is None:
+        _active_config = load_config()
+    return _active_config
 
 
-def reset_config():
+def reset_config() -> None:
     """Reset to default configuration."""
-    get_config._config = DEFAULT_CONFIG
+    global _active_config
+    _active_config = DEFAULT_CONFIG
 
 
 # Instrument-specific overrides

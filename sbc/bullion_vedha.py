@@ -92,10 +92,10 @@ def _julian_at_noon(date: datetime.date) -> float:
     """Get Julian day at noon IST."""
     local = datetime.datetime.combine(date, datetime.time(12, 0), tzinfo=ZoneInfo('Asia/Kolkata'))
     utc = local.astimezone(datetime.UTC)
-    return swe.julday(utc.year, utc.month, utc.day, utc.hour + utc.minute/60.0)
+    return float(swe.julday(utc.year, utc.month, utc.day, utc.hour + utc.minute/60.0))
 
 
-def _get_planets(date: datetime.date):
+def _get_planets(date: datetime.date) -> tuple[list[dict], int, float]:
     """Get planetary positions with natures for a date."""
     jul = _julian_at_noon(date)
     planets, ayanamsa = positions(jul)
@@ -117,34 +117,34 @@ def _angle(lon1: float, lon2: float) -> float:
     return abs((lon1 - lon2 + 180) % 360 - 180)
 
 
-def _is_retrograde(planet) -> bool:
-    return planet.get("retrograde", False)
+def _is_retrograde(planet: dict) -> bool:
+    return bool(planet.get("retrograde", False))
 
 
-def _is_in_fire_sign(planet) -> bool:
+def _is_in_fire_sign(planet: dict) -> bool:
     return planet["sign"] in ("Aries", "Leo", "Sagittarius")
 
 
-def _is_in_same_nakshatra_line(p1, p2) -> bool:
+def _is_in_same_nakshatra_line(p1: dict, p2: dict) -> bool:
     """Check if two planets are on same nakshatra line (same nakshatra or trine nakshatras)."""
     n1 = p1["nakshatra"]
     n2 = p2["nakshatra"]
     # Only the same nakshatra counts for now; a trine (5/9 apart in the 27
     # nakshatra scheme) would need full nakshatra trine logic.
-    return n1 == n2
+    return bool(n1 == n2)
 
 
 # ============================================================
 # 1. KRITTIKA VEDHA - PRIMARY GOLD TRIGGER
 # ============================================================
-def detect_krittika_vedha(planets, vedha_map) -> list[BullionVedhaSignal]:
+def detect_krittika_vedha(planets: list[dict], vedha_map: dict) -> list[BullionVedhaSignal]:
     """
     Krittika Vedha: Malefic (Sun/Mars/Saturn) in Krittika Nakshatra
     Transits on Krittika cast direct diagonal (Sammukha/Vipreet) Vedha across the grid.
     Sharp Bullish Surge (Teji): Krittika directly rules Gold, gems, precious metals.
     Malefic transits create severe structural supply/price shocks lasting up to 8 months.
     """
-    signals = []
+    signals: list[BullionVedhaSignal] = []
     malefics = ["Sun", "Mars", "Saturn", "Rahu", "Ketu"]
 
     for p in planets:
@@ -184,14 +184,14 @@ def detect_krittika_vedha(planets, vedha_map) -> list[BullionVedhaSignal]:
 # ============================================================
 # 2. ROHINI VEDHA - LIQUIDITY & METALS
 # ============================================================
-def detect_rohini_vedha(planets, vedha_map) -> list[BullionVedhaSignal]:
+def detect_rohini_vedha(planets: list[dict], vedha_map: dict) -> list[BullionVedhaSignal]:
     """
     Rohini Vedha: Kroora Graha (Mars/Saturn/Rahu) in Rohini Nakshatra
     Casts Parshwa (Side) and Sammukha Vedha on key liquid metal axis.
     High Volatility / Speculative Rally: Rohini rules liquids and elemental metals.
     Malefic Vedha sparks sharp 7-14 day momentum spikes, especially in Silver.
     """
-    signals = []
+    signals: list[BullionVedhaSignal] = []
     kroora = ["Mars", "Saturn", "Rahu"]
 
     for p in planets:
@@ -227,13 +227,13 @@ def detect_rohini_vedha(planets, vedha_map) -> list[BullionVedhaSignal]:
 # ============================================================
 # 3. ADITYA-GURU VEDHA - SUN-JUPITER CONJUNCTION/VEDHA
 # ============================================================
-def detect_aditya_guru_vedha(planets, vedha_map) -> list[BullionVedhaSignal]:
+def detect_aditya_guru_vedha(planets: list[dict], vedha_map: dict) -> list[BullionVedhaSignal]:
     """
     Aditya-Guru Vedha: Transiting Sun casting Subha Vedha on Jupiter (or same Nakshatra line)
     Direct Sammukha ray between the Sun line and Jupiter line.
     Macro Gold Accumulation: Triggers central bank buying and institutional store-of-value flows into Gold ETF and spot physical markets.
     """
-    signals = []
+    signals: list[BullionVedhaSignal] = []
 
     sun = next((p for p in planets if p["name"] == "Sun"), None)
     jupiter = next((p for p in planets if p["name"] == "Jupiter"), None)
@@ -281,13 +281,13 @@ def detect_aditya_guru_vedha(planets, vedha_map) -> list[BullionVedhaSignal]:
 # ============================================================
 # 4. SHUKI-CHANDRA VEDHA - VENUS-MOON SILVER MULTIPLIER
 # ============================================================
-def detect_shuki_chandra_vedha(planets, vedha_map) -> list[BullionVedhaSignal]:
+def detect_shuki_chandra_vedha(planets: list[dict], vedha_map: dict) -> list[BullionVedhaSignal]:
     """
     Shuki-Chandra Vedha: Transiting Venus in high-strength Pada casting Vedha on Moon Nakshatra
     Direct horizontal or diagonal SBC intersection with Moon/Liquid Nakshatra.
     Silver Outperformance: Silver historically outperforms Gold when Venus creates a benefic Subha Vedha with Moon/Rohini/Shravana.
     """
-    signals = []
+    signals: list[BullionVedhaSignal] = []
 
     venus = next((p for p in planets if p["name"] == "Venus"), None)
     moon = next((p for p in planets if p["name"] == "Moon"), None)
@@ -345,13 +345,13 @@ def detect_shuki_chandra_vedha(planets, vedha_map) -> list[BullionVedhaSignal]:
 # ============================================================
 # 5. RETROGRADE MALEFIC VEDHA (VAKRA KROORA VEDHA)
 # ============================================================
-def detect_retrograde_malefic_vedha(planets, vedha_map) -> list[BullionVedhaSignal]:
+def detect_retrograde_malefic_vedha(planets: list[dict], vedha_map: dict) -> list[BullionVedhaSignal]:
     """
     Retrograde Malefic Vedha: Retrograde Mars, Saturn, or Ketu entering Fire Signs (Aries/Leo/Sagittarius)
     Retrograde motion increases Vedha intensity by 3x.
     Panic Buying / Safe-Haven Spikes: Triggers flight-to-safety capital flows into Gold during geopolitical or currency uncertainty.
     """
-    signals = []
+    signals: list[BullionVedhaSignal] = []
     retrograde_malefics = ["Mars", "Saturn", "Ketu", "Rahu"]
 
     for p in planets:
@@ -392,13 +392,13 @@ def detect_retrograde_malefic_vedha(planets, vedha_map) -> list[BullionVedhaSign
 # ============================================================
 # 6. VIPREET OBSTRUCTIVE VEDHA (MANDI / PRICE DUMP TRIGGER)
 # ============================================================
-def detect_vipreet_obstructive_vedha(planets, vedha_map) -> list[BullionVedhaSignal]:
+def detect_vipreet_obstructive_vedha(planets: list[dict], vedha_map: dict) -> list[BullionVedhaSignal]:
     """
     Vipreet Obstructive Vedha: Benefic (Venus/Jupiter/Mercury) casting Vedha without counter-malefic pressure
     Softening Subha Vedha over Krittika or Rohini axis.
     Cooling / Correction (Mandi): Induces profit booking and price compression across bullion counters.
     """
-    signals = []
+    signals: list[BullionVedhaSignal] = []
     benefics = ["Venus", "Jupiter", "Mercury"]
 
     for p in planets:
@@ -448,20 +448,20 @@ def detect_vipreet_obstructive_vedha(planets, vedha_map) -> list[BullionVedhaSig
 # ============================================================
 # 7. MERCURY-KETU-SUN TRIANGLE IN LEO (VOLATILITY CLUSTER)
 # ============================================================
-def detect_mercury_ketu_sun_triangle(planets, vedha_map) -> list[BullionVedhaSignal]:
+def detect_mercury_ketu_sun_triangle(planets: list[dict], vedha_map: dict) -> list[BullionVedhaSignal]:
     """
     Mercury-Ketu-Sun Triangle in Leo: All three in Leo/Magha nakshatra
     Creates a volatile cluster affecting Gold (Sun/Ketu in Magha) and trading/communication (Mercury).
     High Volatility / Sudden Moves / Trend Changes: Combines authority (Sun), detachment (Ketu),
     and trading intellect (Mercury) in the same nakshatra. Triggers sharp intraday reversals in bullion.
     """
-    signals = []
+    signals: list[BullionVedhaSignal] = []
 
     sun = next((p for p in planets if p["name"] == "Sun"), None)
     mercury = next((p for p in planets if p["name"] == "Mercury"), None)
     ketu = next((p for p in planets if p["name"] == "Ketu"), None)
 
-    if not all([sun, mercury, ketu]):
+    if sun is None or mercury is None or ketu is None:
         return signals
 
     # Check if all three in Leo
@@ -505,7 +505,7 @@ def detect_mercury_ketu_sun_triangle(planets, vedha_map) -> list[BullionVedhaSig
 # ============================================================
 # MASTER DETECTION FUNCTION
 # ============================================================
-def scan_bullion_vedha_matrix(date: datetime.date = None) -> dict[str, Any]:
+def scan_bullion_vedha_matrix(date: datetime.date | None = None) -> dict[str, Any]:
     """
     Scan all 6 Bullion Vedha Matrix signals for a given date.
 
@@ -595,7 +595,7 @@ def scan_bullion_vedha_matrix(date: datetime.date = None) -> dict[str, Any]:
 # ============================================================
 # WEEKLY SCAN
 # ============================================================
-def scan_bullion_vedha_week(start_date: datetime.date = None) -> dict[str, Any]:
+def scan_bullion_vedha_week(start_date: datetime.date | None = None) -> dict[str, Any]:
     """Scan bullion vedha matrix for full week (7 days)."""
     if start_date is None:
         start_date = datetime.date.today()
@@ -615,7 +615,7 @@ def scan_bullion_vedha_week(start_date: datetime.date = None) -> dict[str, Any]:
         all_signals.extend(scan["signals"])
 
     # Deduplicate by vedha_type + triggering planets
-    unique_signals = {}
+    unique_signals: dict[str, dict] = {}
     for s in all_signals:
         key = f"{s['vedha_type']}_{'-'.join(sorted(s['triggering_planets']))}"
         if key not in unique_signals or s["confidence"] > unique_signals[key]["confidence"]:

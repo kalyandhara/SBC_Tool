@@ -21,6 +21,7 @@ from __future__ import annotations
 import datetime as dt
 
 import numpy as np
+from numpy.typing import ArrayLike
 
 from sbc import market_store
 from sbc.market_holidays import next_trading_day
@@ -50,7 +51,7 @@ def _turn_of_month(days: list[dt.date], i: int) -> bool:
     return from_start < 3 or from_end < 2
 
 
-def controls(dates: list[str], closes, vix_by_date: dict[str, float]) -> np.ndarray:
+def controls(dates: list[str], closes: ArrayLike, vix_by_date: dict[str, float]) -> np.ndarray:
     """(N, len(CONTROL_NAMES)) matrix aligned with `dates`; NaN where history is too short."""
     close = np.asarray(closes, dtype=float)
     n = len(close)
@@ -85,7 +86,7 @@ def controls(dates: list[str], closes, vix_by_date: dict[str, float]) -> np.ndar
     return np.column_stack([np.asarray(c, dtype=float) for c in cols])
 
 
-def nifty_controls(dates: list[str], closes) -> np.ndarray:
+def nifty_controls(dates: list[str], closes: ArrayLike) -> np.ndarray:
     """controls() with India VIX read from market.db."""
     vix = {b["date"]: b["close"] for b in market_store.get_daily("INDIAVIX")}
     return controls(dates, closes, vix)

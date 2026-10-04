@@ -18,7 +18,7 @@ from __future__ import annotations
 
 import ast
 import hashlib
-from collections.abc import Callable
+from collections.abc import Callable, Iterable
 from functools import lru_cache
 from pathlib import Path
 
@@ -95,8 +95,8 @@ def dependency_closure(read: Callable[[Path], str] = _read) -> tuple[str, list[P
     return payload_src, module_closure(start, read)
 
 
-def module_closure(start, read: Callable[[Path], str] = _read,
-                   excluded=frozenset(EXCLUDED_MODULES)) -> list[Path]:
+def module_closure(start: Iterable[str], read: Callable[[Path], str] = _read,
+                   excluded: frozenset[str] = frozenset(EXCLUDED_MODULES)) -> list[Path]:
     """Sorted files of the first-party modules reachable from `start`."""
     files: dict[str, Path] = {}
     todo = list(start)
@@ -114,7 +114,7 @@ def module_closure(start, read: Callable[[Path], str] = _read,
 
 
 def module_version(module: str, read: Callable[[Path], str] = _read,
-                   excluded=frozenset()) -> str:
+                   excluded: frozenset[str] = frozenset()) -> str:
     """Hash of `module` and every first-party module it imports.
 
     For stores keyed by something other than the prediction series (e.g. the

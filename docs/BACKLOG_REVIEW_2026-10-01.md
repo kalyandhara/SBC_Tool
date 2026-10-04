@@ -30,7 +30,7 @@ code and tech debt · **P3** = hygiene.
 | B-35 NSE holiday calendar (new) | ✅ `sbc/market_holidays.py` (2024–2026 + special closures + Muhurat); KP generation, forecast, ledger, KP report/path, Rahu–Ketu calendar and date picker use it |
 | B-23 Lint debt / CI | ✅ ruff is the only linter (2,907 → 0 findings); CI runs on `master`; black/isort/flake8 dropped |
 | B-08 Requirements drift | 🟡 runtime deps now match the tested stack and include openpyxl, python-docx, matplotlib; no lock file yet |
-| **B-36 mypy debt** (new) | ⬜ 231 annotation errors; CI type-check job is advisory (non-blocking) |
+| **B-36 mypy debt** (new) | ✅ 0 errors (was 312 by 2026-10-03); the CI type check now blocks (2026-10-03, `fix-b36-mypy`) |
 | B-20 Series cache engine version | ✅ rows carry `sbc.engine_version` (hash of the code behind `build_response` + the payload builder); other versions are ignored and purged on warm-up |
 | B-15 Two app instances | ✅ engine moved to `sbc/engine.py`; nothing under `sbc/` imports `app`; `python app.py` serves one app on 127.0.0.1:8000; README run steps updated |
 | B-25 Exception text in responses | ✅ 29 handlers use `sbc.api.errors.internal_error()` (logs traceback, generic 500); nested error fields and the crash-series cache no longer echo/cache exceptions; tz endpoints answer 400 for bad input; duplicate global handler removed |
@@ -92,7 +92,23 @@ no TradingView export.
 - Daily or intraday bars for EXIT?
 - Strict 3-way confluence, or any 2 of 3?
 
-### B-36 · mypy reports 231 errors (P3, new)
+### B-36 · mypy reports 231 errors (P3, new) — ✅ done 2026-10-03
+**Resolved.** `mypy sbc/ app.py --ignore-missing-imports` reports 0 errors. There were 312 by
+2026-10-03, after the prediction-engine phases. The CI job is now blocking.
+
+**Fixes:**
+- Mostly annotations: optional defaults, empty containers, numpy `ArrayLike` in `sbc/stats.py`, and `float()` around Swiss Ephemeris returns.
+- Added `types-pytz` to the dev extra.
+
+**Small behaviour changes** that the types exposed:
+- `cgsp_framework.get_planet` and `rahu_ketu_trap._get_planet_longitude` raise a clear `ValueError` on a missing planet. Before, they returned `None` and the caller crashed later.
+- `KPConfig` fills defaults for empty dicts as well as `None`.
+- KP regime shifts skip rows whose timestamp can't be parsed.
+- `applying_or_separating` returns `None` when the current separation is unknown.
+- The rate limiter keys a missing client address as `"unknown"`.
+
+**Removed:** the empty, unused `TITHI_GROUPS` in `lunar_forecast.py`. The real table is in `sbc/nakshatra.py`.
+
 `mypy sbc/ app.py --ignore-missing-imports`: 68 assignment, 62 var-annotated, 31
 no-untyped-def, 19 index, 18 no-any-return and others. Spot-checking found no runtime bug.
 For example, `app.py`'s "MarketEvent is not indexable" comes from reusing a variable name

@@ -140,7 +140,7 @@ class AstroPlotData:
 def _julian_day(dt: datetime.datetime) -> float:
     """Convert datetime to Julian day."""
     h = dt.hour + dt.minute / 60.0 + dt.second / 3600.0 + dt.microsecond / 3_600_000_000.0
-    return swe.julday(dt.year, dt.month, dt.day, h)
+    return float(swe.julday(dt.year, dt.month, dt.day, h))
 
 
 def _get_planet_positions(julian_day: float) -> list[dict]:
@@ -403,7 +403,7 @@ def _build_aspect_timelines(
 
                 active_start = None
                 exact_date = None
-                exact_orb = 999
+                exact_orb: float = 999
                 applying_phase = True
 
                 for pt1, pt2 in zip(track1, track2):
@@ -460,7 +460,7 @@ def _build_aspect_timelines(
 
 def _detect_eclipses(planet_tracks: dict[str, list[PlanetPoint]]) -> list[dict]:
     """Detect solar/lunar eclipses."""
-    eclipses = []
+    eclipses: list = []
 
     if "Sun" not in planet_tracks or "Moon" not in planet_tracks:
         return eclipses
@@ -514,7 +514,7 @@ def _detect_eclipses(planet_tracks: dict[str, list[PlanetPoint]]) -> list[dict]:
 # =============================================================================
 
 def generate_astro_plot(
-    center_date: str = None,
+    center_date: str | None = None,
     window_days: int = 30,
     resolution: str = "daily",
     timezone: str = DEFAULT_TZ,
@@ -557,9 +557,9 @@ def generate_astro_plot(
         raise ValueError("Resolution must be 'daily' or 'hourly'")
 
     # Calculate all planet positions
-    planet_tracks = {p: [] for p in PLANETS_ORDER}
+    planet_tracks: dict[str, list] = {p: [] for p in PLANETS_ORDER}
     all_events = []
-    prev_points = {}
+    prev_points: dict = {}
 
     for date_str, datetime_str, dt in time_points:
         jul = _julian_day(dt.astimezone(datetime.UTC).replace(tzinfo=None))

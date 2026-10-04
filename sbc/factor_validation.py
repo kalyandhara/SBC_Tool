@@ -27,7 +27,7 @@ from sbc import stats as st
 HORIZONS = (1, 5, 20)
 
 
-def run(n_perm: int = st.N_PERMUTATIONS, horizons=HORIZONS, start: str | None = None,
+def run(n_perm: int = st.N_PERMUTATIONS, horizons: tuple[int, ...] = HORIZONS, start: str | None = None,
         end: str | None = None) -> dict:
     dates, closes, fps = rv.load_history(start, end)
     d0 = (dt.date.fromisoformat(dates[0]) - dt.timedelta(days=1)).isoformat()

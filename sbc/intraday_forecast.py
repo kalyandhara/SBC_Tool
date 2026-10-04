@@ -30,7 +30,9 @@ import datetime as dt
 import hashlib
 import json
 import math
+from collections.abc import Iterator
 from functools import lru_cache
+from typing import Any
 
 from sbc import kp_ephemeris as kpe
 from sbc.kp_intraday import (
@@ -79,7 +81,7 @@ def _sub_component(sublord: str, strength: float) -> float:
     return d * (0.5 + 0.5 * min(strength, 3.0) / 3.0)
 
 
-def _minutes(day: dt.date):
+def _minutes(day: dt.date) -> Iterator[dt.datetime]:
     t = dt.datetime.combine(day, SESSION_OPEN)
     end = dt.datetime.combine(day, SESSION_CLOSE)
     while t <= end:
@@ -114,12 +116,12 @@ def _sbc_readings(day_iso: str) -> tuple:
     return tuple(readings)
 
 
-def _sbc_at(readings, t: dt.time) -> float:
+def _sbc_at(readings: tuple[tuple[dt.time, float], ...], t: dt.time) -> float:
     net = readings[0][1]
     for rt, rn in readings:
         if t >= rt:
             net = rn
-    return net
+    return float(net)
 
 
 def build_forecast(day: dt.date, step: int = DEFAULT_STEP,
@@ -147,7 +149,7 @@ def build_forecast(day: dt.date, step: int = DEFAULT_STEP,
                 })
 
     # Horas touching the session, with aspect-modified quality.
-    horas = []
+    horas: list[dict[str, Any]] = []
     for i, (start, lord) in enumerate(schedule):
         end = schedule[i + 1][0] if i + 1 < len(schedule) else start + (schedule[1][0] - schedule[0][0])
         if end.time() <= SESSION_OPEN or start.time() >= SESSION_CLOSE:
@@ -165,7 +167,7 @@ def build_forecast(day: dt.date, step: int = DEFAULT_STEP,
             "chand_vat": lord in BENEFIC_HORAS and HORA_QUALITY_SCORE[quality.value] >= 0,
         })
 
-    def hora_at(t: dt.time):
+    def hora_at(t: dt.time) -> dict[str, Any] | None:
         clock = t.strftime("%H:%M")
         for h in horas:
             if h["start"] <= clock < h["end"]:
@@ -174,7 +176,7 @@ def build_forecast(day: dt.date, step: int = DEFAULT_STEP,
 
     readings = _sbc_readings(day.isoformat())
     by_minute = {m.time(): kp for m, kp in minutes}
-    trans_by_time = {}
+    trans_by_time: dict = {}
     for tr in transitions:
         trans_by_time.setdefault(tr["time"], []).append(tr)
 

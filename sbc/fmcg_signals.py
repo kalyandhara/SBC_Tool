@@ -8,6 +8,8 @@ Implements the validated planetary syntax from backtesting:
 5. Jupiter in water/earth signs
 """
 
+from typing import Any
+
 from .cgsp_framework import angular_distance, get_planet
 
 # =============================================================================
@@ -27,7 +29,7 @@ def check_fmcg_syntax(planets, tithi, sun, moon):
 
     from .nakshatra import paksha_of
 
-    results = {}
+    results: dict[str, Any] = {}
 
     # ---- 1. MOON SYNTAX ----
     moon_strong_sign = moon["sign"] in {"Taurus", "Cancer"}

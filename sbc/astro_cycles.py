@@ -26,7 +26,7 @@ CYCLE_PLANETS = ("Mercury", "Moon")
 DEFAULT_SL_POINTS = 15.0
 
 
-def _safe_tz(tz_name: str):
+def _safe_tz(tz_name: str) -> ZoneInfo:
     try:
         return ZoneInfo(tz_name)
     except ZoneInfoNotFoundError:
@@ -105,7 +105,7 @@ def moon_ingress_bars(
     tz = _safe_tz(tz_name)
     day = datetime.date.fromisoformat(date_str) if isinstance(date_str, str) else date_str
 
-    def _moon_nakshatra(minutes: int):
+    def _moon_nakshatra(minutes: int) -> str | None:
         jd = _jd_utc(day, minutes, tz)
         planets, _ = positions(jd)
         moon = next((p for p in planets if p["name"] == "Moon"), None)

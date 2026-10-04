@@ -28,7 +28,7 @@ THURSDAY, SUNDAY = 3, 6
 
 def _jd(t_ist: dt.datetime) -> float:
     u = t_ist - IST
-    return swe.julday(u.year, u.month, u.day, u.hour + u.minute / 60 + u.second / 3600)
+    return float(swe.julday(u.year, u.month, u.day, u.hour + u.minute / 60 + u.second / 3600))
 
 
 def _ist(jd: float) -> dt.datetime:
@@ -38,7 +38,7 @@ def _ist(jd: float) -> dt.datetime:
 
 def _moon_lon(jd: float) -> float:
     swe.set_sid_mode(swe.SIDM_LAHIRI)
-    return swe.calc_ut(jd, swe.MOON, swe.FLG_MOSEPH | swe.FLG_SIDEREAL)[0][0] % 360.0
+    return float(swe.calc_ut(jd, swe.MOON, swe.FLG_MOSEPH | swe.FLG_SIDEREAL)[0][0]) % 360.0
 
 
 def _in_nakshatra(jd: float, index: int) -> bool:

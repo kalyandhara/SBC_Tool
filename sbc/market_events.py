@@ -69,7 +69,7 @@ def applying_or_separating(
     separating = moving away, stationary = unchanged. Returns None when the
     previous separation is unknown.
     """
-    if separation_prev is None:
+    if separation_prev is None or separation_now is None:
         return None
     now_gap = abs(separation_now - target_angle)
     prev_gap = abs(separation_prev - target_angle)

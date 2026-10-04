@@ -1,16 +1,16 @@
 """OHLC cache + fallback for NIFTY/BANK NIFTY backtesting."""
 import csv
 import random
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, date, datetime, timedelta
 from pathlib import Path
 
 DATA_DIR = Path("data/ohlc")
 DATA_DIR.mkdir(parents=True, exist_ok=True)
 
-def _file_path(symbol: str, date: datetime):
+def _file_path(symbol: str, date: datetime) -> Path:
     return DATA_DIR / f"{symbol}_{date.strftime('%Y-%m-%d')}.csv"
 
-def ensure_week_cache(symbol: str = "NIFTY", days: int = 7):
+def ensure_week_cache(symbol: str = "NIFTY", days: int = 7) -> list[Path]:
     """Explicitly generate sample 3-min bars for the last `days` weekdays (CLI/test use)."""
     files = []
     for i in range(days):
@@ -25,10 +25,10 @@ def ensure_week_cache(symbol: str = "NIFTY", days: int = 7):
         files.append(fp)
     return files
 
-def generate_sample_ohlc(fp: Path, date):
+def generate_sample_ohlc(fp: Path, day: date) -> None:
     """Generate 3-min bars for a trading day 09:15-15:30."""
     start_price = 25000 + random.randint(-500, 500)
-    price = start_price
+    price: float = start_price
     rows = []
     minutes = list(range(9*60+15, 15*60+30, 3))
     for m in minutes:
@@ -41,13 +41,13 @@ def generate_sample_ohlc(fp: Path, date):
         hh = m // 60
         mm = m % 60
         time_str = f"{hh:02d}:{mm:02d}"
-        rows.append([date.isoformat(), time_str, round(open_p,2), round(high_p,2), round(low_p,2), round(close_p,2), random.randint(1000,10000)])
+        rows.append([day.isoformat(), time_str, round(open_p,2), round(high_p,2), round(low_p,2), round(close_p,2), random.randint(1000,10000)])
     with open(fp, 'w', newline='') as f:
         w = csv.writer(f)
         w.writerow(["date","time","open","high","low","close","volume"])
         w.writerows(rows)
 
-def load_week_ohlc(symbol: str = "NIFTY", days: int = 7):
+def load_week_ohlc(symbol: str = "NIFTY", days: int = 7) -> list[dict[str, str]]:
     """Read cached 3-min bars for the last `days` weekdays (read-only).
 
     Never fabricates data: days without a cached file are simply skipped.
