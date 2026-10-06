@@ -492,6 +492,11 @@ Git warns "LF will be replaced by CRLF" on 14 files. Add a `.gitattributes`
 
 ---
 
+## Follow-on backlog
+
+B-40…B-48 (monthly NIFTY projection, ingested 2026-10-05) live in
+`docs/BACKLOG_MONTHLY_PROJECTION_2026-10-05.md`.
+
 ## Suggested order of work
 
 | Sprint | Items | Outcome |

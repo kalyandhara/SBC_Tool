@@ -5,6 +5,7 @@ document.addEventListener('DOMContentLoaded',()=>{
   const startEl=document.getElementById('rk-start');
   const endEl=document.getElementById('rk-end');
   const heatDiv=document.getElementById('rk-heatmap');
+  const escapeHtml=v=>String(v??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
   if(!runBtn) return;
   const today=new Date();
   const fmt=d=>isoDateOf(d);
@@ -49,8 +50,7 @@ document.addEventListener('DOMContentLoaded',()=>{
       html+=`<th style="padding:4px;border:1px solid #334155">Rahu/Ketu Status</th>`;
       html+=`</tr></thead><tbody>`;
       calendar.forEach(day=>{
-        const date=day.date;
-        if(!isTradingDay(date)) return;
+        const date=day.date;  // the API returns NSE sessions only
         const dayNameStr=dayName(date);
         const nse='<span style="color:#22c55e">✓ Open</span>';
         html+=`<tr>`;
@@ -73,7 +73,8 @@ document.addEventListener('DOMContentLoaded',()=>{
         const firstSig=(day.signals||[])[0];
         const rahuN=firstSig?.rahu_nakshatra||'-';
         const ketuN=firstSig?.ketu_nakshatra||'-';
-        html+=`<td style="padding:4px;border:1px solid #334155;font-size:10px">Rahu:${rahuN}<br>Ketu:${ketuN}</td>`;
+        const stations=(day.node_stations||[]).map(t=>`<br><span style="color:#f97316">${escapeHtml(t)}</span>`).join('');
+        html+=`<td style="padding:4px;border:1px solid #334155;font-size:10px">Rahu:${rahuN}<br>Ketu:${ketuN}${stations}</td>`;
         html+=`</tr>`;
       });
       html+=`</tbody></table>`;

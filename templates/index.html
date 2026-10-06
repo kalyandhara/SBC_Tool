@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <link rel="icon" type="image/svg+xml" href="/static/favicon.svg">
   <title>Sarvatobhadra Chakra - Market Prediction</title>
-  <link rel="stylesheet" href="/static/style.css?v=22">
+  <link rel="stylesheet" href="/static/style.css?v=23">
   <script src="/static/chart.umd.min.js"></script>
   <script src="/static/js/api-token.js"></script>
 </head>
@@ -1239,6 +1239,31 @@
         <p id="calendar-stored" class="analog-note"></p>
         <div id="calendar-results"></div>
       </section>
+      <section class="panel analog-lab" id="planet-motion">
+        <div class="panel-head">
+          <h2>Planet Motion</h2>
+          <span class="panel-sub">Stations to the minute (IST, true-node Rahu included), and daily declination, ecliptic latitude and speed at 09:15 IST.</span>
+        </div>
+        <div class="analog-banner" role="note">
+          <strong>Display only.</strong>
+          None of these series has been tested as a predictor.
+        </div>
+        <form id="pm-form" class="research-controls">
+          <label>Start <input type="date" id="pm-start"></label>
+          <label>End <input type="date" id="pm-end"></label>
+          <label>Chart
+            <select id="pm-metric">
+              <option value="declination" selected>Declination (Kranti)</option>
+              <option value="latitude">Ecliptic latitude (Śara)</option>
+              <option value="speed">Speed (°/day)</option>
+            </select>
+          </label>
+          <button type="submit" class="btn">Show</button>
+        </form>
+        <div id="pm-status" class="nifty-chart-status" role="status" aria-live="polite"></div>
+        <div id="pm-stations"></div>
+        <div id="pm-chart" class="ifc-chart pm-chart" aria-label="Planet series chart"></div>
+      </section>
     </div>
 
     <div id="tab-swing" class="tab-pane" role="tabpanel">
@@ -1292,11 +1317,12 @@
   <script src="/static/js/analog-lab.js?v=2"></script>
   <script src="/static/js/forecast-card.js?v=2"></script>
   <script src="/static/js/forward-calendar.js?v=3"></script>
+  <script src="/static/js/planet-series.js?v=1"></script>
   <script src="/static/js/swing-windows.js?v=4"></script>
   <script src="/static/js/birth-city.js?v=2"></script>
   <script src="/static/js/profiles-habits.js?v=2"></script>
   <script src="/static/js/trading-signals.js?v=2"></script>
-  <script src="/static/js/rahu-ketu-trap.js?v=2"></script>
+  <script src="/static/js/rahu-ketu-trap.js?v=3"></script>
   <footer class="site-footer">
     <div class="wrap">
       <small>For informational purposes only. Astrological market timing is not financial advice. Trade at your own risk.</small>

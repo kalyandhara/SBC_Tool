@@ -3251,3 +3251,5 @@ a:focus-visible,
 }
 .asof-badge.ok { color: var(--green); background: color-mix(in srgb, var(--green) 10%, transparent); }
 .asof-badge.stale { color: var(--accent); background: color-mix(in srgb, var(--accent) 14%, transparent); }
+.pm-chart { height: 460px; }
+@media (max-width: 700px) { .pm-chart { height: 380px; } }

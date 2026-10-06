@@ -232,6 +232,52 @@ def forward_calendar():
     return jsonify({**cal, "freshness": data_freshness.stamp(cal.get("data_as_of"))}), 200
 
 
+def _date_range_args(default_days: int) -> tuple[datetime.date, datetime.date]:
+    """?start (default: the 1st of this month) and ?end (default: start + default_days - 1)."""
+    today = datetime.date.today()
+    start = datetime.date.fromisoformat(request.args.get("start") or today.replace(day=1).isoformat())
+    raw_end = request.args.get("end")
+    end = (datetime.date.fromisoformat(raw_end) if raw_end
+           else start + datetime.timedelta(days=default_days - 1))
+    return start, end
+
+
+@engine_bp.route("/planet_series")
+def planet_series():
+    """Daily declination, ecliptic latitude or speed per planet at 09:15 IST (B-45).
+
+    ?metric=declination|latitude|speed (default declination) &start=&end= (max 400 days;
+    default the 35 days from the 1st of this month).
+    """
+    from sbc import planet_series as ps
+
+    try:
+        start, end = _date_range_args(35)
+        result = ps.series(request.args.get("metric", "declination"), start, end)
+    except ValueError as exc:
+        msg = str(exc) if "metric" in str(exc) or "days" in str(exc) else "start and end must be YYYY-MM-DD"
+        return jsonify({"error": msg}), 400
+    return jsonify(result), 200
+
+
+@engine_bp.route("/stations")
+def stations():
+    """Planetary stations to the minute, IST, true-node Rahu included (B-42).
+
+    ?start=&end= (inclusive, max 10 years; default the 35 days from the 1st of this month).
+    """
+    from sbc import stations as st
+
+    try:
+        start, end = _date_range_args(35)
+        rows = st.between(start, end + datetime.timedelta(days=1))
+    except ValueError:
+        return jsonify({"error": "start and end must be YYYY-MM-DD, end on or after start, "
+                                 "at most ten years"}), 400
+    return jsonify({"start": start.isoformat(), "end": end.isoformat(), "zodiac": "sidereal (Lahiri)",
+                    "count": len(rows), "stations": rows}), 200
+
+
 @engine_bp.route("/calendar/reports")
 def calendar_reports():
     """Weekly calendars written by the scheduler, newest first."""
