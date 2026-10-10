@@ -34,7 +34,7 @@ document.addEventListener('DOMContentLoaded', function(){
     const url = new URL('/api/cities/search', window.location.origin);
     url.searchParams.set('q', q);
     if(country) url.searchParams.set('country', country);
-    const res = await fetch(url);
+    const res = await fetchWithTimeout(url);
     if(!res.ok) return [];
     return await res.json();
   }

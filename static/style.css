@@ -2801,20 +2801,33 @@ body {
 /* Monthly Sector Confluence Heatmap */
 .monthly-heatmap-controls { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; margin-bottom: 12px; }
 .monthly-heatmap-controls label { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--muted); }
-.monthly-heatmap-legend { margin-bottom: 8px; font-size: 11px; color: var(--muted); }
+.monthly-heatmap-legend { margin-bottom: 8px; font-size: 11px; color: var(--muted); display: flex; flex-wrap: wrap; gap: 12px; align-items: center; }
+.monthly-heatmap-legend label { display: flex; align-items: center; gap: 4px; cursor: pointer; }
 .monthly-heatmap-grid { overflow-x: auto; }
-.mh-table { display: table; border-collapse: separate; border-spacing: 2px; }
-.mh-row { display: table-row; }
-.mh-corner, .mh-head-cell, .mh-sector-cell, .mh-cell, .mh-lunar-cell {
-  display: table-cell; padding: 4px 6px; font-size: 10px; text-align: center;
-  border-radius: 4px; vertical-align: middle;
+.mh-grid { display: grid; gap: 2px; align-items: center; min-width: max-content; }
+.mh-corner, .mh-date, .mh-sector-cell, .mh-cell, .mh-lunar-cell, .mh-total {
+  font-size: 10px; line-height: 1.2; border-radius: 3px; min-height: 18px;
+  display: flex; align-items: center;
 }
-.mh-corner { font-weight: 700; color: var(--muted); text-align: right; white-space: nowrap; }
-.mh-head-cell { color: var(--muted); font-weight: 600; min-width: 26px; background: var(--bg2); }
-.mh-sector-cell { text-align: right; font-weight: 600; color: var(--text); white-space: nowrap; min-width: 130px; }
-.mh-cell { min-width: 34px; color: var(--text); font-variant-numeric: tabular-nums; background: rgba(128,128,128,0.06); }
-.mh-lunar-strip { margin-top: 8px; }
-.mh-lunar-cell { min-width: 26px; max-width: 90px; font-size: 8px; line-height: 1.2; color: var(--muted); background: var(--bg2); }
+.mh-corner { font-weight: 700; color: var(--muted); justify-content: flex-end; white-space: nowrap; padding-right: 6px; }
+.mh-date { color: var(--muted); justify-content: center; font-variant-numeric: tabular-nums; }
+.mh-sector-cell { font-weight: 600; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; justify-content: flex-end; padding: 0 6px; cursor: pointer; }
+.mh-sector-cell:hover { color: #a5b4fc; }
+.mh-overall { color: var(--text); font-style: italic; }
+.mh-total { padding: 0 4px; }
+.mh-cell { height: 18px; background: rgba(128,128,128,0.07); }
+.mh-cell:hover, .mh-lunar-cell:hover { outline: 1px solid var(--muted); }
+.mh-lunar-cell { justify-content: center; font-size: 11px; background: transparent; cursor: pointer; }
+.mh-lunar-cell:empty { cursor: default; }
+.mh-bar { display: flex; align-items: center; gap: 6px; width: 100%; }
+.mh-bar-track { position: relative; flex: 1; height: 8px; background: rgba(128,128,128,0.10); border-radius: 2px; }
+.mh-bar-track::after { content: ""; position: absolute; left: 50%; top: -2px; bottom: -2px; width: 1px; background: var(--muted); }
+.mh-bar-fill { position: absolute; top: 0; bottom: 0; border-radius: 2px; }
+.mh-pos { left: 50%; background: rgba(34,197,94,0.75); }
+.mh-neg { right: 50%; background: rgba(239,68,68,0.75); }
+.mh-bar-val { min-width: 36px; text-align: right; font-variant-numeric: tabular-nums; color: var(--muted); }
+.mh-lunar-key { font-size: 11px; color: var(--muted); margin-top: 8px; }
+#mh-lunar-detail { margin-top: 8px; padding: 8px; background: #0b1220; border: 1px solid #1e293b; border-radius: 8px; font-size: 12px; color: #c7d2fe; white-space: pre-wrap; min-height: 2.5em; }
 
 /* Birth Data Entry Form */
 .birth-data-panel {
@@ -3251,3 +3264,5 @@ a:focus-visible,
 }
 .asof-badge.ok { color: var(--green); background: color-mix(in srgb, var(--green) 10%, transparent); }
 .asof-badge.stale { color: var(--accent); background: color-mix(in srgb, var(--accent) 14%, transparent); }
+.pm-chart { height: 460px; }
+@media (max-width: 700px) { .pm-chart { height: 380px; } }

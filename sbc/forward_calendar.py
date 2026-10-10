@@ -9,9 +9,10 @@
       days          per calendar day: sky events; trading days add rule/analog leans and flags
     }
 
-Events come from consecutive daily fingerprints (09:15 IST), so an ingress or
-station is dated to the first 09:15 after it. Exact aspects are the day whose
-orb is the local minimum (< 1 deg); the Moon is left out.
+Events come from consecutive daily fingerprints (09:15 IST), so an ingress is
+dated to the first 09:15 after it. Stations come from sbc.stations, timed to
+the minute on their IST date and including the true-node Rahu. Exact aspects
+are the day whose orb is the local minimum (< 1 deg); the Moon is left out.
 
 render_markdown / render_html turn the result into a report, and write()
 stores both under reports/calendar/. The run_app.py loop calls generate_if_due()
@@ -28,6 +29,7 @@ from pathlib import Path
 from sbc import analogs as an
 from sbc import daily_ledger, fingerprint_store, market_store, research_reports
 from sbc import forecast as fc
+from sbc import stations as st
 from sbc.market_holidays import holiday_name, is_trading_day, next_trading_day
 
 IST = market_store.IST
@@ -54,8 +56,13 @@ def _aspect_orbs(fp: dict) -> dict[tuple, float]:
             if "Moon" not in (a["a"], a["b"])}
 
 
-def events_between(prev: dict, cur: dict, nxt: dict | None) -> list[str]:
-    """Sky events dated to `cur` (compared with the day before and, for exact aspects, after)."""
+def events_between(prev: dict, cur: dict, nxt: dict | None,
+                   stations: list[dict] | None = None) -> list[str]:
+    """Sky events dated to `cur` (compared with the day before and, for exact aspects, after).
+
+    `stations` (sbc.stations rows for cur's IST date) replaces the fingerprint
+    station check, which can only see a station at the next 09:15.
+    """
     out = []
     pp, cp = prev["planets"], cur["planets"]
     for n in INGRESS:
@@ -64,9 +71,12 @@ def events_between(prev: dict, cur: dict, nxt: dict | None) -> list[str]:
     for n in NAKSHATRA_CHANGE:
         if pp[n]["nakshatra"] != cp[n]["nakshatra"]:
             out.append(f"{n} enters {cp[n]['nakshatra_name']} nakshatra")
-    for n in STATIONS:
-        if pp[n]["retrograde"] != cp[n]["retrograde"]:
-            out.append(f"{n} stations {'retrograde' if cp[n]['retrograde'] else 'direct'}")
+    if stations is not None:
+        out += [f"{s['label']} IST" for s in stations]
+    else:
+        for n in STATIONS:
+            if pp[n]["retrograde"] != cp[n]["retrograde"]:
+                out.append(f"{n} stations {'retrograde' if cp[n]['retrograde'] else 'direct'}")
     if nxt is not None:
         before, after = _aspect_orbs(prev), _aspect_orbs(nxt)
         for key, orb in sorted(_aspect_orbs(cur).items()):
@@ -110,6 +120,7 @@ def build(start: str | None = None, weeks: int = 4, now: dt.datetime | None = No
     history = history or an.load_nifty_history()
 
     fps = _fingerprints(first - dt.timedelta(days=1), end + dt.timedelta(days=1))
+    exact_stations = st.by_date(first, end)
     entry_close = float(history.closes[-1])
     vix_rows = market_store.get_daily("INDIAVIX", end=history.dates[-1])
     vix = vix_rows[-1]["close"] if vix_rows else None
@@ -119,7 +130,8 @@ def build(start: str | None = None, weeks: int = 4, now: dt.datetime | None = No
         day = dt.date.fromisoformat(fps[i]["date"])
         row: dict = {"date": day.isoformat(), "weekday": day.strftime("%a"),
                      "trading": is_trading_day(day), "holiday": holiday_name(day),
-                     "events": events_between(fps[i - 1], fps[i], fps[i + 1])}
+                     "events": events_between(fps[i - 1], fps[i], fps[i + 1],
+                                               exact_stations.get(day.isoformat(), []))}
         if row["trading"]:
             sessions += 1
             f = fc.forecast(day.isoformat(), 1, history=history)

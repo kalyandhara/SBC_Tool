@@ -164,6 +164,10 @@ def generate_calendar(start_date: str, end_date: str, industries: list[str] | No
     start = datetime.date.fromisoformat(start_date)
     end = datetime.date.fromisoformat(end_date)
     delta = datetime.timedelta(days=1)
+    # True-node stations to the minute (B-42), within a day of each session.
+    # Shown for reference only: they don't change the trap score.
+    from sbc.stations import by_date
+    node_stations = by_date(start - delta, end + delta, ("Rahu",))
     calendar = []
     cur = start
     while cur <= end:
@@ -178,6 +182,9 @@ def generate_calendar(start_date: str, end_date: str, industries: list[str] | No
             "signals": [asdict(s) for s in signals],
             "red_count": sum(1 for s in signals if s.level == "RED"),
             "orange_count": sum(1 for s in signals if s.level == "ORANGE"),
+            "node_stations": [f"{r['date']} {r['label']} IST"
+                              for k in (-1, 0, 1)
+                              for r in node_stations.get((cur + k * delta).isoformat(), [])],
         }
         calendar.append(day_entry)
         cur += delta

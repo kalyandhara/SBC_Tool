@@ -11,6 +11,11 @@ const HEAVY_ENDPOINTS = [
   "/api/prediction", "/api/futurecast", "/api/bullish_futurecast", "/api/sector_vedha",
   "/api/largecap_divergence", "/api/kp_intraday_report", "/api/engine/intraday_path",
   "/api/monthly_heatmap", "/api/weekly_commentary", "/api/lunar_forecast",
+  // Called from static/js (formerly inline in index.html, which used plain fetch):
+  // yfinance downloads, per-month heatmaps and chart rendering can exceed 8 s.
+  "/api/astro/personal", "/api/backtest", "/api/signal/moon", "/api/price",
+  "/api/vedha_daily", "/api/daily_confluence", "/api/nakshatra_chart",
+  "/api/intraday_projection", "/api/rahu_ketu_trap_calendar",
 ];
 
 // fetchWithTimeout(url), (url, options), (url, timeoutMs) or (url, options, timeoutMs).
@@ -1644,6 +1649,7 @@ function copyLunarForecast() {
     return;
   }
   const text = window.currentLunarClipboardText;
+  if (!navigator.clipboard) { showToast("Clipboard isn't available in this browser"); return; }
   navigator.clipboard.writeText(text).then(() => {
     showToast("Copied to clipboard!");
   }).catch(() => {
@@ -1658,11 +1664,16 @@ function shareLunarForecast() {
   }
   const text = window.currentLunarSocialText || "";
   if (navigator.share) {
-    navigator.share({ title: "Lunar Cycle Sector Forecast", text: text });
-  } else {
+    // Rejects when the user cancels the share sheet; nothing to report then.
+    navigator.share({ title: "Lunar Cycle Sector Forecast", text: text }).catch(() => {});
+  } else if (navigator.clipboard) {
     navigator.clipboard.writeText(text).then(() => {
       showToast("Copied for sharing!");
+    }).catch(() => {
+      showToast("Couldn't copy (clipboard blocked); select the text instead");
     });
+  } else {
+    showToast("Sharing isn't available in this browser");
   }
 }
 
@@ -3736,7 +3747,7 @@ function renderKPIntradayReport(data) {
   $("kp-intraday").classList.remove("hidden");
 }
 
-async function loadKPIntradayReport(date, instrument, format) {
+async function loadKPIntradayReport(date, instrument, format, closedNote) {
   if (format === 'docx') {
     // Word export is a file download, not something to render in the panel.
     window.open('/api/kp_intraday_report?date=' + encodeURIComponent(date) +
@@ -3745,6 +3756,8 @@ async function loadKPIntradayReport(date, instrument, format) {
   }
 
   const content = $("kp-intraday-content");
+  // The date asked for; a closed day loads the next session but stays "asked for".
+  if (content && !closedNote) content.dataset.requestedDate = date;
   if (content) {
     content.className = "kp-intraday-content panel-loading";
     content.textContent = `Generating KP Intraday Trend Change Prediction Report for ${date} (${instrument})...`;
@@ -3752,23 +3765,126 @@ async function loadKPIntradayReport(date, instrument, format) {
   try {
     const url = `/api/kp_intraday_report?date=${encodeURIComponent(date)}&instrument=${encodeURIComponent(instrument)}&format=${encodeURIComponent(format)}`;
     const response = await fetchWithTimeout(url);
+    if (response.status === 400 && !closedNote) {
+      // NSE closed (weekend/holiday): show the next session instead of an error.
+      const err = await response.clone().json().catch(() => ({}));
+      if (err.next_trading_day) {
+        const dateEl = $("kp-intraday-date");
+        if (dateEl) dateEl.value = err.next_trading_day;
+        return loadKPIntradayReport(err.next_trading_day, instrument, format,
+          `${err.error}; showing the next session, ${err.next_trading_day}.`);
+      }
+    }
     if (format === 'html') {
       if (!response.ok) throw new Error("unavailable (HTTP " + response.status + ")");
       const html = await response.text();
       $("kp-intraday-content").className = "kp-intraday-content";
       $("kp-intraday-content").innerHTML = html;
       $("kp-intraday-content").dataset.reportDate = date;
+      if (closedNote) showKPClosedNote(closedNote);
     } else {
       const data = await response.json();
       if (data.error) throw new Error(data.error);
       renderKPIntradayReport(data);
       content.dataset.reportDate = date;
+      if (closedNote) showKPClosedNote(closedNote);
     }
   } catch (e) {
     console.error("KP Intraday report failed:", e);
     if (content) {
       content.className = "kp-intraday-content panel-error";
       content.textContent = "KP Intraday report is unavailable. Try running the report again.";
+    }
+  }
+}
+
+function showKPClosedNote(text) {
+  const content = $("kp-intraday-content");
+  if (!content) return;
+  const note = document.createElement("p");
+  note.className = "experimental-note";
+  note.textContent = text;
+  content.prepend(note);
+}
+
+function showKPNiftyClosedNote(text) {
+  const content = $("kp-nifty-content");
+  if (!content) return;
+  const note = document.createElement("p");
+  note.className = "experimental-note";
+  note.textContent = text;
+  content.prepend(note);
+}
+
+async function loadKPIntradayReportNifty(date, format, closedNote) {
+  const instrument = "NIFTY";
+  if (format === 'docx') {
+    window.open('/api/kp_intraday_report?date=' + encodeURIComponent(date) +
+      '&instrument=' + encodeURIComponent(instrument) + '&format=docx', '_blank');
+    return;
+  }
+  const content = $("kp-nifty-content");
+  if (content && !closedNote) content.dataset.requestedDate = date;
+  if (content) {
+    content.className = "kp-intraday-content panel-loading";
+    content.textContent = `Generating KP Intraday Trend Change Prediction Report for ${date} (${instrument})...`;
+  }
+  try {
+    const url = `/api/kp_intraday_report?date=${encodeURIComponent(date)}&instrument=${encodeURIComponent(instrument)}&format=${encodeURIComponent(format)}`;
+    const response = await fetchWithTimeout(url);
+    if (response.status === 400 && !closedNote) {
+      const err = await response.clone().json().catch(() => ({}));
+      if (err.next_trading_day) {
+        const dateEl = $("kp-nifty-date");
+        if (dateEl) dateEl.value = err.next_trading_day;
+        return loadKPIntradayReportNifty(err.next_trading_day, format, `${err.error}; showing the next session, ${err.next_trading_day}.`);
+      }
+    }
+    if (format === 'html') {
+      if (!response.ok) throw new Error("unavailable (HTTP " + response.status + ")");
+      const html = await response.text();
+      $("kp-nifty-content").className = "kp-intraday-content";
+      $("kp-nifty-content").innerHTML = html;
+      $("kp-nifty-content").dataset.reportDate = date;
+      if (closedNote) showKPNiftyClosedNote(closedNote);
+    } else {
+      const data = await response.json();
+      if (data.error) throw new Error(data.error);
+      // Render JSON into panel
+      const content = $("kp-nifty-content");
+      if (content) {
+        content.className = "kp-intraday-content";
+        content.innerHTML = `<pre style="white-space:pre-wrap;font-size:11px">${JSON.stringify(data, null, 2)}</pre>`;
+      }
+      if (closedNote) showKPNiftyClosedNote(closedNote);
+    }
+  } catch (e) {
+    console.error("KP NIFTY report failed:", e);
+    if (content) {
+      content.className = "kp-intraday-content panel-error";
+      content.textContent = "KP Intraday report for NIFTY is unavailable. Try running the report again.";
+    }
+  }
+}
+
+async function generateKPSampleDataNifty(date) {
+  const content = $("kp-nifty-content");
+  try {
+    if (content) { content.className = "kp-intraday-content panel-loading"; content.textContent = "Computing KP data from Swiss Ephemeris…"; }
+    const response = await fetchWithTimeout("/api/kp_intraday_sample", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ date })
+    });
+    const data = await response.json();
+    if (data.error && response.status !== 409) throw new Error(data.error);
+    // Load NIFTY report after generation
+    loadKPIntradayReportNifty(date, $("kp-nifty-format") ? $("kp-nifty-format").value : "html");
+  } catch (e) {
+    console.error("KP NIFTY data generation failed:", e);
+    if (content) {
+      content.className = "kp-intraday-content panel-error";
+      content.textContent = `KP data could not be generated: ${e.message}`;
     }
   }
 }
@@ -3812,6 +3928,74 @@ if ($("kp-intraday-sample")) {
     if (date) generateKPSampleData(date);
   });
 }
+
+// KP NIFTY-only page listeners
+if ($("kp-nifty-run")) {
+  $("kp-nifty-run").addEventListener("click", () => {
+    const date = ($("kp-nifty-date") && $("kp-nifty-date").value) || ($("date") && $("date").value);
+    const instrument = "NIFTY";
+    const format = $("kp-nifty-format") ? $("kp-nifty-format").value : "html";
+    if (date) {
+      // Re-use the existing loader but render into the NIFTY content panel
+      loadKPIntradayReportNifty(date, format);
+    }
+  });
+}
+
+if ($("kp-nifty-sample")) {
+  $("kp-nifty-sample").addEventListener("click", () => {
+    const date = ($("kp-nifty-date") && $("kp-nifty-date").value) || ($("date") && $("date").value);
+    if (date) generateKPSampleDataNifty(date);
+  });
+}
+
+// Sync KP NIFTY date with main Date control
+function syncKPNiftyDate() {
+  const mainDate = $("date") && $("date").value;
+  const kpNiftyDate = $("kp-nifty-date");
+  if (kpNiftyDate && mainDate && (!kpNiftyDate.value || kpNiftyDate.value === "")) {
+    kpNiftyDate.value = mainDate;
+  }
+}
+if ($("date") && $("kp-nifty-date")) {
+  // Initialize on load
+  syncKPNiftyDate();
+  // Update when main date changes
+  $("date").addEventListener("change", syncKPNiftyDate);
+}
+
+// Crash Windows default one-month forward window
+function initCrashWindowsDefaults() {
+  const startEl = $("crash-start-date");
+  const endEl = $("crash-end-date");
+  if (!startEl || !endEl) return;
+  const todayISO = localTodayISO();
+  if (!startEl.value) startEl.value = todayISO;
+  if (!endEl.value) {
+    const today = new Date(todayISO + "T00:00:00");
+    const oneMonthLater = new Date(today);
+    oneMonthLater.setMonth(oneMonthLater.getMonth() + 1);
+    const endISO = oneMonthLater.toISOString().slice(0,10);
+    endEl.value = endISO;
+  }
+  // Optional generate handler – updates report header with chosen period
+  const genBtn = $("crash-generate");
+  if (genBtn) {
+    genBtn.addEventListener("click", () => {
+      const s = startEl.value;
+      const e = endEl.value;
+      const txt = $("crash-report-text");
+      if (txt && s && e) {
+        // Simple header update – real generation would call backend
+        const header = `Indicative Market Crash Windows — Planetary Combinations\nPeriod analysed: ${s.replace(/-/g,'-')} to ${e.replace(/-/g,'-')}    |    Generated: ${todayISO}    |    Sidereal (Lahiri), mean nodes\n`;
+        // Preserve existing content after first line
+        const rest = txt.textContent.split('\n').slice(2).join('\n');
+        txt.textContent = header + rest;
+      }
+    });
+  }
+}
+document.addEventListener("DOMContentLoaded", initCrashWindowsDefaults);
 
 if ($("kp-intraday-path")) {
   $("kp-intraday-path").addEventListener("click", async () => {
@@ -4061,8 +4245,8 @@ function initWorkspaceTabs() {
       }
       const targetDate = (dateEl && dateEl.value) || globalDate;
       const content = $("kp-intraday-content");
-      const kpStale = content && targetDate && content.dataset.reportDate &&
-                      content.dataset.reportDate !== targetDate;
+      const shownFor = content && (content.dataset.requestedDate || content.dataset.reportDate);
+      const kpStale = content && targetDate && shownFor && shownFor !== targetDate;
       if (content && (kpStale || !content.innerHTML.trim() || content.querySelector(".kp-error"))) {
         const inst = $("kp-intraday-instrument") ? $("kp-intraday-instrument").value : "NIFTY";
         const fmt = $("kp-intraday-format") ? $("kp-intraday-format").value : "html";
@@ -4672,135 +4856,178 @@ function heatColor(net, maxAbs) {
   return "rgba(128,128,128,0.08)"; // neutral
 }
 
+let mhLastData = null;
+let mhShowAll = false;
+
 function renderMonthlyHeatmap(data) {
+  mhLastData = data;
+  drawMonthlyHeatmap();
+}
+
+// Strong-day cut-off: the top quartile of |net| across all sector cells.
+// Anything weaker stays blank so the coloured cells are the signal.
+function mhThreshold(values) {
+  const abs = values.map(v => Math.abs(v)).filter(v => v > 0).sort((a, b) => a - b);
+  if (!abs.length) return 0;
+  return abs[Math.floor(0.75 * (abs.length - 1))];
+}
+
+function mhLunarIcons(markers, bhadraActive) {
+  const labels = (markers || []).map(m => m.label || "");
+  const icons = [];
+  if (labels.includes("FULL MOON")) icons.push("\u{1F315}");
+  if (labels.includes("NEW MOON")) icons.push("\u{1F311}");
+  if (labels.includes("EKADASHI")) icons.push("11\uFE0F\u20E3");
+  if (labels.includes("ASHTAMI")) icons.push("8\uFE0F\u20E3");
+  if (labels.includes("CHATURDASHI")) icons.push("14\uFE0F\u20E3");
+  if (bhadraActive) icons.push("\u26A0");
+  return icons.join(" ");
+}
+
+function drawMonthlyHeatmap() {
+  const data = mhLastData;
   const gridEl = $("monthly-heatmap-grid");
   const lunarEl = $("monthly-heatmap-lunar");
   const legendEl = $("monthly-heatmap-legend");
-  if (!gridEl) return;
-  gridEl.innerHTML = "";
-  lunarEl.innerHTML = "";
+  if (!gridEl || !data) return;
 
   const sectors = data.sectors || [];
   const dates = data.dates || [];
   const matrix = data.matrix || {};
-  const overall = data.overall_by_day || {};
-
-  // Absolute max for colour scale.
-  let maxAbs = 0;
-  for (const s of sectors) {
-    for (const d of dates) {
-      const v = matrix[s] ? matrix[s][d] : 0;
-      if (Math.abs(v) > maxAbs) maxAbs = Math.abs(v);
-    }
-  }
-  legendEl.innerHTML =
-    '<span class="mh-legend-note">Cell = combined confluence net (green bullish / red bearish).</span>';
-
-  // Build grid: header row (dates) + one row per sector.
-  const grid = document.createElement("div");
-  grid.className = "mh-table";
-
-  // Header
-  const head = document.createElement("div");
-  head.className = "mh-row mh-head";
-  head.appendChild(mkCell("mh-corner", "Sector ↓ / Day →"));
-  for (const d of dates) {
-    const day = d.slice(8);
-    head.appendChild(mkCell("mh-head-cell", day, d));
-  }
-  grid.appendChild(head);
-
-  for (const s of sectors) {
-    const row = document.createElement("div");
-    row.className = "mh-row";
-    row.appendChild(mkCell("mh-sector-cell", s, s));
-    for (const d of dates) {
-      const v = matrix[s] ? (matrix[s][d] == null ? 0 : matrix[s][d]) : 0;
-      const cell = document.createElement("div");
-      cell.className = "mh-cell";
-      cell.style.background = heatColor(v, maxAbs);
-      cell.title = `${s} · ${d} · net ${v >= 0 ? "+" : ""}${v.toFixed(2)}`;
-      cell.textContent = v >= 0 ? "+" + v.toFixed(1) : v.toFixed(1);
-      row.appendChild(cell);
-    }
-    grid.appendChild(row);
-  }
-  gridEl.appendChild(grid);
-
-  // Lunar timing strip (per-day markers).
-  const strip = document.createElement("div");
-  strip.className = "mh-lunar-strip";
-  const legend = document.createElement("div");
-  legend.style.cssText = "margin-bottom:6px;font-size:11px;color:#94a3b8";
-  legend.innerHTML = "🌙 Nakshatra · 🌕 Purnima · 🌑 Amavasya · 11️⃣ Ekadashi · 8️⃣ Ashtami · 14️⃣ Chaturdashi · ⚠ Bhadra";
-  lunarEl.appendChild(legend);
-  const markersByDay = {};
-  for (const m of (data.lunar_markers || [])) {
-    (markersByDay[m.date] = markersByDay[m.date] || []).push(m);
-  }
   const bhadra = data.bhadra || {};
-  const head2 = document.createElement("div");
-  head2.className = "mh-row mh-head";
-  head2.appendChild(mkCell("mh-corner", "Lunar timing"));
-  function symbolizeLunar(markers) {
-    const out = [];
-    for (const e of markers) {
-      const t = e.type;
-      const l = e.label;
-      if (l === "MOON NAKSHATRA") {
-        const name = t.replace("Moon:", "moon ").trim();
-        out.push({txt: `🌙 ${name}`, detail: `Moon Nakshatra: ${name}`});
-      } else if (l === "FULL MOON") {
-        out.push({txt: "🌕 Purnima", detail: "Purnima - Full Moon"});
-      } else if (l === "NEW MOON") {
-        out.push({txt: "🌑 Amavasya", detail: "Amavasya - New Moon"});
-      } else if (l === "FULL MOON WINDOW") {
-        out.push({txt: "🌕 Purnima-window", detail: "Full Moon window"});
-      } else if (l === "NEW MOON WINDOW") {
-        out.push({txt: "🌑 Amavasya-window", detail: "New Moon window"});
-      } else if (l === "EKADASHI") {
-        out.push({txt: "11️⃣ Ekadashi", detail: "Ekadashi"});
-      } else if (l === "ASHTAMI") {
-        out.push({txt: "8️⃣ Ashtami", detail: "Ashtami"});
-      } else if (l === "CHATURDASHI") {
-        out.push({txt: "14️⃣ Chaturdashi", detail: "Chaturdashi"});
-      } else {
-        out.push({txt: t, detail: `${t} - ${l}`});
-      }
+  const valueOf = (s, d) => (matrix[s] && matrix[s][d] != null ? matrix[s][d] : 0);
+
+  const allValues = [];
+  for (const s of sectors) for (const d of dates) allValues.push(valueOf(s, d));
+  const maxAbs = Math.max(0, ...allValues.map(v => Math.abs(v)));
+  const thr = mhShowAll ? 0 : mhThreshold(allValues);
+
+  // Blank unless the day clears the threshold; intensity scales with |net|.
+  const cellBg = (v) => {
+    if (!maxAbs || v === 0 || Math.abs(v) < thr) return "";
+    const a = 0.25 + 0.6 * Math.min(1, Math.abs(v) / maxAbs);
+    return v > 0 ? `rgba(34,197,94,${a})` : `rgba(239,68,68,${a})`;
+  };
+  const signed = (v) => (v >= 0 ? "+" : "") + v.toFixed(2);
+
+  legendEl.innerHTML = "";
+  const note = document.createElement("span");
+  note.textContent = mhShowAll
+    ? "Green = bullish, red = bearish. All days shown. Hover for values."
+    : "Green = bullish, red = bearish. Only the strongest quarter of days is coloured. Hover for values.";
+  const toggle = document.createElement("label");
+  const cb = document.createElement("input");
+  cb.type = "checkbox";
+  cb.checked = mhShowAll;
+  cb.addEventListener("change", () => { mhShowAll = cb.checked; drawMonthlyHeatmap(); });
+  toggle.append(cb, " Show all days");
+  legendEl.append(note, toggle);
+
+  // Lunar markers per day, plus a detail panel filled on click.
+  const markersByDay = {};
+  for (const m of (data.lunar_markers || [])) (markersByDay[m.date] = markersByDay[m.date] || []).push(m);
+  lunarEl.innerHTML = "";
+  const key = document.createElement("div");
+  key.className = "mh-lunar-key";
+  key.textContent = "\u{1F315} Purnima \u00B7 \u{1F311} Amavasya \u00B7 11\uFE0F\u20E3 Ekadashi \u00B7 8\uFE0F\u20E3 Ashtami \u00B7 14\uFE0F\u20E3 Chaturdashi \u00B7 \u26A0 Bhadra \u2014 click an icon or a sector name for detail";
+  const detailEl = document.createElement("div");
+  detailEl.id = "mh-lunar-detail";
+  detailEl.textContent = "";
+  lunarEl.append(key, detailEl);
+
+  const showDay = (d) => {
+    const lines = [`Lunar timing for ${d}`];
+    for (const e of (markersByDay[d] || [])) {
+      lines.push(e.label === "MOON NAKSHATRA"
+        ? `\u2022 Moon nakshatra: ${e.type.replace("Moon:", "").trim()}`
+        : `\u2022 ${e.type} - ${e.label}`);
     }
-    return out;
-  }
-  const detailPanel = document.createElement("div");
-  detailPanel.id = "mh-lunar-detail";
-  detailPanel.style.cssText = "margin-top:8px;padding:8px;background:#0b1220;border:1px solid #1e293b;border-radius:8px;font-size:12px;color:#c7d2fe;white-space:pre-wrap";
-  lunarEl.appendChild(detailPanel);
+    if (bhadra[d]) {
+      lines.push("\u26A0 Bhadra/Vishti muhurt active");
+      for (const w of bhadra[d]) lines.push(`  ${w.begin} - ${w.end}`);
+    }
+    if (lines.length === 1) lines.push("\u2022 No lunar markers");
+    detailEl.textContent = lines.join("\n");
+  };
+
+  const showSector = (s) => {
+    const ranked = dates
+      .map(d => ({ d, v: valueOf(s, d) }))
+      .sort((a, b) => Math.abs(b.v) - Math.abs(a.v))
+      .slice(0, 5);
+    const total = dates.reduce((acc, d) => acc + valueOf(s, d), 0);
+    detailEl.textContent = [
+      `${s} \u2014 month total ${signed(total)}`,
+      "Strongest days:",
+      ...ranked.map(r => `  ${r.d}  ${signed(r.v)}`),
+    ].join("\n");
+  };
+
+  // Grid: label columns, then one column per day.
+  const grid = document.createElement("div");
+  grid.className = "mh-grid";
+  grid.style.gridTemplateColumns = `150px 120px repeat(${dates.length}, 16px)`;
+  const add = (cls, text, title) => {
+    const el = mkCell(cls, text, title);
+    grid.appendChild(el);
+    return el;
+  };
+
+  // Lunar row sits above the date header.
+  add("mh-corner", "Lunar");
+  add("mh-corner", "");
   for (const d of dates) {
-    const evs = markersByDay[d] || [];
-    const syms = symbolizeLunar(evs);
-    const bh = bhadra[d] ? [{txt: "⚠ Bhadra", detail: "Bhadra/Vishti muhurt active"}] : [];
-    const combined = [...syms, ...bh];
-    const text = combined.map(x=>x.txt).join(" · ") || "—";
-    const tooltip = combined.map(x=>`• ${x.detail}`).join("\n") + `\nDate: ${d}`;
-    const cell = document.createElement("div");
-    cell.className = "mh-lunar-cell";
-    cell.textContent = text;
-    cell.title = tooltip;
-    cell.style.cursor = "pointer";
-    cell.addEventListener("click", ()=>{
-      let html = `Lunar timing for ${d}\n`;
-      if (bhadra[d]) {
-        html += "⚠ Bhadra windows:\n";
-        for (const w of bhadra[d]) {
-          html += `  ${w.begin} - ${w.end}\n`;
-        }
-      }
-      html += combined.map(x=>`• ${x.detail}`).join("\n");
-      detailPanel.textContent = html;
-    });
-    head2.appendChild(cell);
+    const el = add("mh-lunar-cell", mhLunarIcons(markersByDay[d], !!bhadra[d]), d);
+    el.addEventListener("click", () => showDay(d));
   }
-  strip.appendChild(head2);
-  lunarEl.appendChild(strip);
+
+  // Date header: a day number every 5 days keeps the axis readable.
+  add("mh-corner", "Sector");
+  add("mh-corner", "Month total");
+  dates.forEach((d, i) => add("mh-date", i % 5 === 0 ? d.slice(8) : "", d));
+
+  // Summary row: sum of sector nets per day, same colour rule.
+  add("mh-sector-cell mh-overall", "All sectors");
+  add("mh-total", "");
+  for (const d of dates) {
+    const v = sectors.reduce((acc, s) => acc + valueOf(s, d), 0);
+    const el = add("mh-cell", "", `All sectors \u00B7 ${d} \u00B7 net ${signed(v)}`);
+    el.style.background = cellBg(v);
+  }
+
+  // Sector rows, sorted by month total (most bullish first).
+  const totals = sectors
+    .map(s => ({ s, total: dates.reduce((acc, d) => acc + valueOf(s, d), 0) }))
+    .sort((a, b) => b.total - a.total);
+  const maxTotal = Math.max(0, ...totals.map(t => Math.abs(t.total)));
+  for (const { s, total } of totals) {
+    const name = add("mh-sector-cell", s, `${s} \u2014 click for strongest days`);
+    name.addEventListener("click", () => showSector(s));
+
+    const bar = document.createElement("div");
+    bar.className = "mh-bar";
+    const track = document.createElement("div");
+    track.className = "mh-bar-track";
+    const fill = document.createElement("div");
+    fill.className = "mh-bar-fill " + (total >= 0 ? "mh-pos" : "mh-neg");
+    fill.style.width = (maxTotal ? (Math.abs(total) / maxTotal) * 50 : 0) + "%";
+    track.appendChild(fill);
+    const val = document.createElement("span");
+    val.className = "mh-bar-val";
+    val.textContent = signed(total);
+    bar.append(track, val);
+    const barCell = add("mh-total", "");
+    barCell.appendChild(bar);
+
+    for (const d of dates) {
+      const v = valueOf(s, d);
+      const el = add("mh-cell", "", `${s} \u00B7 ${d} \u00B7 net ${signed(v)}`);
+      el.style.background = cellBg(v);
+    }
+  }
+
+  gridEl.innerHTML = "";
+  gridEl.appendChild(grid);
 }
 
 function mkCell(cls, text, title) {

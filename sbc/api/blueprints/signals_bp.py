@@ -130,7 +130,6 @@ def largecap_divergence():
     FIRE_SIGNS = {"Aries", "Leo", "Sagittarius"}
     FIXED_SIGNS = {"Taurus", "Leo", "Scorpio", "Aquarius"}
     MUTABLE_SIGNS = {"Gemini", "Virgo", "Sagittarius", "Pisces"}
-    WATER_SIGNS = {"Cancer", "Scorpio", "Pisces"}
     JUPITER_FRIENDLY = {"Cancer", "Libra", "Pisces", "Leo", "Sagittarius"}
     RAHU_WEAK = {"Virgo", "Libra", "Capricorn"}
     MERCURY_FRIENDLY = {"Gemini", "Virgo", "Libra"}
@@ -234,15 +233,9 @@ def largecap_divergence():
                       get_planet(planets, "Jupiter")["nakshatra"] == "Krittika",
             "conviction": "LOW",
             "summary": "Insufficient events (rare)"
-        },
-        {
-            "id": 10,
-            "name": "Adhik Masa + Rahu Fire + Moon Water",
-            "active": rahu and rahu["sign"] in FIRE_SIGNS and
-                      moon["sign"] in WATER_SIGNS,
-            "conviction": "LOW",
-            "summary": "Placeholder needs real lunar calendar"
         }
+        # A 10th config, "Adhik Masa + Rahu Fire + Moon Water", was removed: it never
+        # checked Adhik Masa (no lunar-month calendar here) yet could show as active.
     ]
 
     active = [c for c in configs if c["active"]]
@@ -255,7 +248,7 @@ def largecap_divergence():
         "active_count": len(active),
         "high_conviction_count": len(high_conviction),
         "medium_conviction_count": len(medium_conviction),
-        "summary": f"{len(active)}/10 configurations active · {len(high_conviction)} HIGH · {len(medium_conviction)} MEDIUM"
+        "summary": f"{len(active)}/{len(configs)} configurations active · {len(high_conviction)} HIGH · {len(medium_conviction)} MEDIUM"
     })
 
 

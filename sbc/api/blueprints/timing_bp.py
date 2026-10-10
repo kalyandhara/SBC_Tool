@@ -301,6 +301,31 @@ def api_gann_precision():
         return internal_error()
 
 
+# ticker -> (monotonic time of last attempt, last close or None). A failed
+# lookup is cached too, so a rate-limited yfinance isn't re-hit on every click.
+_ref_price_cache: dict[str, tuple[float, float | None]] = {}
+_REF_PRICE_TTL_S = 10 * 60
+
+
+def _ref_price(ticker):
+    """Latest daily close for ticker, cached; None when unavailable."""
+    now = time.monotonic()
+    hit = _ref_price_cache.get(ticker)
+    if hit and now - hit[0] < _REF_PRICE_TTL_S:
+        return hit[1]
+    price = None
+    try:
+        import yfinance as yf
+        df = yf.download(ticker, period="5d", interval="1d", auto_adjust=True, progress=False)
+        if not df.empty:
+            df.columns = [c[0] if isinstance(c, tuple) else c for c in df.columns]
+            price = float(df["Close"].iloc[-1])
+    except Exception:
+        price = None
+    _ref_price_cache[ticker] = (now, price)
+    return price
+
+
 @timing_bp.route("/api/astro/cycles", methods=["GET"])
 def api_astro_cycles():
     """AstroCycle Pro: Mercury/Moon cycle time bars + Moon nakshatra ingresses."""
@@ -314,15 +339,7 @@ def api_astro_cycles():
         except ValueError:
             return jsonify({"error": "invalid sl_points"}), 400
 
-        ref_price = None
-        try:
-            import yfinance as yf
-            df = yf.download(ticker, period="5d", interval="1d", auto_adjust=True, progress=False)
-            if not df.empty:
-                df.columns = [c[0] if isinstance(c, tuple) else c for c in df.columns]
-                ref_price = float(df["Close"].iloc[-1])
-        except Exception:
-            ref_price = None
+        ref_price = _ref_price(ticker)
 
         from sbc.astro_cycles import cycle_bars, moon_ingress_bars
         bars = cycle_bars(date_str, tz_name, ref_price=ref_price, sl_points=sl_points)
