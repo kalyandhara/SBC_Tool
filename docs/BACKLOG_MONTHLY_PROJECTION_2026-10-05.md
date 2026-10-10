@@ -125,6 +125,7 @@ Mark the out-of-bounds band (±23.44°) on the declination chart and the 0 line 
 such factor exists today), and Mercury speed below 0.2°/day before a station.
 
 ### B-46 · Ghabad Muhurat (P3)
+**Status (2026-10-05): definition found, ready to build.** Rule from Marathi Wikipedia, summarised in `docs/research/ghabad_muhurat.md`: count nakshatras Sun → Moon inclusive, × 3, + tithi (1–30), mod 7; remainder 3 = Ghabad, 0 = Ardha-ghabad. It reproduces the note's 05-10 mark (Ghabad 03:55–23:10 IST, the whole session).
 The note marks 05-10 as "Ghabad Muhurat, Bhadra". The codebase has no Ghabad calculation.
 **Blocked on a definition:** ask for the rule (tithi × weekday × nakshatra combination, or a
 specific text) before writing any code. When it exists, add it to `sbc/muhurta.py` and the B-43 table.

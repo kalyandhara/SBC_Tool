@@ -100,3 +100,56 @@ def format_window(window: tuple[dt.datetime, dt.datetime]) -> str:
     """'21:06 Thu -> 07:05 Fri IST' style label."""
     s, e = window
     return f"{s:%H:%M %a} -> {e:%H:%M %a} IST"
+
+
+# Ghabad Muhurat -----------------------------------------------------------
+
+NAKSHATRA_SPAN = 360.0 / 27.0
+
+def _sun_lon(jd: float) -> float:
+    swe.set_sid_mode(swe.SIDM_LAHIRI)
+    return float(swe.calc_ut(jd, swe.SUN, swe.FLG_MOSEPH | swe.FLG_SIDEREAL)[0][0]) % 360.0
+
+
+def _tithi(jd: float) -> int:
+    sun = _sun_lon(jd)
+    moon = _moon_lon(jd)
+    diff = (moon - sun) % 360.0
+    # 12 deg per tithi
+    return int(diff // 12.0) + 1
+
+
+def ghabad_status(day: dt.date, jd: float | None = None) -> dict:
+    """Return Ghabad Muhurat status for day at 09:15 IST.
+    Rule: nakshatras Sun->Moon inclusive ×3 + tithi mod 7.
+    remainder 3 = Ghabad, 0 = Ardha-ghabad, else None.
+    """
+    if jd is None:
+        # use 09:15 IST
+        t_ist = dt.datetime.combine(day, dt.time(9, 15), IST)
+        jd = _jd(t_ist)
+    sun_lon = _sun_lon(jd)
+    moon_lon = _moon_lon(jd)
+    sun_nak = int(sun_lon // NAKSHATRA_SPAN)
+    moon_nak = int(moon_lon // NAKSHATRA_SPAN)
+    # count inclusive
+    if moon_nak >= sun_nak:
+        nak_count = moon_nak - sun_nak + 1
+    else:
+        nak_count = (27 - sun_nak) + moon_nak + 1
+    tithi = _tithi(jd)
+    remainder = (nak_count * 3 + tithi) % 7
+    if remainder == 3:
+        kind = "Ghabad"
+    elif remainder == 0:
+        kind = "Ardha-ghabad"
+    else:
+        kind = None
+    return {
+        "kind": kind,
+        "remainder": remainder,
+        "nakshatra_count": nak_count,
+        "tithi": tithi,
+        "sun_nakshatra": sun_nak,
+        "moon_nakshatra": moon_nak,
+    }

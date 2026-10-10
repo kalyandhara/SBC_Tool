@@ -83,6 +83,15 @@
           <button class="nav-tab" data-tab="tab-kp" role="tab" aria-selected="false" aria-controls="tab-kp">
             <span class="tab-icon">⏱️</span> KP Intraday
           </button>
+          <button class="nav-tab" data-tab="tab-kp-nifty" role="tab" aria-selected="false" aria-controls="tab-kp-nifty">
+            <span class="tab-icon">🪐</span> KP Chart (NIFTY)
+          </button>
+          <button class="nav-tab" data-tab="tab-kp-report" role="tab" aria-selected="false" aria-controls="tab-kp-report">
+            <span class="tab-icon">📄</span> KP Intraday Report
+          </button>
+          <button class="nav-tab" data-tab="tab-crash" role="tab" aria-selected="false" aria-controls="tab-crash">
+            <span class="tab-icon">⚠️</span> Crash Windows
+          </button>
           <button class="nav-tab" data-tab="tab-balance" role="tab" aria-selected="false" aria-controls="tab-balance">
             <span class="tab-icon">⚖️</span> Monthly Projection
           </button>
@@ -743,7 +752,7 @@
       <section id="monthly-heatmap" class="panel monthly-heatmap-panel" data-sector-category="all">
         <div class="panel-head">
           <h2>Monthly Sector Confluence Heatmap</h2>
-          <span class="panel-sub" id="monthly-heatmap-sub">SBC nakshatra-vedha + planetary transit confluence &middot; sector &times; day, with lunar timing strip</span>
+          <span class="panel-sub" id="monthly-heatmap-sub">SBC nakshatra-vedha + planetary transit confluence &middot; sector month totals &middot; strongest days coloured &middot; lunar markers on the date axis</span>
         </div>
         <div class="monthly-heatmap-controls">
           <label>From
@@ -1055,6 +1064,205 @@
           <span><i class="mk mk-warning"></i> Exhaustion Warning</span>
         </div>
       </div>
+      </section>
+    </div>
+
+    <!-- ============================================================== -->
+    <!-- TAB KP NIFTY ONLY -->
+    <!-- ============================================================== -->
+    <div id="tab-kp-nifty" class="tab-pane" role="tabpanel">
+      <section id="kp-nifty-page" class="panel kp-intraday-panel">
+        <div class="panel-head">
+          <h2>KP Chart · NIFTY Only <span class="experimental-badge">Experimental</span></h2>
+          <span class="panel-sub">Rule-based intraday trend change signals for NIFTY index futures using KP astrology &middot; back-tested with no edge over chance; research only</span>
+        </div>
+        <div class="kp-intraday-controls">
+          <label>Trading Day
+            <div class="week-picker-wrap">
+              <input type="date" id="kp-nifty-date" class="week-picker-input">
+              <div id="kp-nifty-calendar" class="week-calendar-dropdown hidden"></div>
+            </div>
+          </label>
+          <label>Instrument
+            <select id="kp-nifty-instrument" disabled>
+              <option value="NIFTY" selected>NIFTY</option>
+            </select>
+          </label>
+          <label>Format
+            <select id="kp-nifty-format">
+              <option value="html">HTML Interactive Report</option>
+              <option value="json">JSON Structured Data</option>
+              <option value="docx">Word document (.docx)</option>
+            </select>
+          </label>
+          <button id="kp-nifty-run" class="btn">⚡ Generate NIFTY Report</button>
+          <button id="kp-nifty-sample" class="btn btn-secondary" title="Compute this month's KP data from Swiss Ephemeris">Generate KP Data</button>
+        </div>
+        <div id="kp-nifty-content" class="kp-intraday-content"></div>
+      </section>
+    </div>
+
+    <!-- ============================================================== -->
+    <!-- TAB KP INTRADAY REPORT VIEW -->
+    <!-- ============================================================== -->
+    <div id="tab-kp-report" class="tab-pane" role="tabpanel">
+      <section id="kp-report-page" class="panel">
+        <div class="panel-head">
+          <h2>KP Intraday Trend Change Prediction Report</h2>
+          <span class="panel-sub">Static report view · Research only</span>
+        </div>
+        <div class="panel-body">
+          <pre id="kp-report-text" style="white-space:pre-wrap;font-family:ui-monospace,monospace;font-size:12px;line-height:1.4;color:var(--text);">KP INTRADAY TREND CHANGE PREDICTION REPORT
+Trading Day: 2026-09-22
+NIFTY / BANK NIFTY  •  NSE Mumbai  •  KP Ayanamsha
+Source: KP_Data_01Aug2026_to_30Sep2026.csv   |   Generated: 02-Sep-2026 08:23
+Astro Quant Research Lab | Growwmore Consulting
+1. Day Chart Signature
+Day Lord: Mars.   Moon: Capricorn sign, Moon star (sig strength +1.00), opening sub Mars.   Moon speed: 12.21 deg/day.
+Day-level bias (Day Lord nature + Moon Star Lord significators): +0.50  -> neutral.
+Rahu Moon-sub windows (Rule A-13): 10:40 to 14:35.  Gains made inside these windows are at risk of full give-back after the sub ends — trade half size, breakout-only, and do not project Rahu-window momentum forward.
+Moon Affliction Gate (Rule A-14): PASSED.
+Hora timeline with hora-lord aspects (v12.2, market hours):
+•	9:15-9:29  Venus (Beneficial).  Lord receives: Mars 4th aspect (99.8 deg sep) -> trending/impulsive;  Rahu 9th aspect (111.9 deg sep) -> trap/false-move risk.
+•	9:29-10:29  Mercury (Quick).  Lord receives: Saturn 7th aspect (174.0 deg sep) -> suppression/slow.
+•	10:29-11:30  Moon (Gentle).  Lord receives: Mars 7th aspect (171.1 deg sep) -> trending/impulsive;  Jupiter 7th aspect (167.4 deg sep) -> supported/expansive.
+•	11:30-12:31  Saturn (Sluggish).  Lord receives: Sun 7th aspect (166.9 deg sep) -> authoritative;  Mercury 7th aspect (174.0 deg sep) -> choppy/two-sided;  Jupiter 9th aspect (125.7 deg sep) -> supported/expansive.
+•	12:31-13:31  Jupiter (Fruitful).  Lord receives: Moon 7th aspect (167.4 deg sep) -> sentiment-driven.
+•	13:31-14:32  Mars (Aggressive)  DAY-LORD CONFLUENCE.  Lord receives: Moon 7th aspect (171.1 deg sep) -> sentiment-driven.
+•	14:32-15:30  Sun (Vigorous).  Lord receives: Saturn 7th aspect (166.9 deg sep) -> suppression/slow.
+Rule under test (frozen 18-Jul-2026): base hora quality is modified by aspects the hora lord receives — Mars aspect = trending/impulsive, Rahu = trap/false-move, Jupiter = support (can override a malefic base), Saturn = suppression. Hora currently contributes weight 0.3 to slot scores. 17-Jul evidence: squeeze fell in the Mars+Rahu-aspected Venus confluence hora (fits), morning rally in Jupiter-aspected Saturn hora (fits), but plain Jupiter hora hosted the stall (does not fit). Do not treat hora or its aspects as a standalone signal.
+1b. Navamsa (D-9) Strength Layer (v15)
+Key planet Navamsa placements (opening): Moon: Aries (neutral);  Asc Sub (Mercury): Leo (friend);  Sun: Aquarius (enemy);  Jupiter: Aquarius (neutral);  Saturn: Sagittarius (neutral).
+Moon Navamsa Element (Rule N-3): FIRE — expect volatility, strong directional moves; favours trending strategies over mean-reversion.
+Lagna Lord Navamsa (Rule N-5): kendra/trikona in D-9 (trend sustains) (effect: +0.20 on slot scores).
+1c. SBC Nadi Classification (v15.1)
+Moon Nakshatra (opening): Shravana.   Nadi: Amrut  (score multiplier: 1.05×)
+Market character: Steady growth — standard trending; trade with the dominant direction
+Nadi stable all session — no nakshatra transition during market hours.
+2. Master Regime Shifts (Moon Sub-Lord, Rule A-11/A-12)
+•	10:40  Moon sub change Mars->Rahu.  Incoming sub-lord Rahu (house-set strength -1.8) -> post-shift regime: sell-on-rise.
+•	14:35  Moon sub change Rahu->Jupiter.  Incoming sub-lord Jupiter (house-set strength -0.5) -> post-shift regime: range / two-sided.
+3. Predictive Intraday Path
+Orange markers = Tier-1 / regime-shift timestamps. Path is directional shape, not price target. Windows are candidates until price confirms.
+4. Trend Change Timing Table
+Time	Grade	Direction	Trigger (Rule A-8/A-11)	Asc sub house-set	Hora	Navamsa D-9	Nadi
+9:20	PURE-SET ALARM (Tier-1)	Bullish	Asc sub change Mercury->Ketu	10	Venus	Taurus (debilitated) Mo:FI	Amrut (1.05×)
+9:35	PURE-SET ALARM (Tier-1)	Bullish	Asc sub change Venus->Sun	11	Mercury	Aquarius (enemy) Mo:FI	Amrut (1.05×)
+9:40	TIER-1	Bullish	Asc sub change Sun->Moon	3, 10	Mercury	Aries (neutral) Mo:FI	Amrut (1.05×)
+9:45	TIER-1	Bullish	Asc star change Rahu->Jupiter; Asc sub change Moon->Jupiter	3, 6, 9, 10, 12	Mercury	Aquarius (neutral) Mo:FI	Amrut (1.05×)
+9:55	TIER-1	Bullish	Asc sub change Jupiter->Saturn	4, 5, 9, 11, 12	Mercury	Sagittarius (neutral) Mo:FI	Amrut (1.05×)
+10:05	TIER-1	Bullish	Asc sub change Saturn->Mercury	2, 7, 9, 11, 12	Mercury	Leo (friend) Mo:FI	Amrut (1.05×)
+10:10	PURE-SET ALARM (Tier-1)	Bullish	Asc sub change Mercury->Ketu	10	Mercury	Taurus (debilitated) Mo:FI	Amrut (1.05×)
+10:15	TIER-1	Bearish	Asc sub change Ketu->Venus	1, 4, 8, 12	Mercury	Capricorn (friend) Mo:FI	Amrut (1.05×)
+10:25	PURE-SET ALARM	Bullish	Asc sub change Venus->Sun	10, 11	Mercury	Aquarius (enemy) Mo:FI	Amrut (1.05×)
+10:30	TIER-2	Bullish	Asc sign change; Asc sub change Sun->Moon	3, 9	Moon	Aries (neutral) Mo:FI	Amrut (1.05×)
+10:40	REGIME SHIFT (neutral hand-off)	Bearish	Moon sub change Mars->Rahu	1, 3, 6, 8	Moon	Scorpio (debilitated) Mo:FI	Amrut (1.05×)
+10:45	TIER-1	Bearish	Asc star change Jupiter->Saturn; Asc sub change Rahu->Saturn	3, 4, 5, 8, 11	Moon	Sagittarius (neutral) Mo:FI	Amrut (1.05×)
+11:05	TIER-2	Bearish	Asc sub change Mercury->Venus	3, 7, 11, 12	Moon	Capricorn (friend) Mo:FI	Amrut (1.05×)
+11:15	PURE-SET ALARM	Bullish	Asc sub change Venus->Sun	10	Moon	Aquarius (enemy) Mo:FI	Amrut (1.05×)
+11:25	TIER-1	Bearish	Asc sub change Moon->Mars	1, 2, 5, 6, 8, 9	Moon	Cancer (debilitated VARGOTTAMA PUSHKARA) Mo:FI	Amrut (1.05×)
+11:30	TIER-2	Bearish	Asc sub change Mars->Rahu	1, 3, 6, 8	Moon	Scorpio (debilitated) Mo:FI	Amrut (1.05×)
+11:45	TIER-1 (cluster bottom)	Bullish	Asc star change Saturn->Mercury; Asc sub change Jupiter->Mercury	1, 6, 8, 11	Saturn	Leo (friend) Mo:FI	Amrut (1.05×)
+12:15	TIER-1	Bearish	Asc sub change Moon->Mars	1, 2, 4, 5, 6, 8	Saturn	Cancer (debilitated VARGOTTAMA PUSHKARA) Mo:FI	Amrut (1.05×)
+12:20	TIER-1	Bearish	Asc sub change Mars->Rahu	1, 3, 5, 8, 12	Saturn	Scorpio (debilitated) Mo:FI	Amrut (1.05×)
+12:30	TIER-1	Bearish	Asc sub change Rahu->Jupiter	2, 4, 8, 10	Saturn	Aquarius (neutral) Mo:FI	Amrut (1.05×)
+12:35	TIER-1	Bearish	Asc sub change Jupiter->Saturn	3, 4, 8, 10	Jupiter	Sagittarius (neutral) Mo:FI	Amrut (1.05×)
+12:45	PURE-SET ALARM (Tier-1)	Bearish	Asc sign change; Asc star change Mercury->Ketu; Asc sub change Saturn->Ketu	8	Jupiter	Taurus (debilitated) Mo:FI	Amrut (1.05×)
+12:50	PURE-SET ALARM COUNTER-REGIME	Bullish	Asc sub change Ketu->Venus	2, 6, 11	Jupiter	Capricorn (friend) Mo:FI	Amrut (1.05×)
+13:00	TIER-2	Bearish	Asc sub change Venus->Moon	2, 8	Jupiter	Aries (neutral) Mo:FI	Amrut (1.05×)
+13:05	TIER-1	Bearish	Asc sub change Moon->Mars	1, 4, 5, 7, 8, 12	Jupiter	Cancer (debilitated VARGOTTAMA PUSHKARA) Mo:FI	Amrut (1.05×)
+13:10	TIER-1	Bearish	Asc sub change Mars->Rahu	2, 5, 7, 12	Jupiter	Scorpio (debilitated) Mo:FI	Amrut (1.05×)
+13:35	TIER-2	Bearish	Asc sub change Saturn->Mercury	5, 7, 10, 12	Mars *DL*	Leo (friend) Mo:EA	Amrut (1.05×)
+13:45	PURE-SET ALARM COUNTER-REGIME	Bullish	Asc star change Ketu->Venus; Asc sub change Mercury->Venus	2, 6, 10, 11	Mars *DL*	Capricorn (friend) Mo:EA	Amrut (1.05×)
+13:45	REVERSAL CANDIDATE (v14)	Bullish	v14 REVERSAL: bearish exhaustion + bullish pure-set alarm(s)	2, 6, 10, 11	Mars *DL*	Capricorn (friend) Mo:EA	Amrut (1.05×)
+14:00	TIER-2	Bearish	Asc sub change Moon->Mars	1, 4, 5, 7, 8, 12	Mars *DL*	Cancer (debilitated VARGOTTAMA PUSHKARA) Mo:EA	Amrut (1.05×)
+14:35	REGIME SHIFT (neutral hand-off)	Bearish	Moon sub change Rahu->Jupiter; Asc sub change Mercury->Ketu	8	Sun	Taurus (debilitated) Mo:EA	Amrut (1.05×)
+14:35	REVERSAL CANDIDATE (v14)	Bearish	v14 REVERSAL: bullish exhaustion + bearish pure-set alarm(s)	8	Sun	Taurus (debilitated) Mo:EA	Amrut (1.05×)
+Counter-regime pure-set alarms (v12): 12:50 Bullish (+3.15); 12:55 Bullish (+3.15); 13:45 Bullish (+3.15).  These oppose the active Moon regime and fire at reduced conviction (75% of a full pure alarm). In v11 they were suppressed entirely. Treat as early reversal warnings — trade ONLY on price confirmation (first 5 candles ≥ 15 pts), at reduced size, never as a standalone counter-trend entry.
+REVERSAL CANDIDATE signals (v14): 13:45 Bullish (score +9.97, from Bearish exhaustion + 8 pure-set alarm(s)).  14:35 Bearish (score -12.36, from Bullish exhaustion + 2 pure-set alarm(s)).  These signals are generated when score exhaustion in one direction coincides with pure-set alarms in the opposite direction — a high-conviction reversal setup. Confirm with price: first 5 candles must move ≥ 15 pts in the reversal direction.
+5. Intraday Trading View
+Strongest bullish candidate window: 9:35 to 10:10 (peak score 16.64).  Strongest bearish candidate window: 12:10 to 12:45 (deepest score -20.23).
+Score exhaustion warning: Bullish score exhaustion: score fell from 16.64 at 9:50 to 3.74 at 10:00. Treat longs as reversal-risk unless price confirms. | Mixed-house reversal risk: 4/7/9 appear inside the directional bullish candidate (9:35 Asc star Rahu houses 2,4,7,9; 9:40 Asc star Rahu houses 2,4,7,9; 9:45 Moon sub Mars houses 2,3,6,7,9,10). Treat continuation as fragile unless price confirms.
+Playbook: trade Tier-1 flips only, in the direction of the active Moon sub-lord regime. Longs are valid only in buy-on-dip regimes; shorts only in sell-on-rise regimes. EXCEPTION (v14): REVERSAL CANDIDATE signals may trade AGAINST the regime when exhaustion + pure-set alarms confirm — these are early reversal entries with elevated conviction. Every candidate window requires price confirmation: the first 5 five-minute candles must move at least 15 NIFTY points in the predicted direction, plus normal chart confirmation such as reversal candle, VWAP reclaim/loss, or CPR level break. Maximum three Tier-1 trades per session (Rule D-3).
+Bank Nifty calibration (Section 7): widen timing tolerance to ±8 minutes, expect one-grade-stronger response to Moon-based triggers, and trade Rahu-sub windows at half size, breakout-only.
+6. Disclaimer
+Educational research output combining KP astrology with systematic trading discipline. Not investment advice. Derivatives trading involves substantial risk of loss. Validate all signals with independent backtesting before deploying capital.
+</pre>
+        </div>
+      </section>
+    </div>
+
+    <!-- ============================================================== -->
+    <!-- TAB CRASH WINDOWS -->
+    <!-- ============================================================== -->
+    <div id="tab-crash" class="tab-pane" role="tabpanel">
+      <section id="crash-windows-page" class="panel">
+        <div class="panel-head">
+          <h2>Indicative Market Crash Windows — Planetary Combinations <span class="experimental-badge">Research</span></h2>
+          <span class="panel-sub">Planetary combination risk windows with historical lift scoring · Research only</span>
+        </div>
+        <div class="crash-controls">
+          <label>Period Start
+            <input type="date" id="crash-start-date">
+          </label>
+          <label>Period End
+            <input type="date" id="crash-end-date">
+          </label>
+          <button id="crash-generate" class="btn">⚡ Generate Report</button>
+        </div>
+        <div id="crash-report-content" class="crash-report-content panel-body">
+          <pre id="crash-report-text" style="white-space:pre-wrap;font-family:ui-monospace,monospace;font-size:12px;line-height:1.4;color:var(--text);">Indicative Market Crash Windows — Planetary Combinations
+Period analysed: 01-10-2026 to 31-12-2026    |    Generated: 07-10-2026    |    Sidereal (Lahiri), mean nodes
+1. Summary
+92 days scanned. 1 indicative risk period(s) found (1 HIGH, 0 ELEVATED), covering 8 days.
+Strongest window: 06-11-2026 to 13-11-2026, peak score 2.36 on 06-11-2026 — Sun debilitated in Libra, Jupiter in a fire sign, Mars debilitated in Cancer, Sun–Saturn in 6/8 (shadashtak), Mercury retrograde, Guru-Chandal (Jupiter with Rahu/Ketu), Venus in 11th house (Mumbai open).
+Neither of the two strongest slow-cycle signals (Saturn–Uranus, Jupiter–Saturn hard aspects) is active in this range, so any windows below rely on shorter-term triggers.
+
+2. Indicative crash / correction periods
+#	Period	Days	Level	Peak score / date	Reasons (combination [active dates] — position. Meaning. Evidence.)
+1	06-11-2026
+to
+13-11-2026
+
+HIGH days:
+06-11-2026 – 12-11-2026	8	HIGH	2.36
+06-11-2026	• Jupiter in a fire sign [06-11-2026 to 13-11-2026] — Jupiter Leo 0°. Expansive Jupiter in fiery signs; associated with speculative excess before the fall. (Historical lift 1.82×; seen in 1987, 1992, 2000, 2004, 2008 (x3), 2011, 2015, 2016, 2020 (x2).)
+• Venus in 11th house (Mumbai open) [06-11-2026 to 13-11-2026] — Lagna Scorpio at 09:15 IST, Venus Vir 29° in 11th. Venus in the house of gains; appeared in 46% of crash days vs 27% expected. (Historical lift 1.73×; seen in 1929, 1990, 1992, 1998, 2000, 2001, 2008, 2011, 2015, 2018, 2024, 2025.)
+• Sun debilitated in Libra [06-11-2026 to 13-11-2026] — Sun Lib 19°. Weak Sun (authority, confidence). Note: falls every mid-Oct to mid-Nov, so it overlaps the "October effect". (Historical lift 1.88×; seen in 1929, 1987, 1997, 2008.)
+• Sun–Saturn in 6/8 (shadashtak) [06-11-2026 to 13-11-2026] — Sun Lib 19° / Saturn Pis 14°. Sun and Saturn in mutually hostile 6/8 positions. (Historical lift 1.50×; seen in 1990, 1997, 2008, 2010, 2016, 2024.)
+• Mercury retrograde [06-11-2026 to 13-11-2026] — Mercury retrograde at Lib 15°. Errors, miscommunication and technical breakdowns (2010 Flash Crash, 2024 carry unwind). (Historical lift 1.41×; seen in 1962, 1987, 2008, 2010, 2011, 2024, 2025.)
+• Mars debilitated in Cancer [06-11-2026 to 12-11-2026] — Mars Can 26°. Weak, emotional Mars; seen in fast, liquidity-driven panics. (Historical lift 1.52×; seen in 1998, 2010, 2015, 2025.)
+• Guru-Chandal (Jupiter with Rahu/Ketu) [06-11-2026 to 13-11-2026] — Jupiter Leo 0° with Ketu. Jupiter (finance, wisdom) afflicted by the nodes; confirming factor. (Historical lift 1.27×; seen in 1990, 2001, 2016, 2020 (x2).)
+3. Combination calendar
+When each combination is active in the range (whether or not the day crossed the threshold).
+Combination	Type	Lift	Weight	Active dates in range
+Venus in 11th house in a water sign (Mumbai open)	Trigger	2.80	0.90	Not active
+Saturn–Uranus hard aspect	Slow backdrop	2.11	0.74	Not active
+Jupiter–Saturn hard aspect	Slow backdrop	2.09	0.73	Not active
+Jupiter in a fire sign	Slow backdrop	1.82	0.58	31-10-2026 – 31-12-2026
+Venus in 11th house (Mumbai open)	Trigger	1.73	0.52	06-11-2026 – 13-11-2026; 23-11-2026 – 15-12-2026
+Kaal Sarp (all 7 planets one side of Rahu–Ketu)	Trigger	2.03	0.46	Not active
+Saturn in Capricorn	Slow backdrop	1.81	0.41	Not active
+Sun debilitated in Libra	Seasonal	1.88	0.39	18-10-2026 – 16-11-2026
+Sun–Saturn in 6/8 (shadashtak)	Trigger	1.50	0.27	18-10-2026 – 16-11-2026
+Venus in a water sign	Trigger	1.40	0.26	Not active
+Mercury retrograde	Trigger	1.41	0.24	25-10-2026 – 13-11-2026
+Mars debilitated in Cancer	Trigger	1.52	0.23	01-10-2026 – 12-11-2026
+Saturn–Pluto hard aspect	Slow backdrop	1.29	0.16	Not active
+Mars–Saturn hard aspect	Trigger	1.27	0.15	Not active
+Guru-Chandal (Jupiter with Rahu/Ketu)	Trigger	1.27	0.14	31-10-2026 – 05-12-2026
+4. Eclipses in the range (reference only)
+In the historical study, eclipses within ±15 days showed no edge (lift 0.95); listed for completeness.
+None in this range.
+5. How the score works
+•	Each day's planetary positions are computed (11:30 IST; sidereal Lahiri; mean Rahu/Ketu). The Venus-in-11th tests use the Mumbai 09:15 IST opening-bell chart with whole-sign houses.
+•	Each active combination adds its weight. Weight = (historical lift − 1) × n/(n+5), where lift compares how often the combination appeared on 26 crash days (1929–2025) with how often it appears on any weekday since 1925, and n is the number of crash days it appeared on. Combinations seen in only a few crashes are discounted.
+•	ELEVATED = score ≥ 1.85 (about the top 10% of all days since 1925). HIGH = score ≥ 2.36 (about the top 3%). Flagged days less than 4 days apart are joined into one period.
+•	Historically, about 42% of crash days scored ELEVATED or higher and about 23% scored HIGH, against 10% and 3% of ordinary days. These figures are in-sample (the weights come from the same crash days), so expect weaker results going forward. Most flagged periods will not contain a crash, and many crashes occur outside flagged periods.
+•	None of the combinations passed a strict multiple-testing correction in the research. Use the windows as a risk-management prompt (position size, stops, hedges) alongside technical and macro confirmation — not as a sell signal.
+Research tool only. Not investment advice.
+</pre>
+        </div>
       </section>
     </div>
 
