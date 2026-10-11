@@ -185,6 +185,7 @@ data/forecast_ledger.db
 data/market.db
 data/fingerprints.db
 data/daily_ledger.db
+data/trade_journal.db
 sbc/navamsa_pipeline/navamsa.db
 .playwright-mcp/
 
