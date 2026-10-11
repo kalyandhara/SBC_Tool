@@ -44,10 +44,15 @@ def _lon(planet: str, jd: float) -> float:
     return float(swe.calc_ut(jd, BODY[planet], _flags())[0][0]) % 360.0
 
 
-def _fold(diff: np.ndarray | float) -> np.ndarray | float:
-    """Unsigned angle 0..180 between two longitudes, given their difference."""
+def _fold_array(diff: np.ndarray) -> np.ndarray:
     d = np.abs(diff) % 360.0
-    return np.where(d > 180.0, 360.0 - d, d) if isinstance(d, np.ndarray) else (360.0 - d if d > 180.0 else d)
+    return np.where(d > 180.0, 360.0 - d, d)  # type: ignore[return-value,no-any-return]
+
+
+def _fold(diff: float) -> float:
+    """Unsigned angle 0..180 between two longitudes, given their difference."""
+    d = abs(diff) % 360.0
+    return 360.0 - d if d > 180.0 else d
 
 
 def _deviation(planet: str, natal_lon: float, angle: float, jd: float) -> float:
@@ -89,7 +94,7 @@ def _windows(planet: str, natal_lon: float, code: str, jd0: float, jd1: float, s
              orb: float) -> list[tuple]:
     angle = ASPECTS[code]
     grid, lon = _lon_grid(planet, jd0, jd1, step)
-    inside = np.abs(_fold(lon - natal_lon) - angle) <= orb
+    inside = np.abs(_fold_array(lon - natal_lon) - angle) <= orb
     out = []
     i, n = 0, len(grid)
     while i < n:
@@ -167,7 +172,7 @@ def active_on(natal: dict[str, float], day: str, planets: Iterable[str] | None =
     for planet in planets:
         lon = _lon(planet, jd)
         for point in points:
-            sep = float(_fold(lon - natal[point]))
+            sep = float(_fold(float(lon) - natal[point]))
             for code in aspects:
                 if abs(sep - ASPECTS[code]) <= orb:
                     out.append({"planet": planet, "natal": point, "aspect": code,
