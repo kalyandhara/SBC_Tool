@@ -70,7 +70,8 @@ graded, and it did not beat drift. New work should extend it, not duplicate it.
 - **B-51 — Transit-to-natal windows.** Generalise `sbc/helio_aspects.py` so the
   reference body can be a natal planet instead of Earth, same orb, same aspects,
   same entry/exact/exit output. This is the one new calculation.
-- **B-52 — Per-instrument bars.** Let `swing_model.Bars` take any series
+- **B-52 — Per-instrument bars.** ✅ Done 2026-10-11: `Bars.for_symbol(symbol)` in `sbc/swing_model.py`; `Bars.nifty()` delegates to it. The research series were already in `data/market.db`, so no refresh was needed.
+  Original scope: Let `swing_model.Bars` take any series
   `market_store` holds, not just NIFTY. Depends on `scripts/refresh_market_data.py --research`.
 - **B-53 — Grade it.** Register the transit-to-natal reversal hypothesis *before*
   running it, then `scripts/validate_swing.py`-style report into `docs/research/`.

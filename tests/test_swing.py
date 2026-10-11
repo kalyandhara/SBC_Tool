@@ -165,3 +165,37 @@ def test_forecast_carries_the_helio_component():
     comp = next(c for c in fc.forecast(day, 5, history=history)["components"] if c["name"] == "helio_all_reversal")
     assert comp["source"] == "helio" and comp["lean"] in (-1, 0, 1) and not comp["validated"]
     assert (comp["lean"] == 0) == (not comp["windows"])
+
+
+# ── B-52 per-instrument bars ───────────────────────────────────────────────
+
+def _store_rows(n=30):
+    start = dt.date(2026, 1, 1)
+    return [{"date": (start + dt.timedelta(days=i)).isoformat(), "open": 100.0 + i, "high": 101.0 + i,
+             "low": 99.0 + i, "close": 100.5 + i, "volume": 1000} for i in range(n)]
+
+
+def test_bars_for_symbol_read_that_symbol_from_the_store(monkeypatch):
+    seen = {}
+
+    def fake_get_daily(symbol, start=None, end=None):
+        seen["symbol"] = symbol
+        return _store_rows()
+
+    monkeypatch.setattr(sm.market_store, "get_daily", fake_get_daily)
+    bars = sm.Bars.for_symbol("ITC")
+    assert seen["symbol"] == "ITC"
+    assert len(bars.close) == 30 and bars.dates[0] == "2026-01-01"
+
+
+def test_nifty_is_the_default_symbol(monkeypatch):
+    seen = []
+    monkeypatch.setattr(sm.market_store, "get_daily", lambda symbol, *a, **k: seen.append(symbol) or _store_rows())
+    sm.Bars.nifty()
+    assert seen == ["NIFTY"]
+
+
+def test_missing_symbol_names_what_to_refresh(monkeypatch):
+    monkeypatch.setattr(sm.market_store, "get_daily", lambda *a, **k: [])
+    with pytest.raises(sm.market_store.MarketDataMissing, match="no ZZZ bars"):
+        sm.Bars.for_symbol("ZZZ")
