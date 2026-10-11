@@ -119,15 +119,8 @@ def _tithi(jd: float) -> int:
     return int(diff // 12.0) + 1
 
 
-def ghabad_status(day: dt.date, jd: float | None = None) -> dict:
-    """Return Ghabad Muhurat status for day at 09:15 IST.
-    Rule: nakshatras Sun->Moon inclusive ×3 + tithi mod 7.
-    remainder 3 = Ghabad, 0 = Ardha-ghabad, else None.
-    """
-    if jd is None:
-        # use 09:15 IST (naive, matching this module's convention)
-        t_ist = dt.datetime.combine(day, dt.time(9, 15))
-        jd = _jd(t_ist)
+def _ghabad_state(jd: float) -> dict:
+    """Ghabad state at an instant: nakshatras Sun->Moon inclusive x3 + tithi, mod 7."""
     sun_lon = _sun_lon(jd)
     moon_lon = _moon_lon(jd)
     sun_nak = int(sun_lon // NAKSHATRA_SPAN)
@@ -153,3 +146,62 @@ def ghabad_status(day: dt.date, jd: float | None = None) -> dict:
         "sun_nakshatra": sun_nak,
         "moon_nakshatra": moon_nak,
     }
+
+
+def ghabad_status(day: dt.date, jd: float | None = None) -> dict:
+    """Return Ghabad Muhurat status for day at 09:15 IST.
+    remainder 3 = Ghabad, 0 = Ardha-ghabad, else None.
+    """
+    if jd is None:
+        # use 09:15 IST (naive, matching this module's convention)
+        jd = _jd(dt.datetime.combine(day, dt.time(9, 15)))
+    return _ghabad_state(jd)
+
+
+def ghabad_kind_at(when: dt.datetime) -> str | None:
+    """'Ghabad', 'Ardha-ghabad' or None at a naive IST instant."""
+    return _ghabad_state(_jd(when))["kind"]
+
+
+def _ghabad_kind_jd(jd: float) -> str | None:
+    return _ghabad_state(jd)["kind"]
+
+
+def _kind_edge(a: float, b: float) -> float:
+    """Bisect the moment the Ghabad kind leaves its value at a (to < 1 s)."""
+    kind_a = _ghabad_kind_jd(a)
+    for _ in range(40):
+        mid = (a + b) / 2
+        if _ghabad_kind_jd(mid) == kind_a:
+            a = mid
+        else:
+            b = mid
+    return b
+
+
+def ghabad_windows(start: dt.date, end: dt.date) -> list[dict]:
+    """Ghabad and Ardha-ghabad windows (naive IST) from start to end, inclusive.
+
+    The kind changes only when the Moon's nakshatra, the tithi or the Sun's
+    nakshatra changes, so a 30-minute scan finds every change and each one is
+    bisected to the second. Windows shorter than the scan step can be missed.
+    """
+    t0 = _jd(dt.datetime.combine(start, dt.time(0)))
+    t1 = _jd(dt.datetime.combine(end + dt.timedelta(days=1), dt.time(0)))
+    step = 1 / 48
+    found: list[tuple[str, float, float]] = []
+    cur_kind = _ghabad_kind_jd(t0)
+    cur_start = t0
+    t = t0
+    while t < t1:
+        n = min(t + step, t1)
+        kind = _ghabad_kind_jd(n)
+        if kind != cur_kind:
+            edge = _kind_edge(t, n)
+            if cur_kind:
+                found.append((cur_kind, cur_start, edge))
+            cur_kind, cur_start = kind, edge
+        t = n
+    if cur_kind:
+        found.append((cur_kind, cur_start, t1))
+    return [{"kind": k, "start": _ist(s), "end": _ist(e)} for k, s, e in found]

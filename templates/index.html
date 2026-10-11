@@ -1479,6 +1479,23 @@ Research tool only. Not investment advice.
         <div id="pm-stations"></div>
         <div id="pm-chart" class="ifc-chart pm-chart" aria-label="Planet series chart"></div>
       </section>
+      <section class="panel analog-lab" id="monthly-score">
+        <div class="panel-head">
+          <h2>Monthly Score</h2>
+          <span class="panel-sub">One SBC composite score per calendar day (fingerprint classical net), beside the NIFTY closes so far. Hollow markers are non-trading days.</span>
+        </div>
+        <div class="analog-banner" role="note">
+          <strong>Hypothetical, unvalidated.</strong>
+          The score has not been tested as a predictor. Read it against the closes, not as a forecast.
+        </div>
+        <form id="ms-form" class="research-controls">
+          <label>Month <input type="month" id="ms-month"></label>
+          <button type="submit" class="btn">Show</button>
+        </form>
+        <div id="ms-status" class="nifty-chart-status" role="status" aria-live="polite"></div>
+        <p id="ms-meta" class="analog-note"></p>
+        <div id="ms-chart" class="ifc-chart pm-chart" aria-label="Monthly score chart"></div>
+      </section>
     </div>
 
     <div id="tab-swing" class="tab-pane" role="tabpanel">
@@ -1534,6 +1551,7 @@ Research tool only. Not investment advice.
   <script src="/static/js/forward-calendar.js?v=3"></script>
   <script src="/static/js/infographic.js?v=1"></script>
   <script src="/static/js/planet-series.js?v=1"></script>
+  <script src="/static/js/monthly-score.js?v=1"></script>
   <script src="/static/js/swing-windows.js?v=4"></script>
   <script src="/static/js/birth-city.js?v=2"></script>
   <script src="/static/js/profiles-habits.js?v=2"></script>

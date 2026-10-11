@@ -17,9 +17,8 @@ API_ONLY = {
     "/healthz", "/webhook/sbc", "/api/sbc/latest",
     "/api/engine/aspect_windows", "/api/engine/fingerprint", "/api/engine/fingerprint/status",
     "/api/engine/forecast/ledger", "/api/engine/intraday_forecast/freeze",
-    # Muhurta / journal endpoints with no panel yet; monthly_projection is read by the
-    # infographic card (sbc/infographic.py), not by a tab.
-    "/api/engine/monthly_projection", "/api/engine/aspect_table", "/api/engine/trade_journal",
+    # Muhurta / journal endpoints with no panel yet.
+    "/api/engine/aspect_table", "/api/engine/trade_journal",
     "/api/engine/intraday_forecast/score", "/api/engine/market/freshness", "/api/engine/version",
 }
 

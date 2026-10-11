@@ -17,6 +17,7 @@ import swisseph as swe
 
 from .kp_ephemeris import _julday_ist
 from .market_events import ASPECT_ORBS
+from .muhurta import ghabad_kind_at
 
 # ---------------------------------------------------------------------------
 # Constants
@@ -277,7 +278,7 @@ def _build_row(when: datetime, name_a: str, name_b: str, aspect_code: str, angle
         "combust": bool(combust),
         "retro": bool(retro),
         "winner": winner,
-        "muhurta": "",
+        "muhurta": ghabad_kind_at(when) or "",
     }
 
 

@@ -62,7 +62,8 @@ say that 20 sessions is far too few for significance, and keep the series in the
 so later months can extend it.
 **Open:** which index the score is meant for, and what the score scale means (is 30 neutral? 0?).
 
-### B-41 · Monthly NIFTY score line with forecast-vs-actual overlay (P2)
+### B-41 · Monthly NIFTY score line with forecast-vs-actual overlay (P2) — ✅ done
+**Status (2026-10-11): done.** Score source decided with the owner: the fingerprint classical net that `/api/engine/monthly_projection` already returned, not `sbc/forecast.py` probability. That composite adds only validated components, so it is the base rate every day (a flat line). Panel: Monthly Score on the Forward Calendar tab (`static/js/monthly-score.js`): score on the left axis, NIFTY close on the right, hollow markers for non-trading days, freshness badge, "hypothetical, unvalidated" label and live 5-session hit rate. Tests: `tests/test_monthly_projection.py`. Browser-checked on a local server.
 **Scope:**
 - `GET /api/engine/monthly_projection?month=YYYY-MM` returns one value per calendar day from our own composite in `sbc/forecast.py`, flagged for trading or non-trading days, plus NIFTY closes so far.
 - A chart on the Forward Calendar tab: score line (left axis), NIFTY close (right axis), and an option to overlay an external series such as B-40's.
@@ -124,11 +125,9 @@ Mark the out-of-bounds band (±23.44°) on the declination chart and the 0 line 
 **Candidate factors** (graded before use): declination parallels and contra-parallels (no
 such factor exists today), and Mercury speed below 0.2°/day before a station.
 
-### B-46 · Ghabad Muhurat (P3)
-**Status (2026-10-05): definition found, ready to build.** Rule from Marathi Wikipedia, summarised in `docs/research/ghabad_muhurat.md`: count nakshatras Sun → Moon inclusive, × 3, + tithi (1–30), mod 7; remainder 3 = Ghabad, 0 = Ardha-ghabad. It reproduces the note's 05-10 mark (Ghabad 03:55–23:10 IST, the whole session).
+### B-46 · Ghabad Muhurat (P3) — ✅ done
+**Status (2026-10-05): definition found. Built and tested.** `ghabad_windows()` and `ghabad_kind_at()` in `sbc/muhurta.py` reproduce all 18 October windows in the research note to within a minute (`tests/test_muhurta.py`). The B-43 aspect table's `muhurta` column shows Ghabad / Ardha-ghabad. Bhadra is still empty there (B-43). Rule from Marathi Wikipedia, summarised in `docs/research/ghabad_muhurat.md`: count nakshatras Sun → Moon inclusive, × 3, + tithi (1–30), mod 7; remainder 3 = Ghabad, 0 = Ardha-ghabad. It reproduces the note's 05-10 mark (Ghabad 03:55–23:10 IST, the whole session).
 The note marks 05-10 as "Ghabad Muhurat, Bhadra". The codebase has no Ghabad calculation.
-**Blocked on a definition:** ask for the rule (tithi × weekday × nakshatra combination, or a
-specific text) before writing any code. When it exists, add it to `sbc/muhurta.py` and the B-43 table.
 
 ### B-47 · Rebuild the source's monthly score (P3, gated on B-40)
 Only start if B-40 (and at least two further months in the ledger) show the third-party

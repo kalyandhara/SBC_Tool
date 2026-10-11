@@ -158,3 +158,26 @@ def test_score_external_by_hand():
     assert m["spearman_next_return"]["n"] == 3  # the last day has no next session
     assert m["lowest_score_days"][0]["date"] == "2026-10-07"
     assert "too few" in m["caveat"]
+
+
+# ── B-41 monthly score endpoint ────────────────────────────────────────────
+
+def test_monthly_score_needs_a_valid_month(client):
+    assert client.get("/api/engine/monthly_projection").status_code == 400
+    assert client.get("/api/engine/monthly_projection?month=2026-13").status_code == 400
+
+
+def test_monthly_score_covers_every_calendar_day(client):
+    r = client.get("/api/engine/monthly_projection?month=2026-10")
+    assert r.status_code == 200
+    d = r.get_json()
+    assert len(d["days"]) == 31
+    assert d["disclaimer"] == "hypothetical, unvalidated"
+    assert {x["trading"] for x in d["days"]} == {True, False}
+
+
+def test_monthly_score_sends_no_closes_for_future_months(client):
+    future = (dt.date.today() + dt.timedelta(days=60)).strftime("%Y-%m")
+    d = client.get(f"/api/engine/monthly_projection?month={future}").get_json()
+    assert all(x["nifty_close"] is None for x in d["days"])
+
