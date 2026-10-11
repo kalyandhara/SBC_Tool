@@ -125,8 +125,8 @@ def ghabad_status(day: dt.date, jd: float | None = None) -> dict:
     remainder 3 = Ghabad, 0 = Ardha-ghabad, else None.
     """
     if jd is None:
-        # use 09:15 IST
-        t_ist = dt.datetime.combine(day, dt.time(9, 15), IST)
+        # use 09:15 IST (naive, matching this module's convention)
+        t_ist = dt.datetime.combine(day, dt.time(9, 15))
         jd = _jd(t_ist)
     sun_lon = _sun_lon(jd)
     moon_lon = _moon_lon(jd)

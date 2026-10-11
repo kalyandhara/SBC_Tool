@@ -40,6 +40,7 @@ def _blueprints() -> list:
     from sbc.api.blueprints.chakra_bp import chakra_bp
     from sbc.api.blueprints.chart_bp import chart_bp
     from sbc.api.blueprints.forecast_bp import forecast_bp
+    from sbc.api.blueprints.infographic_bp import infographic_bp
     from sbc.api.blueprints.integrations_bp import integrations_bp
     from sbc.api.blueprints.kp_bp import kp_bp
     from sbc.api.blueprints.overview_bp import overview_bp
@@ -50,7 +51,8 @@ def _blueprints() -> list:
     from sbc.api.blueprints.timing_bp import timing_bp
     from sbc.api.engine_bp import engine_bp
     return [engine_bp, overview_bp, chart_bp, sectors_bp, kp_bp, balance_bp, chakra_bp,
-            forecast_bp, research_bp, signals_bp, timing_bp, profile_bp, integrations_bp]
+            forecast_bp, research_bp, signals_bp, timing_bp, profile_bp, integrations_bp,
+            infographic_bp]
 
 
 def _rate_limit():
