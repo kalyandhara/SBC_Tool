@@ -900,3 +900,36 @@ def trade_journal():
         return jsonify({"error": str(e)}), 400
 
 
+
+
+@engine_bp.route("/transit-almanac")
+def transit_almanac():
+    """Yearly transit almanac (B-55): ?year=YYYY (default this year), &zodiac=sidereal|tropical."""
+    from sbc import transit_almanac as ta
+
+    try:
+        year = int(request.args.get("year") or datetime.date.today().year)
+        zodiac = request.args.get("zodiac", "sidereal")
+        data = ta.build(year, zodiac)
+    except ValueError:
+        return jsonify({"error": f"year must be {ta.MIN_YEAR}-{ta.MAX_YEAR}, zodiac sidereal or tropical"}), 400
+    return jsonify(data), 200
+
+
+@engine_bp.route("/bullion-week")
+def bullion_week():
+    """Weekly bullion brief (B-56) for the Mon-Fri week containing ?start (default: next Monday
+    on weekends, else this week's Monday)."""
+    from sbc import bullion_week as bw
+
+    raw = request.args.get("start")
+    try:
+        if raw:
+            day = datetime.date.fromisoformat(raw)
+        else:
+            today = datetime.date.today()
+            day = today + datetime.timedelta(days=(7 - today.weekday()) % 7) if today.weekday() >= 5 else today
+        data = bw.build(day)
+    except ValueError:
+        return jsonify({"error": "start must be YYYY-MM-DD"}), 400
+    return jsonify(data), 200

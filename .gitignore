@@ -215,3 +215,6 @@ reports/calendar/
 
 # GeoNames source files for data/cities.db (scripts/seed_cities.py)
 data/geonames/
+
+# Dukascopy month cache (B-57); rebuilt by scripts/fetch_dukascopy.py
+data/intraday/cache/

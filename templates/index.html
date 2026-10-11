@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <link rel="icon" type="image/svg+xml" href="/static/favicon.svg">
   <title>Sarvatobhadra Chakra - Market Prediction</title>
-  <link rel="stylesheet" href="/static/style.css?v=23">
+  <link rel="stylesheet" href="/static/style.css?v=27">
   <script src="/static/chart.umd.min.js"></script>
   <script src="/static/js/api-token.js"></script>
 </head>
@@ -66,43 +66,44 @@
   <nav class="nav-tabs-bar" aria-label="Workspaces">
     <div class="wrap nav-tabs" id="workspace-tabs" role="tablist">
       <button class="nav-tab active" data-tab="tab-overview" role="tab" aria-selected="true" aria-controls="tab-overview">
-        <span class="tab-icon">⚡</span> Executive Overview
+        <span class="tab-icon" aria-hidden="true">⚡</span> Executive Overview
       </button>
       <button class="nav-tab" data-tab="tab-chart" role="tab" aria-selected="false" aria-controls="tab-chart">
-        <span class="tab-icon">📈</span> Chart &amp; Timing
+        <span class="tab-icon" aria-hidden="true">📈</span> Chart &amp; Timing
       </button>
       <button class="nav-tab" data-tab="tab-sectors" role="tab" aria-selected="false" aria-controls="tab-sectors">
-        <span class="tab-icon">🎯</span> Sector Heatmap
+        <span class="tab-icon" aria-hidden="true">🎯</span> Sector Heatmap
       </button>
+      <button class="nav-tab" data-tab="tab-calendar" role="tab" aria-selected="false" aria-controls="tab-calendar">
+        <span class="tab-icon" aria-hidden="true">🗓️</span> Forward Calendar
+      </button>
+      <button class="nav-tab" data-tab="tab-bullion" role="tab" aria-selected="false" aria-controls="tab-bullion">
+        <span class="tab-icon" aria-hidden="true">🥇</span> Bullion Week
+      </button>
+      <span id="nav-asof" class="nav-asof" title="The session most pages are computed for. Change it with the Date field above." aria-live="polite"></span>
       <details class="advanced-workspaces">
-        <summary>Advanced analysis</summary>
+        <summary title="Pages whose signals have not beaten the base rate in testing">Research · unvalidated</summary>
         <div class="advanced-workspace-tabs">
-          <button class="nav-tab" data-tab="tab-research" role="tab" aria-selected="false" aria-controls="tab-research">
-            <span class="tab-icon">🔬</span> Research Lab
-          </button>
           <button class="nav-tab" data-tab="tab-kp" role="tab" aria-selected="false" aria-controls="tab-kp">
-            <span class="tab-icon">⏱️</span> KP Intraday
+            <span class="tab-icon" aria-hidden="true">⏱️</span> KP Intraday
           </button>
           <button class="nav-tab" data-tab="tab-kp-nifty" role="tab" aria-selected="false" aria-controls="tab-kp-nifty">
-            <span class="tab-icon">🪐</span> KP Chart (NIFTY)
+            <span class="tab-icon" aria-hidden="true">🪐</span> KP Chart (NIFTY)
           </button>
           <button class="nav-tab" data-tab="tab-kp-report" role="tab" aria-selected="false" aria-controls="tab-kp-report">
-            <span class="tab-icon">📄</span> KP Intraday Report
+            <span class="tab-icon" aria-hidden="true">📄</span> KP Intraday Report
           </button>
           <button class="nav-tab" data-tab="tab-crash" role="tab" aria-selected="false" aria-controls="tab-crash">
-            <span class="tab-icon">⚠️</span> Crash Windows
+            <span class="tab-icon" aria-hidden="true">⚠️</span> Crash Windows
           </button>
           <button class="nav-tab" data-tab="tab-balance" role="tab" aria-selected="false" aria-controls="tab-balance">
-            <span class="tab-icon">⚖️</span> Monthly Projection
+            <span class="tab-icon" aria-hidden="true">⚖️</span> Monthly Projection
           </button>
           <button class="nav-tab" data-tab="tab-analogs" role="tab" aria-selected="false" aria-controls="tab-analogs">
-            <span class="tab-icon">🔭</span> Analog Lab
-          </button>
-          <button class="nav-tab" data-tab="tab-calendar" role="tab" aria-selected="false" aria-controls="tab-calendar">
-            <span class="tab-icon">🗓️</span> Forward Calendar
+            <span class="tab-icon" aria-hidden="true">🔭</span> Analog Lab
           </button>
           <button class="nav-tab" data-tab="tab-swing" role="tab" aria-selected="false" aria-controls="tab-swing">
-            <span class="tab-icon">🌊</span> Swing Windows
+            <span class="tab-icon" aria-hidden="true">🌊</span> Swing Windows
           </button>
         </div>
       </details>
@@ -265,17 +266,17 @@
                   <div class="coord-block">
                     <span class="coord-label">Longitude</span>
                     <div class="deg-min-sec">
-                      <input type="number" placeholder="°" min="-180" max="180" id="lon-deg">°
-                      <input type="number" placeholder="′" min="0" max="59" id="lon-min">′
-                      <input type="number" placeholder="″" min="0" max="59" id="lon-sec">″
+                      <input type="number" placeholder="°" min="-180" max="180" id="lon-deg" aria-label="Longitude degrees">°
+                      <input type="number" placeholder="′" min="0" max="59" id="lon-min" aria-label="Longitude minutes">′
+                      <input type="number" placeholder="″" min="0" max="59" id="lon-sec" aria-label="Longitude seconds">″
                     </div>
                   </div>
                   <div class="coord-block">
                     <span class="coord-label">Latitude</span>
                     <div class="deg-min-sec">
-                      <input type="number" placeholder="°" min="-90" max="90" id="lat-deg">°
-                      <input type="number" placeholder="′" min="0" max="59" id="lat-min">′
-                      <input type="number" placeholder="″" min="0" max="59" id="lat-sec">″
+                      <input type="number" placeholder="°" min="-90" max="90" id="lat-deg" aria-label="Latitude degrees">°
+                      <input type="number" placeholder="′" min="0" max="59" id="lat-min" aria-label="Latitude minutes">′
+                      <input type="number" placeholder="″" min="0" max="59" id="lat-sec" aria-label="Latitude seconds">″
                     </div>
                   </div>
                 </div>
@@ -305,15 +306,15 @@
                 </label>
               </div>
             </div>
-            <div class="profile-controls" style="display:flex;gap:8px;align-items:center;margin-bottom:8px">
-              <select id="bd-profile-select" style="flex:1">
+            <div class="profile-controls u-row u-center-y u-mb8">
+              <select class="u-flex1" id="bd-profile-select" aria-label="Saved birth profile">
                 <option value="">-- Select saved profile --</option>
               </select>
               <button type="button" class="btn btn-secondary" id="bd-profile-rename">Rename</button>
               <button type="button" class="btn btn-secondary" id="bd-profile-default">Set Default</button>
               <button type="button" class="btn btn-secondary" id="bd-profile-delete">Delete</button>
               <button type="button" class="btn btn-secondary" id="bd-profile-export">Export</button>
-              <input type="file" id="bd-profile-import" accept="application/json" style="display:none">
+              <input type="file" id="bd-profile-import" aria-label="Import birth profile file" accept="application/json" style="display:none">
               <button type="button" class="btn btn-secondary" id="bd-profile-import-btn">Import</button>
             </div>
             <div class="form-actions">
@@ -501,12 +502,12 @@
           <h2>Rahu/Ketu Trap Calendar</h2>
           <span class="panel-sub">Industry-wise daily trap scores · v1</span>
         </div>
-        <div class="trap-controls" style="display:flex;gap:8px;flex-wrap:wrap;margin:8px 0">
-          <label style="font-size:13px">Start <input type="date" id="rk-start" style="margin-left:4px"></label>
-          <label style="font-size:13px">End <input type="date" id="rk-end" style="margin-left:4px"></label>
-          <button id="rk-run" class="btn btn-primary" style="margin-left:auto">Load Calendar</button>
+        <div class="trap-controls u-row u-wrap u-my8">
+          <label class="u-fs13">Start <input class="u-ml4" type="date" id="rk-start"></label>
+          <label class="u-fs13">End <input class="u-ml4" type="date" id="rk-end"></label>
+          <button id="rk-run" class="btn btn-primary u-mlauto">Load Calendar</button>
         </div>
-        <div id="rk-heatmap" style="overflow:auto;max-height:600px"></div>
+        <div class="u-scroll600" id="rk-heatmap"></div>
       </section>
 
       <!-- Upcoming Yoga Alerts -->
@@ -526,8 +527,8 @@
           <button class="btn btn-sm btn-secondary" id="toggle-trading-details">Show Details</button>
         </div>
         <div id="trading-signals-details" class="hidden">
-          <div id="astro-score" class="panel-sub" style="text-align:center;margin:20px 0"></div>
-          <div class="monthly-heatmap-controls" style="margin:12px 0">
+          <div id="astro-score" class="panel-sub u-center u-my20"></div>
+          <div class="monthly-heatmap-controls u-my12">
             <label>Sector
               <select id="nakshatra-sector-select" class="form-control">
                 <option>Nifty Bank</option>
@@ -540,16 +541,16 @@
                 <option>Nifty Realty</option>
               </select>
             </label>
-            <button id="trading-predicted-actual-load" class="btn" style="margin-left:8px" title="Experimental: not validated">Load Projection vs Actual <span class="experimental-badge">Experimental</span></button>
+            <button id="trading-predicted-actual-load" class="btn u-ml8" title="Experimental: not validated">Load Projection vs Actual <span class="experimental-badge">Experimental</span></button>
           </div>
-          <div id="trading-signals-predicted-actual" style="height:650px;margin-top:24px">
-            <div style="display:flex;gap:12px;margin-bottom:8px;font-size:12px;color:#94a3b8">
-              <span>Top: SBC intraday projection (/api/intraday_projection) &mdash; <strong style="color:var(--accent)">experimental, not validated</strong></span>
+          <div class="u-h650 u-mt24" id="trading-signals-predicted-actual">
+            <div class="legend-row">
+              <span>Top: SBC intraday projection (/api/intraday_projection) &mdash; <strong class="u-accent">experimental, not validated</strong></span>
               <span>Bottom: Actual price candles</span>
             </div>
-            <div id="predicted-actual-top" style="height:300px;border:1px solid #1e293b;border-radius:6px"></div>
-            <div style="height:8px"></div>
-            <div id="predicted-actual-bottom" style="height:340px;border:1px solid #1e293b;border-radius:6px"></div>
+            <div class="chart-box u-h300" id="predicted-actual-top"></div>
+            <div class="u-h8"></div>
+            <div class="chart-box u-h340" id="predicted-actual-bottom"></div>
           </div>
           <h1 id="astro-score-label">&mdash;</h1>
           <div id="astro-score-sub">Loading live panchanga&hellip;</div>
@@ -558,8 +559,8 @@
             <div><b>⚡ REVERSAL WINDOWS ACTIVE TODAY</b></div>
             <div id="reversal-details"></div>
           </div>
-          <div id="sector-map" style="margin-top:20px">
-            <h3>Today's Sector Map <span id="sector-map-overall" style="float:right"></span></h3>
+          <div class="u-mt20" id="sector-map">
+            <h3>Today's Sector Map <span class="u-fr" id="sector-map-overall"></span></h3>
             <div id="sector-map-items"></div>
           </div>
         </div>
@@ -628,11 +629,11 @@
         <div id="intraday-proj-status" class="nifty-chart-status"></div>
         <div id="intraday-proj-chart" class="intraday-proj-chart"></div>
         <div id="intraday-proj-legend" class="nifty-chart-legend">
-          <span><i style="display:inline-block;width:14px;height:3px;border-radius:2px;background:#3b82f6;margin-right:5px"></i> Cumulative KP path</span>
-          <span><i style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#f59e0b;margin-right:5px"></i> Reversal turning points</span>
-          <span><i style="display:inline-block;width:10px;height:10px;border-radius:2px;background:rgba(34,197,94,0.85);margin-right:5px"></i> Benefic hora momentum</span>
-          <span><i style="display:inline-block;width:10px;height:10px;border-radius:2px;background:rgba(239,68,68,0.85);margin-right:5px"></i> Malefic hora momentum</span>
-          <span><i style="display:inline-block;width:10px;height:10px;border-radius:2px;background:rgba(148,163,184,0.6);margin-right:5px"></i> Dahan (Bhadra) muted</span>
+          <span><i class="sw sw-line sw-c-blue"></i> Cumulative KP path</span>
+          <span><i class="sw sw-dot sw-c-amber"></i> Reversal turning points</span>
+          <span><i class="sw sw-sq10 sw-c-bull"></i> Benefic hora momentum</span>
+          <span><i class="sw sw-sq10 sw-c-bear"></i> Malefic hora momentum</span>
+          <span><i class="sw sw-sq10 sw-c-neutral"></i> Dahan (Bhadra) muted</span>
           <span>Shaded bands: hora lord</span>
         </div>
         <div id="intraday-proj-tip" class="nifty-chart-tip hidden"></div>
@@ -1026,24 +1027,24 @@
         <div id="kp-intraday-path-chart" class="kp-intraday-chart" style="display:none;">
           <h3>Intraday Path (cumulative KP composite score) <span class="experimental-badge">Experimental</span></h3>
           <p class="experimental-note"><strong>Experimental &mdash; no validated edge.</strong> Back-test on Swiss-Ephemeris KP data, 4 Aug&ndash;30 Sep 2026 (41 days): hourly direction hit 50.8%, regime-shift hit 49.7%, correlation with returns +0.004 &mdash; indistinguishable from chance. Shown for research only; do not trade on it. Details: <code>docs/INTRADAY_PATH_VALIDATION.md</code>.</p>
-          <div id="kp-path-container" style="height: 320px; width: 100%;"></div>
-          <div id="kp-nifty-intraday-wrap" style="margin-top:24px; display:none;">
+          <div class="u-h320 u-w100" id="kp-path-container"></div>
+          <div class="u-mt24" id="kp-nifty-intraday-wrap" style="display:none;">
             <h4>NIFTY Intraday Chart (3-min)</h4>
-            <div id="kp-nifty-intraday-disabled" style="text-align:center; padding:40px; color:#94a3b8;">Intraday chart is unavailable for future dates.</div>
-            <div id="kp-nifty-intraday-frame" style="height:380px; width:100%; border:1px solid #1e293b; border-radius:6px; display:none;">
+            <div class="empty-note" id="kp-nifty-intraday-disabled">Intraday chart is unavailable for future dates.</div>
+            <div class="chart-box u-h380" id="kp-nifty-intraday-frame" style="display:none;">
               <!-- TradingView embed will be injected here -->
             </div>
           </div>
-          <pre id="kp-path-data" style="font-size:11px; white-space: pre-wrap;"></pre>
+          <pre class="u-pre11" id="kp-path-data"></pre>
         </div>
         <div id="kp-intraday-content" class="kp-intraday-content"></div>
 
       <!-- Kota Chakra Prediction -->
-      <div id="kota-chakra-panel" class="kp-intraday-chart" style="margin-top:24px;">
+      <div id="kota-chakra-panel" class="kp-intraday-chart u-mt24">
         <h3>🏰 Kota Chakra Prediction</h3>
-        <div style="display:flex; gap:8px; margin-bottom:12px;">
-          <select id="kota-date"></select>
-          <select id="kota-instrument">
+        <div class="u-row u-mb12">
+          <select id="kota-date" aria-label="Kota Chakra date"></select>
+          <select id="kota-instrument" aria-label="Kota Chakra instrument">
             <option value="NIFTY">NIFTY</option>
             <option value="BANKNIFTY">BANKNIFTY</option>
           </select>
@@ -1057,7 +1058,7 @@
 
       <!-- KP Intraday Price Chart -->
       <div id="kp-intraday-chart" class="kp-intraday-chart">
-        <div id="kp-chart-container" style="height: 400px; width: 100%;"></div>
+        <div class="u-h400 u-w100" id="kp-chart-container"></div>
         <div class="kp-chart-legend">
           <span><i class="mk mk-bull"></i> Bullish Window</span>
           <span><i class="mk mk-bear"></i> Bearish Window</span>
@@ -1111,86 +1112,12 @@
       <section id="kp-report-page" class="panel">
         <div class="panel-head">
           <h2>KP Intraday Trend Change Prediction Report</h2>
-          <span class="panel-sub">Static report view · Research only</span>
+          <span class="panel-sub">Live report for the header date's NSE session · Research only, back-tested at chance</span>
           <div class="panel-actions"><button type="button" class="btn btn-secondary infographic-btn" data-infographic="kp_report" data-params="" title="Download a PNG card for this tab">🖼 Infographic</button></div>
         </div>
         <div class="panel-body">
-          <pre id="kp-report-text" style="white-space:pre-wrap;font-family:ui-monospace,monospace;font-size:12px;line-height:1.4;color:var(--text);">KP INTRADAY TREND CHANGE PREDICTION REPORT
-Trading Day: sample report, not a live session
-NIFTY / BANK NIFTY  •  NSE Mumbai  •  KP Ayanamsha
-Source: KP_Data_01Aug2026_to_30Sep2026.csv   |   Generated: 02-Sep-2026 08:23
-Astro Quant Research Lab | Growwmore Consulting
-1. Day Chart Signature
-Day Lord: Mars.   Moon: Capricorn sign, Moon star (sig strength +1.00), opening sub Mars.   Moon speed: 12.21 deg/day.
-Day-level bias (Day Lord nature + Moon Star Lord significators): +0.50  -> neutral.
-Rahu Moon-sub windows (Rule A-13): 10:40 to 14:35.  Gains made inside these windows are at risk of full give-back after the sub ends — trade half size, breakout-only, and do not project Rahu-window momentum forward.
-Moon Affliction Gate (Rule A-14): PASSED.
-Hora timeline with hora-lord aspects (v12.2, market hours):
-•	9:15-9:29  Venus (Beneficial).  Lord receives: Mars 4th aspect (99.8 deg sep) -> trending/impulsive;  Rahu 9th aspect (111.9 deg sep) -> trap/false-move risk.
-•	9:29-10:29  Mercury (Quick).  Lord receives: Saturn 7th aspect (174.0 deg sep) -> suppression/slow.
-•	10:29-11:30  Moon (Gentle).  Lord receives: Mars 7th aspect (171.1 deg sep) -> trending/impulsive;  Jupiter 7th aspect (167.4 deg sep) -> supported/expansive.
-•	11:30-12:31  Saturn (Sluggish).  Lord receives: Sun 7th aspect (166.9 deg sep) -> authoritative;  Mercury 7th aspect (174.0 deg sep) -> choppy/two-sided;  Jupiter 9th aspect (125.7 deg sep) -> supported/expansive.
-•	12:31-13:31  Jupiter (Fruitful).  Lord receives: Moon 7th aspect (167.4 deg sep) -> sentiment-driven.
-•	13:31-14:32  Mars (Aggressive)  DAY-LORD CONFLUENCE.  Lord receives: Moon 7th aspect (171.1 deg sep) -> sentiment-driven.
-•	14:32-15:30  Sun (Vigorous).  Lord receives: Saturn 7th aspect (166.9 deg sep) -> suppression/slow.
-Rule under test (frozen 18-Jul-2026): base hora quality is modified by aspects the hora lord receives — Mars aspect = trending/impulsive, Rahu = trap/false-move, Jupiter = support (can override a malefic base), Saturn = suppression. Hora currently contributes weight 0.3 to slot scores. 17-Jul evidence: squeeze fell in the Mars+Rahu-aspected Venus confluence hora (fits), morning rally in Jupiter-aspected Saturn hora (fits), but plain Jupiter hora hosted the stall (does not fit). Do not treat hora or its aspects as a standalone signal.
-1b. Navamsa (D-9) Strength Layer (v15)
-Key planet Navamsa placements (opening): Moon: Aries (neutral);  Asc Sub (Mercury): Leo (friend);  Sun: Aquarius (enemy);  Jupiter: Aquarius (neutral);  Saturn: Sagittarius (neutral).
-Moon Navamsa Element (Rule N-3): FIRE — expect volatility, strong directional moves; favours trending strategies over mean-reversion.
-Lagna Lord Navamsa (Rule N-5): kendra/trikona in D-9 (trend sustains) (effect: +0.20 on slot scores).
-1c. SBC Nadi Classification (v15.1)
-Moon Nakshatra (opening): Shravana.   Nadi: Amrut  (score multiplier: 1.05×)
-Market character: Steady growth — standard trending; trade with the dominant direction
-Nadi stable all session — no nakshatra transition during market hours.
-2. Master Regime Shifts (Moon Sub-Lord, Rule A-11/A-12)
-•	10:40  Moon sub change Mars->Rahu.  Incoming sub-lord Rahu (house-set strength -1.8) -> post-shift regime: sell-on-rise.
-•	14:35  Moon sub change Rahu->Jupiter.  Incoming sub-lord Jupiter (house-set strength -0.5) -> post-shift regime: range / two-sided.
-3. Predictive Intraday Path
-Orange markers = Tier-1 / regime-shift timestamps. Path is directional shape, not price target. Windows are candidates until price confirms.
-4. Trend Change Timing Table
-Time	Grade	Direction	Trigger (Rule A-8/A-11)	Asc sub house-set	Hora	Navamsa D-9	Nadi
-9:20	PURE-SET ALARM (Tier-1)	Bullish	Asc sub change Mercury->Ketu	10	Venus	Taurus (debilitated) Mo:FI	Amrut (1.05×)
-9:35	PURE-SET ALARM (Tier-1)	Bullish	Asc sub change Venus->Sun	11	Mercury	Aquarius (enemy) Mo:FI	Amrut (1.05×)
-9:40	TIER-1	Bullish	Asc sub change Sun->Moon	3, 10	Mercury	Aries (neutral) Mo:FI	Amrut (1.05×)
-9:45	TIER-1	Bullish	Asc star change Rahu->Jupiter; Asc sub change Moon->Jupiter	3, 6, 9, 10, 12	Mercury	Aquarius (neutral) Mo:FI	Amrut (1.05×)
-9:55	TIER-1	Bullish	Asc sub change Jupiter->Saturn	4, 5, 9, 11, 12	Mercury	Sagittarius (neutral) Mo:FI	Amrut (1.05×)
-10:05	TIER-1	Bullish	Asc sub change Saturn->Mercury	2, 7, 9, 11, 12	Mercury	Leo (friend) Mo:FI	Amrut (1.05×)
-10:10	PURE-SET ALARM (Tier-1)	Bullish	Asc sub change Mercury->Ketu	10	Mercury	Taurus (debilitated) Mo:FI	Amrut (1.05×)
-10:15	TIER-1	Bearish	Asc sub change Ketu->Venus	1, 4, 8, 12	Mercury	Capricorn (friend) Mo:FI	Amrut (1.05×)
-10:25	PURE-SET ALARM	Bullish	Asc sub change Venus->Sun	10, 11	Mercury	Aquarius (enemy) Mo:FI	Amrut (1.05×)
-10:30	TIER-2	Bullish	Asc sign change; Asc sub change Sun->Moon	3, 9	Moon	Aries (neutral) Mo:FI	Amrut (1.05×)
-10:40	REGIME SHIFT (neutral hand-off)	Bearish	Moon sub change Mars->Rahu	1, 3, 6, 8	Moon	Scorpio (debilitated) Mo:FI	Amrut (1.05×)
-10:45	TIER-1	Bearish	Asc star change Jupiter->Saturn; Asc sub change Rahu->Saturn	3, 4, 5, 8, 11	Moon	Sagittarius (neutral) Mo:FI	Amrut (1.05×)
-11:05	TIER-2	Bearish	Asc sub change Mercury->Venus	3, 7, 11, 12	Moon	Capricorn (friend) Mo:FI	Amrut (1.05×)
-11:15	PURE-SET ALARM	Bullish	Asc sub change Venus->Sun	10	Moon	Aquarius (enemy) Mo:FI	Amrut (1.05×)
-11:25	TIER-1	Bearish	Asc sub change Moon->Mars	1, 2, 5, 6, 8, 9	Moon	Cancer (debilitated VARGOTTAMA PUSHKARA) Mo:FI	Amrut (1.05×)
-11:30	TIER-2	Bearish	Asc sub change Mars->Rahu	1, 3, 6, 8	Moon	Scorpio (debilitated) Mo:FI	Amrut (1.05×)
-11:45	TIER-1 (cluster bottom)	Bullish	Asc star change Saturn->Mercury; Asc sub change Jupiter->Mercury	1, 6, 8, 11	Saturn	Leo (friend) Mo:FI	Amrut (1.05×)
-12:15	TIER-1	Bearish	Asc sub change Moon->Mars	1, 2, 4, 5, 6, 8	Saturn	Cancer (debilitated VARGOTTAMA PUSHKARA) Mo:FI	Amrut (1.05×)
-12:20	TIER-1	Bearish	Asc sub change Mars->Rahu	1, 3, 5, 8, 12	Saturn	Scorpio (debilitated) Mo:FI	Amrut (1.05×)
-12:30	TIER-1	Bearish	Asc sub change Rahu->Jupiter	2, 4, 8, 10	Saturn	Aquarius (neutral) Mo:FI	Amrut (1.05×)
-12:35	TIER-1	Bearish	Asc sub change Jupiter->Saturn	3, 4, 8, 10	Jupiter	Sagittarius (neutral) Mo:FI	Amrut (1.05×)
-12:45	PURE-SET ALARM (Tier-1)	Bearish	Asc sign change; Asc star change Mercury->Ketu; Asc sub change Saturn->Ketu	8	Jupiter	Taurus (debilitated) Mo:FI	Amrut (1.05×)
-12:50	PURE-SET ALARM COUNTER-REGIME	Bullish	Asc sub change Ketu->Venus	2, 6, 11	Jupiter	Capricorn (friend) Mo:FI	Amrut (1.05×)
-13:00	TIER-2	Bearish	Asc sub change Venus->Moon	2, 8	Jupiter	Aries (neutral) Mo:FI	Amrut (1.05×)
-13:05	TIER-1	Bearish	Asc sub change Moon->Mars	1, 4, 5, 7, 8, 12	Jupiter	Cancer (debilitated VARGOTTAMA PUSHKARA) Mo:FI	Amrut (1.05×)
-13:10	TIER-1	Bearish	Asc sub change Mars->Rahu	2, 5, 7, 12	Jupiter	Scorpio (debilitated) Mo:FI	Amrut (1.05×)
-13:35	TIER-2	Bearish	Asc sub change Saturn->Mercury	5, 7, 10, 12	Mars *DL*	Leo (friend) Mo:EA	Amrut (1.05×)
-13:45	PURE-SET ALARM COUNTER-REGIME	Bullish	Asc star change Ketu->Venus; Asc sub change Mercury->Venus	2, 6, 10, 11	Mars *DL*	Capricorn (friend) Mo:EA	Amrut (1.05×)
-13:45	REVERSAL CANDIDATE (v14)	Bullish	v14 REVERSAL: bearish exhaustion + bullish pure-set alarm(s)	2, 6, 10, 11	Mars *DL*	Capricorn (friend) Mo:EA	Amrut (1.05×)
-14:00	TIER-2	Bearish	Asc sub change Moon->Mars	1, 4, 5, 7, 8, 12	Mars *DL*	Cancer (debilitated VARGOTTAMA PUSHKARA) Mo:EA	Amrut (1.05×)
-14:35	REGIME SHIFT (neutral hand-off)	Bearish	Moon sub change Rahu->Jupiter; Asc sub change Mercury->Ketu	8	Sun	Taurus (debilitated) Mo:EA	Amrut (1.05×)
-14:35	REVERSAL CANDIDATE (v14)	Bearish	v14 REVERSAL: bullish exhaustion + bearish pure-set alarm(s)	8	Sun	Taurus (debilitated) Mo:EA	Amrut (1.05×)
-Counter-regime pure-set alarms (v12): 12:50 Bullish (+3.15); 12:55 Bullish (+3.15); 13:45 Bullish (+3.15).  These oppose the active Moon regime and fire at reduced conviction (75% of a full pure alarm). In v11 they were suppressed entirely. Treat as early reversal warnings — trade ONLY on price confirmation (first 5 candles ≥ 15 pts), at reduced size, never as a standalone counter-trend entry.
-REVERSAL CANDIDATE signals (v14): 13:45 Bullish (score +9.97, from Bearish exhaustion + 8 pure-set alarm(s)).  14:35 Bearish (score -12.36, from Bullish exhaustion + 2 pure-set alarm(s)).  These signals are generated when score exhaustion in one direction coincides with pure-set alarms in the opposite direction — a high-conviction reversal setup. Confirm with price: first 5 candles must move ≥ 15 pts in the reversal direction.
-5. Intraday Trading View
-Strongest bullish candidate window: 9:35 to 10:10 (peak score 16.64).  Strongest bearish candidate window: 12:10 to 12:45 (deepest score -20.23).
-Score exhaustion warning: Bullish score exhaustion: score fell from 16.64 at 9:50 to 3.74 at 10:00. Treat longs as reversal-risk unless price confirms. | Mixed-house reversal risk: 4/7/9 appear inside the directional bullish candidate (9:35 Asc star Rahu houses 2,4,7,9; 9:40 Asc star Rahu houses 2,4,7,9; 9:45 Moon sub Mars houses 2,3,6,7,9,10). Treat continuation as fragile unless price confirms.
-Playbook: trade Tier-1 flips only, in the direction of the active Moon sub-lord regime. Longs are valid only in buy-on-dip regimes; shorts only in sell-on-rise regimes. EXCEPTION (v14): REVERSAL CANDIDATE signals may trade AGAINST the regime when exhaustion + pure-set alarms confirm — these are early reversal entries with elevated conviction. Every candidate window requires price confirmation: the first 5 five-minute candles must move at least 15 NIFTY points in the predicted direction, plus normal chart confirmation such as reversal candle, VWAP reclaim/loss, or CPR level break. Maximum three Tier-1 trades per session (Rule D-3).
-Bank Nifty calibration (Section 7): widen timing tolerance to ±8 minutes, expect one-grade-stronger response to Moon-based triggers, and trade Rahu-sub windows at half size, breakout-only.
-6. Disclaimer
-Educational research output combining KP astrology with systematic trading discipline. Not investment advice. Derivatives trading involves substantial risk of loss. Validate all signals with independent backtesting before deploying capital.
-</pre>
+          <p id="kp-report-status" class="nifty-chart-status" role="status" aria-live="polite">Opens on the live report for the session in the header date.</p>
+          <div id="kp-report-text" class="kp-intraday-content"></div>
         </div>
       </section>
     </div>
@@ -1215,7 +1142,7 @@ Educational research output combining KP astrology with systematic trading disci
           <button type="button" class="btn btn-secondary infographic-btn" data-infographic="crash" data-params="crash-start-date:start,crash-end-date:end" title="Download a PNG card for this tab">🖼 Infographic</button>
         </div>
         <div id="crash-report-content" class="crash-report-content panel-body">
-          <pre id="crash-report-text" style="white-space:pre-wrap;font-family:ui-monospace,monospace;font-size:12px;line-height:1.4;color:var(--text);">Indicative Market Crash Windows — Planetary Combinations
+          <pre class="pre-report" id="crash-report-text">Indicative Market Crash Windows — Planetary Combinations
 Period analysed: 01-10-2026 to 31-12-2026    |    Generated: 07-10-2026    |    Sidereal (Lahiri), mean nodes
 1. Summary
 92 days scanned. 1 indicative risk period(s) found (1 HIGH, 0 ELEVATED), covering 8 days.
@@ -1290,9 +1217,9 @@ Research tool only. Not investment advice.
           <button type="button" class="btn btn-secondary infographic-btn" data-infographic="monthly" data-params="daily-balance-date:month" title="Download a PNG card for this tab">🖼 Infographic</button>
         </div>
         <div id="daily-balance-content" class="daily-balance-content">
-          <div id="daily-balance-chart-container" style="height: 420px; width: 100%;"></div>
+          <div class="u-h420 u-w100" id="daily-balance-chart-container"></div>
           <div class="daily-balance-legend">
-            <span><i class="line-swatch" style="background:#1E88E5"></i> SBC confluence (blend)</span>
+            <span><i class="line-swatch sw-c-material-blue"></i> SBC confluence (blend)</span>
             <span><i class="zone-swatch bull"></i> Bullish zone</span>
             <span><i class="zone-swatch neutral"></i> Neutral zone</span>
             <span><i class="zone-swatch bear"></i> Bearish zone</span>
@@ -1316,80 +1243,14 @@ Research tool only. Not investment advice.
         <div id="cm-summary" class="cm-summary"></div>
         <div id="cm-matrix" class="cm-matrix"></div>
         <div id="cm-legend" class="nifty-chart-legend">
-          <span><i style="display:inline-block;width:12px;height:12px;border-radius:2px;background:#3d8b40;margin-right:5px"></i> BULLISH</span>
-          <span><i style="display:inline-block;width:12px;height:12px;border-radius:2px;background:#cc4b3d;margin-right:5px"></i> BEARISH</span>
-          <span><i style="display:inline-block;width:12px;height:12px;border-radius:2px;background:#c9993a;margin-right:5px"></i> NEUTRAL / no signal</span>
+          <span><i class="sw sw-sq12 sw-c-green"></i> BULLISH</span>
+          <span><i class="sw sw-sq12 sw-c-red"></i> BEARISH</span>
+          <span><i class="sw sw-sq12 sw-c-gold"></i> NEUTRAL / no signal</span>
         </div>
       </section>
     </div>
 
     <!-- TAB 6: ASTRO RESEARCH LAB -->
-    <div id="tab-research" class="tab-pane" role="tabpanel">
-      <section class="panel research-lab-panel">
-        <div class="panel-head">
-          <h2>Astro Research Lab</h2>
-          <span class="panel-sub">Event studies compare lunar signals with a market-wide baseline.</span>
-        </div>
-        <div class="research-controls">
-          <label>Market
-            <select id="research-ticker">
-              <option value="^NSEI">NIFTY 50</option>
-              <option value="^NSEBANK">NIFTY Bank</option>
-            </select>
-          </label>
-          <label>Event
-            <select id="research-event">
-              <option value="new_moon">New Moon</option>
-              <option value="full_moon">Full Moon</option>
-            </select>
-          </label>
-          <label>Forward window
-            <select id="research-horizon">
-              <option value="1">1 day</option>
-              <option value="5" selected>5 days</option>
-              <option value="10">10 days</option>
-              <option value="20">20 days</option>
-            </select>
-          </label>
-          <label>Start <input type="date" id="research-start"></label>
-          <label>End <input type="date" id="research-end"></label>
-          <label>Cost (bps) <input type="number" id="research-cost-bps" value="10" min="0" max="1000"></label>
-          <button id="research-run" class="btn">Run study</button>
-          <label>Train days <input type="number" id="research-train-days" value="730" min="90" max="3650"></label>
-          <label>Test days <input type="number" id="research-test-days" value="180" min="30" max="730"></label>
-          <label>Step days <input type="number" id="research-step-days" value="180" min="30" max="730"></label>
-          <button id="research-walk-forward-run" class="btn btn-secondary">Run walk-forward</button>
-        </div>
-        <div id="research-status" class="nifty-chart-status" role="status" aria-live="polite"></div>
-        <div id="research-results" class="research-results"></div>
-        <div id="research-walk-forward-results" class="research-results"></div>
-        <div class="research-subsection">
-          <h3>Planetary Aspect Research Grid</h3>
-          <div class="research-controls">
-            <label>Planet A <input id="research-planet-a" placeholder="e.g. Jupiter"></label>
-            <label>Planet B <input id="research-planet-b" placeholder="e.g. Saturn"></label>
-            <label>Aspect
-              <select id="research-aspect"><option value="">All aspects</option><option>conjunction</option><option>sextile</option><option>square</option><option>trine</option><option>opposition</option></select>
-            </label>
-            <button id="research-aspect-run" class="btn btn-secondary">Load aspect grid</button>
-          </div>
-          <div id="research-aspect-results" class="research-results"></div>
-        </div>
-        <div class="research-subsection">
-          <h3>Solar/Lunar Cycles</h3>
-          <button id="research-cycle-run" class="btn btn-secondary">Load cycle explorer</button>
-          <div id="research-cycle-results" class="research-results"></div>
-        </div>
-        <div class="research-exports">
-          <a id="research-export-json" class="btn btn-secondary" href="#">JSON</a>
-          <a id="research-export-csv" class="btn btn-secondary" href="#">CSV</a>
-          <a id="research-export-md" class="btn btn-secondary" href="#">Markdown</a>
-        </div>
-      </section>
-    </div>
-
-
-
     <div id="tab-analogs" class="tab-pane" role="tabpanel">
       <section class="panel analog-lab">
         <div class="panel-head">
@@ -1496,6 +1357,41 @@ Research tool only. Not investment advice.
         <p id="ms-meta" class="analog-note"></p>
         <div id="ms-chart" class="ifc-chart pm-chart" aria-label="Monthly score chart"></div>
       </section>
+      <section class="panel analog-lab" id="transit-almanac">
+        <div class="panel-head">
+          <h2>Transit Almanac</h2>
+          <span class="panel-sub">A year of stations, sign changes, exact aspects and eclipses, Pluto to Mercury plus the Moon's nodes. Dates in IST.</span>
+        </div>
+        <div class="analog-banner" role="note">
+          <strong>Traditional readings, untested.</strong>
+          The meanings are classical astrology in plain words. None has been tested against NIFTY or bullion prices yet.
+        </div>
+        <form id="ta-form" class="research-controls">
+          <label>Year <input type="number" id="ta-year" min="1990" max="2050" step="1"></label>
+          <label>Zodiac
+            <select id="ta-zodiac">
+              <option value="sidereal" selected>Sidereal (Lahiri)</option>
+              <option value="tropical">Tropical (Western)</option>
+            </select>
+          </label>
+          <label class="ta-check"><span>Fast planets</span><span><input type="checkbox" id="ta-fast"> Venus &amp; Mercury aspects</span></label>
+          <button type="submit" class="btn">Show year</button>
+        </form>
+        <div id="ta-status" class="nifty-chart-status" role="status" aria-live="polite"></div>
+        <div id="ta-chart" class="ta-chart"></div>
+        <div class="ta-legend" aria-hidden="true">
+          <span><i class="ta-fire"></i>Fire</span><span><i class="ta-earth"></i>Earth</span><span><i class="ta-air"></i>Air</span><span><i class="ta-water"></i>Water</span>
+          <span>Solid direct, dotted retrograde</span><span>▲ aspect (red tense, teal easy, gold conjunction)</span><span>◆ station · | sign change · ● eclipse</span>
+        </div>
+        <div class="research-controls ta-filter" id="ta-filter" role="group" aria-label="Event filter">
+          <button type="button" class="ta-seg" data-f="all" aria-pressed="true">All</button>
+          <button type="button" class="ta-seg" data-f="station" aria-pressed="false">Stations</button>
+          <button type="button" class="ta-seg" data-f="ingress" aria-pressed="false">Sign changes</button>
+          <button type="button" class="ta-seg" data-f="aspect" aria-pressed="false">Aspects</button>
+          <button type="button" class="ta-seg" data-f="eclipse" aria-pressed="false">Eclipses</button>
+        </div>
+        <div id="ta-ledger"></div>
+      </section>
     </div>
 
     <div id="tab-swing" class="tab-pane" role="tabpanel">
@@ -1533,6 +1429,27 @@ Research tool only. Not investment advice.
 
     <!-- Global Disclaimer -->
     <p class="disclaimer">For study and research. Not financial advice. Financial markets involve substantial risk of loss. Trade on your own analysis.</p>
+    <div id="tab-bullion" class="tab-pane" role="tabpanel">
+      <section class="panel analog-lab">
+        <div class="panel-head">
+          <h2>Bullion Week</h2>
+          <span class="panel-sub">Gold and silver on MCX, Monday to Friday: Rahu Kaal, horas, the Moon's nakshatra and KP sub-lord through the session, sky events and US data.</span>
+        </div>
+        <div class="analog-banner" role="note">
+          <strong>Hypotheses, not signals.</strong>
+          Sub-lord readings follow a published bullion sheet and have not been tested. The nakshatra record shows how often gold and silver closed up, next to the base rate.
+        </div>
+        <form id="bw-form" class="research-controls">
+          <label>Week of <input type="date" id="bw-start"></label>
+          <button type="submit" class="btn">Build week</button>
+        </form>
+        <div id="bw-status" class="nifty-chart-status" role="status" aria-live="polite"></div>
+        <div id="bw-week" class="bw-week"></div>
+        <div id="bw-day"></div>
+        <div id="bw-context" class="bw-context"></div>
+      </section>
+    </div>
+
   </main>
 
   <footer class="footer">
@@ -1542,8 +1459,11 @@ Research tool only. Not investment advice.
   <!-- Client-Side Scripts -->
   <script src="/static/js/freshness.js?v=1"></script>
   <script src="/static/vendor/lightweight-charts.js?v=4"></script>
-  <script src="/static/nifty-chart.js?v=17"></script>
-  <script src="/static/app.js?v=38"></script>
+  <script src="/static/nifty-chart.js?v=18"></script>
+  <script src="/static/app.js?v=41"></script>
+  <script src="/static/js/kp-intraday.js?v=1"></script>
+  <script src="/static/js/overview-calendars.js?v=1"></script>
+  <script src="/static/js/sector-dashboard.js?v=1"></script>
   <script src="/static/intraday-projection.js?v=2"></script>
   <script src="/static/intraday-forecast.js?v=7"></script>
   <script src="/static/js/analog-lab.js?v=2"></script>
@@ -1557,6 +1477,8 @@ Research tool only. Not investment advice.
   <script src="/static/js/profiles-habits.js?v=2"></script>
   <script src="/static/js/trading-signals.js?v=2"></script>
   <script src="/static/js/rahu-ketu-trap.js?v=3"></script>
+  <script src="/static/js/transit-almanac.js?v=3"></script>
+  <script src="/static/js/bullion-week.js?v=4"></script>
   <footer class="site-footer">
     <div class="wrap">
       <small>For informational purposes only. Astrological market timing is not financial advice. Trade at your own risk.</small>

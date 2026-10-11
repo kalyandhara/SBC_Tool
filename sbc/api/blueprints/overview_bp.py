@@ -29,6 +29,27 @@ def market_holidays():
     return jsonify({"year": year, "covered": year in COVERED_YEARS,
                     "holidays": holidays_in(year)})
 
+@overview_bp.route('/api/market/next_session')
+def market_next_session():
+    """The NSE session the header should default to (B-61).
+
+    ?date=YYYY-MM-DD (default: today in IST). Returns that date if it is a trading day,
+    otherwise the next one, with the reason it moved (weekend or holiday name).
+    """
+    from zoneinfo import ZoneInfo
+
+    from sbc.market_holidays import holiday_name, next_trading_day
+    raw = request.args.get("date")
+    try:
+        day = (datetime.date.fromisoformat(raw) if raw
+               else datetime.datetime.now(ZoneInfo("Asia/Kolkata")).date())
+    except ValueError:
+        return jsonify({"error": "date must be YYYY-MM-DD"}), 400
+    session = next_trading_day(day)
+    return jsonify({"date": day.isoformat(), "session": session.isoformat(),
+                    "moved": session != day, "reason": holiday_name(day) if session != day else None})
+
+
 @overview_bp.route('/api/prediction')
 def prediction():
     from sbc.engine import ANCHORS, build_response

@@ -1,0 +1,7 @@
+[
+ {"date": "2026-10-14", "time": "18:00", "name": "US CPI (Sep)", "source": "manual", "et": "08:30 ET", "detail": "BLS schedule via fedratecalc.com; replaced by the BLS feed on the next refresh"},
+ {"date": "2026-10-15", "time": "18:00", "name": "US Retail Sales (Sep)", "source": "manual", "et": "08:30 ET", "detail": "Census has no iCalendar feed; keep by hand"},
+ {"date": "2026-10-15", "time": "18:00", "name": "US PPI (Sep)", "source": "manual", "et": "08:30 ET", "detail": "BLS schedule via fedratecalc.com; replaced by the BLS feed on the next refresh"},
+ {"date": "2026-10-29", "time": "18:00", "name": "US GDP (Q3 advance)", "source": "manual", "et": "08:30 ET", "detail": "BEA schedule page, checked 2026-10-11"},
+ {"date": "2026-10-29", "time": "18:00", "name": "US PCE / Personal Income (Sep)", "source": "manual", "et": "08:30 ET", "detail": "BEA schedule page, checked 2026-10-11"}
+]
