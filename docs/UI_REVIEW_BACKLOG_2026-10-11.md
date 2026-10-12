@@ -208,3 +208,7 @@ Cache-busting versions: `style.css?v=25`, `app.js?v=40`, `transit-almanac.js?v=3
 - **New findings from the probe:** `GET /api/backtest/moon?...&vedha=false` returns 400 on every
   page load; the Bhadra calendar can time out at 8 s on a cold server (`/api/bhadra_calendar` is
   not in `HEAVY_ENDPOINTS`).
+
+## Follow-up fixes (2026-10-11, evening)
+- Trading Signals: the old panel (moon backtest, walk-forward, fake predicted-vs-actual chart) has been replaced by the Moon Signal Check, which plots in Plotly and scores against the base rate (`/api/signals/moon-check`, `static/js/moon-signal-check.js`). The Show Details toggle is now bound before the slow astro fetch.
+- Chart & Timing: `app.js` bootstrap runs each initialiser in `safeInit`, so one failure no longer blanks the rest of the page. Expiry Range now auto-loads. Expiry Range and AstroCycle read NIFTY from market.db and fall back to Yahoo. Futurecast panels show a placeholder while the prediction loads.

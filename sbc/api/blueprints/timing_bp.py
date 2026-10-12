@@ -314,6 +314,19 @@ def _ref_price(ticker):
     if hit and now - hit[0] < _REF_PRICE_TTL_S:
         return hit[1]
     price = None
+    if ticker == "^NSEI":  # local NIFTY closes first; Yahoo only as a fallback
+        try:
+            from sbc import market_store
+            today = datetime.date.today()
+            bars = market_store.get_daily("NIFTY", (today - datetime.timedelta(days=14)).isoformat(),
+                                          today.isoformat())
+            if bars:
+                price = float(bars[-1]["close"])
+        except Exception:
+            price = None
+    if price is not None:
+        _ref_price_cache[ticker] = (now, price)
+        return price
     try:
         import yfinance as yf
         df = yf.download(ticker, period="5d", interval="1d", auto_adjust=True, progress=False)
@@ -361,6 +374,27 @@ def api_astro_cycles():
         return internal_error()
 
 
+def _expiry_bars(instrument, start, end, local_only=False):
+    """Daily OHLC bars for the expiry panel: NIFTY from market.db, else Yahoo."""
+    key = (instrument or "NIFTY").upper().replace(" ", "")
+    if key == "NIFTY":
+        from sbc import market_store
+        bars = market_store.get_daily("NIFTY", start.isoformat(), end.isoformat())
+        if bars:
+            return bars
+    if local_only:
+        return []
+    import yfinance as yf
+    df = yf.download("^NSEI" if key == "NIFTY" else "^NSEBANK", start=start,
+                     end=end + datetime.timedelta(days=1), interval="1d", auto_adjust=True, progress=False)
+    if df.empty:
+        return []
+    df.columns = [c[0] if isinstance(c, tuple) else c for c in df.columns]
+    df = df[["Open", "High", "Low", "Close"]].dropna()
+    return [{"date": idx.date().isoformat(), "open": float(r.Open), "high": float(r.High),
+             "low": float(r.Low), "close": float(r.Close)} for idx, r in df.iterrows()]
+
+
 @timing_bp.route("/api/expiry/range", methods=["GET"])
 def api_expiry_range():
     """Expiry Range Indicator: forecast expiry-day support/resistance."""
@@ -375,22 +409,15 @@ def api_expiry_range():
         from_date = datetime.date.fromisoformat(date_str)
         from sbc.expiry_range import expiry_range_levels, next_expiry
         expiry = next_expiry(instrument, from_date)
-        ticker = "^NSEI" if instrument.upper().replace(" ", "") == "NIFTY" else "^NSEBANK"
-        import yfinance as yf
-        start = expiry - datetime.timedelta(days=10)
-        df = yf.download(ticker, start=start, end=expiry + datetime.timedelta(days=1),
-                         interval="1d", auto_adjust=True, progress=False)
-        if df.empty:
+        bars = _expiry_bars(instrument, expiry - datetime.timedelta(days=10), expiry)
+        if not bars:
             return jsonify({"error": "no price data"}), 400
-        df.columns = [c[0] if isinstance(c, tuple) else c for c in df.columns]
-        dates = [idx.date() if hasattr(idx, "date") else None for idx in df.index]
-        ref_idx = next((i for i, d in enumerate(dates) if d and d >= expiry), None)
-        prev_idx = ref_idx - 1 if ref_idx is not None else len(dates) - 2
-        if prev_idx is None or prev_idx < 0:
+        dates = [datetime.date.fromisoformat(b["date"]) for b in bars]
+        ref_idx = next((i for i, d in enumerate(dates) if d >= expiry), None)
+        prev_idx = ref_idx - 1 if ref_idx is not None else len(dates) - 1
+        if prev_idx < 0:
             return jsonify({"error": "no reference day before expiry"}), 400
-        ref = df.iloc[prev_idx]
-        ohlc = {"open": float(ref["Open"]), "high": float(ref["High"]),
-                "low": float(ref["Low"]), "close": float(ref["Close"])}
+        ohlc = {k: float(bars[prev_idx][k]) for k in ("open", "high", "low", "close")}
         levels = expiry_range_levels(ohlc, buffer_pct)
         return jsonify({
             "instrument": instrument.upper().replace(" ", ""),
@@ -419,7 +446,9 @@ def api_expiry_backtest():
         except ValueError:
             return jsonify({"error": "invalid buffer_pct"}), 400
         from sbc.expiry_range import backtest_expiry
-        result = backtest_expiry(instrument, months, buffer_pct)
+        end = datetime.date.today()
+        bars = _expiry_bars(instrument, end - datetime.timedelta(days=months * 31 + 10), end, local_only=True)
+        result = backtest_expiry(instrument, months, buffer_pct, bars=bars or None)
         return jsonify(result), 200
     except ValueError as e:
         return jsonify({"error": str(e)}), 400

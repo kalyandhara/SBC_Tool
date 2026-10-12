@@ -275,3 +275,76 @@ def api_backtest_moon():
     except Exception:
         return internal_error()
 
+
+# Trading Signals panel: Moon-sign signal check (repurposed from /api/backtest/moon).
+_SIGNAL_SYMBOLS = {
+    "NIFTY": ("NIFTY 50", None), "SENSEX": ("SENSEX", None),
+    "NIFTYBANK": ("Nifty Bank", "^NSEBANK"), "NIFTYIT": ("Nifty IT", "^CNXIT"),
+    "NIFTYAUTO": ("Nifty Auto", "^CNXAUTO"), "NIFTYMETAL": ("Nifty Metal", "^CNXMETAL"),
+    "NIFTYFMCG": ("Nifty FMCG", "^CNXFMCG"), "NIFTYPHARMA": ("Nifty Pharma", "^CNXPHARMA"),
+    "NIFTYENERGY": ("Nifty Energy", "^CNXENERGY"), "NIFTYREALTY": ("Nifty Realty", "^CNXREALTY"),
+}
+
+
+def _signal_bars(symbol: str, start: datetime.date, end: datetime.date) -> tuple[list[dict], str]:
+    """NIFTY and SENSEX from market.db (offline); sector indices from Yahoo."""
+    name, ticker = _SIGNAL_SYMBOLS[symbol]
+    if ticker is None:
+        from sbc import market_store
+        return market_store.get_daily(symbol, start.isoformat(), end.isoformat()), "market.db"
+    import yfinance as yf
+    df = yf.download(ticker, start=start, end=end + datetime.timedelta(days=1), interval="1d",
+                     auto_adjust=True, progress=False)
+    if df.empty:
+        return [], f"Yahoo ({ticker})"
+    df.columns = [c[0] if isinstance(c, tuple) else c for c in df.columns]
+    df = df[["Open", "High", "Low", "Close"]].dropna()
+    bars = [{"date": idx.date().isoformat(), "open": float(r.Open), "high": float(r.High),
+             "low": float(r.Low), "close": float(r.Close)} for idx, r in df.iterrows()]
+    return bars, f"Yahoo ({ticker})"
+
+
+@research_bp.route("/api/signals/moon-check", methods=["GET"])
+def api_signals_moon_check():
+    """?symbol=NIFTY&years=2&multi_tf=true&regime=false&gap=false"""
+    from sbc.moon_signal_check import check
+    symbol = (request.args.get("symbol") or "NIFTY").upper()
+    if symbol not in _SIGNAL_SYMBOLS:
+        return jsonify({"error": f"symbol must be one of {', '.join(_SIGNAL_SYMBOLS)}"}), 400
+    try:
+        years = max(1, min(10, int(request.args.get("years", "2"))))
+    except ValueError:
+        return jsonify({"error": "years must be 1-10"}), 400
+    flag = lambda k, d: (request.args.get(k, d).lower() == "true")  # noqa: E731
+    end = datetime.date.today()
+    start = end - datetime.timedelta(days=365 * years)
+    try:
+        bars, source = _signal_bars(symbol, start, end)
+    except Exception:
+        current_app.logger.exception("moon-check data load failed")
+        return jsonify({"error": "price data unavailable for this symbol right now"}), 503
+    if len(bars) < 30:
+        return jsonify({"error": f"not enough price history from {source}"}), 404
+    out = check(bars, multi_tf=flag("multi_tf", "true"), regime=flag("regime", "false"),
+                gap_filter=flag("gap", "false"))
+    return jsonify({"symbol": symbol, "name": _SIGNAL_SYMBOLS[symbol][0], "source": source,
+                    "start": bars[0]["date"], "end": bars[-1]["date"],
+                    "bars": [{k: b[k] for k in ("date", "close")} for b in bars], **out})
+
+
+
+@research_bp.route("/api/crash_windows")
+def crash_windows():
+    """Indicative crash windows for a date range (planetary-combination score; research only)."""
+    from sbc.crash_windows import build
+
+    try:
+        start_d = datetime.date.fromisoformat(request.args.get("start") or "")
+        end_d = datetime.date.fromisoformat(request.args.get("end") or "")
+    except (TypeError, ValueError):
+        return jsonify({"error": "invalid start/end date"}), 400
+    if end_d < start_d:
+        return jsonify({"error": "end before start"}), 400
+    if (end_d - start_d).days > 730:
+        return jsonify({"error": "range too large (max 2 years)"}), 400
+    return jsonify(build(start_d, end_d))

@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <link rel="icon" type="image/svg+xml" href="/static/favicon.svg">
   <title>Sarvatobhadra Chakra - Market Prediction</title>
-  <link rel="stylesheet" href="/static/style.css?v=27">
+  <link rel="stylesheet" href="/static/style.css?v=31">
   <script src="/static/chart.umd.min.js"></script>
   <script src="/static/js/api-token.js"></script>
 </head>
@@ -527,31 +527,6 @@
           <button class="btn btn-sm btn-secondary" id="toggle-trading-details">Show Details</button>
         </div>
         <div id="trading-signals-details" class="hidden">
-          <div id="astro-score" class="panel-sub u-center u-my20"></div>
-          <div class="monthly-heatmap-controls u-my12">
-            <label>Sector
-              <select id="nakshatra-sector-select" class="form-control">
-                <option>Nifty Bank</option>
-                <option>Nifty IT</option>
-                <option>Nifty Auto</option>
-                <option>Nifty Metal</option>
-                <option>Nifty FMCG</option>
-                <option>Nifty Pharma</option>
-                <option>Nifty Energy</option>
-                <option>Nifty Realty</option>
-              </select>
-            </label>
-            <button id="trading-predicted-actual-load" class="btn u-ml8" title="Experimental: not validated">Load Projection vs Actual <span class="experimental-badge">Experimental</span></button>
-          </div>
-          <div class="u-h650 u-mt24" id="trading-signals-predicted-actual">
-            <div class="legend-row">
-              <span>Top: SBC intraday projection (/api/intraday_projection) &mdash; <strong class="u-accent">experimental, not validated</strong></span>
-              <span>Bottom: Actual price candles</span>
-            </div>
-            <div class="chart-box u-h300" id="predicted-actual-top"></div>
-            <div class="u-h8"></div>
-            <div class="chart-box u-h340" id="predicted-actual-bottom"></div>
-          </div>
           <h1 id="astro-score-label">&mdash;</h1>
           <div id="astro-score-sub">Loading live panchanga&hellip;</div>
           <div id="astro-signals-list"></div>
@@ -562,6 +537,37 @@
           <div class="u-mt20" id="sector-map">
             <h3>Today's Sector Map <span class="u-fr" id="sector-map-overall"></span></h3>
             <div id="sector-map-items"></div>
+          </div>
+          <div class="msc" id="moon-signal-check">
+            <h3>Moon-sign signal check</h3>
+            <p class="msc-intro">The Moon's sidereal sign at 09:15 IST gives a bullish or bearish call for the next session's close. This checks that call against the base rate.</p>
+            <form class="research-controls" id="msc-form">
+              <label>Index
+                <select id="msc-symbol">
+                  <option value="NIFTY" selected>NIFTY 50</option>
+                  <option value="SENSEX">SENSEX</option>
+                  <option value="NIFTYBANK">Nifty Bank</option>
+                  <option value="NIFTYIT">Nifty IT</option>
+                  <option value="NIFTYAUTO">Nifty Auto</option>
+                  <option value="NIFTYMETAL">Nifty Metal</option>
+                  <option value="NIFTYFMCG">Nifty FMCG</option>
+                  <option value="NIFTYPHARMA">Nifty Pharma</option>
+                  <option value="NIFTYENERGY">Nifty Energy</option>
+                  <option value="NIFTYREALTY">Nifty Realty</option>
+                </select>
+              </label>
+              <label>Period
+                <select id="msc-years"><option value="1">1 year</option><option value="2" selected>2 years</option><option value="5">5 years</option><option value="10">10 years</option></select>
+              </label>
+              <label class="msc-check"><input type="checkbox" id="msc-multi" checked> Weekly sign agrees</label>
+              <label class="msc-check"><input type="checkbox" id="msc-regime"> Skip 1st and 15th</label>
+              <label class="msc-check" title="Keeps a day only if the next session opens in the called direction. That open isn't known when the call is made."><input type="checkbox" id="msc-gap"> Gap filter (look-ahead)</label>
+              <button type="submit" class="btn">Run check</button>
+              <button type="button" class="btn btn-secondary" id="msc-csv" disabled>Export CSV</button>
+            </form>
+            <div id="msc-status" class="nifty-chart-status" role="status" aria-live="polite">NIFTY and SENSEX use local data; sector indices download from Yahoo.</div>
+            <div id="msc-score" class="msc-score"></div>
+            <div id="msc-chart" class="msc-chart" aria-label="Close price with signal bands, and rolling hit rate against the base rate"></div>
           </div>
         </div>
       </section>
@@ -681,7 +687,7 @@
           <span class="panel-sub" id="futurecast-summary"></span>
         </div>
         <p class="backtest-note" id="futurecast-note"></p>
-        <div id="futurecast-results" class="backtest-results"></div>
+        <div id="futurecast-results" class="backtest-results panel-loading">Loads with the prediction&hellip;</div>
       </section>
 
       <!-- Bullish Futurecast 1Y Window -->
@@ -696,7 +702,7 @@
             <span class="past-label"></span>
             <span class="future-label"></span>
           </div>
-          <div id="bullish-timeline" class="bullish-timeline" role="list" aria-label="Bullish futurecast timeline"></div>
+          <div id="bullish-timeline" class="bullish-timeline panel-loading" role="list" aria-label="Bullish futurecast timeline">Loads with the prediction&hellip;</div>
           <div id="bullish-center-marker" class="bullish-center-marker" aria-hidden="true">
             <span class="center-label">TODAY</span>
             <span class="center-line"></span>
@@ -1142,57 +1148,53 @@
           <button type="button" class="btn btn-secondary infographic-btn" data-infographic="crash" data-params="crash-start-date:start,crash-end-date:end" title="Download a PNG card for this tab">🖼 Infographic</button>
         </div>
         <div id="crash-report-content" class="crash-report-content panel-body">
-          <pre class="pre-report" id="crash-report-text">Indicative Market Crash Windows — Planetary Combinations
-Period analysed: 01-10-2026 to 31-12-2026    |    Generated: 07-10-2026    |    Sidereal (Lahiri), mean nodes
-1. Summary
-92 days scanned. 1 indicative risk period(s) found (1 HIGH, 0 ELEVATED), covering 8 days.
-Strongest window: 06-11-2026 to 13-11-2026, peak score 2.36 on 06-11-2026 — Sun debilitated in Libra, Jupiter in a fire sign, Mars debilitated in Cancer, Sun–Saturn in 6/8 (shadashtak), Mercury retrograde, Guru-Chandal (Jupiter with Rahu/Ketu), Venus in 11th house (Mumbai open).
-Neither of the two strongest slow-cycle signals (Saturn–Uranus, Jupiter–Saturn hard aspects) is active in this range, so any windows below rely on shorter-term triggers.
-
-2. Indicative crash / correction periods
-#	Period	Days	Level	Peak score / date	Reasons (combination [active dates] — position. Meaning. Evidence.)
-1	06-11-2026
-to
-13-11-2026
-
-HIGH days:
-06-11-2026 – 12-11-2026	8	HIGH	2.36
-06-11-2026	• Jupiter in a fire sign [06-11-2026 to 13-11-2026] — Jupiter Leo 0°. Expansive Jupiter in fiery signs; associated with speculative excess before the fall. (Historical lift 1.82×; seen in 1987, 1992, 2000, 2004, 2008 (x3), 2011, 2015, 2016, 2020 (x2).)
-• Venus in 11th house (Mumbai open) [06-11-2026 to 13-11-2026] — Lagna Scorpio at 09:15 IST, Venus Vir 29° in 11th. Venus in the house of gains; appeared in 46% of crash days vs 27% expected. (Historical lift 1.73×; seen in 1929, 1990, 1992, 1998, 2000, 2001, 2008, 2011, 2015, 2018, 2024, 2025.)
-• Sun debilitated in Libra [06-11-2026 to 13-11-2026] — Sun Lib 19°. Weak Sun (authority, confidence). Note: falls every mid-Oct to mid-Nov, so it overlaps the "October effect". (Historical lift 1.88×; seen in 1929, 1987, 1997, 2008.)
-• Sun–Saturn in 6/8 (shadashtak) [06-11-2026 to 13-11-2026] — Sun Lib 19° / Saturn Pis 14°. Sun and Saturn in mutually hostile 6/8 positions. (Historical lift 1.50×; seen in 1990, 1997, 2008, 2010, 2016, 2024.)
-• Mercury retrograde [06-11-2026 to 13-11-2026] — Mercury retrograde at Lib 15°. Errors, miscommunication and technical breakdowns (2010 Flash Crash, 2024 carry unwind). (Historical lift 1.41×; seen in 1962, 1987, 2008, 2010, 2011, 2024, 2025.)
-• Mars debilitated in Cancer [06-11-2026 to 12-11-2026] — Mars Can 26°. Weak, emotional Mars; seen in fast, liquidity-driven panics. (Historical lift 1.52×; seen in 1998, 2010, 2015, 2025.)
-• Guru-Chandal (Jupiter with Rahu/Ketu) [06-11-2026 to 13-11-2026] — Jupiter Leo 0° with Ketu. Jupiter (finance, wisdom) afflicted by the nodes; confirming factor. (Historical lift 1.27×; seen in 1990, 2001, 2016, 2020 (x2).)
-3. Combination calendar
-When each combination is active in the range (whether or not the day crossed the threshold).
-Combination	Type	Lift	Weight	Active dates in range
-Venus in 11th house in a water sign (Mumbai open)	Trigger	2.80	0.90	Not active
-Saturn–Uranus hard aspect	Slow backdrop	2.11	0.74	Not active
-Jupiter–Saturn hard aspect	Slow backdrop	2.09	0.73	Not active
-Jupiter in a fire sign	Slow backdrop	1.82	0.58	31-10-2026 – 31-12-2026
-Venus in 11th house (Mumbai open)	Trigger	1.73	0.52	06-11-2026 – 13-11-2026; 23-11-2026 – 15-12-2026
-Kaal Sarp (all 7 planets one side of Rahu–Ketu)	Trigger	2.03	0.46	Not active
-Saturn in Capricorn	Slow backdrop	1.81	0.41	Not active
-Sun debilitated in Libra	Seasonal	1.88	0.39	18-10-2026 – 16-11-2026
-Sun–Saturn in 6/8 (shadashtak)	Trigger	1.50	0.27	18-10-2026 – 16-11-2026
-Venus in a water sign	Trigger	1.40	0.26	Not active
-Mercury retrograde	Trigger	1.41	0.24	25-10-2026 – 13-11-2026
-Mars debilitated in Cancer	Trigger	1.52	0.23	01-10-2026 – 12-11-2026
-Saturn–Pluto hard aspect	Slow backdrop	1.29	0.16	Not active
-Mars–Saturn hard aspect	Trigger	1.27	0.15	Not active
-Guru-Chandal (Jupiter with Rahu/Ketu)	Trigger	1.27	0.14	31-10-2026 – 05-12-2026
-4. Eclipses in the range (reference only)
-In the historical study, eclipses within ±15 days showed no edge (lift 0.95); listed for completeness.
-None in this range.
-5. How the score works
-•	Each day's planetary positions are computed (11:30 IST; sidereal Lahiri; mean Rahu/Ketu). The Venus-in-11th tests use the Mumbai 09:15 IST opening-bell chart with whole-sign houses.
-•	Each active combination adds its weight. Weight = (historical lift − 1) × n/(n+5), where lift compares how often the combination appeared on 26 crash days (1929–2025) with how often it appears on any weekday since 1925, and n is the number of crash days it appeared on. Combinations seen in only a few crashes are discounted.
-•	ELEVATED = score ≥ 1.85 (about the top 10% of all days since 1925). HIGH = score ≥ 2.36 (about the top 3%). Flagged days less than 4 days apart are joined into one period.
-•	Historically, about 42% of crash days scored ELEVATED or higher and about 23% scored HIGH, against 10% and 3% of ordinary days. These figures are in-sample (the weights come from the same crash days), so expect weaker results going forward. Most flagged periods will not contain a crash, and many crashes occur outside flagged periods.
-•	None of the combinations passed a strict multiple-testing correction in the research. Use the windows as a risk-management prompt (position size, stops, hedges) alongside technical and macro confirmation — not as a sell signal.
-Research tool only. Not investment advice.
-</pre>
+          <div class="crash-report" id="crash-report-text">
+            <header class="crash-head">
+              <h3>Indicative Market Crash Windows — Planetary Combinations</h3>
+              <p class="crash-meta" id="crash-report-meta">Period analysed: 01-10-2026 to 31-12-2026    |    Generated: 07-10-2026    |    Sidereal (Lahiri), mean nodes</p>
+            </header>
+            <section class="crash-sec">
+              <h4>1. Summary</h4>
+              <div class="crash-kpis">
+                <div><span>Days scanned</span><b>92</b></div>
+                <div><span>Risk periods</span><b>1</b></div>
+                <div><span>HIGH / ELEVATED</span><b>1 / 0</b></div>
+                <div><span>Days covered</span><b>8</b></div>
+              </div>
+              <p>Strongest window: 06-11-2026 to 13-11-2026, peak score 2.36 on 06-11-2026 — Sun debilitated in Libra, Jupiter in a fire sign, Mars debilitated in Cancer, Sun–Saturn in 6/8 (shadashtak), Mercury retrograde, Guru-Chandal (Jupiter with Rahu/Ketu), Venus in 11th house (Mumbai open).</p>
+              <p class="muted">Neither of the two strongest slow-cycle signals (Saturn–Uranus, Jupiter–Saturn hard aspects) is active in this range, so any windows below rely on shorter-term triggers.</p>
+            </section>
+            <section class="crash-sec">
+              <h4>2. Indicative crash / correction periods</h4>
+              <div class="analog-table-wrap"><table class="analog-table crash-table">
+                <thead><tr><th>#</th><th>Period</th><th>Days</th><th>Level</th><th>Peak score</th><th>Peak date</th></tr></thead>
+                <tbody><tr><td>1</td><td class="nowrap">06-11-2026 → 13-11-2026<br><span class="muted">HIGH days: 06-11 → 12-11</span></td><td class="num">8</td><td><span class="crash-level high">HIGH</span></td><td class="num">2.36</td><td class="nowrap">06-11-2026</td></tr></tbody>
+              </table></div>
+              <h5>Reasons for period 1</h5>
+              <div class="analog-table-wrap"><table class="analog-table crash-table">
+                <thead><tr><th>Combination</th><th>Active dates</th><th>Position</th><th>Meaning</th><th>Lift</th><th>Seen in</th></tr></thead>
+                <tbody><tr><td><strong>Jupiter in a fire sign</strong></td><td class='nowrap'>06-11-2026 to 13-11-2026</td><td>Jupiter Leo 0°</td><td>Expansive Jupiter in fiery signs; associated with speculative excess before the fall.</td><td class='num'>1.82×</td><td class='crash-seen'>1987, 1992, 2000, 2004, 2008 (x3), 2011, 2015, 2016, 2020 (x2)</td></tr><tr><td><strong>Venus in 11th house (Mumbai open)</strong></td><td class='nowrap'>06-11-2026 to 13-11-2026</td><td>Lagna Scorpio at 09:15 IST, Venus Vir 29° in 11th</td><td>Venus in the house of gains; appeared in 46% of crash days vs 27% expected.</td><td class='num'>1.73×</td><td class='crash-seen'>1929, 1990, 1992, 1998, 2000, 2001, 2008, 2011, 2015, 2018, 2024, 2025</td></tr><tr><td><strong>Sun debilitated in Libra</strong></td><td class='nowrap'>06-11-2026 to 13-11-2026</td><td>Sun Lib 19°</td><td>Weak Sun (authority, confidence). Note: falls every mid-Oct to mid-Nov, so it overlaps the &quot;October effect&quot;.</td><td class='num'>1.88×</td><td class='crash-seen'>1929, 1987, 1997, 2008</td></tr><tr><td><strong>Sun–Saturn in 6/8 (shadashtak)</strong></td><td class='nowrap'>06-11-2026 to 13-11-2026</td><td>Sun Lib 19° / Saturn Pis 14°</td><td>Sun and Saturn in mutually hostile 6/8 positions.</td><td class='num'>1.50×</td><td class='crash-seen'>1990, 1997, 2008, 2010, 2016, 2024</td></tr><tr><td><strong>Mercury retrograde</strong></td><td class='nowrap'>06-11-2026 to 13-11-2026</td><td>Mercury retrograde at Lib 15°</td><td>Errors, miscommunication and technical breakdowns (2010 Flash Crash, 2024 carry unwind).</td><td class='num'>1.41×</td><td class='crash-seen'>1962, 1987, 2008, 2010, 2011, 2024, 2025</td></tr><tr><td><strong>Mars debilitated in Cancer</strong></td><td class='nowrap'>06-11-2026 to 12-11-2026</td><td>Mars Can 26°</td><td>Weak, emotional Mars; seen in fast, liquidity-driven panics.</td><td class='num'>1.52×</td><td class='crash-seen'>1998, 2010, 2015, 2025</td></tr><tr><td><strong>Guru-Chandal (Jupiter with Rahu/Ketu)</strong></td><td class='nowrap'>06-11-2026 to 13-11-2026</td><td>Jupiter Leo 0° with Ketu</td><td>Jupiter (finance, wisdom) afflicted by the nodes; confirming factor.</td><td class='num'>1.27×</td><td class='crash-seen'>1990, 2001, 2016, 2020 (x2)</td></tr></tbody>
+              </table></div>
+            </section>
+            <section class="crash-sec">
+              <h4>3. Combination calendar</h4>
+              <p class="muted">When each combination is active in the range (whether or not the day crossed the threshold).</p>
+              <div class="analog-table-wrap"><table class="analog-table crash-table">
+                <thead><tr><th>Combination</th><th>Type</th><th>Lift</th><th>Weight</th><th>Active dates in range</th></tr></thead>
+                <tbody><tr class='crash-off'><td>Venus in 11th house in a water sign (Mumbai open)</td><td><span class='crash-type trig'>Trigger</span></td><td class='num'>2.80</td><td class='num'>0.90</td><td>Not active</td></tr><tr class='crash-off'><td>Saturn–Uranus hard aspect</td><td><span class='crash-type slow'>Slow backdrop</span></td><td class='num'>2.11</td><td class='num'>0.74</td><td>Not active</td></tr><tr class='crash-off'><td>Jupiter–Saturn hard aspect</td><td><span class='crash-type slow'>Slow backdrop</span></td><td class='num'>2.09</td><td class='num'>0.73</td><td>Not active</td></tr><tr class='crash-on'><td>Jupiter in a fire sign</td><td><span class='crash-type slow'>Slow backdrop</span></td><td class='num'>1.82</td><td class='num'>0.58</td><td>31-10-2026 – 31-12-2026</td></tr><tr class='crash-on'><td>Venus in 11th house (Mumbai open)</td><td><span class='crash-type trig'>Trigger</span></td><td class='num'>1.73</td><td class='num'>0.52</td><td>06-11-2026 – 13-11-2026; 23-11-2026 – 15-12-2026</td></tr><tr class='crash-off'><td>Kaal Sarp (all 7 planets one side of Rahu–Ketu)</td><td><span class='crash-type trig'>Trigger</span></td><td class='num'>2.03</td><td class='num'>0.46</td><td>Not active</td></tr><tr class='crash-off'><td>Saturn in Capricorn</td><td><span class='crash-type slow'>Slow backdrop</span></td><td class='num'>1.81</td><td class='num'>0.41</td><td>Not active</td></tr><tr class='crash-on'><td>Sun debilitated in Libra</td><td><span class='crash-type seas'>Seasonal</span></td><td class='num'>1.88</td><td class='num'>0.39</td><td>18-10-2026 – 16-11-2026</td></tr><tr class='crash-on'><td>Sun–Saturn in 6/8 (shadashtak)</td><td><span class='crash-type trig'>Trigger</span></td><td class='num'>1.50</td><td class='num'>0.27</td><td>18-10-2026 – 16-11-2026</td></tr><tr class='crash-off'><td>Venus in a water sign</td><td><span class='crash-type trig'>Trigger</span></td><td class='num'>1.40</td><td class='num'>0.26</td><td>Not active</td></tr><tr class='crash-on'><td>Mercury retrograde</td><td><span class='crash-type trig'>Trigger</span></td><td class='num'>1.41</td><td class='num'>0.24</td><td>25-10-2026 – 13-11-2026</td></tr><tr class='crash-on'><td>Mars debilitated in Cancer</td><td><span class='crash-type trig'>Trigger</span></td><td class='num'>1.52</td><td class='num'>0.23</td><td>01-10-2026 – 12-11-2026</td></tr><tr class='crash-off'><td>Saturn–Pluto hard aspect</td><td><span class='crash-type slow'>Slow backdrop</span></td><td class='num'>1.29</td><td class='num'>0.16</td><td>Not active</td></tr><tr class='crash-off'><td>Mars–Saturn hard aspect</td><td><span class='crash-type trig'>Trigger</span></td><td class='num'>1.27</td><td class='num'>0.15</td><td>Not active</td></tr><tr class='crash-on'><td>Guru-Chandal (Jupiter with Rahu/Ketu)</td><td><span class='crash-type trig'>Trigger</span></td><td class='num'>1.27</td><td class='num'>0.14</td><td>31-10-2026 – 05-12-2026</td></tr></tbody>
+              </table></div>
+            </section>
+            <section class="crash-sec">
+              <h4>4. Eclipses in the range (reference only)</h4>
+              <p class="muted">In the historical study, eclipses within ±15 days showed no edge (lift 0.95); listed for completeness.</p>
+              <p>None in this range.</p>
+            </section>
+            <section class="crash-sec">
+              <h4>5. How the score works</h4>
+              <ul class="crash-how"><li>Each day&#x27;s planetary positions are computed (11:30 IST; sidereal Lahiri; mean Rahu/Ketu). The Venus-in-11th tests use the Mumbai 09:15 IST opening-bell chart with whole-sign houses.</li><li>Each active combination adds its weight. Weight = (historical lift − 1) × n/(n+5), where lift compares how often the combination appeared on 26 crash days (1929–2025) with how often it appears on any weekday since 1925, and n is the number of crash days it appeared on. Combinations seen in only a few crashes are discounted.</li><li>ELEVATED = score ≥ 1.85 (about the top 10% of all days since 1925). HIGH = score ≥ 2.36 (about the top 3%). Flagged days less than 4 days apart are joined into one period.</li><li>Historically, about 42% of crash days scored ELEVATED or higher and about 23% scored HIGH, against 10% and 3% of ordinary days. These figures are in-sample (the weights come from the same crash days), so expect weaker results going forward. Most flagged periods will not contain a crash, and many crashes occur outside flagged periods.</li><li>None of the combinations passed a strict multiple-testing correction in the research. Use the windows as a risk-management prompt (position size, stops, hedges) alongside technical and macro confirmation — not as a sell signal.</li></ul>
+              <p class="crash-foot">Research tool only. Not investment advice.</p>
+            </section>
+          </div>
         </div>
       </section>
     </div>
@@ -1460,7 +1462,7 @@ Research tool only. Not investment advice.
   <script src="/static/js/freshness.js?v=1"></script>
   <script src="/static/vendor/lightweight-charts.js?v=4"></script>
   <script src="/static/nifty-chart.js?v=18"></script>
-  <script src="/static/app.js?v=41"></script>
+  <script src="/static/app.js?v=45"></script>
   <script src="/static/js/kp-intraday.js?v=1"></script>
   <script src="/static/js/overview-calendars.js?v=1"></script>
   <script src="/static/js/sector-dashboard.js?v=1"></script>
@@ -1472,10 +1474,11 @@ Research tool only. Not investment advice.
   <script src="/static/js/infographic.js?v=1"></script>
   <script src="/static/js/planet-series.js?v=1"></script>
   <script src="/static/js/monthly-score.js?v=1"></script>
-  <script src="/static/js/swing-windows.js?v=4"></script>
+  <script src="/static/js/swing-windows.js?v=5"></script>
   <script src="/static/js/birth-city.js?v=2"></script>
   <script src="/static/js/profiles-habits.js?v=2"></script>
-  <script src="/static/js/trading-signals.js?v=2"></script>
+  <script src="/static/js/trading-signals.js?v=3"></script>
+  <script src="/static/js/moon-signal-check.js?v=1"></script>
   <script src="/static/js/rahu-ketu-trap.js?v=3"></script>
   <script src="/static/js/transit-almanac.js?v=3"></script>
   <script src="/static/js/bullion-week.js?v=4"></script>

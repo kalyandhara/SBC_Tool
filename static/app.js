@@ -3607,21 +3607,118 @@ function initCrashWindowsDefaults() {
     const endISO = oneMonthLater.toISOString().slice(0,10);
     endEl.value = endISO;
   }
-  // Optional generate handler – updates report header with chosen period
   const genBtn = $("crash-generate");
-  if (genBtn) {
-    genBtn.addEventListener("click", () => {
-      const s = startEl.value;
-      const e = endEl.value;
-      const txt = $("crash-report-text");
-      if (txt && s && e) {
-        // Simple header update – real generation would call backend
-        const header = `Indicative Market Crash Windows — Planetary Combinations\nPeriod analysed: ${s.replace(/-/g,'-')} to ${e.replace(/-/g,'-')}    |    Generated: ${todayISO}    |    Sidereal (Lahiri), mean nodes\n`;
-        // Preserve existing content after first line
-        const rest = txt.textContent.split('\n').slice(2).join('\n');
-        txt.textContent = header + rest;
-      }
+  if (genBtn) genBtn.addEventListener("click", () => loadCrashWindows().catch(() => {}));
+  loadCrashWindows().catch(() => {});
+}
+
+// Daily risk score as a step area with the ELEVATED and HIGH lines (Plotly, loaded on first use).
+async function drawCrashScoreChart(d) {
+  const box = $("crash-score-chart");
+  if (!box || !d.series.length) return;
+  if (!window.Plotly) {
+    await new Promise((ok, fail) => {
+      const s = document.createElement("script");
+      s.src = "/static/vendor/plotly-basic-4.1.1.min.js"; s.onload = ok; s.onerror = fail;
+      document.head.appendChild(s);
     });
+  }
+  const css = (n, f) => getComputedStyle(document.documentElement).getPropertyValue(n).trim() || f;
+  const text = css("--text", "#e2e8f0"), muted = css("--muted", "#94a3b8"), line = css("--line", "#1f2c47");
+  const x = d.series.map((r) => r.date), y = d.series.map((r) => r.score);
+  const hline = (v, color, name) => ({ type: "scatter", mode: "lines", name, x: [x[0], x[x.length - 1]], y: [v, v],
+    line: { color, width: 1.4, dash: "dash" }, hoverinfo: "skip" });
+  const axis = { gridcolor: line, zerolinecolor: line, color: muted };
+  Plotly.react(box, [
+    { type: "scatter", mode: "lines", name: "Risk score", x, y, fill: "tozeroy", line: { shape: "hv", color: "#5b7bb0", width: 1 },
+      fillcolor: "rgba(91,123,176,.75)", hovertemplate: "%{x|%d-%m-%Y}<br>score %{y:.2f}<extra></extra>" },
+    hline(d.thresholds.elevated, "#d4a017", `Elevated ≥ ${d.thresholds.elevated}`),
+    hline(d.thresholds.high, "#dc2626", `High ≥ ${d.thresholds.high}`),
+  ], {
+    paper_bgcolor: "rgba(0,0,0,0)", plot_bgcolor: "rgba(0,0,0,0)", font: { color: text, size: 11 }, height: 300,
+    margin: { l: 52, r: 12, t: 8, b: 36 }, showlegend: true, legend: { x: 0.01, y: 0.99, bgcolor: "rgba(0,0,0,0)" },
+    xaxis: Object.assign({ type: "date", tickformat: "%d %b" }, axis),
+    yaxis: Object.assign({ title: { text: "Risk score" }, rangemode: "tozero" }, axis),
+  }, { responsive: true, displaylogo: false });
+}
+
+// Crash windows report: /api/crash_windows scores every day in the chosen period.
+async function loadCrashWindows() {
+  const s = $("crash-start-date")?.value, e = $("crash-end-date")?.value;
+  const box = $("crash-report-text"), btn = $("crash-generate");
+  if (!box || !s || !e) return;
+  const dmy = (iso) => iso.split("-").reverse().join("-");
+  const runs = (rs) => (rs && rs.length ? rs.map(([a, b]) => (a === b ? dmy(a) : `${dmy(a)} – ${dmy(b)}`)).join("; ") : "Not active");
+  const typeCls = { "Trigger": "trig", "Slow backdrop": "slow", "Seasonal": "seas" };
+  if (btn) btn.disabled = true;
+  const meta = $("crash-report-meta");
+  if (meta) meta.textContent = `Scoring ${dmy(s)} to ${dmy(e)}…`;
+  try {
+    const res = await fetch(`/api/crash_windows?start=${s}&end=${e}`);
+    const d = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(d.error || `request failed (${res.status})`);
+    const top = d.periods[0];
+    const summary = top
+      ? `Strongest window: ${dmy(top.start)} to ${dmy(top.end)}, peak score ${top.peak_score.toFixed(2)} on ${dmy(top.peak_date)} — ${top.reasons.map((r) => esc(r.label)).join(", ")}.`
+      : "No day in this range crossed the ELEVATED threshold.";
+    const slow = d.strong_slow_active.length
+      ? `Strong slow-cycle signal active: ${d.strong_slow_active.map(esc).join(", ")}.`
+      : "Neither of the two strongest slow-cycle signals (Saturn–Uranus, Jupiter–Saturn hard aspects) is active in this range, so any windows below rely on shorter-term triggers.";
+    const clip = (rs, p) => rs.map(([x, y]) => [x < p.start ? p.start : x, y > p.end ? p.end : y]).filter(([x, y]) => x <= y);
+    const reasonLine = (r, p) => {
+      const span = clip(r.runs, p).map(([x, y]) => `${dmy(x)} to ${dmy(y)}`).join("; ");
+      const ev = `Historical lift ${r.lift.toFixed(2)}×${r.seen ? `; seen in ${esc(r.seen)}` : ""}`;
+      return `<li><strong>${esc(r.label)}</strong> <span class="crash-dates">[${span}]</span> — ${esc(r.position)}. ${esc(r.meaning)} <span class="crash-seen">(${ev}.)</span></li>`;
+    };
+    const periodRows = d.periods.map((p, n) => `
+      <tr><td>${n + 1}</td>
+        <td class="nowrap">${dmy(p.start)}<br>to<br>${dmy(p.end)}${p.high_runs.length ? `<br><br><span class="muted">HIGH days:<br>${p.high_runs.map(([x, y]) => (x === y ? dmy(x) : `${dmy(x)} – ${dmy(y)}`)).join("<br>")}</span>` : ""}</td>
+        <td class="num">${p.days}</td><td><span class="crash-level ${p.level === "HIGH" ? "high" : "elev"}">${p.level}</span></td>
+        <td class="nowrap">${p.peak_score.toFixed(2)}<br>${dmy(p.peak_date)}</td>
+        <td><ul class="crash-reasons">${p.reasons.map((r) => reasonLine(r, p)).join("")}</ul></td></tr>`).join("");
+    const reasonTables = "";
+    const cal = d.calendar.map((c) => `
+      <tr class="${c.runs.length ? "crash-on" : "crash-off"}"><td>${esc(c.label)}</td>
+        <td><span class="crash-type ${typeCls[c.type] || ""}">${esc(c.type)}</span></td>
+        <td class="num">${c.lift.toFixed(2)}</td><td class="num">${c.weight.toFixed(2)}</td><td>${runs(c.runs)}</td></tr>`).join("");
+    const ecl = d.eclipses.length ? d.eclipses.map((x) => `${x.kind} eclipse ${dmy(x.date)}`).join("; ") : "None in this range.";
+    const t = d.thresholds;
+    box.innerHTML = `
+      <header class="crash-head">
+        <h3>Indicative Market Crash Windows — Planetary Combinations</h3>
+        <p class="crash-meta" id="crash-report-meta">Period analysed: ${dmy(d.start)} to ${dmy(d.end)} | Generated: ${dmy(d.generated)} | Sidereal (Lahiri), mean nodes</p>
+      </header>
+      <section class="crash-sec"><h4>1. Summary</h4>
+        <div class="crash-kpis">
+          <div><span>Days scanned</span><b>${d.days_scanned}</b></div>
+          <div><span>Risk periods</span><b>${d.periods.length}</b></div>
+          <div><span>HIGH / ELEVATED</span><b>${d.n_high} / ${d.n_elevated}</b></div>
+          <div><span>Days covered</span><b>${d.days_covered}</b></div>
+        </div>
+        <p>${summary}</p><p class="muted">${slow}</p><div id="crash-score-chart" class="crash-chart"></div></section>
+      <section class="crash-sec"><h4>2. Indicative crash / correction periods</h4>
+        ${d.periods.length ? `<div class="analog-table-wrap"><table class="analog-table crash-table">
+          <thead><tr><th>#</th><th>Period</th><th>Days</th><th>Level</th><th>Peak score / date</th><th>Reasons (combination [active dates] — position. Meaning. Evidence.)</th></tr></thead>
+          <tbody>${periodRows}</tbody></table></div>${reasonTables}` : `<p class="muted">None in this range.</p>`}</section>
+      <section class="crash-sec"><h4>3. Combination calendar</h4>
+        <p class="muted">When each combination is active in the range (whether or not the day crossed the threshold).</p>
+        <div class="analog-table-wrap"><table class="analog-table crash-table">
+          <thead><tr><th>Combination</th><th>Type</th><th>Lift</th><th>Weight</th><th>Active dates in range</th></tr></thead>
+          <tbody>${cal}</tbody></table></div></section>
+      <section class="crash-sec"><h4>4. Eclipses in the range (reference only)</h4>
+        <p class="muted">In the historical study, eclipses within ±15 days showed no edge (lift 0.95); listed for completeness.</p><p>${ecl}</p></section>
+      <section class="crash-sec"><h4>5. How the score works</h4><ul class="crash-how">
+        <li>Each day's planetary positions are computed (11:30 IST; sidereal Lahiri; mean Rahu/Ketu). The Venus-in-11th tests use the Mumbai 09:15 IST opening-bell chart with whole-sign houses.</li>
+        <li>Each active combination adds its weight. Weight = (historical lift − 1) × n/(n+5), from 26 crash days (1929–2025) against all weekdays since 1925; combinations seen in only a few crashes are discounted.</li>
+        <li>ELEVATED = score above ${t.elevated} (about the top 10% of days since 1925). HIGH = score ≥ ${t.high} (about the top 3%). Flagged days less than ${t.join_gap_days} days apart are joined into one period.</li>
+        <li>The weights are in-sample, so expect weaker results going forward. Most flagged periods will not contain a crash, and many crashes occur outside flagged periods.</li>
+        <li>None of the combinations passed a strict multiple-testing correction. Use the windows as a risk-management prompt (position size, stops, hedges), not as a sell signal.</li>
+      </ul><p class="crash-foot">Research tool only. Not investment advice.</p></section>`;
+    drawCrashScoreChart(d).catch(() => {});
+  } catch (err) {
+    if (meta) meta.textContent = `Couldn't generate the report: ${err.message}`;
+  } finally {
+    if (btn) btn.disabled = false;
   }
 }
 document.addEventListener("DOMContentLoaded", initCrashWindowsDefaults);
@@ -3886,21 +3983,31 @@ async function loadExpiryForecast(mode) {
 // ---------------------------------------------------------------
 // Bootstrap: wire up all initialisers once the DOM is ready
 // ---------------------------------------------------------------
+// One failing initialiser must not stop the rest of the page (auto-run, AstroCycle,
+// futurecast) from loading.
+function safeInit(label, fn) {
+  try {
+    const out = fn();
+    if (out && typeof out.catch === "function") out.catch((e) => console.error(`${label} failed:`, e));
+  } catch (e) {
+    console.error(`${label} failed:`, e);
+  }
+}
+
 document.addEventListener("DOMContentLoaded", () => {
   // Load and apply persisted settings
-  const settings = loadSettings();
-  applySettings(settings);
+  safeInit("settings", () => applySettings(loadSettings()));
 
-  setTodayAsDefault();
-  loadPresets();
-  initWeekCalendar();
-  initSectorFilters();
-  initWorkspaceTabs();
-  initKPIntradayChart();
-  initMonthlyHeatmap();
-  initConfluenceMatrix();
-  initKeyboardNavigation();
-  initThemeToggle();
+  safeInit("setTodayAsDefault", () => setTodayAsDefault());
+  safeInit("loadPresets", () => loadPresets());
+  safeInit("initWeekCalendar", () => initWeekCalendar());
+  safeInit("initSectorFilters", () => initSectorFilters());
+  safeInit("initWorkspaceTabs", () => initWorkspaceTabs());
+  safeInit("initKPIntradayChart", () => initKPIntradayChart());
+  safeInit("initMonthlyHeatmap", () => initMonthlyHeatmap());
+  safeInit("initConfluenceMatrix", () => initConfluenceMatrix());
+  safeInit("initKeyboardNavigation", () => initKeyboardNavigation());
+  safeInit("initThemeToggle", () => initThemeToggle());
 
   // Auto-run the prediction with today's date so the page (including the
   // hosted SBC chakra) renders without clicking Predict
@@ -3916,6 +4023,7 @@ document.addEventListener("DOMContentLoaded", () => {
   // Expiry Range Indicator panel
   if ($("expiry-run")) {
     $("expiry-run").addEventListener("click", () => loadExpiryForecast("forecast"));
+    loadExpiryForecast("forecast").catch(() => {});
   }
   if ($("expiry-backtest")) {
     $("expiry-backtest").addEventListener("click", () => loadExpiryForecast("backtest"));
