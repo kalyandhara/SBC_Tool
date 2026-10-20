@@ -4068,90 +4068,185 @@ document.addEventListener("DOMContentLoaded", () => {
     if ($("bhadra-month")) $("bhadra-month").addEventListener("click", () => { bhadraState.offset = 0; bhadraState.date = bhadraBaseDate(); loadBhadraCalendar(); });
   }
 
-  // Kota Chakra panel
-  if ($("kota-load-daily")) {
-    const kotaDateSel = $("kota-date");
-    if (kotaDateSel && !kotaDateSel.options.length) {
-      const today = new Date();
-      for (let i = 0; i < 15; i++) {
-        const d = new Date(today); d.setDate(today.getDate() - i);
-        const opt = document.createElement("option");
-        opt.value = isoDateOf(d);
-        opt.textContent = isoDateOf(d);
-        kotaDateSel.appendChild(opt);
-      }
-    }
-    $("kota-load-daily").addEventListener("click", async () => {
-      const date = kotaDateSel.value;
-      const instrument = $("kota-instrument").value;
-      await loadKotaData(`/api/engine/kota/daily?date=${encodeURIComponent(date)}&instrument=${encodeURIComponent(instrument)}`);
+  // Transit Report tab
+  if ($("transit-generate")) {
+    const TRANSIT_PLANETS = ["Sun", "Moon", "Mercury", "Venus", "Mars", "Jupiter",
+      "Saturn", "Rahu", "Ketu", "Uranus", "Neptune", "Pluto"];
+    const planetWrap = $("transit-planets");
+    TRANSIT_PLANETS.forEach((name) => {
+      const label = document.createElement("label");
+      label.className = "chk";
+      const box = document.createElement("input");
+      box.type = "checkbox";
+      box.value = name;
+      box.checked = true;
+      label.appendChild(box);
+      label.appendChild(document.createTextNode(" " + name));
+      planetWrap.appendChild(label);
     });
-    $("kota-load-weekly").addEventListener("click", async () => {
-      const date = kotaDateSel.value;
-      await loadKotaData(`/api/engine/kota/weekly?week_start=${encodeURIComponent(date)}`);
-    });
-    $("kota-load-monthly").addEventListener("click", async () => {
-      const date = kotaDateSel.value;
-      const month = date.slice(0,7);
-      await loadKotaData(`/api/engine/kota/monthly?month=${encodeURIComponent(month)}`);
+    $("transit-planets-toggle").addEventListener("click", () => {
+      const boxes = [...planetWrap.querySelectorAll("input")];
+      const anyOff = boxes.some((b) => !b.checked);
+      boxes.forEach((b) => { b.checked = anyOff; });
     });
 
-    async function loadKotaData(url) {
-      const btns = [$("kota-load-daily"), $("kota-load-weekly"), $("kota-load-monthly")];
-      btns.forEach((b) => { if (b) b.disabled = true; });
-      const wrap = $("kota-table-wrap");
-      if (wrap) wrap.innerHTML = '<div class="exec-empty">Loading Kota Chakra data...</div>';
-      if (window.SBCFreshness) SBCFreshness.show("kota-asof", "");
+    const today = new Date();
+    const iso = (d) => d.toISOString().slice(0, 10);
+    $("transit-start").value = iso(today);
+    $("transit-end").value = iso(new Date(today.getTime() + 365 * 86400000));
+
+    let cityTimer = null;
+    $("transit-city").addEventListener("input", () => {
+      clearTimeout(cityTimer);
+      const q = $("transit-city").value.trim();
+      if (q.length < 2) return;
+      cityTimer = setTimeout(async () => {
+        try {
+          const res = await fetchWithTimeout(`/api/transits/cities?q=${encodeURIComponent(q)}&limit=8`);
+          const data = await res.json();
+          const list = $("transit-city-list");
+          list.innerHTML = "";
+          (data.results || []).forEach((c) => {
+            const opt = document.createElement("option");
+            opt.value = c.name;
+            opt.label = `${c.name}, ${c.country} (${c.timezone})`;
+            list.appendChild(opt);
+          });
+        } catch (e) { /* autocomplete is best-effort */ }
+      }, 250);
+    });
+
+    $("transit-generate").addEventListener("click", () => {
+      const status = $("transit-status");
+      const start = $("transit-start").value;
+      const end = $("transit-end").value;
+      const types = [...$("transit-types").querySelectorAll("input:checked")].map((b) => b.value);
+      const planets = [...planetWrap.querySelectorAll("input:checked")].map((b) => b.value);
+      if (!start || !end) { status.textContent = "Pick a start and end date."; return; }
+      if (!types.length) { status.textContent = "Pick at least one transit type."; return; }
+      if (!planets.length) { status.textContent = "Pick at least one planet."; return; }
+      const params = new URLSearchParams({
+        city: $("transit-city").value.trim() || "Mumbai",
+        start, end,
+        ayanamsa: $("transit-ayanamsa").value,
+        node_mode: $("transit-node").value,
+        types: types.join(","),
+        planets: planets.join(","),
+      });
+      status.textContent = "Building workbook (large ranges can take ~30s)...";
+      const url = `/api/transits/report?${params}`;
+      // Kick off the download and confirm via HEAD-less GET: navigating
+      // with as_attachment streams straight to the file.
+      const done = () => { status.textContent = "Download started: " + start + " to " + end + "."; };
+      fetch(url).then((r) => { if (!r.ok) throw new Error("HTTP " + r.status); return r.blob(); })
+        .then((blob) => {
+          const a = document.createElement("a");
+          const match = url.match(/start=([^&]+)/);
+          a.href = URL.createObjectURL(blob);
+          a.download = `transit_report_${start}_${end}.xlsx`;
+          document.body.appendChild(a);
+          a.click();
+          a.remove();
+          done();
+        })
+        .catch((e) => { status.textContent = "Report failed: " + e.message; });
+    });
+  }
+
+
+  // Momentum Screener tab
+  if ($("scr-run")) {
+    (async () => {
       try {
-        const res = await fetchWithTimeout(url);
-        const data = await res.json();
-        if (data.error) throw new Error(data.error);
-        if (window.SBCFreshness) SBCFreshness.show("kota-asof", SBCFreshness.kotaBadge(data.coverage));
-        renderKotaTable(data.records || data.summary);
-      } catch (e) {
-        console.error("Kota Chakra load failed:", e);
-        if (wrap) wrap.innerHTML = '<div class="kp-error" style="color:var(--red);padding:12px;">Kota Chakra data unavailable: ' + (e.message || e) + '</div>';
-      } finally {
-        btns.forEach((b) => { if (b) b.disabled = false; });
-      }
-    }
+        const res = await fetchWithTimeout("/api/screener/universes");
+        const body = await res.json();
+        const sel = $("scr-universe");
+        sel.innerHTML = "";
+        body.universes.forEach((u) => {
+          const opt = document.createElement("option");
+          opt.value = u; opt.textContent = u;
+          sel.appendChild(opt);
+        });
+      } catch (e) { /* population is best-effort */ }
+    })();
 
-    function renderKotaTable(records) {
-      const wrap = $("kota-table-wrap");
-      if (!wrap) return;
-      if (!records || !records.length) {
-        wrap.innerHTML = "<div>No data</div>";
+    const today = new Date();
+    $("scr-end").value = today.toISOString().slice(0, 10);
+
+    const scrParams = () => {
+      const watch = $("scr-watchlist").value.trim();
+      const params = new URLSearchParams({
+        universe: watch ? ("watchlist:" + watch) : $("scr-universe").value,
+        mode: $("scr-mode").value,
+        timeframe: $("scr-timeframe").value,
+      });
+      if ($("scr-end").value) params.set("end", $("scr-end").value);
+      if ($("scr-lookback").value) params.set("lookback", $("scr-lookback").value);
+      if ($("scr-ha").checked) params.set("as_ha", "1");
+      return params;
+    };
+
+    const renderResults = (body) => {
+      const wrap = $("scr-results");
+      if (!body.signals || !body.signals.length) {
+        wrap.innerHTML = '<div class="empty-note">No signals in this window.</div>';
         return;
       }
-      const table = document.createElement("table");
-      table.style.width = "100%";
-      table.style.borderCollapse = "collapse";
-      const thead = document.createElement("thead");
-      const headerRow = document.createElement("tr");
-      Object.keys(records[0]).forEach(k => {
-        const th = document.createElement("th");
-        th.textContent = k;
-        th.style.border = "1px solid #334155";
-        th.style.padding = "4px";
-        headerRow.appendChild(th);
-      });
-      thead.appendChild(headerRow);
-      table.appendChild(thead);
-      const tbody = document.createElement("tbody");
-      records.forEach(r => {
-        const tr = document.createElement("tr");
-        Object.values(r).forEach(v => {
-          const td = document.createElement("td");
-          td.textContent = v;
-          td.style.border = "1px solid #334155";
-          td.style.padding = "4px";
-          tr.appendChild(td);
-        });
-        tbody.appendChild(tr);
-      });
-      table.appendChild(tbody);
-      wrap.innerHTML = "";
-      wrap.appendChild(table);
-    }
+      const rows = body.signals.slice(0, 50).map((s) => {
+        const pnl = s.pnl_pct == null ? "" : s.pnl_pct + "%";
+        const exit = s.status === "exited"
+          ? `${_fmt_ts(s.exit_ts)} @ ${s.exit_price} (${s.exit_reason || ""})`
+          : "open";
+        return `<tr><td>${s.symbol}</td><td>${s.side}</td><td>${_fmt_ts(s.entry_ts)}</td>` +
+          `<td>${s.entry}</td><td>${s.change_pct == null ? "" : s.change_pct + "%"}</td>` +
+          `<td>${s.rsi != null ? s.rsi : ""}</td><td>${s.stop_initial}</td>` +
+          `<td>${s.stop_current != null ? s.stop_current : ""}</td><td>${s.status}</td>` +
+          `<td>${exit}</td><td>${pnl}</td></tr>`;
+      }).join("");
+      wrap.innerHTML = `<div class="u-mt12"><strong>${body.signals_total}</strong> signals ` +
+        `(showing ${Math.min(50, body.signals.length)}) — errors: ` +
+        `${Object.keys(body.errors || {}).length}</div>` +
+        `<table class="data-table"><thead><tr><th>Symbol</th><th>Side</th><th>Signal</th>` +
+        `<th>Entry</th><th>% chg</th><th>RSI</th><th>Init SL</th><th>Trail SL</th>` +
+        `<th>Status</th><th>Exit</th><th>P&L</th></tr></thead><tbody>${rows}</tbody></table>`;
+    };
+
+    const _fmt_ts = (v) => (v ? String(v).slice(0, 19).replace("T", " ") : "");
+
+    const run = async (fmt) => {
+      const status = $("scr-status");
+      status.textContent = fmt === "xlsx"
+        ? "Building Excel report (large scans can take a minute)..."
+        : "Scanning...";
+      const params = scrParams();
+      params.set("format", fmt);
+      try {
+        const res = await fetchWithTimeout(`/api/screener/scan?${params}`, 300000);
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({}));
+          throw new Error(err.error || ("HTTP " + res.status));
+        }
+        if (fmt === "xlsx") {
+          const blob = await res.blob();
+          const a = document.createElement("a");
+          a.href = URL.createObjectURL(blob);
+          a.download = `nse_momentum_${$("scr-mode").value}_${$("scr-end").value || "today"}.xlsx`;
+          document.body.appendChild(a);
+          a.click();
+          a.remove();
+          status.textContent = "Excel download started.";
+        } else {
+          const body = await res.json();
+          status.textContent = `${body.signals_total} signals from ` +
+            `${body.scanned} symbols.`;
+          renderResults(body);
+        }
+      } catch (e) {
+        status.textContent = "Scan failed: " + e.message;
+      }
+    };
+    $("scr-run").addEventListener("click", () => run("json"));
+    $("scr-download").addEventListener("click", () => run("xlsx"));
   }
+
 });

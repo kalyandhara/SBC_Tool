@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <link rel="icon" type="image/svg+xml" href="/static/favicon.svg">
   <title>Sarvatobhadra Chakra - Market Prediction</title>
-  <link rel="stylesheet" href="/static/style.css?v=31">
+  <link rel="stylesheet" href="/static/style.css?v=32">
   <script src="/static/chart.umd.min.js"></script>
   <script src="/static/js/api-token.js"></script>
 </head>
@@ -76,6 +76,12 @@
       </button>
       <button class="nav-tab" data-tab="tab-calendar" role="tab" aria-selected="false" aria-controls="tab-calendar">
         <span class="tab-icon" aria-hidden="true">🗓️</span> Forward Calendar
+      </button>
+      <button class="nav-tab" data-tab="tab-transit" role="tab" aria-selected="false" aria-controls="tab-transit">
+        <span class="tab-icon" aria-hidden="true">🪐</span> Transit Report
+      </button>
+      <button class="nav-tab" data-tab="tab-screener" role="tab" aria-selected="false" aria-controls="tab-screener">
+        <span class="tab-icon" aria-hidden="true">🚀</span> Momentum Screener
       </button>
       <button class="nav-tab" data-tab="tab-bullion" role="tab" aria-selected="false" aria-controls="tab-bullion">
         <span class="tab-icon" aria-hidden="true">🥇</span> Bullion Week
@@ -713,6 +719,94 @@
     </div>
 
     <!-- ============================================================== -->
+    <!-- TAB 2b: PLANET TRANSIT REPORT -->
+    <div id="tab-transit" class="tab-pane" role="tabpanel">
+      <section id="transit-report-page" class="panel">
+        <div class="panel-head">
+          <h2>🪐 Planet Transit Report</h2>
+          <span class="panel-sub">Exact zodiac, nakshatra and pada transit timings for all 12 bodies, in your city's local time &middot; Swiss Ephemeris, 1-second precision &middot; Excel download</span>
+        </div>
+        <div class="transit-controls">
+          <label>City
+            <input type="text" id="transit-city" list="transit-city-list" value="Mumbai" autocomplete="off" placeholder="Type a city...">
+            <datalist id="transit-city-list"></datalist>
+          </label>
+          <label>From <input type="date" id="transit-start"></label>
+          <label>To <input type="date" id="transit-end"></label>
+          <label>Ayanamsa
+            <select id="transit-ayanamsa">
+              <option value="lahiri" selected>Lahiri</option>
+              <option value="kp">KP (Krishnamurti)</option>
+              <option value="raman">Raman</option>
+            </select>
+          </label>
+          <label>Node
+            <select id="transit-node">
+              <option value="mean" selected>Mean</option>
+              <option value="true">True</option>
+            </select>
+          </label>
+          <label>Transit types
+            <span class="transit-checks" id="transit-types">
+              <label class="chk"><input type="checkbox" value="sign" checked> Zodiac</label>
+              <label class="chk"><input type="checkbox" value="nakshatra" checked> Nakshatra</label>
+              <label class="chk"><input type="checkbox" value="pada" checked> Pada</label>
+            </span>
+          </label>
+          <label>Planets
+            <span class="transit-checks" id="transit-planets"></span>
+            <button type="button" id="transit-planets-toggle" class="link-btn">all / none</button>
+          </label>
+          <button id="transit-generate" class="btn">⬇️ Generate Excel</button>
+        </div>
+    <!-- TAB 2c: NSE MOMENTUM SCREENER -->
+    <div id="tab-screener" class="tab-pane" role="tabpanel">
+      <section id="screener-page" class="panel">
+        <div class="panel-head">
+          <h2>🚀 NSE Momentum Screener</h2>
+          <span class="panel-sub">Supertrend &middot; RSI &middot; Pivot &middot; Bollinger &middot; EMA crossover across NSE universes &middot; entry, stop-loss and live trade status in an Excel report</span>
+        </div>
+        <div class="transit-controls">
+          <label>Universe
+            <select id="scr-universe"></select>
+          </label>
+          <label>Watchlist (optional)
+            <input type="text" id="scr-watchlist" placeholder="RELIANCE, TCS, ^NSEI">
+          </label>
+          <label>Mode
+            <select id="scr-mode">
+              <option value="full" selected>Full 4-rule momentum</option>
+              <option value="rsi">RSI only</option>
+              <option value="ema">10/30 EMA crossover</option>
+            </select>
+          </label>
+          <label>Timeframe
+            <select id="scr-timeframe">
+              <option value="5m">5 min</option>
+              <option value="10m">10 min</option>
+              <option value="15m">15 min</option>
+              <option value="1h">1 hour</option>
+              <option value="1d" selected>Daily</option>
+              <option value="1wk">Weekly</option>
+            </select>
+          </label>
+          <label>Scan date
+            <input type="date" id="scr-end">
+          </label>
+          <label>Lookback (days)
+            <input type="number" id="scr-lookback" min="5" placeholder="default">
+          </label>
+          <label class="chk scr-ha-wrap">
+            <input type="checkbox" id="scr-ha"> Heikin Ashi candles
+          </label>
+          <button id="scr-run" class="btn">🔍 Run Scan</button>
+          <button id="scr-download" class="btn btn-secondary">⬇️ Excel Report</button>
+        </div>
+        <div id="scr-status" class="transit-status" aria-live="polite"></div>
+        <div id="scr-results"></div>
+      </section>
+    </div>
+
     <!-- TAB 3: SECTOR HEATMAP & COMMODITIES -->
     <!-- ============================================================== -->
     <div id="tab-sectors" class="tab-pane" role="tabpanel">
@@ -1045,23 +1139,6 @@
         </div>
         <div id="kp-intraday-content" class="kp-intraday-content"></div>
 
-      <!-- Kota Chakra Prediction -->
-      <div id="kota-chakra-panel" class="kp-intraday-chart u-mt24">
-        <h3>🏰 Kota Chakra Prediction</h3>
-        <div class="u-row u-mb12">
-          <select id="kota-date" aria-label="Kota Chakra date"></select>
-          <select id="kota-instrument" aria-label="Kota Chakra instrument">
-            <option value="NIFTY">NIFTY</option>
-            <option value="BANKNIFTY">BANKNIFTY</option>
-          </select>
-          <button id="kota-load-daily" class="btn">Load Daily</button>
-          <button id="kota-load-weekly" class="btn btn-secondary">Load Weekly</button>
-          <button id="kota-load-monthly" class="btn btn-secondary">Load Monthly</button>
-        </div>
-        <div id="kota-asof" class="asof-slot"></div>
-        <div id="kota-table-wrap"></div>
-      </div>
-
       <!-- KP Intraday Price Chart -->
       <div id="kp-intraday-chart" class="kp-intraday-chart">
         <div class="u-h400 u-w100" id="kp-chart-container"></div>
@@ -1359,6 +1436,56 @@
         <p id="ms-meta" class="analog-note"></p>
         <div id="ms-chart" class="ifc-chart pm-chart" aria-label="Monthly score chart"></div>
       </section>
+      <section class="panel analog-lab" id="aspect-table-panel">
+        <div class="panel-head">
+          <h2>Aspect Table</h2>
+          <span class="panel-sub">Exact-time geocentric sidereal aspects with Moon included, IST to the minute. KSc/KSp mark orb-entry events.</span>
+        </div>
+        <div class="analog-banner" role="note">
+          <strong>Traditional timing, untested.</strong>
+          These are exact aspect moments from classical astrology. KSc/KSp indicate when planets enter the aspect orb. Not a forecast.
+        </div>
+        <form id="at-form" class="research-controls">
+          <label>Start <input type="date" id="at-start"></label>
+          <label>End <input type="date" id="at-end"></label>
+          <label>Planet
+            <select id="at-planet">
+              <option value="">All planets</option>
+              <option value="Sun">Sun</option>
+              <option value="Moon">Moon</option>
+              <option value="Mercury">Mercury</option>
+              <option value="Venus">Venus</option>
+              <option value="Mars">Mars</option>
+              <option value="Jupiter">Jupiter</option>
+              <option value="Saturn">Saturn</option>
+              <option value="Uranus">Uranus</option>
+              <option value="Neptune">Neptune</option>
+              <option value="Pluto">Pluto</option>
+              <option value="Rahu">Rahu</option>
+              <option value="Ketu">Ketu</option>
+            </select>
+          </label>
+          <label>Aspect
+            <select id="at-aspect">
+              <option value="">All aspects</option>
+              <option value="0">Conjunction (0°)</option>
+              <option value="30">Sextile (30°)</option>
+              <option value="45">Semi-square (45°)</option>
+              <option value="60">Sextile (60°)</option>
+              <option value="90">Square (90°)</option>
+              <option value="120">Trine (120°)</option>
+              <option value="135">Sesquiquadrate (135°)</option>
+              <option value="150">Inconjunct (150°)</option>
+              <option value="180">Opposition (180°)</option>
+              <option value="KSc">KSc (orb entry)</option>
+              <option value="KSp">KSp (conjunction orb entry)</option>
+            </select>
+          </label>
+          <button type="submit" class="btn">Show aspects</button>
+        </form>
+        <div id="at-status" class="nifty-chart-status" role="status" aria-live="polite"></div>
+        <div id="at-results"></div>
+      </section>
       <section class="panel analog-lab" id="transit-almanac">
         <div class="panel-head">
           <h2>Transit Almanac</h2>
@@ -1471,6 +1598,7 @@
   <script src="/static/js/analog-lab.js?v=2"></script>
   <script src="/static/js/forecast-card.js?v=2"></script>
   <script src="/static/js/forward-calendar.js?v=3"></script>
+  <script src="/static/js/aspect-table.js?v=1"></script>
   <script src="/static/js/infographic.js?v=1"></script>
   <script src="/static/js/planet-series.js?v=1"></script>
   <script src="/static/js/monthly-score.js?v=1"></script>
