@@ -132,6 +132,24 @@ def moon_nature(tithi):
     return "benefic"
 
 
+# 27 nitya yogas: index = floor((sun_lon + moon_lon) % 360 / 13deg20').
+NITYA_YOGA_NAMES = [
+    "Vishkambha", "Priti", "Ayushman", "Saubhagya", "Shobhana",
+    "Atiganda", "Sukarman", "Dhriti", "Shula", "Ganda", "Vriddhi",
+    "Dhruva", "Vyaghata", "Harshana", "Vajra", "Siddhi", "Vyatipata",
+    "Variyan", "Parigha", "Shiva", "Siddha", "Sadhya", "Shubha",
+    "Shukla", "Brahma", "Indra", "Vaidhriti",
+]
+VYATIPATA_INDEX = 16
+
+
+def nitya_yoga_of(sun_lon, moon_lon):
+    """Return (index 0-26, name) of the nitya yoga at a moment."""
+    total = (sun_lon + moon_lon) % 360.0
+    index = int(total // NAKSHATRA_SPAN)
+    return index, NITYA_YOGA_NAMES[index]
+
+
 def gandanta_of(longitude):
     """Check if a sidereal longitude falls at a Gandanta junction.
 

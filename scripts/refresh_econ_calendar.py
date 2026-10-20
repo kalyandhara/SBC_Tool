@@ -36,6 +36,9 @@ def main() -> int:
             print(f"{source}: failed ({exc}); keeping previous rows")
             failed.append(source)
             fetched += [r for r in existing if r.get("source") == source]
+    static = ec.static_rows()
+    print(f"static: {len(static)} rows (FOMC decisions, US midterms)")
+    fetched += static
     rows = ec.merge(existing, fetched)
     ECON_FILE.write_text(json.dumps(rows, indent=1), encoding="utf-8")
     print(f"wrote {len(rows)} rows to {ECON_FILE}")

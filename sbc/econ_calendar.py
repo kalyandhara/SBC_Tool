@@ -33,6 +33,45 @@ WATCH = [
     (r"international trade in goods and services", "US Trade Balance"),
 ]
 
+# FOMC decision days = day 2 of each scheduled two-day meeting; the
+# statement lands 14:00 ET. 2026 is the Fed's published schedule; 2027
+# is the provisional calendar (marked tentative). No official ICS feed
+# exists, so these rows are generated here ("source": "static") and
+# merged into data/econ_events.json by scripts/refresh_econ_calendar.py.
+FOMC_2026 = ["2026-01-28", "2026-03-18", "2026-04-29", "2026-06-17",
+             "2026-07-29", "2026-09-16", "2026-10-28", "2026-12-09"]
+FOMC_2027_TENTATIVE = ["2027-01-27", "2027-03-17", "2027-04-28",
+                       "2027-06-16", "2027-07-28", "2027-09-22",
+                       "2027-10-27", "2027-12-08"]
+STATEMENT_ET = "14:00"
+
+
+def static_rows() -> list[dict]:
+    """FOMC rate decisions + election days as calendar rows (times in IST)."""
+    out = []
+    for dates, tentative in ((FOMC_2026, False), (FOMC_2027_TENTATIVE, True)):
+        for date in dates:
+            y, m, d = (int(x) for x in date.split("-"))
+            et = dt.datetime(y, m, d, 14, 0, tzinfo=ET)
+            ist = et.astimezone(IST)
+            out.append({
+                "date": ist.date().isoformat(),
+                "time": ist.strftime("%H:%M"),
+                "name": "US FOMC Rate Decision",
+                "source": "static",
+                "et": f"{STATEMENT_ET} ET",
+                "title": "FOMC statement and rate decision"
+                         + (" (provisional calendar)" if tentative else ""),
+            })
+    # US midterm elections: first Tuesday after the first Monday of November.
+    out.append({
+        "date": "2026-11-03", "time": "19:00",
+        "name": "US Midterm Elections", "source": "static",
+        "et": "-", "title": "US midterm elections (polls close through the "
+                            "evening ET; results overnight IST)",
+    })
+    return sorted(out, key=lambda r: (r["date"], r["time"], r["name"]))
+
 
 def _unfold(text: str) -> list[str]:
     """RFC 5545 line unfolding: a line starting with a space continues the previous one."""
@@ -49,7 +88,7 @@ def _when(prop: str, value: str) -> dt.datetime | None:
     if re.fullmatch(r"\d{8}", value):
         return None  # all-day entries have no release time
     if value.endswith("Z"):
-        return dt.datetime.strptime(value, "%Y%m%dT%H%M%SZ").replace(tzinfo=dt.timezone.utc)
+        return dt.datetime.strptime(value, "%Y%m%dT%H%M%SZ").replace(tzinfo=dt.UTC)
     t = dt.datetime.strptime(value[:15], "%Y%m%dT%H%M%S")
     # BLS uses TZID=US-Eastern, BEA America/New_York; both are US Eastern time.
     return t.replace(tzinfo=ET)

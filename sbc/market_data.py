@@ -1,8 +1,9 @@
 """OHLC data via yfinance with local CSV cache.
 
-Covers the study assets NIFTY (^NSEI), Gold (GC=F) and Silver (SI=F).
-Falls back to the cached file when the network/yfinance is unavailable,
-so the chart still works offline.
+Covers the study assets NIFTY (^NSEI), Gold (GC=F), Silver (SI=F),
+Crude (CL=F), USDINR (USDINR=X), BankNIFTY (^NSEBANK) and US VIX
+(^VIX).  Falls back to the cached file when the network/yfinance is
+unavailable, so the chart still works offline.
 """
 
 import datetime
@@ -28,6 +29,10 @@ _ASSETS = {
     "nifty": ("^NSEI", "nifty_ohlc.csv"),
     "gold": ("GC=F", "gold_ohlc.csv"),
     "silver": ("SI=F", "silver_ohlc.csv"),
+    "crude": ("CL=F", "crude_ohlc.csv"),
+    "usdinr": ("USDINR=X", "usdinr_ohlc.csv"),
+    "banknifty": ("^NSEBANK", "banknifty_ohlc.csv"),
+    "vix": ("^VIX", "vix_ohlc.csv"),
 }
 
 
