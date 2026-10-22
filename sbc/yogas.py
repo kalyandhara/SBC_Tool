@@ -25,6 +25,8 @@ import datetime as dt
 
 from .nakshatra import RASHIS
 from .planets import COMBUST_ORB
+from .planets import DEBIL as DEBILITATED
+from .planets import EXALT as EXALTED_FROM_PLANETS
 
 # Vimshottari Mahadasha lords and years, starting from Ashwini.
 VIMSHOTTARI = [("Ketu", 7), ("Venus", 20), ("Sun", 6), ("Moon", 10),
@@ -38,9 +40,10 @@ DUSTHANA = {6, 8, 12}
 SIGNS = {"Aries": 0, "Taurus": 1, "Gemini": 2, "Cancer": 3, "Leo": 4,
          "Virgo": 5, "Libra": 6, "Scorpio": 7, "Sagittarius": 8,
          "Capricorn": 9, "Aquarius": 10, "Pisces": 11}
-EXALTED = {"Jupiter": 3, "Moon": 1}          # Cancer / Taurus
-OWN = {"Jupiter": {8, 11}, "Moon": {3}}      # Sag/Pisces / Cancer
-DEBILITATED = {"Jupiter": 9, "Moon": 7}      # Capricorn / Scorpio
+EXALTED = dict(EXALTED_FROM_PLANETS)          # planets.py classical map
+OWN = {"Sun": {4}, "Moon": {3}, "Mars": {0, 7}, "Mercury": {2, 5},
+       "Jupiter": {8, 11}, "Venus": {1, 6}, "Saturn": {9, 10}}
+DEBILITATED = dict(DEBILITATED)               # planets.py classical map
 SIGN_LORDS = {0: "Mars", 1: "Venus", 2: "Mercury", 3: "Moon", 4: "Sun",
               5: "Mercury", 6: "Venus", 7: "Mars", 8: "Jupiter",
               9: "Saturn", 10: "Saturn", 11: "Jupiter"}
@@ -315,4 +318,419 @@ def gaja_kesari(anchor_or_date: str, time: str | None = None,
     return verdict
 
 
-YOGAS = {"gaja_kesari": gaja_kesari}
+# ---------------------------------------------------------------------------
+# Shared machinery for the two-planet conjunction yogas below.
+# ---------------------------------------------------------------------------
+
+COMBUSTIBLE = {"Moon": 12.0, "Mars": 17.0, "Mercury": 14.0,
+               "Jupiter": 11.0, "Venus": 10.0, "Saturn": 15.0}
+BENEFICS = ("Jupiter", "Venus", "Moon", "Mercury")
+
+
+def _sign(longitude: float) -> int:
+    return int(longitude % 360.0 // 30)
+
+
+def _dignity(name: str, sign: int) -> str | None:
+    if EXALTED.get(name) == sign:
+        return "exalted"
+    if sign in OWN.get(name, set()):
+        return "own sign"
+    if DEBILITATED.get(name) == sign:
+        return "debilitated"
+    return None
+
+
+def _neecha_bhanga(name: str, sign: int, longitudes: dict[str, float],
+                   lagna_sign: int | None,
+                   moon_sign: int) -> tuple[bool, str]:
+    """Cancellation: the dispositor of the debilitated planet in a
+    Kendra from the Lagna or the Moon."""
+    lord_name = SIGN_LORDS[sign]
+    lord_lon = longitudes.get(lord_name)
+    if lord_lon is None:
+        return False, ""
+    lord_sign = _sign(lord_lon)
+    from_moon = (lord_sign - moon_sign) % 12 + 1
+    from_lagna = ((lord_sign - lagna_sign) % 12 + 1
+                  if lagna_sign is not None else None)
+    if from_moon in KENDRA or (from_lagna is not None
+                               and from_lagna in KENDRA):
+        where = "Lagna" if (from_lagna is not None
+                            and from_lagna in KENDRA) else "Moon"
+        return True, (f"neecha bhanga: {lord_name} (dispositor of "
+                      f"debilitated {name}) is in a Kendra from the "
+                      f"{where}")
+    return False, ""
+
+
+def _afflictions(longitudes: dict[str, float],
+                 victims: dict[str, int],
+                 exclude: set[str]) -> list[str]:
+    """Saturn/Rahu/Ketu conjunction or Saturn full drishti on victims.
+
+    victims: {planet_name: sign}.  Malefics that are themselves part of
+    the yoga pair are excluded from afflicting each other only when the
+    caller says so.
+    """
+    found = []
+    for victim_name, victim_sign in victims.items():
+        for malefic in ("Saturn", "Rahu", "Ketu"):
+            if malefic in exclude:
+                continue
+            m_lon = longitudes.get(malefic)
+            if m_lon is None:
+                continue
+            m_sign = _sign(m_lon)
+            if m_sign == victim_sign:
+                found.append(f"{malefic} conjunct {victim_name}")
+            elif malefic == "Saturn" and victim_sign in drishti_targets(
+                    "Saturn", m_sign):
+                found.append(
+                    f"Saturn aspects {victim_name} "
+                    f"({RASHIS[m_sign]} -> {RASHIS[victim_sign]})")
+    return sorted(set(found))
+
+
+def _benefic_drishti(longitudes: dict[str, float], victim_sign: int,
+                     exclude: set[str]) -> list[str]:
+    """Benefics (Venus/Moon/Jupiter not part of the pair) casting their
+    7th-house aspect onto the victim's sign - a mitigating factor."""
+    out = []
+    for benefic in ("Venus", "Moon", "Jupiter"):
+        if benefic in exclude:
+            continue
+        b_lon = longitudes.get(benefic)
+        if b_lon is None:
+            continue
+        b_sign = _sign(b_lon)
+        # Venus and the Moon cast a 7th-house aspect only; Jupiter
+        # also aspects the 5th and 9th.
+        targets = {(b_sign + 6) % 12}
+        if benefic == "Jupiter":
+            targets |= {(b_sign + 4) % 12, (b_sign + 8) % 12}
+        if victim_sign in targets:
+            out.append(f"{benefic} aspects the pair from "
+                       f"{RASHIS[b_sign]}")
+    return sorted(set(out))
+
+
+def _dusthana_check(longitudes: dict[str, float], lagna_sign: int | None,
+                    names: tuple[str, ...]) -> str | None:
+    if lagna_sign is None:
+        return None
+    for name in names:
+        h = (_sign(longitudes[name]) - lagna_sign) % 12 + 1
+        if h in DUSTHANA:
+            return name
+    return None
+
+
+def _dasha_state(dasha: dict | None, lords: tuple[str, ...]) -> str:
+    if not dasha:
+        return "unknown"
+    active = {dasha["at"]["maha"], dasha["at"]["antar"]}
+    return "active" if active & set(lords) else "dormant"
+
+
+def _tier(score: float) -> str:
+    if score >= 7.0:
+        return "strong"
+    if score >= 5.0:
+        return "moderate"
+    return "weak"
+
+
+def _conjunction(longitudes: dict[str, float], a: str,
+                 b: str) -> bool:
+    return (_sign(longitudes[a]) == _sign(longitudes[b]))
+
+
+def evaluate_conjunction_yoga(longitudes: dict[str, float],
+                              yoga: str, pair: tuple[str, str],
+                              lagna_sign: int | None = None,
+                              dasha: dict | None = None,
+                              spec: dict | None = None) -> dict:
+    """Generic conjunction-yoga evaluator.
+
+    spec keys:
+      polarity        "auspicious" or "affliction"
+      dasha_lords     lords whose period activates the yoga
+      results         one-line classical interpretation
+      waxing_matters  (Moon pairs) Moon bright/wane modifies the score
+      benefic_drishti_mitigates  benefic aspects soften affliction yogas
+    """
+    spec = spec or {}
+    polarity = spec.get("polarity", "auspicious")
+    a, b = pair
+    reasons: list[str] = []
+    score = 5.0
+
+    if not _conjunction(longitudes, a, b):
+        sep_note = (f"{a} is in {RASHIS[_sign(longitudes[a])]}, {b} in "
+                    f"{RASHIS[_sign(longitudes[b])]}")
+        reasons.append(f"primary fails: {a} and {b} are not conjunct "
+                       f"({sep_note})")
+        return {"yoga": yoga, "present": False, "tier": "absent",
+                "score": 0.0, "reasons": reasons,
+                "checks": {"pair": [a, b], "dasha": None}}
+
+    present = True
+    reasons.append(f"primary: {a} and {b} are conjunct in "
+                   f"{RASHIS[_sign(longitudes[a])]}")
+
+    victims = {}
+    for name in pair:
+        sign = _sign(longitudes[name])
+        victims[name] = sign
+        dignity = _dignity(name, sign)
+        if polarity == "auspicious":
+            if dignity == "exalted":
+                score += 2.0
+                reasons.append(f"{name} is exalted ({RASHIS[sign]})")
+            elif dignity == "own sign":
+                score += 1.0
+                reasons.append(f"{name} is in its own sign ({RASHIS[sign]})")
+            elif dignity == "debilitated":
+                score -= 2.0
+                nb, nb_reason = _neecha_bhanga(
+                    name, sign, longitudes, lagna_sign,
+                    _sign(longitudes["Moon"]))
+                if nb:
+                    score += 1.0
+                    reasons.append(f"{name} is debilitated "
+                                   f"({RASHIS[sign]}); {nb_reason}")
+                else:
+                    nb_note = nb_reason or "no neecha bhanga detected"
+                    reasons.append(f"{name} is debilitated "
+                                   f"({RASHIS[sign]}); {nb_note}")
+        elif polarity == "affliction":
+            if dignity in ("exalted", "own sign"):
+                score -= 1.5
+                reasons.append(f"{name} is dignified ({dignity}, "
+                               f"{RASHIS[sign]}) - the defect is softened")
+            elif dignity == "debilitated":
+                score += 1.0
+                reasons.append(f"{name} is debilitated "
+                               f"({RASHIS[sign]}) - the defect deepens")
+
+    # combustion of a combustible pair member (not when the Sun itself
+    # is in the pair - that case is measured directly below)
+    if "Sun" not in pair:
+        for name in pair:
+            orb = COMBUSTIBLE.get(name)
+            if orb is None:
+                continue
+            sep = _separation(longitudes[name], longitudes["Sun"])
+            if sep <= orb:
+                delta = -1.5 if polarity == "auspicious" else 0.5
+                score += delta
+                reasons.append(f"{name} is combust ({sep:.1f} deg from "
+                               "the Sun)")
+
+    afflictions = _afflictions(longitudes, victims,
+                               exclude={a, b})
+    if afflictions:
+        delta = (-min(2.0, len(afflictions)) if polarity == "auspicious"
+                 else min(1.0, 0.5 * len(afflictions)))
+        score += delta
+        reasons.append("malefic affliction: " + "; ".join(afflictions))
+    elif polarity == "auspicious":
+        reasons.append("no Saturn/Rahu/Ketu affliction on the pair")
+
+    if spec.get("benefic_drishti_mitigates"):
+        soft = _benefic_drishti(longitudes, victims[pair[0]],
+                                exclude={a, b})
+        if soft:
+            score -= min(2.0, len(soft))
+            reasons.append("mitigation: " + "; ".join(soft))
+
+    if spec.get("waxing_matters"):
+        elong = (longitudes["Moon"] - longitudes["Sun"]) % 360.0
+        if elong < 180.0:
+            score += 2.0 if polarity == "auspicious" else -0.5
+            reasons.append("the Moon is bright (Shukla paksha)")
+        else:
+            score -= 1.0 if polarity == "auspicious" else 0.5
+            reasons.append("the Moon is dark (Krishna paksha)")
+
+    dust = _dusthana_check(longitudes, lagna_sign, pair)
+    if dust:
+        delta = -1.0 if polarity == "auspicious" else 0.5
+        score += delta
+        reasons.append(f"{dust} is in dusthana from the Lagna")
+    elif lagna_sign is not None:
+        reasons.append("neither planet is in dusthana from the Lagna")
+
+    dasha_state = _dasha_state(dasha, spec.get("dasha_lords",
+                                               (pair[0], pair[1])))
+    if dasha_state == "active":
+        score += 1.0
+        reasons.append("dasha: a pair lord's period is running - the "
+                       "yoga is activated")
+    elif dasha_state == "dormant":
+        reasons.append("dasha: dormant until a pair lord's period runs")
+    if spec.get("results"):
+        reasons.append("results: " + spec["results"])
+
+    score = max(0.0, min(10.0, score))
+    return {"yoga": yoga, "present": present, "tier": _tier(score),
+            "score": round(score, 1), "reasons": reasons,
+            "checks": {"pair": [a, b], "dasha": dasha_state}}
+
+
+def evaluate_budha_aditya(longitudes: dict[str, float],
+                          lagna_sign: int | None = None,
+                          dasha: dict | None = None) -> dict:
+    """Sun + Mercury (Nipuna Yoga): intellect, speech, administration."""
+    deep = _conjunction(longitudes, "Sun", "Mercury") and \
+        _separation(longitudes["Mercury"], longitudes["Sun"]) <= 3.0
+    out = evaluate_conjunction_yoga(
+        longitudes, "budha_aditya", ("Sun", "Mercury"), lagna_sign,
+        dasha,
+        {"polarity": "auspicious", "dasha_lords": ("Sun", "Mercury"),
+         "results": "sharp intellect, way with words, success in "
+                    "administration, writing and commerce"})
+    if out["present"] and deep:
+        out["score"] = round(max(0.0, out["score"] - 1.0), 1)
+        out["tier"] = _tier(out["score"])
+        out["reasons"].append("Mercury is deeply combust (within 3 deg) "
+                              "- brilliance turns impulsive")
+    return out
+
+
+def evaluate_guru_chandal(longitudes: dict[str, float],
+                          lagna_sign: int | None = None,
+                          dasha: dict | None = None) -> dict:
+    """Jupiter + Rahu/Ketu (Guru-Chandal): unorthodox brilliance with
+    an ethical-risk edge; dignified or benefic-aspected Jupiter softens
+    it toward occult/spiritual aptitude."""
+    node = "Rahu" if _conjunction(longitudes, "Jupiter", "Rahu") else \
+        ("Ketu" if _conjunction(longitudes, "Jupiter", "Ketu") else None)
+    out = evaluate_conjunction_yoga(
+        longitudes, "guru_chandal", ("Jupiter", node or "Rahu"),
+        lagna_sign, dasha,
+        {"polarity": "affliction", "dasha_lords": ("Jupiter", "Rahu"),
+         "benefic_drishti_mitigates": True,
+         "results": "unorthodox intelligence and worldly cunning; "
+                    "mitigated, it becomes aptitude for astrology, "
+                    "occult and unconventional wisdom; unmitigated, "
+                    "ethical risk"})
+    if out["present"] and node == "Ketu":
+        out["reasons"].append("Ketu variant: moksha-oriented, detached "
+                              "wisdom rather than worldly cunning")
+    return out
+
+
+def evaluate_chandra_mangal(longitudes: dict[str, float],
+                            lagna_sign: int | None = None,
+                            dasha: dict | None = None) -> dict:
+    """Moon + Mars: earning capacity through bold effort (classically
+    a wealth combination; with a dark Moon the earning turns impulsive
+    or is squandered)."""
+    return evaluate_conjunction_yoga(
+        longitudes, "chandra_mangal", ("Moon", "Mars"), lagna_sign,
+        dasha,
+        {"polarity": "auspicious", "dasha_lords": ("Moon", "Mars"),
+         "waxing_matters": True,
+         "results": "wealth through courage, enterprise and practical "
+                    "action; strong earning instinct"})
+
+
+def evaluate_shrapit(longitudes: dict[str, float],
+                     lagna_sign: int | None = None,
+                     dasha: dict | None = None) -> dict:
+    """Saturn + Rahu (Shrapit Yoga): the past-life-curse combination -
+    recurring obstructions and sudden setbacks; dignity and benefic
+    aspects soften it."""
+    return evaluate_conjunction_yoga(
+        longitudes, "shrapit", ("Saturn", "Rahu"), lagna_sign, dasha,
+        {"polarity": "affliction", "dasha_lords": ("Saturn", "Rahu"),
+         "benefic_drishti_mitigates": True,
+         "results": "recurring obstructions, unexplained delays and "
+                    "sudden reversals; softened, it gives relentless "
+                    "persistence through hardship"})
+
+
+def evaluate_punarphoo(longitudes: dict[str, float],
+                       lagna_sign: int | None = None,
+                       dasha: dict | None = None) -> dict:
+    """Moon + Saturn (Punarphoo): obstacles and delays - classically
+    in marriage and agreements; benefic aspects ease the friction."""
+    return evaluate_conjunction_yoga(
+        longitudes, "punarphoo", ("Moon", "Saturn"), lagna_sign, dasha,
+        {"polarity": "affliction", "dasha_lords": ("Moon", "Saturn"),
+         "waxing_matters": True, "benefic_drishti_mitigates": True,
+         "results": "delays and second thoughts - classically in "
+                    "marriage and contracts; progress comes slowly "
+                    "and sticks once made"})
+
+
+def evaluate_chandra_aditya(longitudes: dict[str, float],
+                            lagna_sign: int | None = None,
+                            dasha: dict | None = None) -> dict:
+    """Sun + Moon (Amavasya-side conjunction): the closer the Moon to
+    the Sun, the weaker the mind's light; separation restores strength."""
+    out = evaluate_conjunction_yoga(
+        longitudes, "chandra_aditya", ("Sun", "Moon"), lagna_sign, dasha,
+        {"polarity": "auspicious", "dasha_lords": ("Sun", "Moon"),
+         "results": "willpower fused with the mind - strong when the "
+                    "Moon has room from the Sun; near-exact, an "
+                    "Amavasya-like dimming of mood and confidence"})
+    if out["present"]:
+        sep = _separation(longitudes["Moon"], longitudes["Sun"])
+        if sep <= 12.0:
+            out["score"] = round(max(0.0, out["score"] - 2.0), 1)
+            out["tier"] = _tier(out["score"])
+            out["reasons"].append(
+                f"near-Amavasya: the Moon is only {sep:.1f} deg from "
+                "the Sun - paksha bala is very low")
+        else:
+            out["reasons"].append(
+                f"the Moon is {sep:.1f} deg from the Sun - some paksha "
+                "bala remains")
+    return out
+
+
+YOGAS = {
+    "gaja_kesari": gaja_kesari,
+    "budha_aditya": evaluate_budha_aditya,
+    "guru_chandal": evaluate_guru_chandal,
+    "chandra_mangal": evaluate_chandra_mangal,
+    "shrapit": evaluate_shrapit,
+    "punarphoo": evaluate_punarphoo,
+    "chandra_aditya": evaluate_chandra_aditya,
+}
+
+
+def detect_all(anchor_or_date: str, time: str | None = None,
+               tz: str | None = None, city: str | None = None,
+               at_date: str | None = None) -> dict:
+    """Run every registered yoga on one birth chart.
+
+    Returns {yoga_name: verdict} with lagna/birth metadata attached,
+    plus a convenience 'summary' listing present yogas by tier.
+    """
+    from . import natal  # noqa: PLC0415
+
+    detail = natal.chart_detail(anchor_or_date, time, tz)
+    longitudes = {p["name"]: p["longitude"] for p in detail}
+    lag = natal.lagna_longitude(anchor_or_date, time, tz, city)
+    lagna_sign = int(lag % 360.0 // 30)
+    birth_date, _t, _z = natal._birth(anchor_or_date, time, tz)
+    dasha = vimshottari(longitudes["Moon"], birth_date, at_date)
+
+    out: dict = {}
+    for name, fn in YOGAS.items():
+        if name == "gaja_kesari":
+            out[name] = fn(anchor_or_date, time, tz, city, at_date)
+        else:
+            out[name] = fn(longitudes, lagna_sign, dasha)
+        out[name]["lagna"] = RASHIS[lagna_sign]
+    out["summary"] = {
+        "present": [n for n, v in out.items()
+                    if isinstance(v, dict) and v.get("present")],
+        "strong": [n for n, v in out.items()
+                   if isinstance(v, dict) and v.get("tier") == "strong"],
+    }
+    return out
