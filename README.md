@@ -1,16 +1,16 @@
-# Sarvatobhadra Chakra (SBC) - Vedic Market Timing Workstation
+# SBC Tool: Historical Pattern Hypothesis Workstation
 
-A comprehensive Flask-based web application for Vedic astrological market analysis using the **Sarvatobhadra Chakra** (81-cell transit matrix) with Swiss Ephemeris precision.
+A Flask research workstation that tests a hypothesis: do planetary cycles, computed from Swiss Ephemeris orbital data, carry information about NIFTY market moves? The cycle features come from a traditional 81-cell timing model, the **Sarvatobhadra Chakra (SBC)**, and every signal is tested out of sample against market controls.
 
 ## Features
 
-> **Research tool, not investment advice.** Every astro signal here has been tested
+> **Research tool, not investment advice.** Every planetary-cycle signal here has been tested
 > out of sample against NIFTY (rules, analogs, factors, sectors, swing entries) and
 > none has shown an edge so far. The forecast card stays at the base rate unless a
 > component passes both the permutation test and the incremental test against market
 > controls. Reports: `docs/research/`; running tally: `docs/GAP_ANALYSIS_PREDICTION_ENGINE_2026-10-03.md`.
 
-### Core astrological engine
+### Core planetary-cycle engine
 - **81-cell Sarvatobhadra Chakra** with 28 nakshatras, 16 vowels, 20 consonants, 12 rashis, 5 tithi groups
 - **Two vedha schools**: Classical (single ray) and All-three rays (Narasimha Rao); KP is used for the intraday layer, not for vedha
 - **Lahiri ayanamsa** with Swiss Ephemeris (Moshier); KP ayanamsa and Placidus cusps for the KP data files
@@ -21,13 +21,13 @@ A comprehensive Flask-based web application for Vedic astrological market analys
 | Tab | What it shows |
 |-----|---------------|
 | **Executive Overview** | Next-session NIFTY forecast card (probability, VIX bands, evidence with verdicts), crash/volatility risk, reversal watch, the interactive SBC Chakra with birth-data profiles, Bhadra calendar, weekly confluence commentary, Rahu/Ketu trap calendar, yoga alerts, trading signals from live tithi/Bhadra/reversal windows |
-| **Chart & Timing** | NIFTY 50 astro-price chart (prediction overlay, crash score, Gann zones and Gann initiation/target/SL markers), intraday astro-projection, AstroCycle Pro Mercury/Moon bars, expiry range indicator, crash and bullish futurecasts |
+| **Chart & Timing** | NIFTY 50 planetary-cycle price chart (prediction overlay, crash score, Gann zones and Gann initiation/target/SL markers), intraday cycle projection, AstroCycle Pro Mercury/Moon bars, expiry range indicator, crash and bullish futurecasts |
 | **Sector Heatmap** | SBC sector dashboard, monthly sector confluence heatmap, sector vedha radar, bullion and transit vedha matrices, large-cap divergence (CGSP), FMCG/tourism/chemical/alcohol sector signals, lunar cycle sector forecast, daily nakshatra confluence |
 | **Research Lab** | Event studies, walk-forward validation, planetary aspect grid, solar/lunar cycles |
 | **KP Intraday** | SBC + KP intraday forecast, KP trend-change report (DOCX export) and intraday path — all labelled *experimental, no validated edge*; Kota Chakra prediction |
 | **Monthly Projection** | Daily indication balance (Jyotish/KP/Western blend) and confluence calendar matrix |
 | **Analog Lab** | Tiered sky-similarity analogs with forward-return distributions |
-| **Forward Calendar** | Next weeks' astro events with the frozen forecast for each session (also as weekly HTML/Markdown reports) |
+| **Forward Calendar** | Next weeks' planetary events with the frozen forecast for each session (also as weekly HTML/Markdown reports) |
 | **Swing Windows** | Heliocentric Earth–planet aspect windows as entries, Gann + Fibonacci + indicator confluence as exits; TradingView Pine script in `tools/tradingview/` |
 
 ### API-only
@@ -105,7 +105,7 @@ SBC_Tool/
 ├── app.py                 # Flask application factory & routes
 ├── requirements.txt       # Python dependencies
 ├── pyproject.toml         # Project config (ruff, mypy, pytest)
-├── sbc/                   # Core astrological engine
+├── sbc/                   # Core planetary-cycle engine
 │   ├── __init__.py
 │   ├── chakra.py          # 81-cell grid definition
 │   ├── planets.py         # Planetary positions (Swiss Ephemeris)
@@ -116,7 +116,7 @@ SBC_Tool/
 │   ├── trade_setups.py    # Trade setup definitions
 │   ├── sector_signals.py  # Plantation/fertilizer vedha signals
 │   ├── monthly_heatmap.py # Sector × day confluence matrix
-│   ├── intraday_projection.py # Hourly NIFTY astro-projection
+│   ├── intraday_projection.py # Hourly NIFTY cycle projection
 │   ├── weekly_commentary.py   # Weekly synthesis
 │   ├── lunar_forecast.py      # Lunar cycle sector forecast
 │   ├── bullion_vedha.py       # Gold/Silver vedha matrix
@@ -130,7 +130,7 @@ SBC_Tool/
 │   ├── kp_config.py           # KP configuration
 │   ├── kota_chakra.py         # Kota chakra predictions
 │   ├── bhadra.py              # Bhadra (Vishti Karana) calendar
-│   ├── astro_plot.py          # Astrological chart plotting
+│   ├── astro_plot.py          # Planetary-cycle chart plotting
 │   ├── config.py              # Rashi-sector mappings, constants
 │   ├── metrics.py             # Bias scaling, western bias
 │   ├── market_data.py         # NIFTY OHLC, moon rashi
@@ -237,16 +237,16 @@ FII/DII cash flows. `run_app.py` refreshes it after each close; the first backfi
 `python scripts/refresh_market_data.py --full`. NSE serves FII/DII for the latest
 session only, so that series grows one day at a time.
 
-`data/fingerprints.db` holds the astro fingerprint (every planet, aspect,
+`data/fingerprints.db` holds the planetary fingerprint (every planet, aspect,
 panchang, KP and SBC factor at 09:15 IST) for each day 1990–2035. Build or
 refresh it with `python scripts/build_fingerprints.py` (about 15 s). Rows are
-versioned by the astro code, so an engine change triggers a rebuild of the stale days.
+versioned by the engine code, so an engine change triggers a rebuild of the stale days.
 
 The **Analog Lab** tab (Advanced analysis) finds past NIFTY sessions with the most similar
 sky and shows what followed them, next to the engine's walk-forward track record.
 `python scripts/validate_rules.py` and `python scripts/validate_analogs.py` regenerate
 the validation reports in `docs/research/`, and `python scripts/validate_incremental.py`
-tests whether any astro signal adds information beyond market controls (VIX, trend,
+tests whether any planetary-cycle signal adds information beyond market controls (VIX, trend,
 volatility, calendar). None has so far; treat every output as research, not advice.
 
 New candidate factors (stations, combustion, planetary war, out-of-bounds declination,
@@ -450,4 +450,4 @@ MIT License - see LICENSE file for details.
 
 ---
 
-**Built with ❤️ for the Vedic Financial Astrology community**
+**A research project in testing historical market-pattern hypotheses with out-of-sample statistics.**
