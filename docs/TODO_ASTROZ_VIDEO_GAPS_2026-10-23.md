@@ -81,15 +81,32 @@ Ordered by validation value; check off as each lands with a study report.
       `reports/video_gap_analysis_astroz_gold_video_2026-10-24.md`
       section 2; repro in
       `scripts/adhoc/validate_transcript_astroz_gold_video.py`.
-- [ ] **A8. Brent crude series (BZ=F).** The 2026-10-25 Mercury video
-      grades crude on a WTI proxy only ("Brent ~$116" unverifiable;
-      WTI 90-session high $110.48, spread $3-4 implied). yfinance
-      carries BZ=F from 2007 — same pattern as djia.
-- [ ] **A9. Asian equity indices (KOSPI ^KS11, N225, HSI).** The
-      "neighbours fell first, India crashes after" contagion story
-      (crash video 2026-10-22, Mercury video 2026-10-25) is
-      ungradeable without them. `crash_propagation_study_2026-10-19`
-      has no Asian leg.
+- [x] **A8. Brent crude series (BZ=F).** ✅ DONE 2026-10-26.
+      `sbc/market_data._ASSETS["brent"] = ("BZ=F", "brent_ohlc.csv")`;
+      4,790 daily rows 2007-07-30 -> 2026-10-25 (ICE trades Sunday
+      evenings; weekend bars harmless to the studies). Immediately
+      grades the 2026-10-25 video: "Brent hit around $116" = the
+      2026-10-23 high $117.41 / close $116.72 — exact. 2026 YTD avg
+      $90.67 (video's "averaging over $80" also holds on Brent).
+      `reports/video_gap_analysis_astroz_mercury_video_2026-10-25.md`
+      section 2 updated.
+- [x] **A9. Asian equity indices (KOSPI ^KS11, N225, HSI).** ✅ DONE
+      2026-10-26. Added to `sbc/market_data._ASSETS` (kospi 1996-12+,
+      nikkei/hsi 1990+; 7-9k rows each) and ran the pre-registered
+      study: `scripts/study_asia_contagion.py` ->
+      `reports/asia_contagion_study_2026-10-25.md` (India = SENSEX
+      1997-07+, the only Indian series deep enough for 2000). Crash
+      clusters: bear = >=20% under the trailing 252-session high,
+      episodes <=63 sessions apart merged. Verdict: co-movement real
+      (worst India dd within ~6 months after a neighbour trough
+      -26.5..-29.3% vs -21.4% random; KOSPI p=0.012, others 0.064-0.068;
+      India <= -15% within 126 sessions after ~70% of troughs vs ~51%
+      random) but the TIMING claim fails — neighbour weekly returns
+      carry zero next-week information (r=+0.02..+0.05, same as
+      India's own autocorrelation; contemporaneous r=+0.41..+0.46).
+      "India falls less" (2026): true vs KOSPI -39.1% and HSI -17.4%,
+      false vs Nikkei -13.4%. 2008: neighbours led the bear entry,
+      troughs were near-simultaneous (+24..27 d).
 - [ ] **A10. FII flow history.** NSE's API exposes the latest session
       only, so cumulative claims ("FIIs withdrew ~4 lakh crore") can
       never be audited from the repo; document the limitation wherever

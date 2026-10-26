@@ -37,7 +37,7 @@ Lahiri, mean node, IST). Prices: repo CSV caches (GC=F, SI=F, CL=F, HG=F,
 |---|---|---|
 | Gold "around $4,000" (COMEX) | 2026-10-23 close $4,007.90 | correct |
 | Silver "around $53" | 2026-10-23 close $53.95 | correct |
-| "Brent hit around $116" | repo has no Brent; WTI 90-session high $110.48 (2026-10-20); typical spread $3-4 implies Brent ~$113-114 | unverifiable, plausible-ish — tool gap |
+| "Brent hit around $116" | Brent BZ=F (now in repo): 2026-10-23 high **$117.41**, close $116.72; fell back to $109.62 by the Oct 25 session — matching his "crude dropped ~1.13% on the Qatar news" | correct (A8 closed) |
 | "Crude averaging over $80" | WTI 2026 YTD close avg $84.80 | correct |
 | Copper "hasn't fallen much, recovered first" | HG -1.3% off its 2026-08-06 high ($6.73), vs silver -24%, NIFTY -14% | correct (data to Aug 25) |
 | NIFTY "fallen about 14%" | -14.3% from the 2026-01-05 high | correct level, wrong starting story (claim 9) |
