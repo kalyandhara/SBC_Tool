@@ -107,10 +107,16 @@ Ordered by validation value; check off as each lands with a study report.
       "India falls less" (2026): true vs KOSPI -39.1% and HSI -17.4%,
       false vs Nikkei -13.4%. 2008: neighbours led the bear entry,
       troughs were near-simultaneous (+24..27 d).
-- [ ] **A10. FII flow history.** NSE's API exposes the latest session
-      only, so cumulative claims ("FIIs withdrew ~4 lakh crore") can
-      never be audited from the repo; document the limitation wherever
-      flow totals are shown.
+- [x] **A10. FII flow history.** ✅ DONE 2026-10-26 (as a documented
+      limitation, not a series). NSE's API exposes the latest session
+      only; the store accumulates from its first refresh
+      (data/market.db flows: 2026-10-01 → 2026-10-26, 14 sessions), so
+      cumulative claims ("FIIs withdrew ~4 lakh crore") can never be
+      audited from the repo. No UI or weekly-commentary surface shows
+      flow totals; the one place coverage is surfaced -
+      `market_store.freshness()` / `/api/engine/market/freshness` -
+      now carries the limitation note on its FII_DII entry (the module
+      docstring and `sbc/market_features.py` already documented it).
 
 ## B. Commentary gaps -> validation studies
 
@@ -197,8 +203,13 @@ Ordered by validation value; check off as each lands with a study report.
       → Mercury retrograde is now covered twice: unconditional
       windows (2026-10-18) and conditional reversal (2026-10-25).
       Both null.
-- [ ] **D3. (minor) Near-term calls on the record.** The video's one
-      testable dated call is Moon-in-Ashwini "recovery" on 2026-10-26
-      and Bharani volatility 2026-10-27; grade them in the next weekly
-      review against the nakshatra base rates
-      (`reports/moon_mercury_nakshatra_nifty_2026-10-18.md`).
+- [x] **D3. (minor) Near-term calls on the record.** ✅ Ledger built
+      2026-10-26 — `reports/astroz_calls_ledger.md`: every falsifiable
+      dated call from the three analysed videos, grading rules frozen
+      at record time (open-day rules for the Ashwini/Bharani/Fed/Oct-29
+      calls, window-return rules for the bear-through-February,
+      Ju-Sat-6/8 and Saturn-Taurus calls, price-proxy rule for the
+      Mars-Ketu risk window). First grading due at the 2026-10-31
+      weekly review (closes calls 1-5); calls 8-11 carry dates to
+      2032. Untestable calls (2:30 PM flip, the unfalsifiable
+      "6 lakhs") are recorded against the video's falsifiability.

@@ -295,6 +295,10 @@ def freshness(now: dt.datetime | None = None) -> dict:
         first, last, count = conn.execute(
             "SELECT MIN(date), MAX(date), COUNT(DISTINCT date) FROM flows").fetchone()
     series["FII_DII"] = {"first": first, "last": last, "rows": count,
-                         "stale": last is None or last < expected.isoformat()}
+                         "stale": last is None or last < expected.isoformat(),
+                         "note": "NSE publishes the latest cash-session flows only; "
+                                 "this series starts at the first refresh, so cumulative "
+                                 "FII totals (e.g. 'FIIs withdrew ~4 lakh crore in 2026') "
+                                 "cannot be audited from this store."}
     return {"expected_last_session": expected.isoformat(), "series": series,
             "stale": any(s["stale"] for s in series.values())}
