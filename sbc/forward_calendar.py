@@ -41,6 +41,25 @@ STATIONS = ("Mercury", "Venus", "Mars", "Jupiter", "Saturn", "Uranus", "Neptune"
 EXACT_ORB = 1.0
 WEEKLY_HOUR = 8  # Saturday 08:00 IST
 
+# From reports/node_jupiter_event_study_2026-10-19.md (rerun
+# scripts/study_node_jupiter_events.py to refresh): after the last 17
+# Rahu sign changes (mean node, Lahiri), NIFTY's mean move over the next
+# 21 sessions was +7.0% (71% of events up, p=0.000 vs random windows).
+# Event studies are research prompts, not validated signals; small n.
+NODE_INGRESS_NOTE = (
+    "Node sign change in this window. After the last 17 Rahu sign "
+    "changes, NIFTY's mean move over the next 21 sessions was +7.0% "
+    "(71% of events up, p=0.000 vs random windows) - historically a "
+    "bottoming marker, not a crash trigger. Source: "
+    "reports/node_jupiter_event_study_2026-10-19.md; research prompt, "
+    "not a validated signal; small n.")
+
+
+def node_changes(days: list[dict]) -> list[str]:
+    """Distinct 'Rahu enters <sign>' events in a built calendar's days."""
+    return sorted({e for d in days for e in d.get("events", [])
+                   if e.startswith("Rahu enters ")})
+
 
 # ── sky events ─────────────────────────────────────────────────────────────
 
@@ -164,6 +183,7 @@ def build(start: str | None = None, weeks: int = 4, now: dt.datetime | None = No
                             "band_68": f["expected_range"].get("band_68"),
                             "validated": f["validated"]}
 
+    node_events = node_changes(days)
     return {
         "generated_at": now.isoformat(timespec="seconds"),
         "start": first.isoformat(),
@@ -177,6 +197,7 @@ def build(start: str | None = None, weeks: int = 4, now: dt.datetime | None = No
         "track_record": {str(h): daily_ledger.summary(h) for h in fc.HORIZONS},
         "weeks": week_rows,
         "days": days,
+        "node_note": NODE_INGRESS_NOTE if node_events else None,
         "caveat": fc.CAVEAT,
     }
 
@@ -230,6 +251,8 @@ def _intro(cal: dict) -> list[str]:
 def render_markdown(cal: dict) -> str:
     lines = [f"# NIFTY forward calendar · {cal['start']} → {cal['end']}", ""]
     lines += [f"_{t}_  " for t in _intro(cal)] + [""]
+    if cal.get("node_note"):
+        lines += [f"> {cal['node_note']}", ""]
     lines += ["## Next session", "", "| Horizon | P(up) | Base rate | 68% range | Live record |",
               "|---|---|---|---|---|"]
     for h, x in cal["headline"].items():
@@ -272,12 +295,16 @@ def render_html(cal: dict) -> str:
     weeks = [[f"{w['start']} → {w['end']}", w["sessions"], _band_text(w["band_68"]), w["events"]]
              for w in cal["weeks"]]
     days = [_day_cells(d) for d in cal["days"]]
+    intro = [f"<p class='muted'>{html.escape(t)}</p>" for t in _intro(cal)]
+    if cal.get("node_note"):
+        intro.append(f"<p class='muted'><strong>"
+                     f"{html.escape(cal['node_note'])}</strong></p>")
     return "".join([
         "<!doctype html><html lang='en'><head><meta charset='utf-8'>",
         "<meta name='viewport' content='width=device-width,initial-scale=1'>",
         f"<title>{html.escape(title)}</title><style>{_CSS}</style></head><body>",
         f"<h1>{html.escape(title)}</h1>",
-        *(f"<p class='muted'>{html.escape(t)}</p>" for t in _intro(cal)),
+        *intro,
         "<h2>Next session</h2>",
         _table(["Horizon", "P(up)", "Base rate", "68% range", "Live record"], head),
         "<h2>Weekly range (VIX-implied, from the last close)</h2>",

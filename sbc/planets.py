@@ -18,6 +18,9 @@ SWE_BODIES = [
     (swe.JUPITER, "Jupiter"),
     (swe.VENUS, "Venus"),
     (swe.SATURN, "Saturn"),
+    (swe.URANUS, "Uranus"),
+    (swe.NEPTUNE, "Neptune"),
+    (swe.PLUTO, "Pluto"),
     (swe.MEAN_NODE, "Rahu"),
 ]
 
@@ -30,21 +33,34 @@ NATURAL_NATURE = {
     "Jupiter": "benefic",
     "Venus": "benefic",
     "Saturn": "malefic",
+    "Uranus": "malefic",   # Volatility, disruption
+    "Neptune": "malefic", # Illusions, bubbles
+    "Pluto": "malefic",   # Destruction, transformation
     "Rahu": "malefic",
     "Ketu": "malefic",
 }
 
 SYMBOLS = {
     "Sun": "Su", "Moon": "Mo", "Mars": "Ma", "Mercury": "Me",
-    "Jupiter": "Ju", "Venus": "Ve", "Saturn": "Sa", "Rahu": "Ra",
-    "Ketu": "Ke",
+    "Jupiter": "Ju", "Venus": "Ve", "Saturn": "Sa",
+    "Uranus": "Ur", "Neptune": "Ne", "Pluto": "Pl",
+    "Rahu": "Ra", "Ketu": "Ke",
 }
 
 # Exaltation / debilitation signs (0=Aries .. 11=Pisces).
+# For outer planets, using Western astrology equivalents (sidereal Lahiri).
 EXALT = {"Sun": 0, "Moon": 1, "Mars": 9, "Mercury": 5, "Jupiter": 3,
-         "Venus": 11, "Saturn": 6, "Rahu": 1, "Ketu": 7}
+         "Venus": 11, "Saturn": 6, "Rahu": 1, "Ketu": 7,
+         "Uranus": 10,  # Scorpio (Western: Aquarius)
+         "Neptune": 8,  # Cancer (Western: Pisces)
+         "Pluto": 9,    # Leo (Western: Scorpio)
+        }
 DEBIL = {"Sun": 6, "Moon": 7, "Mars": 3, "Mercury": 11, "Jupiter": 9,
-         "Venus": 5, "Saturn": 0, "Rahu": 7, "Ketu": 1}
+         "Venus": 5, "Saturn": 0, "Rahu": 7, "Ketu": 1,
+         "Uranus": 4,   # Taurus (Western: Leo)
+         "Neptune": 2,  # Taurus (Western: Virgo)
+         "Pluto": 3,    # Cancer (Western: Taurus)
+        }
 
 # Combustion orbs (degrees from the Sun).
 COMBUST_ORB = {"Moon": 12.0, "Mars": 17.0, "Mercury": 14.0,
@@ -98,7 +114,11 @@ def _planet_dict(name, lon, speed):
 
 
 def refine_natures(planets, tithi):
-    """Apply the classical nature switches for Mercury and the Moon."""
+    """Apply the classical nature switches for Mercury and the Moon.
+    
+    Outer planets (Uranus, Neptune, Pluto) keep their natural malefic nature
+    and do not have phase-dependent switches like Mercury or the Moon.
+    """
     malefic_lons = []
     for p in planets:
         if p["name"] in ("Sun", "Mars", "Saturn", "Rahu", "Ketu"):
@@ -120,6 +140,10 @@ def refine_natures(planets, tithi):
             else:
                 p["nature"] = "benefic"
                 p["nature_note"] = "well-placed"
+        elif p["name"] in ("Uranus", "Neptune", "Pluto"):
+            # Outer planets keep their natural malefic nature
+            p["nature"] = NATURAL_NATURE[p["name"]]
+            p["nature_note"] = f"natural {p['nature']} (outer planet macro-cycle)"
         else:
             p["nature"] = NATURAL_NATURE[p["name"]]
             p["nature_note"] = "natural " + p["nature"]

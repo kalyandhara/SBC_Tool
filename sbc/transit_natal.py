@@ -37,7 +37,7 @@ from sbc.helio_aspects import ASPECT_NAMES, ASPECTS, IST, ORB, _jd, _to_ist
 from sbc.planets import SWE_BODIES, _flags
 
 BODY = {name: body for body, name in SWE_BODIES}
-TRANSIT_PLANETS = ["Sun", "Mercury", "Venus", "Mars", "Jupiter", "Saturn", "Rahu"]
+TRANSIT_PLANETS = ["Sun", "Mercury", "Venus", "Mars", "Jupiter", "Saturn", "Uranus", "Neptune", "Pluto", "Rahu"]
 
 
 def _lon(planet: str, jd: float) -> float:

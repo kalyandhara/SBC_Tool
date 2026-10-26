@@ -348,3 +348,95 @@ def crash_windows():
     if (end_d - start_d).days > 730:
         return jsonify({"error": "range too large (max 2 years)"}), 400
     return jsonify(build(start_d, end_d))
+
+
+@research_bp.route("/api/economic/indicators")
+def economic_indicators():
+    """Return economic indicators for a date range.
+    
+    Query params:
+        series: Filter by series ID (optional, e.g., "FEDFUNDS")
+        start: Start date YYYY-MM-DD (optional)
+        end: End date YYYY-MM-DD (optional)
+    """
+    from sbc.economic_data import get_economic_data
+    
+    series = request.args.get("series")
+    start = request.args.get("start")
+    end = request.args.get("end")
+    
+    try:
+        data = get_economic_data(series=series, start=start, end=end)
+        return jsonify(data)
+    except Exception as e:
+        return internal_error()
+
+
+@research_bp.route("/api/economic/refresh", methods=["POST"])
+def economic_refresh():
+    """Refresh economic data from FRED API.
+    
+    Query params:
+        years: Number of years to fetch (default: 10)
+    """
+    from sbc.economic_data import refresh_fred_data
+    
+    try:
+        years = int(request.args.get("years", 10))
+        years = max(1, min(20, years))  # Limit to 1-20 years
+    except ValueError:
+        return jsonify({"error": "years must be an integer"}), 400
+    
+    try:
+        results = refresh_fred_data(years=years)
+        return jsonify(results)
+    except Exception as e:
+        return internal_error()
+
+
+@research_bp.route("/api/sentiment/daily")
+def sentiment_daily():
+    """Return daily sentiment scores for a date range.
+    
+    Query params:
+        source: Filter by source (vix, news, twitter) (optional)
+        ticker: Filter by ticker (optional)
+        start: Start date YYYY-MM-DD (optional)
+        end: End date YYYY-MM-DD (optional)
+    """
+    from sbc.sentiment_data import get_sentiment_data
+    
+    source = request.args.get("source")
+    ticker = request.args.get("ticker")
+    start = request.args.get("start")
+    end = request.args.get("end")
+    
+    try:
+        data = get_sentiment_data(source=source, ticker=ticker, start=start, end=end)
+        return jsonify(data)
+    except Exception as e:
+        return internal_error()
+
+
+@research_bp.route("/api/sentiment/refresh", methods=["POST"])
+def sentiment_refresh():
+    """Refresh sentiment data from Twitter, news, and VIX.
+    
+    Query params:
+        days: Number of days to fetch (default: 90)
+        ticker: Ticker to search for in news (default: "NIFTY 50")
+    """
+    from sbc.sentiment_data import refresh_sentiment_data
+    
+    try:
+        days = int(request.args.get("days", 90))
+        days = max(1, min(365, days))  # Limit to 1-365 days
+        ticker = request.args.get("ticker", "NIFTY 50")
+    except ValueError:
+        return jsonify({"error": "days must be an integer"}), 400
+    
+    try:
+        results = refresh_sentiment_data(days=days, ticker=ticker)
+        return jsonify(results)
+    except Exception as e:
+        return internal_error()

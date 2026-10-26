@@ -38,6 +38,9 @@ SYMBOLS = {
     "NIFTY": ("^NSEI", "1995-01-01"),
     "SENSEX": ("^BSESN", "1995-01-01"),
     "INDIAVIX": ("^INDIAVIX", "2008-01-01"),
+    "BTC-USD": ("BTC-USD", "2010-07-17"),  # Bitcoin price data
+    "^GSPC": ("^GSPC", "1950-01-03"),     # S&P 500 (NYSE proxy)
+    "^DJI": ("^DJI", "1928-10-01"),       # Dow Jones Industrial Average
 }
 
 # Series for the sector-rule test (sbc.sector_validation): the instruments the

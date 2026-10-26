@@ -31,35 +31,49 @@ ANCHORS = {
         "date": "1992-11-27",
         "time": "00:00",
         "tz": "Asia/Kolkata",
-        "note": "Incorporated 27 Nov 1992",
+        "note": "Incorporated 27 Nov 1992 (time approximate - exact incorporation time pending research)",
     },
     "bse": {
         "name": "BSE (Bombay Stock Exchange)",
         "date": "1875-07-09",
         "time": "00:00",
         "tz": "Asia/Kolkata",
-        "note": "Founded 9 Jul 1875",
+        "note": "Founded 9 Jul 1875 (time approximate - exact founding time pending research)",
     },
     "nifty": {
         "name": "NIFTY 50 Index",
         "date": "1995-11-03",
         "time": "00:00",
         "tz": "Asia/Kolkata",
-        "note": "Base date 3 Nov 1995",
+        "note": "Base date 3 Nov 1995 (time approximate - exact base time pending research)",
     },
     "sensex": {
         "name": "SENSEX Index",
         "date": "1979-04-01",
         "time": "00:00",
         "tz": "Asia/Kolkata",
-        "note": "Base date 1 Apr 1979",
+        "note": "Base date 1 Apr 1979 (time approximate - exact base time pending research)",
     },
     "india": {
         "name": "India (national market)",
         "date": "1947-08-15",
         "time": "00:00",
         "tz": "Asia/Kolkata",
-        "note": "Independence 15 Aug 1947",
+        "note": "Independence 15 Aug 1947 at midnight (official time)",
+    },
+    "bitcoin": {
+        "name": "Bitcoin (BTC)",
+        "date": "2009-01-03",
+        "time": "18:15:05",
+        "tz": "UTC",
+        "note": "Genesis Block mined by Satoshi Nakamoto at 18:15:05 UTC",
+    },
+    "nyse": {
+        "name": "New York Stock Exchange",
+        "date": "1792-05-17",
+        "time": "09:00",
+        "tz": "America/New_York",
+        "note": "Buttonwood Agreement signed (time approximate - exact signing time pending research)",
     },
 }
 
@@ -158,7 +172,11 @@ def build_response(date_str, time_str, tz_name, anchor_key, school):
                 "ray": hit["ray"],
             })
 
-    rec = recommendation(analysis, anchor, date_str, weekday, tithi_info)
+    # Check Mercury retrograde for risk management
+    mercury = next(p for p in planets if p["name"] == "Mercury")
+    mercury_retrograde = mercury["retrograde"]
+
+    rec = recommendation(analysis, anchor, date_str, weekday, tithi_info, mercury_retrograde)
     calendar_alert = reversal_alert(date_str, planets, tithi)
     yoga_alerts = upcoming_yoga_alerts(date_str, time_str, tz_name)
 

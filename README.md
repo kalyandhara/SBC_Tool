@@ -2,6 +2,17 @@
 
 A comprehensive Flask-based web application for Vedic astrological market analysis using the **Sarvatobhadra Chakra** (81-cell transit matrix) with Swiss Ephemeris precision.
 
+## Framework
+
+The SBC_Tool uses a **hybrid Vedic-Western framework**:
+
+- **Core engine:** Vedic sidereal (Lahiri ayanamsa) with traditional 7 planets + nodes
+- **Macro-cycle layer:** Western outer planets (Uranus, Neptune, Pluto) for systemic analysis
+- **Lunar bias:** Academic research convention (New Moon = BULLISH, Full Moon = BEARISH)
+- **Validation layer:** Economic data (FRED, RBI) and sentiment data (VIX, news, Twitter)
+
+This hybrid approach enables validation of financial astrology research examples (e.g., Saturn-Pluto conjunctions, Neptune-Aquarius bubbles) while maintaining the precision of Vedic nakshatra-based timing. See `docs/HYBRID_FRAMEWORK.md` for details.
+
 ## Features
 
 > **Research tool, not investment advice.** Every astro signal here has been tested

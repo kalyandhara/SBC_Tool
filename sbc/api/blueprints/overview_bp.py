@@ -18,6 +18,63 @@ def presets():
         "nakshatras": NAKSHATRAS_27,
     })
 
+
+@overview_bp.route('/api/anchors/custom', methods=['POST'])
+def add_custom_anchor():
+    """Add a custom asset anchor (user-provided birth chart).
+    
+    JSON body:
+        key: unique identifier for the anchor
+        name: display name
+        date: birth date YYYY-MM-DD
+        time: birth time HH:MM or HH:MM:SS (optional, default 00:00)
+        tz: timezone (optional, default UTC)
+        note: description/notes (optional)
+    
+    Note: This is a placeholder implementation. Custom anchors are not
+    persisted across sessions in this version. Future versions will
+    integrate with user profiles for persistence.
+    """
+    data = request.json
+    if not data:
+        return jsonify({"error": "no JSON body provided"}), 400
+    
+    anchor_key = data.get("key")
+    name = data.get("name")
+    date = data.get("date")
+    time = data.get("time", "00:00")
+    tz = data.get("tz", "UTC")
+    note = data.get("note", "")
+    
+    # Validate required fields
+    if not anchor_key or not name or not date:
+        return jsonify({"error": "key, name, and date are required"}), 400
+    
+    # Validate date format
+    try:
+        datetime.datetime.strptime(date, "%Y-%m-%d")
+    except ValueError:
+        return jsonify({"error": "invalid date format, use YYYY-MM-DD"}), 400
+    
+    # Validate time format
+    try:
+        datetime.datetime.strptime(time, "%H:%M") if ":".count(time) == 1 else datetime.datetime.strptime(time, "%H:%M:%S")
+    except ValueError:
+        return jsonify({"error": "invalid time format, use HH:MM or HH:MM:SS"}), 400
+    
+    # In a future version, this would persist to user profiles
+    # For now, return success with placeholder message
+    return jsonify({
+        "key": anchor_key,
+        "name": name,
+        "date": date,
+        "time": time,
+        "tz": tz,
+        "note": note,
+        "message": "Custom anchor added (placeholder - storage not implemented in this version)",
+        "status": "pending_persistence",
+    })
+
 @overview_bp.route('/api/market/holidays')
 def market_holidays():
     """NSE weekday holidays + Muhurat sessions for a year (default: this year)."""

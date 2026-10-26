@@ -410,6 +410,142 @@ def same_sign_periods(planet_a, planet_b, start_date, end_date,
     return out
 
 
+def sign_distance_periods(planet_a, planet_b, start_date, end_date,
+                          distances=(5, 7), node_mode="mean",
+                          ayanamsa="lahiri"):
+    """Return periods where the two planets hold a mutual sign distance.
+
+    The distance is ``(sign_index(planet_a) - sign_index(planet_b)) % 12``
+    and must be one of `distances` (ints 0-11).  The classical
+    Shashtashtaka (mutual 6/8) yoga is ``distances=(5, 7)``: with Saturn
+    in Pisces and Jupiter in Leo the distance is 5 (Jupiter 6th from
+    Saturn, Saturn 8th from Jupiter).  Each period dict: start, end
+    (exclusive), days, distance, relation, planet_a_sign, planet_b_sign
+    (signs at the window start).  Flips shorter than the 3-hour scan
+    step are not detected; periods touching the range edges are clipped
+    (same conventions as same_sign_periods).
+    """
+    if not distances:
+        raise ValueError("distances must not be empty")
+    bad = [d for d in distances if not isinstance(d, int) or not 0 <= d <= 11]
+    if bad:
+        raise ValueError("distances must be ints in 0..11, got %r" % (bad,))
+
+    def relation_label(distance):
+        if distance == 0:
+            return "same sign"
+        return "mutual %d/%d" % (distance + 1, 13 - distance)
+
+    def state_fn(jd):
+        idx_a = int(_planet_lon(jd, planet_a, node_mode, ayanamsa) // 30)
+        idx_b = int(_planet_lon(jd, planet_b, node_mode, ayanamsa) // 30)
+        d = (idx_a - idx_b) % 12
+        return d if d in distances else -1  # sentinel: not in relation
+
+    scan = _scan([planet_a, planet_b], start_date, end_date,
+                 node_mode=node_mode, ayanamsa=ayanamsa)
+    periods = []
+    start_jd = None
+    prev_jd = scan[0][0]
+    prev_state = state_fn(prev_jd)
+    if prev_state >= 0:
+        start_jd = prev_jd
+    for jd, _lons in scan[1:]:
+        state = state_fn(jd)
+        if state != prev_state:
+            jd_flip = _bisect(prev_jd, jd, state_fn, prev_state)
+            if prev_state >= 0:
+                periods.append((start_jd, jd_flip, prev_state))
+            start_jd = jd_flip if state >= 0 else None
+            prev_state = state
+        prev_jd = jd
+    if prev_state >= 0 and start_jd is not None:
+        periods.append((start_jd, scan[-1][0], prev_state))
+
+    out = []
+    for s_jd, e_jd, distance in periods:
+        lon_a = _planet_lon(s_jd, planet_a, node_mode, ayanamsa)
+        lon_b = _planet_lon(s_jd, planet_b, node_mode, ayanamsa)
+        out.append({
+            "start": _from_jd(s_jd).date().isoformat(),
+            "end": _from_jd(e_jd).date().isoformat(),
+            "days": round(e_jd - s_jd, 1),
+            "distance": distance,
+            "relation": relation_label(distance),
+            "planet_a_sign": RASHIS[int(lon_a // 30)],
+            "planet_b_sign": RASHIS[int(lon_b // 30)],
+        })
+    return out
+
+
+def _signed_separation(jd, planet_a, planet_b, node_mode="mean",
+                       ayanamsa="lahiri"):
+    """Signed geocentric separation (a - b) wrapped to [-180, 180)."""
+    d = (_planet_lon(jd, planet_a, node_mode, ayanamsa)
+         - _planet_lon(jd, planet_b, node_mode, ayanamsa)) % 360.0
+    return d - 360.0 if d >= 180.0 else d
+
+
+def conjunction_events(planet_a, planet_b, start_date, end_date,
+                       node_mode="mean", ayanamsa="lahiri",
+                       step_hours=_STEP_HOURS):
+    """Exact moments when two bodies cross 0 or 180 deg of separation.
+
+    Detects conjunctions (signed separation crosses 0) and oppositions
+    (crosses 180) between `planet_a` and `planet_b` — nodes resolve via
+    `node_mode`, and Ketu works as either argument.  Moments are
+    located by a scan (default 3-hour steps; pass `step_hours=24` for
+    very slow pairs) plus bisection, the same machinery as
+    sign_ingresses.  Each event dict: planets (a, b), kind, label,
+    longitude_a/b at the moment, separation (deg, signed), orb to the
+    exact aspect, motion_a/b (D/R/S), utc/utc_date/ist_date.  Bodies
+    whose relative motion stalls can graze the aspect without
+    crossing; grazes are not listed (a minimum-separation scan covers
+    those, e.g. scripts/study_mars_node_conjunction.py).
+    """
+
+    def state_fn(jd):
+        return 0 if _signed_separation(jd, planet_a, planet_b,
+                                       node_mode, ayanamsa) > 0.0 else -1
+
+    scan = _scan([planet_a, planet_b], start_date, end_date,
+                 step_hours=step_hours, node_mode=node_mode,
+                 ayanamsa=ayanamsa)
+    events = []
+    prev_jd = scan[0][0]
+    prev_state = state_fn(prev_jd)
+    for jd, _lons in scan[1:]:
+        state = state_fn(jd)
+        if state != prev_state:
+            jd_x = _bisect(prev_jd, jd, state_fn, prev_state)
+            sep = _signed_separation(jd_x, planet_a, planet_b,
+                                     node_mode, ayanamsa)
+            conj = abs(sep) < 90.0
+            dt_utc = _from_jd(jd_x).replace(tzinfo=datetime.UTC)
+            dt_ist = dt_utc.astimezone(ZoneInfo("Asia/Kolkata"))
+            events.append({
+                "planets": (planet_a, planet_b),
+                "kind": "conjunction" if conj else "opposition",
+                "label": "%s %s %s" % (
+                    planet_a, "conjunct" if conj else "opposite", planet_b),
+                "longitude_a": round(_planet_lon(jd_x, planet_a, node_mode,
+                                                 ayanamsa), 4),
+                "longitude_b": round(_planet_lon(jd_x, planet_b, node_mode,
+                                                 ayanamsa), 4),
+                "separation": round(sep, 6),
+                "orb": round(abs(sep) if conj else abs(abs(sep) - 180.0),
+                             6),
+                "motion_a": _motion_at(jd_x, planet_a, node_mode, ayanamsa),
+                "motion_b": _motion_at(jd_x, planet_b, node_mode, ayanamsa),
+                "utc": dt_utc.isoformat(),
+                "utc_date": dt_utc.date().isoformat(),
+                "ist_date": dt_ist.date().isoformat(),
+            })
+            prev_state = state
+        prev_jd = jd
+    return events
+
+
 if __name__ == "__main__":
     import argparse
 
@@ -423,16 +559,37 @@ if __name__ == "__main__":
                         help="also print sign ingress dates")
     parser.add_argument("--nakshatras", action="store_true",
                         help="also print nakshatra ingress dates")
+    parser.add_argument("--shashtashtaka", action="store_true",
+                        help="print mutual 6/8 sign-distance periods "
+                             "instead of same-sign periods")
+    parser.add_argument("--conjunctions", action="store_true",
+                        help="print exact conjunction/opposition moments "
+                             "of --planet with --other")
     args = parser.parse_args()
 
     start_d = datetime.date.fromisoformat(args.start)
     end_d = datetime.date.fromisoformat(args.end)
 
-    print(f"Same-sign periods {args.planet}-{args.other} "
-          f"{start_d} .. {end_d}")
-    for p in same_sign_periods(args.planet, args.other, start_d, end_d):
-        print(f"  {p['start']} .. {p['end']}  {p['sign']:12s} "
-              f"{p['days']:7.1f}d")
+    if args.conjunctions:
+        print(f"Conjunction/opposition crossings {args.planet}-"
+              f"{args.other} {start_d} .. {end_d}")
+        for e in conjunction_events(args.planet, args.other,
+                                    start_d, end_d):
+            print(f"  {e['ist_date']}  {e['label']:<28} "
+                  f"orb {e['orb']:.4f}")
+    elif args.shashtashtaka:
+        print(f"Shashtashtaka (mutual 6/8) periods {args.planet}-"
+              f"{args.other} {start_d} .. {end_d}")
+        for p in sign_distance_periods(args.planet, args.other,
+                                       start_d, end_d):
+            print(f"  {p['start']} .. {p['end']}  {p['days']:7.1f}d  "
+                  f"{p['planet_a_sign']} / {p['planet_b_sign']}")
+    else:
+        print(f"Same-sign periods {args.planet}-{args.other} "
+              f"{start_d} .. {end_d}")
+        for p in same_sign_periods(args.planet, args.other, start_d, end_d):
+            print(f"  {p['start']} .. {p['end']}  {p['sign']:12s} "
+                  f"{p['days']:7.1f}d")
     if args.ingresses:
         print(f"{args.planet} sign ingresses (IST dates)")
         for e in sign_ingresses(args.planet, start_d, end_d):

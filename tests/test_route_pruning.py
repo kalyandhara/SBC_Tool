@@ -18,7 +18,10 @@ API_ONLY = {
     "/api/engine/aspect_windows", "/api/engine/fingerprint", "/api/engine/fingerprint/status",
     "/api/engine/forecast/ledger", "/api/engine/intraday_forecast/freeze",
     # Muhurta / journal endpoints with no panel yet.
-    "/api/engine/aspect_table", "/api/engine/trade_journal",
+    "/api/engine/trade_journal",
+    # Kota Chakra panel removed from the KP Intraday page 2026-10-19;
+    # the API stays for the freshness tooling and tests.
+    "/api/engine/kota/daily", "/api/engine/kota/weekly", "/api/engine/kota/monthly",
     "/api/engine/intraday_forecast/score", "/api/engine/market/freshness", "/api/engine/version",
 }
 

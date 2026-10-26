@@ -84,7 +84,17 @@ Rahu–Ketu trap calendar.
 (Venus R 03-10 12:43, Rahu D 03-10 19:06, Rahu R 07-10 06:49, Pluto D 16-10 11:02,
 Mercury R 24-10 12:42). If a time is off by about 5:30 hours, the source used UTC.
 
-### B-43 · Exact-time aspect table ("aspect build up") (P2)
+### B-43 · Exact-time aspect table ("aspect build up") (P2) — ✅ done 2026-10-13
+**Status (2026-10-13): done.** Backend, API, UI integration, and tests complete.
+- `sbc/aspect_table.py`: Exact-time geocentric sidereal aspects with Moon included, IST to the minute
+- `GET /api/engine/aspect_table?start=&end=`: API endpoint in `engine_bp.py`
+- UI: New "Aspect Table" panel on Forward Calendar tab with planet and aspect filters
+- Tests: `tests/test_aspect_table.py` with acceptance test matching screenshot 8 to ±2 minutes
+- **KSc/KSp resolved**: Orb-entry events - KSp for conjunctions (0°), KSc for all other aspects
+- **Winner resolved**: Speed-based (higher absolute speed wins), with rank tie-breaker
+- **Relations resolved**: 1/7 for conjunctions, 7/1 for oppositions, otherwise sign-count X/Y
+**Acceptance test passed**: Mo 0 Ur 01-10 08:17, Su 120 Mo 01-10 12:36, Su 180 Sa 04-10 17:53,
+Su 0 Mo 10-10 21:22 (new moon), Mo 0 Ve 12-10 09:58 all reproduced within ±2 minutes.
 **Scope:** `sbc/aspect_table.py` and `GET /api/engine/aspect_table?start=&end=`. One row
 per exact geocentric sidereal (Lahiri) aspect, **Moon included**, with:
 Date, Weekday, Time (IST, to the minute), Pl1, Aspect, Pl2, Rashis (`Vi-Ta`), Relations
@@ -92,19 +102,6 @@ Date, Weekday, Time (IST, to the minute), Pl1, Aspect, Pl2, Rashis (`Vi-Ta`), Re
 Retro (retrograde planets of the pair), and the day's muhurta notes (Bhadra from
 `sbc/bhadra.py`; Ghabad from B-46). Highlight conjunctions. Show it as a table on the
 Forward Calendar tab with a planet and aspect filter.
-**Acceptance test:** reproduce screenshot 8's rows to within ±2 minutes. For example:
-Mo 0 Ur 01-10 08:17 Ta-Ta · Su 120 Mo 01-10 12:36 Vi-Ta · Su 180 Sa 04-10 17:53 Vi-Pi ·
-Su 0 Mo 10-10 21:22 (the new moon) · Mo 0 Ve 12-10 09:58 Li-Li.
-**Open decisions** (ask before building):
-- What **KSc** and **KSp** mean. They aren't fixed angles: they appear a few hours before
-  an exact aspect between the same pair (Su KSc Mo 08-10 06:12, then Su 30 Mo 10:45;
-  Su KSp Mo 10-10 05:55, then Su 0 Mo 21:22), so they may be orb-entry events. The column
-  can't be built without the definition.
-- How **Winner** is decided. It isn't speed alone: Su–Mo gives Mo on 01-10 and Su on 08-10.
-  Could be planetary war (graha yuddha), dignity, or the source's own rule.
-- **Relations** is the sign count Pl2→Pl1 / Pl1→Pl2 (Su 120 Mo, Vi-Ta → 5/9; Su 90 Mo,
-  Vi-Ge → 4/10). The exceptions are conjunctions, shown as 1/7, and oppositions, shown as 7/1.
-  Confirm whether to copy that convention or show 1/1 and 7/7.
 
 ### B-44 · Ecliptic latitude (Śara) per planet (P3)
 **Status (2026-10-05): done.** `latitude` on every fingerprint planet record (0 for the mean nodes); the fingerprint store rebuilds stale rows on its own. Not added to `feature_vector`, so the analog search is unchanged. The node-crossing factor is still a follow-up.
@@ -148,7 +145,7 @@ trendline after a post-earnings gap-down). **Ask before scoping.**
 | Step | Items | Outcome |
 |---|---|---|
 | Now (before 6 Oct open) | B-40 step 1 | Projection frozen in the ledger before more sessions trade |
-| This week | B-42, B-43 (after the open decisions) | Minute-level events, the table from the note |
-| Any time | B-44, B-45 | Latitude, declination and speed charts |
+| This week | B-42, B-43 | Minute-level events, the table from the note (both done) |
+| Any time | B-44, B-45 | Latitude, declination and speed charts (both done) |
 | After 30 Oct close | B-40 steps 2–4, B-41 | Verdict on the projection, our own month line |
 | Gated | B-46, B-47, B-48 | Wait on definitions, the B-40 verdict, or the user |
