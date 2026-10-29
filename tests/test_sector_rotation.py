@@ -50,6 +50,14 @@ def test_core_events_2024_has_the_four_kinds():
     assert "NODES_INGRESS" not in kinds  # node ingresses are not a core event
 
 
+def test_core_events_spans_the_full_market_history():
+    """The report covers 2007-2026; station lookups must stay within stations.between's limit."""
+    events = sr.core_events(2007, 2026)
+    mercury = [e for e in events if e["event"] == "MERCURY_RETROGRADE_START"]
+    assert any(e["date"].startswith("2007") for e in mercury)
+    assert any(e["date"].startswith("2026") for e in mercury)
+
+
 def test_window_return_known_answer():
     c = np.array([100.0, 101.0, 102.0, 110.0])
     assert sr.window_return(c, anchor=0, h=3) == pytest.approx(0.10)
