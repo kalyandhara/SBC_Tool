@@ -255,3 +255,25 @@ WHEEL_GROUPS = {
     "Industrials": ["CNXINFRA"],
     "Commodities": ["CNXMETAL", "CNXENERGY"],
 }
+
+
+def upcoming_events(events: list[dict], today: str, days: int) -> list[dict]:
+    """Events dated from `today` through `today` + `days` inclusive, sorted by date.
+
+    ISO dates compare correctly as strings, so no parsing happens per event.
+    """
+    end = (dt.date.fromisoformat(today) + dt.timedelta(days=days)).isoformat()
+    return sorted((e for e in events if today <= e["date"] <= end), key=lambda e: (e["date"], e["event"]))
+
+
+def event_outlook(descriptive: dict, event: str, n: int = 3) -> dict:
+    """Strongest and weakest `n` sectors per horizon for one event, from the report's descriptive rows.
+
+    The report sorts each horizon's rows by mean relative return, highest first. Descriptive only.
+    """
+    keep = ("sector", "n_raw", "n_clusters", "mean_relative", "beat_rate", "heat")
+    out = {}
+    for h, rows in descriptive.get(event, {}).items():
+        out[h] = {"strongest": [{k: r[k] for k in keep} for r in rows[:n]],
+                  "weakest": [{k: r[k] for k in keep} for r in rows[::-1][:n]]}
+    return out

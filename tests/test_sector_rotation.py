@@ -209,6 +209,28 @@ def test_participation_is_share_of_available_positive_returns():
     assert sr.participation({"A": float("nan")}) is None
 
 
+def test_upcoming_events_window_is_inclusive_and_sorted():
+    events = [{"date": "2026-11-30", "event": "B"}, {"date": "2026-10-29", "event": "C"},
+              {"date": "2026-11-01", "event": "A"}, {"date": "2026-10-28", "event": "PAST"},
+              {"date": "2027-01-01", "event": "LATE"}]
+    got = sr.upcoming_events(events, "2026-10-29", 33)  # window ends 2026-12-01
+    assert [e["event"] for e in got] == ["C", "A", "B"]
+
+
+def test_event_outlook_orders_strongest_then_weakest_and_trims():
+    rows = [{"sector": s, "n_raw": 5, "n_clusters": 3, "mean_relative": v, "beat_rate": 0.5,
+             "heat": "yellow", "volatility": 0.0, "sharpe": 0.0, "top5_rate": 0.0}
+            for s, v in [("A", 0.03), ("B", 0.02), ("C", 0.01), ("D", -0.01)]]
+    out = sr.event_outlook({"EV": {"5": rows}}, "EV", n=2)["5"]
+    assert [r["sector"] for r in out["strongest"]] == ["A", "B"]
+    assert [r["sector"] for r in out["weakest"]] == ["D", "C"]
+    assert set(out["strongest"][0]) == {"sector", "n_raw", "n_clusters", "mean_relative", "beat_rate", "heat"}
+
+
+def test_event_outlook_empty_for_unknown_event():
+    assert sr.event_outlook({}, "MISSING") == {}
+
+
 def test_heat_bucket_five_levels_from_z():
     assert [sr.heat_bucket(z) for z in (1.2, 0.5, 0.0, -0.5, -1.2)] == [
         "dark_green", "light_green", "yellow", "orange", "dark_red"]

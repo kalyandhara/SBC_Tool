@@ -3449,6 +3449,10 @@ a:focus-visible,
 .sr-heat-dark_red { background: #b71c1c; color: #fff; }
 .sr-heat-none { color: var(--muted, #94a3b8); }
 .sr-legend { font-size: 0.8rem; color: var(--muted, #94a3b8); }
+.sr-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.sr-chip { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 0.85rem; white-space: nowrap; }
+.usp-card { display: grid; gap: 8px; padding: 12px 0; border-top: 1px solid var(--border, #334155); min-width: 0; }
+.usp-card h3 { margin: 0; font-size: 1rem; }
 .sr-radar-wrap { display: grid; gap: 12px; grid-template-columns: minmax(0, 260px) minmax(0, 1fr); align-items: center; }
 .sr-radar { width: 100%; max-width: 260px; height: auto; }
 .sr-grid { fill: none; stroke: var(--border, #475569); stroke-width: 1; }
