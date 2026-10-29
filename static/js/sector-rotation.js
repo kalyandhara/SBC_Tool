@@ -26,6 +26,26 @@ const SR_HEAT_LABEL = {
 
 let SR_DATA = null;
 let SR_H = "5";
+let SR_EVENT = null;
+const SR_WHEEL_GROUPS = ["Financials", "Technology", "Pharma", "Consumption", "Industrials", "Commodities"];
+const SR_NS = "http://www.w3.org/2000/svg";
+
+function srSvgEl(tag, attrs = {}) {
+  const node = document.createElementNS(SR_NS, tag);
+  for (const [k, v] of Object.entries(attrs)) node.setAttribute(k, v);
+  return node;
+}
+
+function srEventSelect(events, onChange) {
+  const select = srEl("select", { "aria-label": "Event" });
+  for (const ev of events) {
+    const opt = srEl("option", { value: ev, text: srEventName(ev) });
+    if (ev === SR_EVENT) opt.setAttribute("selected", "selected");
+    select.appendChild(opt);
+  }
+  select.addEventListener("change", () => { SR_EVENT = select.value; onChange(); });
+  return srEl("label", {}, [srEl("span", { text: "Event " }), select]);
+}
 
 function srEl(tag, props = {}, children = []) {
   const node = document.createElement(tag);
@@ -127,6 +147,115 @@ function srRotationMatrix(data) {
   ]);
 }
 
+function srWheel(data) {
+  const events = Object.keys(data.wheel);
+  const groups = data.wheel[SR_EVENT][SR_H];
+  const values = SR_WHEEL_GROUPS.map((g) => groups[g]);
+  const scale = Math.max(1e-9, ...values.map((v) => (v == null ? 0 : Math.abs(v))));
+  const size = 280, cx = size / 2, cy = size / 2, inner = 36, outer = 110;
+  const svg = srSvgEl("svg", { viewBox: `0 0 ${size} ${size}`, class: "sr-wheel", role: "img",
+    "aria-label": `Rotation wheel for ${srEventName(SR_EVENT)} at T+${SR_H}: mean relative return by capital-flow group` });
+  const step = (2 * Math.PI) / SR_WHEEL_GROUPS.length;
+  SR_WHEEL_GROUPS.forEach((g, i) => {
+    const v = values[i];
+    const a0 = -Math.PI / 2 + i * step + 0.03, a1 = a0 + step - 0.06;
+    const r = v == null ? inner : inner + (outer - inner) * (Math.abs(v) / scale);
+    const pt = (rad, ang) => [cx + rad * Math.cos(ang), cy + rad * Math.sin(ang)];
+    const [x0, y0] = pt(inner, a0), [x1, y1] = pt(r, a0), [x2, y2] = pt(r, a1), [x3, y3] = pt(inner, a1);
+    const large = a1 - a0 > Math.PI ? 1 : 0;
+    const d = `M${x0},${y0} L${x1},${y1} A${r},${r} 0 ${large} 1 ${x2},${y2} L${x3},${y3} A${inner},${inner} 0 ${large} 0 ${x0},${y0} Z`;
+    const path = srSvgEl("path", { d, class: v == null ? "sr-wedge-none" : v >= 0 ? "sr-wedge-up" : "sr-wedge-down" });
+    const title = srSvgEl("title", {});
+    title.textContent = `${g}: ${v == null ? "no data" : srPct(v)}`;
+    path.appendChild(title);
+    svg.appendChild(path);
+    const mid = a0 + (a1 - a0) / 2;
+    const [lx, ly] = pt(outer + 14, mid);
+    const label = srSvgEl("text", { x: lx, y: ly, class: "sr-axis", "text-anchor": "middle" });
+    label.textContent = g;
+    svg.appendChild(label);
+  });
+  return srEl("section", { class: "panel" }, [
+    srEl("div", { class: "panel-head" }, [
+      srEl("h2", { text: `Rotation wheel, T+${SR_H}` }),
+      srEl("span", { class: "panel-sub", text: "Capital-flow groups. Wedge length is mean relative return: green above NIFTY, red below. Group membership is a proposal (see the report). Descriptive, not graded." }),
+    ]),
+    srEventSelect(events, srRender),
+    srEl("div", { class: "sr-wheel-wrap" }, [svg, srEl("div", { class: "sr-scroll" }, [srEl("table", { class: "sr-table" }, [
+      srEl("thead", {}, [srEl("tr", {}, [srEl("th", { text: "Group" }), srEl("th", { text: "Mean relative" })])]),
+      srEl("tbody", {}, SR_WHEEL_GROUPS.map((g, i) => srEl("tr", {}, [srEl("th", { scope: "row", text: g }), srEl("td", { text: srPct(values[i]) })]))),
+    ])])]),
+  ]);
+}
+
+function srSankey(data) {
+  const flow = data.flows[SR_EVENT][SR_H];
+  const links = flow.links;
+  const W = 520, H = 320, pad = 8, colX = [0, 240, 470], nodeW = 14;
+  const sectorTotals = {}, outcomeTotals = {};
+  for (const l of links) {
+    // event -> sector links carry the sector in target; sector -> NIFTY links carry it in source.
+    if (l.target.startsWith("NIFTY")) outcomeTotals[l.target] = (outcomeTotals[l.target] || 0) + l.value;
+    else if (l.source === SR_EVENT) sectorTotals[l.target] = (sectorTotals[l.target] || 0) + l.value;
+  }
+  const total = links.filter((l) => l.source === SR_EVENT).reduce((a, l) => a + l.value, 0);
+  const columns = [
+    [[SR_EVENT, total]],
+    Object.entries(sectorTotals).sort((a, b) => b[1] - a[1]),
+    ["NIFTY up", "NIFTY down"].filter((k) => outcomeTotals[k]).map((k) => [k, outcomeTotals[k]]),
+  ];
+  const place = new Map();
+  columns.forEach((col, ci) => {
+    const sum = col.reduce((a, [, v]) => a + v, 0) || 1;
+    const usable = H - 2 * pad - (col.length - 1) * 6;
+    let y = pad;
+    col.forEach(([name, v]) => {
+      const h = Math.max(2, (v / sum) * usable);
+      place.set(`${ci}:${name}`, { x: colX[ci], y, h, value: v, name, used: 0 });
+      y += h + 6;
+    });
+  });
+  const svg = srSvgEl("svg", { viewBox: `0 0 ${W} ${H}`, class: "sr-sankey", role: "img",
+    "aria-label": `Flow from ${srEventName(SR_EVENT)} to the strongest sector to the NIFTY outcome, T+${SR_H}` });
+  for (const l of links) {
+    let a, b;
+    if (l.source === SR_EVENT) { a = place.get(`0:${SR_EVENT}`); b = place.get(`1:${l.target}`); }
+    else { a = place.get(`1:${l.source}`); b = place.get(`2:${l.target}`); }
+    if (!a || !b) continue;
+    const tA = Math.max(1, (l.value / a.value) * a.h), tB = Math.max(1, (l.value / b.value) * b.h);
+    const ay = a.y + a.used + tA / 2, by = b.y + b.used + tB / 2;
+    a.used += tA; b.used += tB;
+    const x0 = a.x + nodeW, x1 = b.x, mx = (x0 + x1) / 2;
+    const path = srSvgEl("path", { d: `M${x0},${ay} C${mx},${ay} ${mx},${by} ${x1},${by}`,
+      class: "sr-flow", "stroke-width": Math.min(tA, tB) });
+    const title = srSvgEl("title", {});
+    const from = l.source === SR_EVENT ? srEventName(SR_EVENT) : l.source;
+    title.textContent = `${from} → ${l.target}: ${l.value}`;
+    path.appendChild(title);
+    svg.appendChild(path);
+  }
+  for (const node of place.values()) {
+    svg.appendChild(srSvgEl("rect", { x: node.x, y: node.y, width: nodeW, height: node.h, class: "sr-node" }));
+    const right = node.x >= colX[2];
+    const label = srSvgEl("text", { x: node.x + (right ? -4 : nodeW + 4), y: node.y + node.h / 2 + 4,
+      class: "sr-axis", "text-anchor": right ? "end" : "start" });
+    label.textContent = `${node.name === SR_EVENT ? srEventName(node.name) : node.name} (${node.value})`;
+    svg.appendChild(label);
+  }
+  const notes = [];
+  if (flow.unranked) notes.push(`${flow.unranked} occurrence(s) had no sector with data in the window`);
+  if (flow.nifty_missing) notes.push(`${flow.nifty_missing} had no NIFTY return`);
+  return srEl("section", { class: "panel" }, [
+    srEl("div", { class: "panel-head" }, [
+      srEl("h2", { text: `Flow, T+${SR_H}` }),
+      srEl("span", { class: "panel-sub", text: "Event → strongest sector → NIFTY over the window. The top-stock stage is not shown: it needs constituent data (phase 2). Descriptive, not graded." }),
+    ]),
+    srEventSelect(Object.keys(data.flows), srRender),
+    srEl("div", { class: "sr-scroll" }, [svg]),
+    srEl("p", { class: "sr-legend", text: notes.length ? notes.join("; ") + "." : "All occurrences are counted." }),
+  ]);
+}
+
 function srRadar(data) {
   const events = Object.keys(data.event_summary);
   const size = 260, cx = size / 2, cy = size / 2, radius = 100;
@@ -214,11 +343,14 @@ function srRender() {
   const root = document.getElementById("sr-root");
   if (!root || !SR_DATA) return;
   const data = SR_DATA;
+  if (!SR_EVENT || !data.wheel[SR_EVENT]) SR_EVENT = Object.keys(data.wheel)[0];
   root.replaceChildren(
     srBanner(data),
     srEl("div", { class: "sr-controls" }, [srHorizonPicker(srRender)]),
     srHeatmap(data),
     srRotationMatrix(data),
+    srWheel(data),
+    srSankey(data),
     srRadar(data),
     srNotes(data),
   );

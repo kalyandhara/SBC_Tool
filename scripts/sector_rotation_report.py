@@ -114,7 +114,7 @@ def build(n_perm: int = st.N_PERMUTATIONS, seed: int = 0, series: dict | None = 
             label, _ = sr.rotation_pattern(top5) if len(top5) == 5 else ("insufficient", top5)
             occurrence.append({"date": e["date"], "event": e["event"], "h": h,
                                "cluster": int(cluster_of[e["anchor"]]), "nifty": nret,
-                               "label": label, "top5": top5})
+                               "label": label, "top5": top5, "top": top5[0] if top5 else None})
             rank_of = {s: i + 1 for i, (s, _) in enumerate(ranked)}
             for k in SECTOR_KEYS:
                 if np.isfinite(rets[k]) and np.isfinite(nret):
@@ -180,6 +180,36 @@ def build(n_perm: int = st.N_PERMUTATIONS, seed: int = 0, series: dict | None = 
             z = (r["mean_relative"] - mu) / sd if sd and np.isfinite(sd) else float("nan")
             r["heat"] = sr.heat_bucket(z)
 
+    # Rotation wheel: mean relative return per capital-flow group (descriptive, not graded).
+    wheel = {}
+    for name in events_out:
+        wheel[name] = {}
+        for h in HORIZONS:
+            by_key = {r["sector"]: r["mean_relative"] for r in descriptive[name][str(h)]}
+            wheel[name][str(h)] = {g: _mean([by_key.get(k) for k in ks])
+                                   for g, ks in sr.WHEEL_GROUPS.items()}
+
+    # Sankey: event -> strongest sector (occurrences where it ranked first) -> NIFTY outcome over the window.
+    flows = {}
+    for name in events_out:
+        flows[name] = {}
+        for h in HORIZONS:
+            occ = [o for o in occurrence if o["event"] == name and o["h"] == h]
+            ranked = [o for o in occ if o["top"]]
+            links = Counter()
+            nifty_missing = 0
+            for o in ranked:
+                links[(name, o["top"])] += 1
+                if o["nifty"] is not None and np.isfinite(o["nifty"]):
+                    links[(o["top"], "NIFTY up" if o["nifty"] > 0 else "NIFTY down")] += 1
+                else:
+                    nifty_missing += 1
+            flows[name][str(h)] = {
+                "links": [{"source": s_, "target": t_, "value": v} for (s_, t_), v in sorted(links.items())],
+                "unranked": len(occ) - len(ranked),  # no sector had a finite return in the window
+                "nifty_missing": nifty_missing,
+            }
+
     coverage = {}
     for k in SECTOR_KEYS:
         bars = [b for b in series[k] if b["close"] and b["close"] > 0]
@@ -203,6 +233,8 @@ def build(n_perm: int = st.N_PERMUTATIONS, seed: int = 0, series: dict | None = 
         "coverage": coverage,
         "descriptive": descriptive,
         "event_summary": event_summary,
+        "wheel": wheel,
+        "flows": flows,
         "rotation": rotation,
         "forecast": forecast,
         "confirmatory": confirmatory,

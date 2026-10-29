@@ -3458,6 +3458,14 @@ a:focus-visible,
 .sr-shape-1 { fill: #ffa726; stroke: #ffa726; }
 .sr-shape-2 { fill: #66bb6a; stroke: #66bb6a; }
 .sr-shape-3 { fill: #ab47bc; stroke: #ab47bc; }
+.sr-wheel-wrap { display: grid; gap: 12px; grid-template-columns: minmax(0, 280px) minmax(0, 1fr); align-items: center; }
+.sr-wheel { width: 100%; max-width: 280px; height: auto; }
+.sr-wedge-up { fill: #66bb6a; fill-opacity: 0.6; stroke: #2e7d32; }
+.sr-wedge-down { fill: #ef5350; fill-opacity: 0.6; stroke: #b71c1c; }
+.sr-wedge-none { fill: none; stroke: var(--border, #475569); stroke-dasharray: 3 3; }
+.sr-sankey { width: 100%; min-width: 420px; height: auto; }
+.sr-flow { fill: none; stroke: #42a5f5; stroke-opacity: 0.35; }
+.sr-node { fill: var(--text, #e2e8f0); }
 @media (max-width: 640px) {
-  .sr-radar-wrap { grid-template-columns: 1fr; }
+  .sr-radar-wrap, .sr-wheel-wrap { grid-template-columns: 1fr; }
 }

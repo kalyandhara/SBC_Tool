@@ -236,3 +236,15 @@ def heat_bucket(z: float) -> str | None:
     if z > -1.0:
         return "orange"
     return "dark_red"
+
+
+# Capital-flow groups for the rotation wheel. The spec names the six groups but not their members;
+# this mapping is a proposal, stated here, and is descriptive only.
+WHEEL_GROUPS = {
+    "Financials": ["CNXBANK", "CNXFIN", "CNXPSUBANK"],
+    "Technology": ["CNXIT", "CNXMEDIA"],
+    "Pharma": ["CNXPHARMA", "CNXHEALTH"],
+    "Consumption": ["CNXFMCG", "CNXAUTO", "CNXCONSUM", "CNXREALTY"],
+    "Industrials": ["CNXINFRA"],
+    "Commodities": ["CNXMETAL", "CNXENERGY", "CNXOILGAS"],
+}

@@ -77,3 +77,29 @@ def test_heat_buckets_come_from_the_fixed_set():
 def test_no_breadth_key_anywhere_in_json():
     import json
     assert "breadth" not in json.dumps(rep.build(series=_series())).replace('"breadth": "not computed"', "")
+
+
+def test_wheel_groups_cover_each_sector_once():
+    from sbc import sector_rotation as sr
+    members = [k for ks in sr.WHEEL_GROUPS.values() for k in ks]
+    assert sorted(members) == sorted(rep.SECTOR_KEYS)
+    assert set(sr.WHEEL_GROUPS) == {"Financials", "Technology", "Pharma", "Consumption", "Industrials", "Commodities"}
+
+
+def test_wheel_has_six_groups_per_event_and_horizon():
+    out = rep.build(series=_series())
+    for ev in out["wheel"].values():
+        for groups in ev.values():
+            assert set(groups) == {"Financials", "Technology", "Pharma", "Consumption", "Industrials", "Commodities"}
+
+
+def test_flows_conserve_occurrence_counts():
+    out = rep.build(series=_series())
+    for name, by_h in out["flows"].items():
+        for h, flow in by_h.items():
+            n = out["rotation"][name][h]["occurrences"]
+            links = flow["links"]
+            to_sector = sum(l["value"] for l in links if l["target"] in rep.SECTOR_KEYS)
+            to_nifty = sum(l["value"] for l in links if l["target"] in ("NIFTY up", "NIFTY down"))
+            assert to_sector + flow["unranked"] == n
+            assert to_nifty + flow["nifty_missing"] == to_sector
