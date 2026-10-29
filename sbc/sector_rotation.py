@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import bisect
 import datetime as dt
+from collections import Counter
 
 import numpy as np
 
@@ -153,3 +154,31 @@ def descriptive_summary(rows: list[dict]) -> dict:
     return {"n_raw": n_raw, "n_clusters": len(clusters),
             "top5_rate": top5 / len(ranks) if ranks else None,
             "beat_rate": beat / n_raw if n_raw else None}
+
+
+# Rotation groups, fixed in the pre-registration ("Rotation pattern labels").
+GROUPS = {
+    "PHARMA": "Defensive", "FMCG": "Defensive", "HEALTH": "Defensive", "CONSUM": "Defensive",
+    "IT": "Growth", "MEDIA": "Growth", "AUTO": "Growth",
+    "BANK": "Risk-On", "FIN": "Risk-On", "REALTY": "Risk-On", "METAL": "Risk-On",
+    "INFRA": "Risk-On", "PSUBANK": "Risk-On",
+    "ENERGY": "Neutral", "OILGAS": "Neutral",
+}
+
+
+def rotation_pattern(top5: list[str]) -> tuple[str, list[str]]:
+    """Majority group among the top-5 sectors, or "Mixed" if no group holds more than half.
+
+    The top-5 list is returned with the label so the label can be checked against the data.
+    An unmapped sector raises KeyError rather than being dropped silently.
+    """
+    counts = Counter(GROUPS[s] for s in top5)
+    group, n = counts.most_common(1)[0]
+    if n * 2 > len(top5):
+        return group, top5
+    return "Mixed", top5
+
+
+def forecast_confidence(row: dict) -> str:
+    """High only on a confirmatory pass; otherwise No call. No Medium level (pre-registration)."""
+    return "High" if row.get("passed") else "No call"

@@ -136,3 +136,33 @@ def test_insufficient_below_minimum_signal_days():
     signal[:10] = 1.0  # 10 signal days, below MIN_SIGNAL_DAYS
     res = sr.grade_confirmatory(HYP, {"T": signal}, {5: fwd}, era, clusters, controls)
     assert res[0]["status"] == "insufficient"
+
+
+def test_rotation_pattern_majority():
+    label, top5 = sr.rotation_pattern(["FMCG", "PHARMA", "HEALTH", "IT", "AUTO"])
+    assert label == "Defensive" and top5 == ["FMCG", "PHARMA", "HEALTH", "IT", "AUTO"]
+
+
+def test_rotation_pattern_tie_is_mixed():
+    label, _ = sr.rotation_pattern(["FMCG", "IT"])
+    assert label == "Mixed"
+
+
+def test_rotation_pattern_uses_sector_keys_from_preregistration():
+    # Pre-registration section "Rotation pattern labels" names the sectors; every one must map.
+    names = {"PHARMA", "FMCG", "HEALTH", "CONSUM", "IT", "MEDIA", "AUTO",
+             "BANK", "FIN", "REALTY", "METAL", "INFRA", "PSUBANK", "ENERGY", "OILGAS"}
+    assert names <= set(sr.GROUPS)
+
+
+def test_confidence_no_call_by_default():
+    assert sr.forecast_confidence({"passed": False}) == "No call"
+
+
+def test_confidence_high_only_on_confirmatory_pass():
+    assert sr.forecast_confidence({"passed": True}) == "High"
+
+
+def test_no_medium_level_anywhere():
+    outputs = {sr.forecast_confidence(r) for r in ({"passed": True}, {"passed": False}, {}, {"passed": None})}
+    assert outputs <= {"High", "No call"}
