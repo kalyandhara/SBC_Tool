@@ -103,6 +103,26 @@ def test_wheel_has_six_groups_per_event_and_horizon():
             assert set(groups) == {"Financials", "Technology", "Pharma", "Consumption", "Industrials", "Commodities"}
 
 
+def test_combinations_are_keyed_by_sorted_pair_with_cluster_counts():
+    out = rep.build(series=_series())
+    for key, by_h in out["combinations"].items():
+        first, second = key.split("+")
+        assert first < second
+        assert set(by_h) == {"5", "10", "20"}
+        for h_rows in by_h.values():
+            assert h_rows["clusters"] >= 1
+            for row in h_rows["sectors"]:
+                assert row["sector"] in rep.SECTOR_KEYS
+                assert row["n_clusters"] <= h_rows["clusters"]
+                assert row["thin"] == (row["n_clusters"] < sr.MIN_CLUSTERS)
+
+
+def test_combinations_have_no_pass_fields():
+    import json
+    text = json.dumps(rep.build(series=_series())["combinations"])
+    assert '"passed"' not in text and '"p"' not in text and '"q"' not in text
+
+
 def test_flows_conserve_occurrence_counts():
     out = rep.build(series=_series())
     for name, by_h in out["flows"].items():

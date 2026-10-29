@@ -229,21 +229,22 @@ def test_event_outlook_orders_strongest_then_weakest_and_trims():
 
 
 def test_co_clusters_pairs_events_that_share_a_cluster():
-    anchored = [{"event": "MERCURY_RETROGRADE_START"}, {"event": "SOLAR_ECLIPSE"},
-                {"event": "SOLAR_ECLIPSE"}, {"event": "LUNAR_ECLIPSE"}]
-    clusters = [[0, 1], [2], [3]]  # Mercury and the first eclipse share a cluster
+    # Session indices (anchors) deliberately do not equal list positions.
+    anchored = [{"event": "MERCURY_RETROGRADE_START", "anchor": 100}, {"event": "SOLAR_ECLIPSE", "anchor": 110},
+                {"event": "SOLAR_ECLIPSE", "anchor": 140}, {"event": "LUNAR_ECLIPSE", "anchor": 300}]
+    clusters = [[100, 110], [140], [300]]  # Mercury and the first eclipse share a cluster
     got = sr.co_clusters(anchored, clusters)
-    assert got == {("MERCURY_RETROGRADE_START", "SOLAR_ECLIPSE"): [[0, 1]]}
+    assert got == {("MERCURY_RETROGRADE_START", "SOLAR_ECLIPSE"): [[100, 110]]}
 
 
 def test_co_clusters_ignores_same_event_repeats():
-    anchored = [{"event": "SOLAR_ECLIPSE"}, {"event": "SOLAR_ECLIPSE"}]
-    assert sr.co_clusters(anchored, [[0, 1]]) == {}
+    anchored = [{"event": "SOLAR_ECLIPSE", "anchor": 5}, {"event": "SOLAR_ECLIPSE", "anchor": 7}]
+    assert sr.co_clusters(anchored, [[5, 7]]) == {}
 
 
 def test_co_clusters_pair_key_is_sorted_and_stable():
-    anchored = [{"event": "SOLAR_ECLIPSE"}, {"event": "JUPITER_INGRESS"}]
-    assert list(sr.co_clusters(anchored, [[0, 1]])) == [("JUPITER_INGRESS", "SOLAR_ECLIPSE")]
+    anchored = [{"event": "SOLAR_ECLIPSE", "anchor": 5}, {"event": "JUPITER_INGRESS", "anchor": 9}]
+    assert list(sr.co_clusters(anchored, [[5, 9]])) == [("JUPITER_INGRESS", "SOLAR_ECLIPSE")]
 
 
 def test_event_outlook_empty_for_unknown_event():

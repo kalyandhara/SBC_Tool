@@ -269,12 +269,14 @@ def upcoming_events(events: list[dict], today: str, days: int) -> list[dict]:
 def co_clusters(anchored: list[dict], clusters: list[list[int]]) -> dict[tuple[str, str], list[list[int]]]:
     """Clusters that hold two or more distinct event kinds, keyed by each sorted pair of kinds.
 
-    Uses the registered clustering (CLUSTER_GAP), so two events "combine" only when they are
-    already one cluster. Same-kind repeats are not a combination.
+    `clusters` holds session indices (the anchors), as sr.cluster returns them, so each is looked up
+    by its anchor value rather than by list position. Uses the registered clustering (CLUSTER_GAP),
+    so two events "combine" only when they are already one cluster. Same-kind repeats are not a combination.
     """
+    kind_at = {e["anchor"]: e["event"] for e in anchored}
     out: dict[tuple[str, str], list[list[int]]] = {}
     for members in clusters:
-        kinds = sorted({anchored[a]["event"] for a in members})
+        kinds = sorted({kind_at[a] for a in members})
         for i, first in enumerate(kinds):
             for second in kinds[i + 1:]:
                 out.setdefault((first, second), []).append(members)

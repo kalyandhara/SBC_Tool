@@ -210,6 +210,28 @@ def build(n_perm: int = st.N_PERMUTATIONS, seed: int = 0, series: dict | None = 
                 "nifty_missing": nifty_missing,
             }
 
+    # Event combinations (Addendum 4): clusters that hold two or more event kinds, summarised per pair.
+    # Each cluster is anchored at its earliest member; returns are relative to NIFTY over the same window.
+    combinations = {}
+    for (first, second), members_list in sorted(sr.co_clusters(anchored, clusters_list).items()):
+        anchors = [min(m) for m in members_list]
+        by_h = {}
+        for h in HORIZONS:
+            sectors = []
+            for k in SECTOR_KEYS:
+                rel = []
+                for a in anchors:
+                    r = sr.window_return(sector_close[k], a, h)
+                    n = sr.window_return(nifty, a, h)
+                    if np.isfinite(r) and np.isfinite(n):
+                        rel.append(r - n)
+                if rel:
+                    sectors.append({"sector": k, "n_clusters": len(rel), "mean_relative": float(np.mean(rel)),
+                                    "thin": len(rel) < sr.MIN_CLUSTERS})
+            sectors.sort(key=lambda r: r["mean_relative"], reverse=True)
+            by_h[str(h)] = {"clusters": len(anchors), "sectors": sectors}
+        combinations[f"{first}+{second}"] = by_h
+
     coverage = {}
     for k in SECTOR_KEYS:
         bars = [b for b in series[k] if b["close"] and b["close"] > 0]
@@ -234,6 +256,7 @@ def build(n_perm: int = st.N_PERMUTATIONS, seed: int = 0, series: dict | None = 
         "descriptive": descriptive,
         "event_summary": event_summary,
         "wheel": wheel,
+        "combinations": combinations,
         "flows": flows,
         "rotation": rotation,
         "forecast": forecast,

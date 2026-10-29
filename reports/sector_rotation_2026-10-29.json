@@ -1,5 +1,2337 @@
 {
   "breadth": "not computed",
+  "combinations": {
+    "JUPITER_INGRESS+LUNAR_ECLIPSE": {
+      "10": {
+        "clusters": 14,
+        "sectors": [
+          {
+            "mean_relative": 0.02345473023301933,
+            "n_clusters": 11,
+            "sector": "CNXPSUBANK",
+            "thin": false
+          },
+          {
+            "mean_relative": 0.01706259811092866,
+            "n_clusters": 10,
+            "sector": "CNXMETAL",
+            "thin": false
+          },
+          {
+            "mean_relative": 0.011831888086532764,
+            "n_clusters": 11,
+            "sector": "CNXENERGY",
+            "thin": false
+          },
+          {
+            "mean_relative": 0.01000939763863466,
+            "n_clusters": 11,
+            "sector": "CNXFMCG",
+            "thin": false
+          },
+          {
+            "mean_relative": 0.006002132805802797,
+            "n_clusters": 12,
+            "sector": "CNXREALTY",
+            "thin": false
+          },
+          {
+            "mean_relative": 0.004845912543699737,
+            "n_clusters": 10,
+            "sector": "CNXCONSUM",
+            "thin": false
+          },
+          {
+            "mean_relative": 0.003405600290924099,
+            "n_clusters": 12,
+            "sector": "CNXINFRA",
+            "thin": false
+          },
+          {
+            "mean_relative": 0.0014453471718680372,
+            "n_clusters": 14,
+            "sector": "CNXIT",
+            "thin": false
+          },
+          {
+            "mean_relative": 0.0012823400934203805,
+            "n_clusters": 11,
+            "sector": "CNXPHARMA",
+            "thin": false
+          },
+          {
+            "mean_relative": 0.00021663843038018937,
+            "n_clusters": 10,
+            "sector": "CNXAUTO",
+            "thin": false
+          },
+          {
+            "mean_relative": -0.0002452587223570779,
+            "n_clusters": 10,
+            "sector": "CNXFIN",
+            "thin": false
+          },
+          {
+            "mean_relative": -0.0037466294472673595,
+            "n_clusters": 14,
+            "sector": "CNXBANK",
+            "thin": false
+          }
+        ]
+      },
+      "20": {
+        "clusters": 14,
+        "sectors": [
+          {
+            "mean_relative": 0.014718580991966252,
+            "n_clusters": 11,
+            "sector": "CNXPSUBANK",
+            "thin": false
+          },
+          {
+            "mean_relative": 0.013766866301218412,
+            "n_clusters": 11,
+            "sector": "CNXFMCG",
+            "thin": false
+          },
+          {
+            "mean_relative": 0.007014085400858838,
+            "n_clusters": 10,
+            "sector": "CNXFIN",
+            "thin": false
+          },
+          {
+            "mean_relative": 0.006527989512165798,
+            "n_clusters": 14,
+            "sector": "CNXIT",
+            "thin": false
+          },
+          {
+            "mean_relative": 0.004277356362025963,
+            "n_clusters": 10,
+            "sector": "CNXMETAL",
+            "thin": false
+          },
+          {
+            "mean_relative": 0.004247937272368929,
+            "n_clusters": 10,
+            "sector": "CNXAUTO",
+            "thin": false
+          },
+          {
+            "mean_relative": 0.0031292761118982384,
+            "n_clusters": 10,
+            "sector": "CNXCONSUM",
+            "thin": false
+          },
+          {
+            "mean_relative": 0.0024435376234862214,
+            "n_clusters": 12,
+            "sector": "CNXREALTY",
+            "thin": false
+          },
+          {
+            "mean_relative": 0.0007509386565019478,
+            "n_clusters": 11,
+            "sector": "CNXENERGY",
+            "thin": false
+          },
+          {
+            "mean_relative": -0.0018689164504953853,
+            "n_clusters": 14,
+            "sector": "CNXBANK",
+            "thin": false
+          },
+          {
+            "mean_relative": -0.004150021492804144,
+            "n_clusters": 12,
+            "sector": "CNXINFRA",
+            "thin": false
+          },
+          {
+            "mean_relative": -0.010497757093201715,
+            "n_clusters": 11,
+            "sector": "CNXPHARMA",
+            "thin": false
+          }
+        ]
+      },
+      "5": {
+        "clusters": 14,
+        "sectors": [
+          {
+            "mean_relative": 0.01598391960754806,
+            "n_clusters": 11,
+            "sector": "CNXPSUBANK",
+            "thin": false
+          },
+          {
+            "mean_relative": 0.011855477711093965,
+            "n_clusters": 10,
+            "sector": "CNXMETAL",
+            "thin": false
+          },
+          {
+            "mean_relative": 0.008072505479142915,
+            "n_clusters": 11,
+            "sector": "CNXENERGY",
+            "thin": false
+          },
+          {
+            "mean_relative": 0.006797804301708338,
+            "n_clusters": 11,
+            "sector": "CNXFMCG",
+            "thin": false
+          },
+          {
+            "mean_relative": 0.004771155080438299,
+            "n_clusters": 11,
+            "sector": "CNXPHARMA",
+            "thin": false
+          },
+          {
+            "mean_relative": 0.004354499743869968,
+            "n_clusters": 12,
+            "sector": "CNXREALTY",
+            "thin": false
+          },
+          {
+            "mean_relative": 0.004213459742202025,
+            "n_clusters": 12,
+            "sector": "CNXINFRA",
+            "thin": false
+          },
+          {
+            "mean_relative": 0.0025022159618314616,
+            "n_clusters": 14,
+            "sector": "CNXIT",
+            "thin": false
+          },
+          {
+            "mean_relative": 0.0005770745727681992,
+            "n_clusters": 10,
+            "sector": "CNXCONSUM",
+            "thin": false
+          },
+          {
+            "mean_relative": -0.0020486968700866083,
+            "n_clusters": 10,
+            "sector": "CNXFIN",
+            "thin": false
+          },
+          {
+            "mean_relative": -0.0020678524242903175,
+            "n_clusters": 10,
+            "sector": "CNXAUTO",
+            "thin": false
+          },
+          {
+            "mean_relative": -0.004467712087008595,
+            "n_clusters": 14,
+            "sector": "CNXBANK",
+            "thin": false
+          }
+        ]
+      }
+    },
+    "JUPITER_INGRESS+MERCURY_RETROGRADE_START": {
+      "10": {
+        "clusters": 17,
+        "sectors": [
+          {
+            "mean_relative": 0.011897240818845143,
+            "n_clusters": 14,
+            "sector": "CNXREALTY",
+            "thin": false
+          },
+          {
+            "mean_relative": 0.010855702757774836,
+            "n_clusters": 13,
+            "sector": "CNXPSUBANK",
+            "thin": false
+          },
+          {
+            "mean_relative": 0.009947023289071507,
+            "n_clusters": 17,
+            "sector": "CNXBANK",
+            "thin": false
+          },
+          {
+            "mean_relative": 0.007920422232441835,
+            "n_clusters": 13,
+            "sector": "CNXENERGY",
+            "thin": false
+          },
+          {
+            "mean_relative": 0.007782454078399854,
+            "n_clusters": 13,
+            "sector": "CNXFIN",
+            "thin": false
+          },
+          {
+            "mean_relative": -0.0012513645967901883,
+            "n_clusters": 13,
+            "sector": "CNXCONSUM",
+            "thin": false
+          },
+          {
+            "mean_relative": -0.0020705925320624917,
+            "n_clusters": 13,
+            "sector": "CNXAUTO",
+            "thin": false
+          },
+          {
+            "mean_relative": -0.0023826524295955426,
+            "n_clusters": 14,
+            "sector": "CNXINFRA",
+            "thin": false
+          },
+          {
+            "mean_relative": -0.003669717818729729,
+            "n_clusters": 13,
+            "sector": "CNXFMCG",
+            "thin": false
+          },
+          {
+            "mean_relative": -0.006761794381796684,
+            "n_clusters": 13,
+            "sector": "CNXPHARMA",
+            "thin": false
+          },
+          {
+            "mean_relative": -0.011612334632687208,
+            "n_clusters": 13,
+            "sector": "CNXMETAL",
+            "thin": false
+          },
+          {
+            "mean_relative": -0.01973381231678386,
+            "n_clusters": 17,
+            "sector": "CNXIT",
+            "thin": false
+          }
+        ]
+      },
+      "20": {
+        "clusters": 17,
+        "sectors": [
+          {
+            "mean_relative": 0.021588166426661264,
+            "n_clusters": 13,
+            "sector": "CNXPSUBANK",
+            "thin": false
+          },
+          {
+            "mean_relative": 0.01687637216780652,
+            "n_clusters": 14,
+            "sector": "CNXREALTY",
+            "thin": false
+          },
+          {
+            "mean_relative": 0.016555592172931285,
+            "n_clusters": 17,
+            "sector": "CNXBANK",
+            "thin": false
+          },
+          {
+            "mean_relative": 0.01333742518734243,
+            "n_clusters": 13,
+            "sector": "CNXFIN",
+            "thin": false
+          },
+          {
+            "mean_relative": 0.012464211891495141,
+            "n_clusters": 13,
+            "sector": "CNXAUTO",
+            "thin": false
+          },
+          {
+            "mean_relative": 0.002241980038693333,
+            "n_clusters": 13,
+            "sector": "CNXENERGY",
+            "thin": false
+          },
+          {
+            "mean_relative": -0.0013041940499005132,
+            "n_clusters": 13,
+            "sector": "CNXPHARMA",
+            "thin": false
+          },
+          {
+            "mean_relative": -0.0013882389414755674,
+            "n_clusters": 13,
+            "sector": "CNXCONSUM",
+            "thin": false
+          },
+          {
+            "mean_relative": -0.0049427578014755325,
+            "n_clusters": 14,
+            "sector": "CNXINFRA",
+            "thin": false
+          },
+          {
+            "mean_relative": -0.0058216720384468654,
+            "n_clusters": 13,
+            "sector": "CNXFMCG",
+            "thin": false
+          },
+          {
+            "mean_relative": -0.014844861513440196,
+            "n_clusters": 13,
+            "sector": "CNXMETAL",
+            "thin": false
+          },
+          {
+            "mean_relative": -0.028434064546272265,
+            "n_clusters": 17,
+            "sector": "CNXIT",
+            "thin": false
+          }
+        ]
+      },
+      "5": {
+        "clusters": 17,
+        "sectors": [
+          {
+            "mean_relative": 0.006712247728839203,
+            "n_clusters": 13,
+            "sector": "CNXPSUBANK",
+            "thin": false
+          },
+          {
+            "mean_relative": 0.006343907598494851,
+            "n_clusters": 13,
+            "sector": "CNXFMCG",
+            "thin": false
+          },
+          {
+            "mean_relative": 0.0049331780346453585,
+            "n_clusters": 13,
+            "sector": "CNXPHARMA",
+            "thin": false
+          },
+          {
+            "mean_relative": 0.0034714027715965897,
+            "n_clusters": 13,
+            "sector": "CNXENERGY",
+            "thin": false
+          },
+          {
+            "mean_relative": 0.002569340510545957,
+            "n_clusters": 13,
+            "sector": "CNXCONSUM",
+            "thin": false
+          },
+          {
+            "mean_relative": 0.002403493071004411,
+            "n_clusters": 14,
+            "sector": "CNXINFRA",
+            "thin": false
+          },
+          {
+            "mean_relative": -0.0001029173867602445,
+            "n_clusters": 17,
+            "sector": "CNXBANK",
+            "thin": false
+          },
+          {
+            "mean_relative": -0.0006815600791904105,
+            "n_clusters": 13,
+            "sector": "CNXFIN",
+            "thin": false
+          },
+          {
+            "mean_relative": -0.0023234854014292203,
+            "n_clusters": 13,
+            "sector": "CNXMETAL",
+            "thin": false
+          },
+          {
+            "mean_relative": -0.0052707287933459685,
+            "n_clusters": 13,
+            "sector": "CNXAUTO",
+            "thin": false
+          },
+          {
+            "mean_relative": -0.006844659346936089,
+            "n_clusters": 17,
+            "sector": "CNXIT",
+            "thin": false
+          },
+          {
+            "mean_relative": -0.007471525334565203,
+            "n_clusters": 14,
+            "sector": "CNXREALTY",
+            "thin": false
+          }
+        ]
+      }
+    },
+    "JUPITER_INGRESS+SATURN_INGRESS": {
+      "10": {
+        "clusters": 2,
+        "sectors": [
+          {
+            "mean_relative": 0.025364202653127943,
+            "n_clusters": 2,
+            "sector": "CNXENERGY",
+            "thin": true
+          },
+          {
+            "mean_relative": 0.021192697569362262,
+            "n_clusters": 2,
+            "sector": "CNXPSUBANK",
+            "thin": true
+          },
+          {
+            "mean_relative": 0.007564190122344494,
+            "n_clusters": 2,
+            "sector": "CNXFMCG",
+            "thin": true
+          },
+          {
+            "mean_relative": 0.003832617764771784,
+            "n_clusters": 2,
+            "sector": "CNXCONSUM",
+            "thin": true
+          },
+          {
+            "mean_relative": 0.0031236828561049257,
+            "n_clusters": 2,
+            "sector": "CNXINFRA",
+            "thin": true
+          },
+          {
+            "mean_relative": 0.0006271263428683227,
+            "n_clusters": 2,
+            "sector": "CNXBANK",
+            "thin": true
+          },
+          {
+            "mean_relative": -0.0016937975911124337,
+            "n_clusters": 2,
+            "sector": "CNXFIN",
+            "thin": true
+          },
+          {
+            "mean_relative": -0.007110920494074802,
+            "n_clusters": 2,
+            "sector": "CNXREALTY",
+            "thin": true
+          },
+          {
+            "mean_relative": -0.007477165652494233,
+            "n_clusters": 2,
+            "sector": "CNXPHARMA",
+            "thin": true
+          },
+          {
+            "mean_relative": -0.007816400203455143,
+            "n_clusters": 2,
+            "sector": "CNXAUTO",
+            "thin": true
+          },
+          {
+            "mean_relative": -0.012501718119637906,
+            "n_clusters": 2,
+            "sector": "CNXMETAL",
+            "thin": true
+          },
+          {
+            "mean_relative": -0.024084087007892774,
+            "n_clusters": 2,
+            "sector": "CNXIT",
+            "thin": true
+          }
+        ]
+      },
+      "20": {
+        "clusters": 2,
+        "sectors": [
+          {
+            "mean_relative": 0.03249911610935413,
+            "n_clusters": 2,
+            "sector": "CNXFMCG",
+            "thin": true
+          },
+          {
+            "mean_relative": 0.015184507472875308,
+            "n_clusters": 2,
+            "sector": "CNXPSUBANK",
+            "thin": true
+          },
+          {
+            "mean_relative": 0.011616949084346129,
+            "n_clusters": 2,
+            "sector": "CNXBANK",
+            "thin": true
+          },
+          {
+            "mean_relative": 0.005562531966629314,
+            "n_clusters": 2,
+            "sector": "CNXENERGY",
+            "thin": true
+          },
+          {
+            "mean_relative": 0.004238989710124097,
+            "n_clusters": 2,
+            "sector": "CNXINFRA",
+            "thin": true
+          },
+          {
+            "mean_relative": 0.0035953443232276117,
+            "n_clusters": 2,
+            "sector": "CNXFIN",
+            "thin": true
+          },
+          {
+            "mean_relative": -3.0147135919922352e-05,
+            "n_clusters": 2,
+            "sector": "CNXCONSUM",
+            "thin": true
+          },
+          {
+            "mean_relative": -0.0003074355748733937,
+            "n_clusters": 2,
+            "sector": "CNXAUTO",
+            "thin": true
+          },
+          {
+            "mean_relative": -0.026784234801480955,
+            "n_clusters": 2,
+            "sector": "CNXPHARMA",
+            "thin": true
+          },
+          {
+            "mean_relative": -0.027472775735474686,
+            "n_clusters": 2,
+            "sector": "CNXREALTY",
+            "thin": true
+          },
+          {
+            "mean_relative": -0.02894323965880463,
+            "n_clusters": 2,
+            "sector": "CNXIT",
+            "thin": true
+          },
+          {
+            "mean_relative": -0.055572677700991224,
+            "n_clusters": 2,
+            "sector": "CNXMETAL",
+            "thin": true
+          }
+        ]
+      },
+      "5": {
+        "clusters": 2,
+        "sectors": [
+          {
+            "mean_relative": 0.02453289827380417,
+            "n_clusters": 2,
+            "sector": "CNXENERGY",
+            "thin": true
+          },
+          {
+            "mean_relative": 0.007477207378988993,
+            "n_clusters": 2,
+            "sector": "CNXAUTO",
+            "thin": true
+          },
+          {
+            "mean_relative": 0.006425092376152186,
+            "n_clusters": 2,
+            "sector": "CNXPSUBANK",
+            "thin": true
+          },
+          {
+            "mean_relative": 0.0031950246655234604,
+            "n_clusters": 2,
+            "sector": "CNXFMCG",
+            "thin": true
+          },
+          {
+            "mean_relative": 0.0010837453518866558,
+            "n_clusters": 2,
+            "sector": "CNXINFRA",
+            "thin": true
+          },
+          {
+            "mean_relative": -0.0005212035294257511,
+            "n_clusters": 2,
+            "sector": "CNXFIN",
+            "thin": true
+          },
+          {
+            "mean_relative": -0.0018298592850256035,
+            "n_clusters": 2,
+            "sector": "CNXBANK",
+            "thin": true
+          },
+          {
+            "mean_relative": -0.002984934816946061,
+            "n_clusters": 2,
+            "sector": "CNXCONSUM",
+            "thin": true
+          },
+          {
+            "mean_relative": -0.005126468576202303,
+            "n_clusters": 2,
+            "sector": "CNXPHARMA",
+            "thin": true
+          },
+          {
+            "mean_relative": -0.007924099460421219,
+            "n_clusters": 2,
+            "sector": "CNXREALTY",
+            "thin": true
+          },
+          {
+            "mean_relative": -0.011419687007020451,
+            "n_clusters": 2,
+            "sector": "CNXMETAL",
+            "thin": true
+          },
+          {
+            "mean_relative": -0.024521544173899568,
+            "n_clusters": 2,
+            "sector": "CNXIT",
+            "thin": true
+          }
+        ]
+      }
+    },
+    "JUPITER_INGRESS+SOLAR_ECLIPSE": {
+      "10": {
+        "clusters": 15,
+        "sectors": [
+          {
+            "mean_relative": 0.021089143338243427,
+            "n_clusters": 12,
+            "sector": "CNXPSUBANK",
+            "thin": false
+          },
+          {
+            "mean_relative": 0.016572589624317482,
+            "n_clusters": 11,
+            "sector": "CNXMETAL",
+            "thin": false
+          },
+          {
+            "mean_relative": 0.012473740746915254,
+            "n_clusters": 12,
+            "sector": "CNXENERGY",
+            "thin": false
+          },
+          {
+            "mean_relative": 0.00826416242737793,
+            "n_clusters": 12,
+            "sector": "CNXFMCG",
+            "thin": false
+          },
+          {
+            "mean_relative": 0.00539199000970829,
+            "n_clusters": 13,
+            "sector": "CNXREALTY",
+            "thin": false
+          },
+          {
+            "mean_relative": 0.0032543398129055343,
+            "n_clusters": 12,
+            "sector": "CNXPHARMA",
+            "thin": false
+          },
+          {
+            "mean_relative": 0.0027768213229713355,
+            "n_clusters": 13,
+            "sector": "CNXINFRA",
+            "thin": false
+          },
+          {
+            "mean_relative": 0.0026487085823586913,
+            "n_clusters": 11,
+            "sector": "CNXCONSUM",
+            "thin": false
+          },
+          {
+            "mean_relative": 0.0021527564542035416,
+            "n_clusters": 15,
+            "sector": "CNXIT",
+            "thin": false
+          },
+          {
+            "mean_relative": -0.0004939035274316161,
+            "n_clusters": 11,
+            "sector": "CNXFIN",
+            "thin": false
+          },
+          {
+            "mean_relative": -0.0034814125343236783,
+            "n_clusters": 11,
+            "sector": "CNXAUTO",
+            "thin": false
+          },
+          {
+            "mean_relative": -0.004067531008094738,
+            "n_clusters": 15,
+            "sector": "CNXBANK",
+            "thin": false
+          }
+        ]
+      },
+      "20": {
+        "clusters": 15,
+        "sectors": [
+          {
+            "mean_relative": 0.011532748334625587,
+            "n_clusters": 12,
+            "sector": "CNXFMCG",
+            "thin": false
+          },
+          {
+            "mean_relative": 0.010458890601809842,
+            "n_clusters": 12,
+            "sector": "CNXPSUBANK",
+            "thin": false
+          },
+          {
+            "mean_relative": 0.009986096522618481,
+            "n_clusters": 15,
+            "sector": "CNXIT",
+            "thin": false
+          },
+          {
+            "mean_relative": 0.005527808983233301,
+            "n_clusters": 11,
+            "sector": "CNXMETAL",
+            "thin": false
+          },
+          {
+            "mean_relative": 0.0035726958639161854,
+            "n_clusters": 11,
+            "sector": "CNXFIN",
+            "thin": false
+          },
+          {
+            "mean_relative": 0.0008422616202547826,
+            "n_clusters": 11,
+            "sector": "CNXCONSUM",
+            "thin": false
+          },
+          {
+            "mean_relative": 0.0007502527826671509,
+            "n_clusters": 12,
+            "sector": "CNXENERGY",
+            "thin": false
+          },
+          {
+            "mean_relative": 0.00026522890660066444,
+            "n_clusters": 11,
+            "sector": "CNXAUTO",
+            "thin": false
+          },
+          {
+            "mean_relative": -0.0021884658621757693,
+            "n_clusters": 13,
+            "sector": "CNXREALTY",
+            "thin": false
+          },
+          {
+            "mean_relative": -0.0035012457090247548,
+            "n_clusters": 15,
+            "sector": "CNXBANK",
+            "thin": false
+          },
+          {
+            "mean_relative": -0.005150985108596231,
+            "n_clusters": 13,
+            "sector": "CNXINFRA",
+            "thin": false
+          },
+          {
+            "mean_relative": -0.006167065424861534,
+            "n_clusters": 12,
+            "sector": "CNXPHARMA",
+            "thin": false
+          }
+        ]
+      },
+      "5": {
+        "clusters": 15,
+        "sectors": [
+          {
+            "mean_relative": 0.012963978812266297,
+            "n_clusters": 12,
+            "sector": "CNXPSUBANK",
+            "thin": false
+          },
+          {
+            "mean_relative": 0.010710205632789955,
+            "n_clusters": 11,
+            "sector": "CNXMETAL",
+            "thin": false
+          },
+          {
+            "mean_relative": 0.00889629507508343,
+            "n_clusters": 12,
+            "sector": "CNXENERGY",
+            "thin": false
+          },
+          {
+            "mean_relative": 0.008646819564527314,
+            "n_clusters": 12,
+            "sector": "CNXPHARMA",
+            "thin": false
+          },
+          {
+            "mean_relative": 0.005735166727290325,
+            "n_clusters": 12,
+            "sector": "CNXFMCG",
+            "thin": false
+          },
+          {
+            "mean_relative": 0.0040365171714035536,
+            "n_clusters": 13,
+            "sector": "CNXINFRA",
+            "thin": false
+          },
+          {
+            "mean_relative": 0.0025805235282462184,
+            "n_clusters": 15,
+            "sector": "CNXIT",
+            "thin": false
+          },
+          {
+            "mean_relative": 0.002499026295536538,
+            "n_clusters": 13,
+            "sector": "CNXREALTY",
+            "thin": false
+          },
+          {
+            "mean_relative": -0.00024363213078251985,
+            "n_clusters": 11,
+            "sector": "CNXCONSUM",
+            "thin": false
+          },
+          {
+            "mean_relative": -0.0027067272749802048,
+            "n_clusters": 11,
+            "sector": "CNXFIN",
+            "thin": false
+          },
+          {
+            "mean_relative": -0.0048510131658416,
+            "n_clusters": 15,
+            "sector": "CNXBANK",
+            "thin": false
+          },
+          {
+            "mean_relative": -0.0053843398386533145,
+            "n_clusters": 11,
+            "sector": "CNXAUTO",
+            "thin": false
+          }
+        ]
+      }
+    },
+    "LUNAR_ECLIPSE+MERCURY_RETROGRADE_START": {
+      "10": {
+        "clusters": 20,
+        "sectors": [
+          {
+            "mean_relative": 0.016683513643325043,
+            "n_clusters": 16,
+            "sector": "CNXPSUBANK",
+            "thin": false
+          },
+          {
+            "mean_relative": 0.010273403361252112,
+            "n_clusters": 16,
+            "sector": "CNXENERGY",
+            "thin": false
+          },
+          {
+            "mean_relative": 0.005874281055853185,
+            "n_clusters": 16,
+            "sector": "CNXFMCG",
+            "thin": false
+          },
+          {
+            "mean_relative": 0.003826681446522477,
+            "n_clusters": 16,
+            "sector": "CNXFIN",
+            "thin": false
+          },
+          {
+            "mean_relative": 0.0032859623017530287,
+            "n_clusters": 16,
+            "sector": "CNXCONSUM",
+            "thin": false
+          },
+          {
+            "mean_relative": 0.0006551355807658173,
+            "n_clusters": 17,
+            "sector": "CNXINFRA",
+            "thin": false
+          },
+          {
+            "mean_relative": -0.0005994737604841857,
+            "n_clusters": 16,
+            "sector": "CNXMETAL",
+            "thin": false
+          },
+          {
+            "mean_relative": -0.0009372556183139327,
+            "n_clusters": 16,
+            "sector": "CNXPHARMA",
+            "thin": false
+          },
+          {
+            "mean_relative": -0.0014507155926174334,
+            "n_clusters": 17,
+            "sector": "CNXREALTY",
+            "thin": false
+          },
+          {
+            "mean_relative": -0.0017174995951406355,
+            "n_clusters": 16,
+            "sector": "CNXAUTO",
+            "thin": false
+          },
+          {
+            "mean_relative": -0.004649611684147359,
+            "n_clusters": 20,
+            "sector": "CNXIT",
+            "thin": false
+          },
+          {
+            "mean_relative": -0.004982818817772699,
+            "n_clusters": 20,
+            "sector": "CNXBANK",
+            "thin": false
+          }
+        ]
+      },
+      "20": {
+        "clusters": 20,
+        "sectors": [
+          {
+            "mean_relative": 0.01555233031750234,
+            "n_clusters": 16,
+            "sector": "CNXPSUBANK",
+            "thin": false
+          },
+          {
+            "mean_relative": 0.012169488845359996,
+            "n_clusters": 16,
+            "sector": "CNXFMCG",
+            "thin": false
+          },
+          {
+            "mean_relative": 0.008628091418954889,
+            "n_clusters": 16,
+            "sector": "CNXFIN",
+            "thin": false
+          },
+          {
+            "mean_relative": 0.007451389291415519,
+            "n_clusters": 16,
+            "sector": "CNXENERGY",
+            "thin": false
+          },
+          {
+            "mean_relative": 0.006350114617539237,
+            "n_clusters": 17,
+            "sector": "CNXREALTY",
+            "thin": false
+          },
+          {
+            "mean_relative": 0.0052726244473696865,
+            "n_clusters": 16,
+            "sector": "CNXCONSUM",
+            "thin": false
+          },
+          {
+            "mean_relative": -0.0004824262664596818,
+            "n_clusters": 16,
+            "sector": "CNXAUTO",
+            "thin": false
+          },
+          {
+            "mean_relative": -0.0016804392584351749,
+            "n_clusters": 16,
+            "sector": "CNXPHARMA",
+            "thin": false
+          },
+          {
+            "mean_relative": -0.0028986182537769287,
+            "n_clusters": 16,
+            "sector": "CNXMETAL",
+            "thin": false
+          },
+          {
+            "mean_relative": -0.0032727702644944883,
+            "n_clusters": 17,
+            "sector": "CNXINFRA",
+            "thin": false
+          },
+          {
+            "mean_relative": -0.006527210264117178,
+            "n_clusters": 20,
+            "sector": "CNXIT",
+            "thin": false
+          },
+          {
+            "mean_relative": -0.007049436459725273,
+            "n_clusters": 20,
+            "sector": "CNXBANK",
+            "thin": false
+          }
+        ]
+      },
+      "5": {
+        "clusters": 20,
+        "sectors": [
+          {
+            "mean_relative": 0.016441824614451976,
+            "n_clusters": 16,
+            "sector": "CNXPSUBANK",
+            "thin": false
+          },
+          {
+            "mean_relative": 0.011175500174933392,
+            "n_clusters": 16,
+            "sector": "CNXENERGY",
+            "thin": false
+          },
+          {
+            "mean_relative": 0.004958704398923012,
+            "n_clusters": 17,
+            "sector": "CNXINFRA",
+            "thin": false
+          },
+          {
+            "mean_relative": 0.0016678855804325363,
+            "n_clusters": 16,
+            "sector": "CNXFMCG",
+            "thin": false
+          },
+          {
+            "mean_relative": 0.0016579583643800896,
+            "n_clusters": 16,
+            "sector": "CNXMETAL",
+            "thin": false
+          },
+          {
+            "mean_relative": 0.0003063636977685552,
+            "n_clusters": 16,
+            "sector": "CNXCONSUM",
+            "thin": false
+          },
+          {
+            "mean_relative": 0.00013005183871571402,
+            "n_clusters": 16,
+            "sector": "CNXFIN",
+            "thin": false
+          },
+          {
+            "mean_relative": -0.00037234281619750315,
+            "n_clusters": 16,
+            "sector": "CNXPHARMA",
+            "thin": false
+          },
+          {
+            "mean_relative": -0.002706956202209765,
+            "n_clusters": 20,
+            "sector": "CNXIT",
+            "thin": false
+          },
+          {
+            "mean_relative": -0.00440997125307107,
+            "n_clusters": 16,
+            "sector": "CNXAUTO",
+            "thin": false
+          },
+          {
+            "mean_relative": -0.005690670523556307,
+            "n_clusters": 20,
+            "sector": "CNXBANK",
+            "thin": false
+          },
+          {
+            "mean_relative": -0.008073565465860452,
+            "n_clusters": 17,
+            "sector": "CNXREALTY",
+            "thin": false
+          }
+        ]
+      }
+    },
+    "LUNAR_ECLIPSE+SATURN_INGRESS": {
+      "10": {
+        "clusters": 6,
+        "sectors": [
+          {
+            "mean_relative": 0.026141353923600157,
+            "n_clusters": 6,
+            "sector": "CNXPSUBANK",
+            "thin": true
+          },
+          {
+            "mean_relative": 0.013778318455805719,
+            "n_clusters": 6,
+            "sector": "CNXINFRA",
+            "thin": true
+          },
+          {
+            "mean_relative": 0.009856345745124229,
+            "n_clusters": 6,
+            "sector": "CNXBANK",
+            "thin": true
+          },
+          {
+            "mean_relative": 0.006631672845830198,
+            "n_clusters": 6,
+            "sector": "CNXCONSUM",
+            "thin": true
+          },
+          {
+            "mean_relative": 0.006421653816552834,
+            "n_clusters": 6,
+            "sector": "CNXFIN",
+            "thin": true
+          },
+          {
+            "mean_relative": 0.004192547922878413,
+            "n_clusters": 6,
+            "sector": "CNXENERGY",
+            "thin": true
+          },
+          {
+            "mean_relative": 0.003637259672125581,
+            "n_clusters": 6,
+            "sector": "CNXREALTY",
+            "thin": true
+          },
+          {
+            "mean_relative": 0.0016333513221340097,
+            "n_clusters": 6,
+            "sector": "CNXFMCG",
+            "thin": true
+          },
+          {
+            "mean_relative": -0.0007042280299812131,
+            "n_clusters": 6,
+            "sector": "CNXPHARMA",
+            "thin": true
+          },
+          {
+            "mean_relative": -0.005325183365943083,
+            "n_clusters": 6,
+            "sector": "CNXAUTO",
+            "thin": true
+          },
+          {
+            "mean_relative": -0.007273197430294716,
+            "n_clusters": 6,
+            "sector": "CNXMETAL",
+            "thin": true
+          },
+          {
+            "mean_relative": -0.019021053757788026,
+            "n_clusters": 6,
+            "sector": "CNXIT",
+            "thin": true
+          }
+        ]
+      },
+      "20": {
+        "clusters": 6,
+        "sectors": [
+          {
+            "mean_relative": 0.01762751020035395,
+            "n_clusters": 6,
+            "sector": "CNXPSUBANK",
+            "thin": true
+          },
+          {
+            "mean_relative": 0.014346458024195504,
+            "n_clusters": 6,
+            "sector": "CNXREALTY",
+            "thin": true
+          },
+          {
+            "mean_relative": 0.013229843150087647,
+            "n_clusters": 6,
+            "sector": "CNXFMCG",
+            "thin": true
+          },
+          {
+            "mean_relative": 0.012957011770935908,
+            "n_clusters": 6,
+            "sector": "CNXBANK",
+            "thin": true
+          },
+          {
+            "mean_relative": 0.010912556226283435,
+            "n_clusters": 6,
+            "sector": "CNXFIN",
+            "thin": true
+          },
+          {
+            "mean_relative": 0.00500308422331656,
+            "n_clusters": 6,
+            "sector": "CNXPHARMA",
+            "thin": true
+          },
+          {
+            "mean_relative": 0.0023951702523431484,
+            "n_clusters": 6,
+            "sector": "CNXCONSUM",
+            "thin": true
+          },
+          {
+            "mean_relative": 0.0009611872147547255,
+            "n_clusters": 6,
+            "sector": "CNXIT",
+            "thin": true
+          },
+          {
+            "mean_relative": 0.0009321714178011272,
+            "n_clusters": 6,
+            "sector": "CNXINFRA",
+            "thin": true
+          },
+          {
+            "mean_relative": 0.0006826448938952456,
+            "n_clusters": 6,
+            "sector": "CNXENERGY",
+            "thin": true
+          },
+          {
+            "mean_relative": -0.014560505750123761,
+            "n_clusters": 6,
+            "sector": "CNXAUTO",
+            "thin": true
+          },
+          {
+            "mean_relative": -0.030781621640849688,
+            "n_clusters": 6,
+            "sector": "CNXMETAL",
+            "thin": true
+          }
+        ]
+      },
+      "5": {
+        "clusters": 6,
+        "sectors": [
+          {
+            "mean_relative": 0.02662951792653338,
+            "n_clusters": 6,
+            "sector": "CNXPSUBANK",
+            "thin": true
+          },
+          {
+            "mean_relative": 0.009314340163211568,
+            "n_clusters": 6,
+            "sector": "CNXENERGY",
+            "thin": true
+          },
+          {
+            "mean_relative": 0.007536942040680265,
+            "n_clusters": 6,
+            "sector": "CNXBANK",
+            "thin": true
+          },
+          {
+            "mean_relative": 0.005603861441516496,
+            "n_clusters": 6,
+            "sector": "CNXFIN",
+            "thin": true
+          },
+          {
+            "mean_relative": 0.004196611432712975,
+            "n_clusters": 6,
+            "sector": "CNXINFRA",
+            "thin": true
+          },
+          {
+            "mean_relative": 0.0011114068896587541,
+            "n_clusters": 6,
+            "sector": "CNXMETAL",
+            "thin": true
+          },
+          {
+            "mean_relative": 0.0004128214778770419,
+            "n_clusters": 6,
+            "sector": "CNXCONSUM",
+            "thin": true
+          },
+          {
+            "mean_relative": -0.0007328603656662954,
+            "n_clusters": 6,
+            "sector": "CNXFMCG",
+            "thin": true
+          },
+          {
+            "mean_relative": -0.0015356611011027403,
+            "n_clusters": 6,
+            "sector": "CNXAUTO",
+            "thin": true
+          },
+          {
+            "mean_relative": -0.0023924470355850547,
+            "n_clusters": 6,
+            "sector": "CNXPHARMA",
+            "thin": true
+          },
+          {
+            "mean_relative": -0.009647262633229051,
+            "n_clusters": 6,
+            "sector": "CNXREALTY",
+            "thin": true
+          },
+          {
+            "mean_relative": -0.012793055067575313,
+            "n_clusters": 6,
+            "sector": "CNXIT",
+            "thin": true
+          }
+        ]
+      }
+    },
+    "LUNAR_ECLIPSE+SOLAR_ECLIPSE": {
+      "10": {
+        "clusters": 37,
+        "sectors": [
+          {
+            "mean_relative": 0.01653034981725658,
+            "n_clusters": 30,
+            "sector": "CNXPSUBANK",
+            "thin": false
+          },
+          {
+            "mean_relative": 0.008207531986212706,
+            "n_clusters": 29,
+            "sector": "CNXMETAL",
+            "thin": false
+          },
+          {
+            "mean_relative": 0.0072015958577452575,
+            "n_clusters": 30,
+            "sector": "CNXFMCG",
+            "thin": false
+          },
+          {
+            "mean_relative": 0.006463917356714136,
+            "n_clusters": 30,
+            "sector": "CNXENERGY",
+            "thin": false
+          },
+          {
+            "mean_relative": 0.00500025764153523,
+            "n_clusters": 30,
+            "sector": "CNXPHARMA",
+            "thin": false
+          },
+          {
+            "mean_relative": 0.0041969429625204535,
+            "n_clusters": 31,
+            "sector": "CNXREALTY",
+            "thin": false
+          },
+          {
+            "mean_relative": 0.00366909734141964,
+            "n_clusters": 29,
+            "sector": "CNXCONSUM",
+            "thin": false
+          },
+          {
+            "mean_relative": 0.0014068523511056796,
+            "n_clusters": 29,
+            "sector": "CNXFIN",
+            "thin": false
+          },
+          {
+            "mean_relative": 0.0008230755721434752,
+            "n_clusters": 31,
+            "sector": "CNXINFRA",
+            "thin": false
+          },
+          {
+            "mean_relative": 0.0006168659582538766,
+            "n_clusters": 37,
+            "sector": "CNXIT",
+            "thin": false
+          },
+          {
+            "mean_relative": -0.0015259186950458098,
+            "n_clusters": 29,
+            "sector": "CNXAUTO",
+            "thin": false
+          },
+          {
+            "mean_relative": -0.002932590874412909,
+            "n_clusters": 37,
+            "sector": "CNXBANK",
+            "thin": false
+          }
+        ]
+      },
+      "20": {
+        "clusters": 37,
+        "sectors": [
+          {
+            "mean_relative": 0.01654067178724759,
+            "n_clusters": 30,
+            "sector": "CNXPSUBANK",
+            "thin": false
+          },
+          {
+            "mean_relative": 0.012530236996763939,
+            "n_clusters": 31,
+            "sector": "CNXREALTY",
+            "thin": false
+          },
+          {
+            "mean_relative": 0.01125385421860764,
+            "n_clusters": 30,
+            "sector": "CNXENERGY",
+            "thin": false
+          },
+          {
+            "mean_relative": 0.007427074039422765,
+            "n_clusters": 30,
+            "sector": "CNXFMCG",
+            "thin": false
+          },
+          {
+            "mean_relative": 0.006847695189170568,
+            "n_clusters": 29,
+            "sector": "CNXMETAL",
+            "thin": false
+          },
+          {
+            "mean_relative": 0.005621503804564261,
+            "n_clusters": 29,
+            "sector": "CNXFIN",
+            "thin": false
+          },
+          {
+            "mean_relative": 0.003937812876765399,
+            "n_clusters": 37,
+            "sector": "CNXIT",
+            "thin": false
+          },
+          {
+            "mean_relative": 0.00013539414708094646,
+            "n_clusters": 29,
+            "sector": "CNXCONSUM",
+            "thin": false
+          },
+          {
+            "mean_relative": -7.824775665471912e-05,
+            "n_clusters": 37,
+            "sector": "CNXBANK",
+            "thin": false
+          },
+          {
+            "mean_relative": -0.002407866517225304,
+            "n_clusters": 31,
+            "sector": "CNXINFRA",
+            "thin": false
+          },
+          {
+            "mean_relative": -0.0025346032774258027,
+            "n_clusters": 30,
+            "sector": "CNXPHARMA",
+            "thin": false
+          },
+          {
+            "mean_relative": -0.011186260999996644,
+            "n_clusters": 29,
+            "sector": "CNXAUTO",
+            "thin": false
+          }
+        ]
+      },
+      "5": {
+        "clusters": 37,
+        "sectors": [
+          {
+            "mean_relative": 0.011126314070653358,
+            "n_clusters": 30,
+            "sector": "CNXPSUBANK",
+            "thin": false
+          },
+          {
+            "mean_relative": 0.005440673892834691,
+            "n_clusters": 30,
+            "sector": "CNXENERGY",
+            "thin": false
+          },
+          {
+            "mean_relative": 0.0043345848531834465,
+            "n_clusters": 30,
+            "sector": "CNXFMCG",
+            "thin": false
+          },
+          {
+            "mean_relative": 0.003541517192500206,
+            "n_clusters": 30,
+            "sector": "CNXPHARMA",
+            "thin": false
+          },
+          {
+            "mean_relative": 0.002342294603851817,
+            "n_clusters": 31,
+            "sector": "CNXINFRA",
+            "thin": false
+          },
+          {
+            "mean_relative": 0.0022765229443383215,
+            "n_clusters": 29,
+            "sector": "CNXMETAL",
+            "thin": false
+          },
+          {
+            "mean_relative": 0.001375663310066773,
+            "n_clusters": 29,
+            "sector": "CNXCONSUM",
+            "thin": false
+          },
+          {
+            "mean_relative": 0.0013420390314478443,
+            "n_clusters": 29,
+            "sector": "CNXFIN",
+            "thin": false
+          },
+          {
+            "mean_relative": -0.000524096022367486,
+            "n_clusters": 29,
+            "sector": "CNXAUTO",
+            "thin": false
+          },
+          {
+            "mean_relative": -0.0007609275816941221,
+            "n_clusters": 37,
+            "sector": "CNXBANK",
+            "thin": false
+          },
+          {
+            "mean_relative": -0.0032381821399790804,
+            "n_clusters": 37,
+            "sector": "CNXIT",
+            "thin": false
+          },
+          {
+            "mean_relative": -0.003538924536618007,
+            "n_clusters": 31,
+            "sector": "CNXREALTY",
+            "thin": false
+          }
+        ]
+      }
+    },
+    "MERCURY_RETROGRADE_START+SATURN_INGRESS": {
+      "10": {
+        "clusters": 6,
+        "sectors": [
+          {
+            "mean_relative": 0.013095657843498332,
+            "n_clusters": 5,
+            "sector": "CNXAUTO",
+            "thin": true
+          },
+          {
+            "mean_relative": 0.012727788651610542,
+            "n_clusters": 6,
+            "sector": "CNXBANK",
+            "thin": true
+          },
+          {
+            "mean_relative": 0.012366604756352517,
+            "n_clusters": 5,
+            "sector": "CNXINFRA",
+            "thin": true
+          },
+          {
+            "mean_relative": 0.01200989747475425,
+            "n_clusters": 5,
+            "sector": "CNXENERGY",
+            "thin": true
+          },
+          {
+            "mean_relative": 0.00451775837650692,
+            "n_clusters": 5,
+            "sector": "CNXMETAL",
+            "thin": true
+          },
+          {
+            "mean_relative": 0.0024883310302129757,
+            "n_clusters": 5,
+            "sector": "CNXFMCG",
+            "thin": true
+          },
+          {
+            "mean_relative": 0.002048587382278466,
+            "n_clusters": 5,
+            "sector": "CNXCONSUM",
+            "thin": true
+          },
+          {
+            "mean_relative": 0.00012146096945309104,
+            "n_clusters": 5,
+            "sector": "CNXFIN",
+            "thin": true
+          },
+          {
+            "mean_relative": 6.613641673298698e-05,
+            "n_clusters": 5,
+            "sector": "CNXPHARMA",
+            "thin": true
+          },
+          {
+            "mean_relative": -0.012213688776935716,
+            "n_clusters": 5,
+            "sector": "CNXPSUBANK",
+            "thin": true
+          },
+          {
+            "mean_relative": -0.013554534232321206,
+            "n_clusters": 6,
+            "sector": "CNXIT",
+            "thin": true
+          },
+          {
+            "mean_relative": -0.014819354228713767,
+            "n_clusters": 5,
+            "sector": "CNXREALTY",
+            "thin": true
+          }
+        ]
+      },
+      "20": {
+        "clusters": 6,
+        "sectors": [
+          {
+            "mean_relative": 0.025150678969113938,
+            "n_clusters": 5,
+            "sector": "CNXAUTO",
+            "thin": true
+          },
+          {
+            "mean_relative": 0.02389380120279159,
+            "n_clusters": 5,
+            "sector": "CNXFMCG",
+            "thin": true
+          },
+          {
+            "mean_relative": 0.017367311396218166,
+            "n_clusters": 5,
+            "sector": "CNXPHARMA",
+            "thin": true
+          },
+          {
+            "mean_relative": 0.010755824580537587,
+            "n_clusters": 6,
+            "sector": "CNXBANK",
+            "thin": true
+          },
+          {
+            "mean_relative": 0.003423063401288462,
+            "n_clusters": 5,
+            "sector": "CNXCONSUM",
+            "thin": true
+          },
+          {
+            "mean_relative": 0.0032233304236707117,
+            "n_clusters": 5,
+            "sector": "CNXINFRA",
+            "thin": true
+          },
+          {
+            "mean_relative": 0.002915986109091606,
+            "n_clusters": 5,
+            "sector": "CNXREALTY",
+            "thin": true
+          },
+          {
+            "mean_relative": -0.00035691315849582333,
+            "n_clusters": 6,
+            "sector": "CNXIT",
+            "thin": true
+          },
+          {
+            "mean_relative": -0.0021093017552771044,
+            "n_clusters": 5,
+            "sector": "CNXFIN",
+            "thin": true
+          },
+          {
+            "mean_relative": -0.006033182352089428,
+            "n_clusters": 5,
+            "sector": "CNXENERGY",
+            "thin": true
+          },
+          {
+            "mean_relative": -0.03246273193738676,
+            "n_clusters": 5,
+            "sector": "CNXMETAL",
+            "thin": true
+          },
+          {
+            "mean_relative": -0.043835455073023735,
+            "n_clusters": 5,
+            "sector": "CNXPSUBANK",
+            "thin": true
+          }
+        ]
+      },
+      "5": {
+        "clusters": 6,
+        "sectors": [
+          {
+            "mean_relative": 0.016739088819933978,
+            "n_clusters": 5,
+            "sector": "CNXENERGY",
+            "thin": true
+          },
+          {
+            "mean_relative": 0.010859922591436888,
+            "n_clusters": 5,
+            "sector": "CNXMETAL",
+            "thin": true
+          },
+          {
+            "mean_relative": 0.010684265375036283,
+            "n_clusters": 5,
+            "sector": "CNXINFRA",
+            "thin": true
+          },
+          {
+            "mean_relative": 0.008879089021845176,
+            "n_clusters": 5,
+            "sector": "CNXPSUBANK",
+            "thin": true
+          },
+          {
+            "mean_relative": 0.006451576998255141,
+            "n_clusters": 6,
+            "sector": "CNXBANK",
+            "thin": true
+          },
+          {
+            "mean_relative": 0.005778918580746817,
+            "n_clusters": 5,
+            "sector": "CNXAUTO",
+            "thin": true
+          },
+          {
+            "mean_relative": 0.00011649586674100654,
+            "n_clusters": 5,
+            "sector": "CNXCONSUM",
+            "thin": true
+          },
+          {
+            "mean_relative": -0.002664070713256339,
+            "n_clusters": 5,
+            "sector": "CNXPHARMA",
+            "thin": true
+          },
+          {
+            "mean_relative": -0.0027513098158009398,
+            "n_clusters": 5,
+            "sector": "CNXFMCG",
+            "thin": true
+          },
+          {
+            "mean_relative": -0.0032936807584836637,
+            "n_clusters": 5,
+            "sector": "CNXFIN",
+            "thin": true
+          },
+          {
+            "mean_relative": -0.006083858764148964,
+            "n_clusters": 6,
+            "sector": "CNXIT",
+            "thin": true
+          },
+          {
+            "mean_relative": -0.017614752084802343,
+            "n_clusters": 5,
+            "sector": "CNXREALTY",
+            "thin": true
+          }
+        ]
+      }
+    },
+    "MERCURY_RETROGRADE_START+SOLAR_ECLIPSE": {
+      "10": {
+        "clusters": 23,
+        "sectors": [
+          {
+            "mean_relative": 0.026206652228497235,
+            "n_clusters": 18,
+            "sector": "CNXPSUBANK",
+            "thin": false
+          },
+          {
+            "mean_relative": 0.009985140421752112,
+            "n_clusters": 18,
+            "sector": "CNXENERGY",
+            "thin": false
+          },
+          {
+            "mean_relative": 0.0069006198182305295,
+            "n_clusters": 18,
+            "sector": "CNXFIN",
+            "thin": false
+          },
+          {
+            "mean_relative": 0.002919170867371491,
+            "n_clusters": 18,
+            "sector": "CNXCONSUM",
+            "thin": false
+          },
+          {
+            "mean_relative": 0.002458339667236777,
+            "n_clusters": 19,
+            "sector": "CNXINFRA",
+            "thin": false
+          },
+          {
+            "mean_relative": 0.0021052153584714007,
+            "n_clusters": 18,
+            "sector": "CNXFMCG",
+            "thin": false
+          },
+          {
+            "mean_relative": 0.0004267769579188174,
+            "n_clusters": 23,
+            "sector": "CNXBANK",
+            "thin": false
+          },
+          {
+            "mean_relative": -0.0003532769455794369,
+            "n_clusters": 18,
+            "sector": "CNXMETAL",
+            "thin": false
+          },
+          {
+            "mean_relative": -0.0008984821109266474,
+            "n_clusters": 18,
+            "sector": "CNXAUTO",
+            "thin": false
+          },
+          {
+            "mean_relative": -0.001835357284881051,
+            "n_clusters": 19,
+            "sector": "CNXREALTY",
+            "thin": false
+          },
+          {
+            "mean_relative": -0.004312305486302058,
+            "n_clusters": 18,
+            "sector": "CNXPHARMA",
+            "thin": false
+          },
+          {
+            "mean_relative": -0.010197293447137278,
+            "n_clusters": 23,
+            "sector": "CNXIT",
+            "thin": false
+          }
+        ]
+      },
+      "20": {
+        "clusters": 23,
+        "sectors": [
+          {
+            "mean_relative": 0.02368503713258234,
+            "n_clusters": 18,
+            "sector": "CNXPSUBANK",
+            "thin": false
+          },
+          {
+            "mean_relative": 0.011634163776954599,
+            "n_clusters": 18,
+            "sector": "CNXFIN",
+            "thin": false
+          },
+          {
+            "mean_relative": 0.010331444796058353,
+            "n_clusters": 18,
+            "sector": "CNXFMCG",
+            "thin": false
+          },
+          {
+            "mean_relative": 0.005923227243746918,
+            "n_clusters": 18,
+            "sector": "CNXCONSUM",
+            "thin": false
+          },
+          {
+            "mean_relative": 0.005861279881341158,
+            "n_clusters": 18,
+            "sector": "CNXENERGY",
+            "thin": false
+          },
+          {
+            "mean_relative": 0.004635005325477647,
+            "n_clusters": 19,
+            "sector": "CNXREALTY",
+            "thin": false
+          },
+          {
+            "mean_relative": -0.0002217055213951979,
+            "n_clusters": 19,
+            "sector": "CNXINFRA",
+            "thin": false
+          },
+          {
+            "mean_relative": -0.0007005846563379325,
+            "n_clusters": 18,
+            "sector": "CNXAUTO",
+            "thin": false
+          },
+          {
+            "mean_relative": -0.0036761593037141797,
+            "n_clusters": 23,
+            "sector": "CNXBANK",
+            "thin": false
+          },
+          {
+            "mean_relative": -0.0046393859965804625,
+            "n_clusters": 18,
+            "sector": "CNXPHARMA",
+            "thin": false
+          },
+          {
+            "mean_relative": -0.006523757582043044,
+            "n_clusters": 18,
+            "sector": "CNXMETAL",
+            "thin": false
+          },
+          {
+            "mean_relative": -0.019576014512560004,
+            "n_clusters": 23,
+            "sector": "CNXIT",
+            "thin": false
+          }
+        ]
+      },
+      "5": {
+        "clusters": 23,
+        "sectors": [
+          {
+            "mean_relative": 0.017793701672859756,
+            "n_clusters": 18,
+            "sector": "CNXPSUBANK",
+            "thin": false
+          },
+          {
+            "mean_relative": 0.011063810784625495,
+            "n_clusters": 18,
+            "sector": "CNXENERGY",
+            "thin": false
+          },
+          {
+            "mean_relative": 0.005451443710191824,
+            "n_clusters": 19,
+            "sector": "CNXINFRA",
+            "thin": false
+          },
+          {
+            "mean_relative": 0.001701456967950722,
+            "n_clusters": 18,
+            "sector": "CNXFIN",
+            "thin": false
+          },
+          {
+            "mean_relative": 0.00017936896750417628,
+            "n_clusters": 18,
+            "sector": "CNXMETAL",
+            "thin": false
+          },
+          {
+            "mean_relative": -0.0005010305496829299,
+            "n_clusters": 18,
+            "sector": "CNXCONSUM",
+            "thin": false
+          },
+          {
+            "mean_relative": -0.0006357533897865716,
+            "n_clusters": 18,
+            "sector": "CNXFMCG",
+            "thin": false
+          },
+          {
+            "mean_relative": -0.0010977703103974032,
+            "n_clusters": 18,
+            "sector": "CNXPHARMA",
+            "thin": false
+          },
+          {
+            "mean_relative": -0.0030071784244619744,
+            "n_clusters": 23,
+            "sector": "CNXBANK",
+            "thin": false
+          },
+          {
+            "mean_relative": -0.0035742476657322714,
+            "n_clusters": 18,
+            "sector": "CNXAUTO",
+            "thin": false
+          },
+          {
+            "mean_relative": -0.007258621113950249,
+            "n_clusters": 23,
+            "sector": "CNXIT",
+            "thin": false
+          },
+          {
+            "mean_relative": -0.007851720722398604,
+            "n_clusters": 19,
+            "sector": "CNXREALTY",
+            "thin": false
+          }
+        ]
+      }
+    },
+    "SATURN_INGRESS+SOLAR_ECLIPSE": {
+      "10": {
+        "clusters": 6,
+        "sectors": [
+          {
+            "mean_relative": 0.026141353923600157,
+            "n_clusters": 6,
+            "sector": "CNXPSUBANK",
+            "thin": true
+          },
+          {
+            "mean_relative": 0.013778318455805719,
+            "n_clusters": 6,
+            "sector": "CNXINFRA",
+            "thin": true
+          },
+          {
+            "mean_relative": 0.009856345745124229,
+            "n_clusters": 6,
+            "sector": "CNXBANK",
+            "thin": true
+          },
+          {
+            "mean_relative": 0.006631672845830198,
+            "n_clusters": 6,
+            "sector": "CNXCONSUM",
+            "thin": true
+          },
+          {
+            "mean_relative": 0.006421653816552834,
+            "n_clusters": 6,
+            "sector": "CNXFIN",
+            "thin": true
+          },
+          {
+            "mean_relative": 0.004192547922878413,
+            "n_clusters": 6,
+            "sector": "CNXENERGY",
+            "thin": true
+          },
+          {
+            "mean_relative": 0.003637259672125581,
+            "n_clusters": 6,
+            "sector": "CNXREALTY",
+            "thin": true
+          },
+          {
+            "mean_relative": 0.0016333513221340097,
+            "n_clusters": 6,
+            "sector": "CNXFMCG",
+            "thin": true
+          },
+          {
+            "mean_relative": -0.0007042280299812131,
+            "n_clusters": 6,
+            "sector": "CNXPHARMA",
+            "thin": true
+          },
+          {
+            "mean_relative": -0.005325183365943083,
+            "n_clusters": 6,
+            "sector": "CNXAUTO",
+            "thin": true
+          },
+          {
+            "mean_relative": -0.007273197430294716,
+            "n_clusters": 6,
+            "sector": "CNXMETAL",
+            "thin": true
+          },
+          {
+            "mean_relative": -0.019021053757788026,
+            "n_clusters": 6,
+            "sector": "CNXIT",
+            "thin": true
+          }
+        ]
+      },
+      "20": {
+        "clusters": 6,
+        "sectors": [
+          {
+            "mean_relative": 0.01762751020035395,
+            "n_clusters": 6,
+            "sector": "CNXPSUBANK",
+            "thin": true
+          },
+          {
+            "mean_relative": 0.014346458024195504,
+            "n_clusters": 6,
+            "sector": "CNXREALTY",
+            "thin": true
+          },
+          {
+            "mean_relative": 0.013229843150087647,
+            "n_clusters": 6,
+            "sector": "CNXFMCG",
+            "thin": true
+          },
+          {
+            "mean_relative": 0.012957011770935908,
+            "n_clusters": 6,
+            "sector": "CNXBANK",
+            "thin": true
+          },
+          {
+            "mean_relative": 0.010912556226283435,
+            "n_clusters": 6,
+            "sector": "CNXFIN",
+            "thin": true
+          },
+          {
+            "mean_relative": 0.00500308422331656,
+            "n_clusters": 6,
+            "sector": "CNXPHARMA",
+            "thin": true
+          },
+          {
+            "mean_relative": 0.0023951702523431484,
+            "n_clusters": 6,
+            "sector": "CNXCONSUM",
+            "thin": true
+          },
+          {
+            "mean_relative": 0.0009611872147547255,
+            "n_clusters": 6,
+            "sector": "CNXIT",
+            "thin": true
+          },
+          {
+            "mean_relative": 0.0009321714178011272,
+            "n_clusters": 6,
+            "sector": "CNXINFRA",
+            "thin": true
+          },
+          {
+            "mean_relative": 0.0006826448938952456,
+            "n_clusters": 6,
+            "sector": "CNXENERGY",
+            "thin": true
+          },
+          {
+            "mean_relative": -0.014560505750123761,
+            "n_clusters": 6,
+            "sector": "CNXAUTO",
+            "thin": true
+          },
+          {
+            "mean_relative": -0.030781621640849688,
+            "n_clusters": 6,
+            "sector": "CNXMETAL",
+            "thin": true
+          }
+        ]
+      },
+      "5": {
+        "clusters": 6,
+        "sectors": [
+          {
+            "mean_relative": 0.02662951792653338,
+            "n_clusters": 6,
+            "sector": "CNXPSUBANK",
+            "thin": true
+          },
+          {
+            "mean_relative": 0.009314340163211568,
+            "n_clusters": 6,
+            "sector": "CNXENERGY",
+            "thin": true
+          },
+          {
+            "mean_relative": 0.007536942040680265,
+            "n_clusters": 6,
+            "sector": "CNXBANK",
+            "thin": true
+          },
+          {
+            "mean_relative": 0.005603861441516496,
+            "n_clusters": 6,
+            "sector": "CNXFIN",
+            "thin": true
+          },
+          {
+            "mean_relative": 0.004196611432712975,
+            "n_clusters": 6,
+            "sector": "CNXINFRA",
+            "thin": true
+          },
+          {
+            "mean_relative": 0.0011114068896587541,
+            "n_clusters": 6,
+            "sector": "CNXMETAL",
+            "thin": true
+          },
+          {
+            "mean_relative": 0.0004128214778770419,
+            "n_clusters": 6,
+            "sector": "CNXCONSUM",
+            "thin": true
+          },
+          {
+            "mean_relative": -0.0007328603656662954,
+            "n_clusters": 6,
+            "sector": "CNXFMCG",
+            "thin": true
+          },
+          {
+            "mean_relative": -0.0015356611011027403,
+            "n_clusters": 6,
+            "sector": "CNXAUTO",
+            "thin": true
+          },
+          {
+            "mean_relative": -0.0023924470355850547,
+            "n_clusters": 6,
+            "sector": "CNXPHARMA",
+            "thin": true
+          },
+          {
+            "mean_relative": -0.009647262633229051,
+            "n_clusters": 6,
+            "sector": "CNXREALTY",
+            "thin": true
+          },
+          {
+            "mean_relative": -0.012793055067575313,
+            "n_clusters": 6,
+            "sector": "CNXIT",
+            "thin": true
+          }
+        ]
+      }
+    }
+  },
   "confirmatory": [],
   "coverage": {
     "CNXAUTO": {
@@ -4233,7 +6565,7 @@
   "n_permutations": 1000,
   "oos_sessions": 1254,
   "preregistration": "docs/research/sector_rotation_preregistration_2026-10-29.md",
-  "preregistration_commit": "1d73afb",
+  "preregistration_commit": "e4d079c",
   "rotation": {
     "JUPITER_INGRESS": {
       "10": {

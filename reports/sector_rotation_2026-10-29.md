@@ -1,6 +1,6 @@
 # Sector rotation around planetary events (phase 1)
 
-Pre-registration: `docs/research/sector_rotation_preregistration_2026-10-29.md` (commit 1d73afb)
+Pre-registration: `docs/research/sector_rotation_preregistration_2026-10-29.md` (commit e4d079c)
 
 **Confirmatory outcome: empty list. No pre-registered edge.** Every table below is descriptive, not graded.
 
