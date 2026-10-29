@@ -14,6 +14,8 @@ DELETED = [
 # Kept on purpose although no page calls them: infrastructure, the TradingView
 # integration, and the prediction engine's operational endpoints.
 API_ONLY = {
+    # Sector rotation (SBC_Tool-5fy): the dashboard page is Task 9. Remove this entry when it lands.
+    "/api/sector_rotation",
     "/healthz", "/webhook/sbc", "/api/sbc/latest",
     "/api/engine/aspect_windows", "/api/engine/fingerprint", "/api/engine/fingerprint/status",
     "/api/engine/forecast/ledger", "/api/engine/intraday_forecast/freeze",
@@ -23,6 +25,12 @@ API_ONLY = {
     # the API stays for the freshness tooling and tests.
     "/api/engine/kota/daily", "/api/engine/kota/weekly", "/api/engine/kota/monthly",
     "/api/engine/intraday_forecast/score", "/api/engine/market/freshness", "/api/engine/version",
+    # Economic / sentiment data infrastructure: refresh + fetch endpoints
+    # for the FRED/RBI and News/VIX caches (sbc.economic_data,
+    # sbc.sentiment_data). Panels are a backlog idea; keys are optional
+    # and the refreshes degrade per-source.
+    "/api/economic/indicators", "/api/economic/refresh",
+    "/api/sentiment/daily", "/api/sentiment/refresh",
 }
 
 
