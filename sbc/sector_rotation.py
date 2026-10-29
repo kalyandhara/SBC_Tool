@@ -266,6 +266,21 @@ def upcoming_events(events: list[dict], today: str, days: int) -> list[dict]:
     return sorted((e for e in events if today <= e["date"] <= end), key=lambda e: (e["date"], e["event"]))
 
 
+def co_clusters(anchored: list[dict], clusters: list[list[int]]) -> dict[tuple[str, str], list[list[int]]]:
+    """Clusters that hold two or more distinct event kinds, keyed by each sorted pair of kinds.
+
+    Uses the registered clustering (CLUSTER_GAP), so two events "combine" only when they are
+    already one cluster. Same-kind repeats are not a combination.
+    """
+    out: dict[tuple[str, str], list[list[int]]] = {}
+    for members in clusters:
+        kinds = sorted({anchored[a]["event"] for a in members})
+        for i, first in enumerate(kinds):
+            for second in kinds[i + 1:]:
+                out.setdefault((first, second), []).append(members)
+    return out
+
+
 HEAT_DIRECTION = {"dark_green": "outperform", "light_green": "outperform", "yellow": "neutral",
                   "orange": "underperform", "dark_red": "underperform"}
 
