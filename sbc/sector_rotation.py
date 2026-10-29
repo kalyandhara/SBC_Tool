@@ -1,0 +1,70 @@
+"""Event anchors and clusters for the sector rotation study (phase 1).
+
+Core events, each a dict {"date", "event"} with IST dates from the existing generators:
+Mercury retrograde starts (sbc.stations), solar and lunar eclipses and Jupiter/Saturn sign
+ingresses (sbc.transit_almanac). Pure functions only; grading lives elsewhere.
+"""
+
+from __future__ import annotations
+
+import bisect
+import datetime as dt
+
+from sbc import stations
+from sbc import transit_almanac as ta
+
+CLUSTER_GAP = 20  # sessions; events closer than this merge into one cluster
+SLOW_PLANETS = ("Jupiter", "Saturn")
+ECLIPSE_EVENT = {"Solar": "SOLAR_ECLIPSE", "Lunar": "LUNAR_ECLIPSE"}
+
+
+def anchor_session(sessions: list[str], day: str) -> int | None:
+    """Index of the first session on or after `day`, or None if past the last session."""
+    i = bisect.bisect_left(sessions, day)
+    return i if i < len(sessions) else None
+
+
+def cluster(anchors: list[int], gap: int = CLUSTER_GAP) -> list[list[int]]:
+    """Group sorted anchor indices so that consecutive members are < gap sessions apart."""
+    out: list[list[int]] = []
+    for a in sorted(anchors):
+        if out and a - out[-1][-1] < gap:
+            out[-1].append(a)
+        else:
+            out.append([a])
+    return out
+
+
+def mercury_events(rows: list[dict]) -> list[dict]:
+    """One MERCURY_RETROGRADE_START per retrograde window.
+
+    rows: station rows as sbc.stations.by_date returns them, any planets.
+    window_end is the date of the next Mercury direct station, or None if none is in rows.
+    """
+    mercury = sorted((r for r in rows if r["planet"] == "Mercury"), key=lambda r: r["date"])
+    out = []
+    for i, r in enumerate(mercury):
+        if r["direction"] != "retrograde":
+            continue
+        end = next((n["date"] for n in mercury[i + 1:] if n["direction"] == "direct"), None)
+        out.append({"date": r["date"], "event": "MERCURY_RETROGRADE_START", "window_end": end})
+    return out
+
+
+def core_events(first_year: int, last_year: int) -> list[dict]:
+    """Core four events from first_year through last_year, sorted by date.
+
+    Mercury windows that start in range are kept even when they end after last_year,
+    because the station lookup runs one extra year ahead to find each window's end.
+    """
+    stat_rows = stations.by_date(dt.date(first_year, 1, 1), dt.date(last_year + 1, 12, 31), ("Mercury",))
+    rows = [r for day in stat_rows.values() for r in day]
+    out = [e for e in mercury_events(rows) if int(e["date"][:4]) <= last_year]
+    for year in range(first_year, last_year + 1):
+        for body in ta.build(year, "sidereal")["bodies"]:
+            for e in body["events"]:
+                if e["type"] == "eclipse":
+                    out.append({"date": e["date"], "event": ECLIPSE_EVENT[e["kind"]]})
+                elif e["type"] == "ingress" and e["body"] in SLOW_PLANETS:
+                    out.append({"date": e["date"], "event": f"{e['body'].upper()}_INGRESS"})
+    return sorted(out, key=lambda e: (e["date"], e["event"]))
