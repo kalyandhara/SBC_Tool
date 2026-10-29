@@ -46,3 +46,28 @@ def test_core_events_2024_has_the_four_kinds():
     assert sum(e["event"] == "SOLAR_ECLIPSE" for e in events) == 2
     assert sum(e["event"] == "LUNAR_ECLIPSE" for e in events) == 2
     assert "NODES_INGRESS" not in kinds  # node ingresses are not a core event
+
+
+def test_window_return_known_answer():
+    c = np.array([100.0, 101.0, 102.0, 110.0])
+    assert sr.window_return(c, anchor=0, h=3) == pytest.approx(0.10)
+
+
+def test_window_return_out_of_range_is_nan():
+    c = np.array([100.0, 101.0])
+    assert np.isnan(sr.window_return(c, anchor=1, h=5))
+
+
+def test_window_return_missing_bar_is_nan():
+    c = np.array([100.0, np.nan, 102.0])
+    assert np.isnan(sr.window_return(c, anchor=0, h=1))  # end bar missing
+    assert sr.window_return(c, anchor=0, h=2) == pytest.approx(0.02)  # end bar present
+
+
+def test_rank_excludes_nan_and_orders_descending():
+    r = {"IT": 0.062, "PHARMA": 0.054, "AUTO": float("nan"), "BANK": 0.035}
+    assert [s for s, _ in sr.rank_sectors(r)] == ["IT", "PHARMA", "BANK"]
+
+
+def test_relative_strength_is_difference():
+    assert sr.relative_strength(0.072, 0.023) == pytest.approx(0.049)

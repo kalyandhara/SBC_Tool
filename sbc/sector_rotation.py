@@ -10,6 +10,8 @@ from __future__ import annotations
 import bisect
 import datetime as dt
 
+import numpy as np
+
 from sbc import stations
 from sbc import transit_almanac as ta
 
@@ -68,3 +70,25 @@ def core_events(first_year: int, last_year: int) -> list[dict]:
                 elif e["type"] == "ingress" and e["body"] in SLOW_PLANETS:
                     out.append({"date": e["date"], "event": f"{e['body'].upper()}_INGRESS"})
     return sorted(out, key=lambda e: (e["date"], e["event"]))
+
+
+def window_return(closes: np.ndarray, anchor: int, h: int) -> float:
+    """close[anchor + h] / close[anchor] - 1; NaN if out of range or either bar is missing."""
+    end = anchor + h
+    if anchor < 0 or end >= len(closes):
+        return float("nan")
+    c0, c1 = closes[anchor], closes[end]
+    if not (np.isfinite(c0) and np.isfinite(c1)) or c0 <= 0:
+        return float("nan")
+    return float(c1 / c0 - 1.0)
+
+
+def rank_sectors(returns: dict[str, float]) -> list[tuple[str, float]]:
+    """Sectors with a finite return, highest first. NaN sectors are dropped; the caller counts them."""
+    valid = [(s, r) for s, r in returns.items() if np.isfinite(r)]
+    return sorted(valid, key=lambda kv: kv[1], reverse=True)
+
+
+def relative_strength(sector_ret: float, nifty_ret: float) -> float:
+    """Sector return minus NIFTY return over the same window."""
+    return sector_ret - nifty_ret
