@@ -61,6 +61,20 @@ RESEARCH_SYMBOLS = {
     "MCLEODRUSS": ("MCLEODRUSS.NS", "2000-01-01"),
 }
 
+# NSE sector indices for the sector-rotation study (docs/research/sector_rotation_preregistration_2026-10-29.md).
+# Keys are ours; values are yfinance tickers. Ticker check 2026-10-29 (row counts and dates only):
+# CNXMEDIA, CNXHEALTH and CNXOILGAS returned no rows under any ticker tried. They stay listed as
+# unavailable until the sector set is decided (see the pre-registration addendum).
+SECTOR_SYMBOLS = {
+    "CNXBANK": "^NSEBANK", "CNXFIN": "NIFTY_FIN_SERVICE.NS", "CNXIT": "^CNXIT", "CNXPHARMA": "^CNXPHARMA",
+    "CNXAUTO": "^CNXAUTO", "CNXFMCG": "^CNXFMCG", "CNXMETAL": "^CNXMETAL",
+    "CNXENERGY": "^CNXENERGY", "CNXREALTY": "^CNXREALTY",
+    "CNXPSUBANK": "^CNXPSUBANK", "CNXINFRA": "^CNXINFRA", "CNXCONSUM": "^CNXCONSUM",
+    # unavailable on yfinance at check time:
+    "CNXMEDIA": "^CNXMEDIA", "CNXHEALTH": "^CNXHEALTH", "CNXOILGAS": "^CNXOILGAS",
+}
+RESEARCH_SYMBOLS.update({k: (t, "2005-01-01") for k, t in SECTOR_SYMBOLS.items()})
+
 NSE_FIIDII_URL = "https://www.nseindia.com/api/fiidiiTradeReact"
 _NSE_HEADERS = {
     "User-Agent": ("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
