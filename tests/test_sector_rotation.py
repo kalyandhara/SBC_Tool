@@ -1,5 +1,7 @@
 """Sector rotation: event anchors, clusters, window returns, ranks, grading and labels."""
 
+import pathlib
+
 import numpy as np
 import pytest
 
@@ -71,3 +73,66 @@ def test_rank_excludes_nan_and_orders_descending():
 
 def test_relative_strength_is_difference():
     assert sr.relative_strength(0.072, 0.023) == pytest.approx(0.049)
+
+
+def _synthetic(n=1000, effect=0.02, in_effect=None, seed=0):
+    """Random 20% signal days; fwd carries `effect` (OOS, last half) and `in_effect` (in-era).
+
+    The signal is random, not periodic: a periodic signal lines up with itself under circular
+    shifts that are multiples of its period, which inflates the null and hides the effect.
+    """
+    rng = np.random.default_rng(seed)
+    days = np.arange(n)
+    signal = (rng.random(n) < 0.2).astype(float)
+    in_effect = effect if in_effect is None else in_effect
+    shift = np.where(days >= n // 2, effect, in_effect)
+    fwd = rng.normal(0, 0.01, n) + shift * signal
+    clusters = days // 50  # 20 clusters of 50 sessions; OOS (last half) = 10 clusters
+    era = days >= n // 2
+    controls = rng.normal(size=(n, 2))
+    return signal, fwd, clusters, era, controls
+
+
+HYP = [{"id": "T", "event": "X", "sector": "IT", "h": 5, "direction": 1}]
+
+
+def test_pass_when_effect_is_consistent_in_both_eras():
+    signal, fwd, clusters, era, controls = _synthetic()
+    res = sr.grade_confirmatory(HYP, {"T": signal}, {5: fwd}, era, clusters, controls)
+    assert res[0]["status"] == "ok" and res[0]["passed"] is True
+
+
+def test_no_pass_when_in_era_direction_opposes_oos():
+    signal, fwd, clusters, era, controls = _synthetic(in_effect=-0.02)
+    res = sr.grade_confirmatory(HYP, {"T": signal}, {5: fwd}, era, clusters, controls)
+    assert res[0]["passed"] is False
+
+
+def test_insufficient_below_eight_oos_clusters():
+    signal, fwd, clusters, era, controls = _synthetic()
+    clusters = np.arange(len(fwd)) // 100  # OOS covers 5 clusters
+    res = sr.grade_confirmatory(HYP, {"T": signal}, {5: fwd}, era, clusters, controls)
+    assert res[0]["status"] == "insufficient" and res[0]["passed"] is False
+
+
+def test_confirmatory_list_matches_preregistration():
+    root = pathlib.Path(__file__).resolve().parents[1]
+    doc = (root / "docs/research/sector_rotation_preregistration_2026-10-29.md").read_text(encoding="utf-8")
+    assert "Confirmatory list: empty" in doc
+    assert sr.CONFIRMATORY == []
+
+
+def test_descriptive_summary_has_no_pass_fields():
+    rows = [{"sector": "IT", "event": "SOLAR_ECLIPSE", "h": 5, "ret": 0.01, "nifty": 0.0,
+             "cluster": 0, "rank": 1}]
+    out = sr.descriptive_summary(rows)
+    assert not ({"q", "p", "passed"} & set(out))
+    assert out["n_raw"] == 1 and out["n_clusters"] == 1
+
+
+def test_insufficient_below_minimum_signal_days():
+    signal, fwd, clusters, era, controls = _synthetic()
+    signal = np.zeros_like(signal)
+    signal[:10] = 1.0  # 10 signal days, below MIN_SIGNAL_DAYS
+    res = sr.grade_confirmatory(HYP, {"T": signal}, {5: fwd}, era, clusters, controls)
+    assert res[0]["status"] == "insufficient"
