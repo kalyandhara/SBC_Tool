@@ -59,3 +59,21 @@ def test_markdown_states_outcome_and_limits():
 def test_cli_refuses_until_sector_set_is_decided():
     assert rep.sector_set_decided("## Addendum 1: ticker check\nno decision") is False
     assert rep.sector_set_decided("Sector set decision: 12 sectors, see Addendum 2") is True
+
+
+def test_event_summary_has_the_five_radar_dimensions_and_no_breadth():
+    out = rep.build(series=_series())
+    for ev in out["event_summary"].values():
+        for summary in ev.values():
+            assert set(summary) == {"return", "volatility", "win_rate", "sharpe", "participation"}
+
+
+def test_heat_buckets_come_from_the_fixed_set():
+    out = rep.build(series=_series())
+    buckets = {r["heat"] for ev in out["descriptive"].values() for rows in ev.values() for r in rows}
+    assert buckets <= set(sr.HEAT_BUCKETS) | {None}
+
+
+def test_no_breadth_key_anywhere_in_json():
+    import json
+    assert "breadth" not in json.dumps(rep.build(series=_series())).replace('"breadth": "not computed"', "")

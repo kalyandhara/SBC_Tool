@@ -183,3 +183,56 @@ def rotation_pattern(top5: list[str]) -> tuple[str, list[str]]:
 def forecast_confidence(row: dict) -> str:
     """High only on a confirmatory pass; otherwise No call. No Medium level (pre-registration)."""
     return "High" if row.get("passed") else "No call"
+
+
+def daily_returns(closes: np.ndarray, anchor: int, h: int) -> np.ndarray:
+    """h daily returns for sessions anchor+1 .. anchor+h; NaN where a bar is out of range or missing."""
+    out = np.full(h, np.nan)
+    for i in range(h):
+        t = anchor + 1 + i
+        if 0 <= t < len(closes):
+            out[i] = window_return(closes, t - 1, 1)
+    return out
+
+
+def volatility(rets: np.ndarray) -> float:
+    """Standard deviation of the finite daily returns; NaN with fewer than two."""
+    x = np.asarray(rets, dtype=float)
+    x = x[np.isfinite(x)]
+    return float(np.std(x, ddof=1)) if len(x) >= 2 else float("nan")
+
+
+def sharpe(excess: np.ndarray) -> float:
+    """Mean over std of daily excess returns, not annualised; NaN with fewer than two or zero std."""
+    x = np.asarray(excess, dtype=float)
+    x = x[np.isfinite(x)]
+    if len(x) < 2:
+        return float("nan")
+    sd = np.std(x, ddof=1)
+    return float(np.mean(x) / sd) if sd > 0 else float("nan")
+
+
+def participation(returns: dict[str, float]) -> float | None:
+    """Share of sectors with a finite return that is positive; None if no sector is available."""
+    valid = [r for r in returns.values() if np.isfinite(r)]
+    if not valid:
+        return None
+    return sum(1 for r in valid if r > 0) / len(valid)
+
+
+HEAT_BUCKETS = ("dark_green", "light_green", "yellow", "orange", "dark_red")
+
+
+def heat_bucket(z: float) -> str | None:
+    """Colour bucket for a z-score of relative strength. Presentational only, not graded."""
+    if not np.isfinite(z):
+        return None
+    if z >= 1.0:
+        return "dark_green"
+    if z >= 0.25:
+        return "light_green"
+    if z > -0.25:
+        return "yellow"
+    if z > -1.0:
+        return "orange"
+    return "dark_red"

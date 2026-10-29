@@ -24,7 +24,7 @@ def test_every_referenced_script_exists():
         assert (ROOT / "static" / src).is_file(), src
 
 
-@pytest.mark.parametrize("name", ["birth-city", "profiles-habits", "trading-signals", "rahu-ketu-trap"])
+@pytest.mark.parametrize("name", ["birth-city", "profiles-habits", "trading-signals", "rahu-ketu-trap", "sector-rotation"])
 def test_extracted_scripts_parse(name):
     try:
         out = subprocess.run(["node", "--check", str(ROOT / "static" / "js" / f"{name}.js")],

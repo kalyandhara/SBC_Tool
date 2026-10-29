@@ -14,8 +14,6 @@ DELETED = [
 # Kept on purpose although no page calls them: infrastructure, the TradingView
 # integration, and the prediction engine's operational endpoints.
 API_ONLY = {
-    # Sector rotation (SBC_Tool-5fy): the dashboard page is Task 9. Remove this entry when it lands.
-    "/api/sector_rotation",
     "/healthz", "/webhook/sbc", "/api/sbc/latest",
     "/api/engine/aspect_windows", "/api/engine/fingerprint", "/api/engine/fingerprint/status",
     "/api/engine/forecast/ledger", "/api/engine/intraday_forecast/freeze",

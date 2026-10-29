@@ -165,3 +165,37 @@ def test_confidence_high_only_on_confirmatory_pass():
 def test_no_medium_level_anywhere():
     outputs = {sr.forecast_confidence(r) for r in ({"passed": True}, {"passed": False}, {}, {"passed": None})}
     assert outputs <= {"High", "No call"}
+
+
+def test_daily_returns_within_window():
+    c = np.array([100.0, 110.0, 99.0, 99.0])
+    r = sr.daily_returns(c, anchor=0, h=3)
+    assert r[0] == pytest.approx(0.10) and r[1] == pytest.approx(-0.1) and r[2] == pytest.approx(0.0)
+
+
+def test_daily_returns_nan_past_end_and_on_missing():
+    c = np.array([100.0, np.nan, 102.0])
+    r = sr.daily_returns(c, anchor=0, h=3)
+    assert np.isnan(r[0]) and np.isnan(r[1]) and np.isnan(r[2])
+
+
+def test_volatility_and_sharpe_need_two_finite_values():
+    assert np.isnan(sr.volatility(np.array([0.01, np.nan])))
+    assert np.isnan(sr.sharpe(np.array([0.01])))
+    assert np.isnan(sr.sharpe(np.array([0.02, 0.02, 0.02])))  # zero std
+
+
+def test_sharpe_is_mean_over_std_not_annualised():
+    x = np.array([0.01, 0.03])
+    assert sr.sharpe(x) == pytest.approx(0.02 / np.std(x, ddof=1))
+
+
+def test_participation_is_share_of_available_positive_returns():
+    assert sr.participation({"A": 0.01, "B": -0.02, "C": float("nan"), "D": 0.0}) == pytest.approx(1 / 3)
+    assert sr.participation({"A": float("nan")}) is None
+
+
+def test_heat_bucket_five_levels_from_z():
+    assert [sr.heat_bucket(z) for z in (1.2, 0.5, 0.0, -0.5, -1.2)] == [
+        "dark_green", "light_green", "yellow", "orange", "dark_red"]
+    assert sr.heat_bucket(float("nan")) is None

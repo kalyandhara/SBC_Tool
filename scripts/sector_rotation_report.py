@@ -13,7 +13,7 @@ import json
 import os
 import subprocess
 import sys
-from collections import Counter
+from collections import Counter, defaultdict
 
 import numpy as np
 
@@ -42,6 +42,12 @@ def _aligned(bars: list[dict], sessions: list[str]) -> np.ndarray:
     """Close on each NIFTY session; NaN where the series has no positive close."""
     by_day = {b["date"]: b["close"] for b in bars if b["close"] and b["close"] > 0}
     return np.array([by_day.get(d, np.nan) for d in sessions], dtype=float)
+
+
+def _mean(values: list) -> float | None:
+    """Mean of the finite values; None when there are none."""
+    x = [v for v in values if v is not None and np.isfinite(v)]
+    return float(np.mean(x)) if x else None
 
 
 def _price_hash(series: dict[str, list[dict]]) -> str:
@@ -88,10 +94,21 @@ def build(n_perm: int = st.N_PERMUTATIONS, seed: int = 0, series: dict | None = 
         cluster_id[a] = cid
 
     rows, occurrence = [], []
+    daily_sector = defaultdict(list)  # (event, h, sector) -> daily returns inside each window
+    daily_excess = defaultdict(list)  # (event, h, sector) -> daily sector minus NIFTY
+    particip = defaultdict(list)      # (event, h) -> per-occurrence share of sectors up
     for e in anchored:
         for h in HORIZONS:
             nret = sr.window_return(nifty, e["anchor"], h)
+            nifty_daily = sr.daily_returns(nifty, e["anchor"], h)
             rets = {k: sr.window_return(sector_close[k], e["anchor"], h) for k in SECTOR_KEYS}
+            share = sr.participation(rets)
+            if share is not None:
+                particip[(e["event"], h)].append(share)
+            for k in SECTOR_KEYS:
+                sec_daily = sr.daily_returns(sector_close[k], e["anchor"], h)
+                daily_sector[(e["event"], h, k)].append(sec_daily)
+                daily_excess[(e["event"], h, k)].append(sec_daily - nifty_daily)
             ranked = sr.rank_sectors(rets)
             top5 = [s for s, _ in ranked[:5]]
             label, _ = sr.rotation_pattern(top5) if len(top5) == 5 else ("insufficient", top5)
@@ -128,14 +145,40 @@ def build(n_perm: int = st.N_PERMUTATIONS, seed: int = 0, series: dict | None = 
                     continue
                 summ = sr.descriptive_summary(ks)
                 rel = [r["ret"] - r["nifty"] for r in ks]
+                key = (name, h, k)
                 per_sector.append({"sector": k, "n_raw": summ["n_raw"],
                                    "n_clusters": summ["n_clusters"],
                                    "mean_relative": float(np.mean(rel)),
+                                   "volatility": sr.volatility(np.concatenate(daily_sector[key])),
+                                   "sharpe": sr.sharpe(np.concatenate(daily_excess[key])),
                                    "top5_rate": summ["top5_rate"], "beat_rate": summ["beat_rate"]})
             descriptive[name][str(h)] = sorted(per_sector, key=lambda r: r["mean_relative"], reverse=True)
             occ = [o for o in occurrence if o["event"] == name and o["h"] == h]
             rotation[name][str(h)] = {"labels": dict(Counter(o["label"] for o in occ)), "occurrences": len(occ)}
             forecast[name][str(h)] = sr.forecast_confidence({"passed": False})
+
+    # Event-level radar values: each axis averages the event's sectors (descriptive, not graded).
+    event_summary = {}
+    for name in events_out:
+        event_summary[name] = {}
+        for h in HORIZONS:
+            ps = descriptive[name][str(h)]
+            event_summary[name][str(h)] = {
+                "return": _mean([r["mean_relative"] for r in ps]),
+                "volatility": _mean([r["volatility"] for r in ps]),
+                "win_rate": _mean([r["beat_rate"] for r in ps]),
+                "sharpe": _mean([r["sharpe"] for r in ps]),
+                "participation": _mean(particip[(name, h)]),
+            }
+
+    # Heatmap colour: z-score of mean relative strength across every event x sector cell at that horizon.
+    for h in HORIZONS:
+        cells = [r for name in events_out for r in descriptive[name][str(h)]]
+        vals = np.array([r["mean_relative"] for r in cells], dtype=float)
+        mu, sd = np.nanmean(vals), np.nanstd(vals, ddof=1) if len(vals) > 1 else float("nan")
+        for r in cells:
+            z = (r["mean_relative"] - mu) / sd if sd and np.isfinite(sd) else float("nan")
+            r["heat"] = sr.heat_bucket(z)
 
     coverage = {}
     for k in SECTOR_KEYS:
@@ -159,6 +202,7 @@ def build(n_perm: int = st.N_PERMUTATIONS, seed: int = 0, series: dict | None = 
         "events": events_out,
         "coverage": coverage,
         "descriptive": descriptive,
+        "event_summary": event_summary,
         "rotation": rotation,
         "forecast": forecast,
         "confirmatory": confirmatory,

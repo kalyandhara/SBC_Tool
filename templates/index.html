@@ -83,6 +83,9 @@
       <button class="nav-tab" data-tab="tab-screener" role="tab" aria-selected="false" aria-controls="tab-screener">
         <span class="tab-icon" aria-hidden="true">🚀</span> Momentum Screener
       </button>
+      <button class="nav-tab" data-tab="tab-rotation" role="tab" aria-selected="false" aria-controls="tab-rotation">
+        <span class="tab-icon" aria-hidden="true">🔭</span> Sector Rotation
+      </button>
       <button class="nav-tab" data-tab="tab-bullion" role="tab" aria-selected="false" aria-controls="tab-bullion">
         <span class="tab-icon" aria-hidden="true">🥇</span> Bullion Week
       </button>
@@ -1562,6 +1565,11 @@
 
     <!-- Global Disclaimer -->
     <p class="disclaimer">For study and research. Not financial advice. Financial markets involve substantial risk of loss. Trade on your own analysis.</p>
+    <div id="tab-rotation" class="tab-pane" role="tabpanel">
+      <div id="sr-status" class="nifty-chart-status" role="status" aria-live="polite"></div>
+      <div id="sr-root" class="sr-root"></div>
+    </div>
+
     <div id="tab-bullion" class="tab-pane" role="tabpanel">
       <section class="panel analog-lab">
         <div class="panel-head">
@@ -1613,6 +1621,7 @@
   <script src="/static/js/moon-signal-check.js?v=1"></script>
   <script src="/static/js/rahu-ketu-trap.js?v=3"></script>
   <script src="/static/js/transit-almanac.js?v=3"></script>
+  <script src="/static/js/sector-rotation.js?v=1"></script>
   <script src="/static/js/bullion-week.js?v=4"></script>
   <footer class="site-footer">
     <div class="wrap">
