@@ -90,3 +90,33 @@ The new endpoint is read-only over the newest precomputed JSON. Its query parame
 ## Commit
 
 This file's commit hash is the registration record. The first report run must come after it.
+
+## Addendum 1: ticker check (2026-10-29)
+
+Logged before any analysis uses the data. The check read row counts and first and last dates only (yfinance, `end` = 2026-10-29). No prices, returns or statistics were printed or summarised.
+
+| Sector | Ticker | Rows | First | Last |
+|---|---|---|---|---|
+| BANK | ^NSEBANK | 4704 | 2007-09-17 | 2026-10-28 |
+| FIN SERVICE | NIFTY_FIN_SERVICE.NS | 3711 | 2011-09-07 | 2026-10-28 |
+| IT | ^CNXIT | 4704 | 2007-09-17 | 2026-10-28 |
+| PHARMA | ^CNXPHARMA | 3876 | 2011-01-31 | 2026-10-28 |
+| AUTO | ^CNXAUTO | 3750 | 2011-07-12 | 2026-10-28 |
+| FMCG | ^CNXFMCG | 3861 | 2011-01-31 | 2026-10-28 |
+| METAL | ^CNXMETAL | 3750 | 2011-07-12 | 2026-10-28 |
+| ENERGY | ^CNXENERGY | 3862 | 2011-01-31 | 2026-10-28 |
+| REALTY | ^CNXREALTY | 3997 | 2010-07-19 | 2026-10-28 |
+| PSU BANK | ^CNXPSUBANK | 3862 | 2011-01-31 | 2026-10-28 |
+| INFRASTRUCTURE | ^CNXINFRA | 3997 | 2010-07-19 | 2026-10-28 |
+| CONSUMER DURABLES | ^CNXCONSUM | 3748 | 2011-07-12 | 2026-10-28 |
+| MEDIA | ^CNXMEDIA | 0 | - | - |
+| HEALTHCARE | ^CNXHEALTH | 0 | - | - |
+| OIL & GAS | ^CNXOILGAS | 0 | - | - |
+
+Alternates tried for the three zero-row sectors (counts and dates only), all returning 0 rows: `NIFTY_MEDIA.NS`, `^CNXMEDIA.NS`, `^NIFTYHEALTH`, `NIFTY_HEALTHCARE.NS`, `^CNXHEALTHCARE`, `NIFTY_OIL_AND_GAS.NS`, `^CNXOILGAS.NS`, `^NIFTYOILGAS`.
+
+Finding: `^CNXFIN` returned no rows. `NIFTY_FIN_SERVICE.NS` is used instead. (`^NIFTYFIN` and `^CNXFINANCE` also returned no rows.)
+
+Consequence for the registration: **the sector set is 12 available indices, not 15.** MEDIA, HEALTHCARE and OIL & GAS have no usable history from yfinance. The Fixed inputs above list 15 sectors and are not changed by this addendum. Choosing how to handle the three (drop them and register a 12-sector set, or find another source) is a change to the registration. It must be decided and recorded in a further addendum before any report run. No report run is made until then.
+
+Also recorded: sector series start between 2007 and 2011. Several sectors have roughly 3,700 to 3,900 sessions, so the out-of-sample era holds fewer sessions per sector than the full history.
