@@ -26,8 +26,6 @@ SKIP = {
     "/api/backtest/moon": "downloads market data (yfinance)",
     "/api/backtest/walkforward": "downloads market data (yfinance)",
     "/api/price": "downloads market data (yfinance)",
-    "/api/research/walk-forward": "downloads market data (yfinance)",
-    "/api/research/event-study": "downloads market data (yfinance)",
 }
 
 
@@ -79,8 +77,8 @@ def test_write_routes_reject_remote_callers_without_token(app):
 
 def test_write_token_header_only(app, monkeypatch):
     """With SBC_API_TOKEN set: header passes, missing or query-string token fails."""
-    import app as app_module
-    monkeypatch.setattr(app_module, "_API_TOKEN", "s3cret")
+    from sbc import app_factory
+    monkeypatch.setattr(app_factory, "_API_TOKEN", "s3cret")
     c = app.test_client()
     remote = {"REMOTE_ADDR": "192.168.1.50"}
     assert c.post("/webhook/sbc", json={"x": 1}, environ_base=remote).status_code == 401

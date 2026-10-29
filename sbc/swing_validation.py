@@ -79,7 +79,15 @@ CONTROL = {"name": "reversal_every_day", "kind": "directional", "source": "contr
 
 def part_a(dates: list[str], closes: np.ndarray, n_perm: int) -> dict:
     active = session_windows(dates)
-    entries = entry_entries(dates, closes, active)
+    return grade_a(dates, closes, entry_entries(dates, closes, active), active, n_perm)
+
+
+def grade_a(dates: list[str], closes: np.ndarray, entries: list[dict], active: list[list[dict]],
+            n_perm: int) -> dict:
+    """Grade entry-timing signals and the no-astro control; `active` is the windows per session.
+
+    Shared with sbc.natal_validation, which supplies its own entries and windows.
+    """
     results = rv.grade(dates, closes, entries, HORIZONS, n_perm)
     # The control is graded on its own so it isn't part of the astro BH family.
     control = rv.grade(dates, closes, [{**CONTROL, "signal": reversal(closes)}], HORIZONS, n_perm)
@@ -122,8 +130,11 @@ def _stats(trades: list[dict], drift: float) -> dict:
             "confluence_share": float(np.mean([t["exit_reason"] == "confluence" for t in trades]))}
 
 
-def part_b(bars: sm.Bars, n_sets: int = RANDOM_SETS, seed: int = 0) -> dict:
-    windows = ha.scan(SCAN_START, bars.dates[-1])
+def part_b(bars: sm.Bars, n_sets: int = RANDOM_SETS, seed: int = 0,
+           windows: list[dict] | None = None) -> dict:
+    """The full model on `windows` (default: the heliocentric Earth-planet windows)."""
+    if windows is None:
+        windows = ha.scan(SCAN_START, bars.dates[-1])
     first = bars.session_on_or_after(TRADE_START) or 0
     drift = float(np.mean(bars.close[first + 1:] / bars.close[first:-1] - 1))
     out: dict = {"windows": len(windows), "drift_per_bar": drift, "models": {}}

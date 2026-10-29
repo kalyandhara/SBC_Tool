@@ -62,7 +62,7 @@ TITHI_EFFECTS = {
     12: {"name": "Dwadashi", "bias": "MILD_BULLISH", "note": "Wealth"},
     13: {"name": "Trayodashi", "bias": "BULLISH", "note": "Gains"},
     14: {"name": "Chaturdashi", "bias": "VOLATILE", "note": "Intensity"},
-    15: {"name": "Purnima", "bias": "PEAK_BULLISH", "note": "Fullness, culmination"},
+    15: {"name": "Purnima", "bias": "PEAK_BEARISH", "note": "Emotional peak, realization (BEARISH per academic study)"},
 
     # Krishna Paksha (16-30)
     16: {"name": "Pratipada", "bias": "MILD_BEARISH", "note": "Decline begins"},
@@ -79,7 +79,7 @@ TITHI_EFFECTS = {
     27: {"name": "Dwadashi", "bias": "MILD_BULLISH", "note": "Wealth"},
     28: {"name": "Trayodashi", "bias": "MILD_BULLISH", "note": "Gains"},
     29: {"name": "Chaturdashi", "bias": "VOLATILE", "note": "Intensity"},
-    30: {"name": "Amavasya", "bias": "PEAK_BEARISH", "note": "Void, reset"},
+    30: {"name": "Amavasya", "bias": "PEAK_BULLISH", "note": "New beginnings, optimism (BULLISH per academic study)"},
 }
 
 # =============================================================================
@@ -438,9 +438,11 @@ def generate_lunar_sector_forecast(date_str, planets, tithi, sun, moon, current_
     # Key dates
     key_dates = []
     if lunar["is_purnima"]:
-        key_dates.append({"date": "Today", "event": "Purnima (Full Moon)", "impact": "HIGH", "note": "Peak liquidity, culmination"})
+        key_dates.append({"date": "Today", "event": "Purnima (Full Moon)", "impact": "HIGH", 
+                         "note": "Emotional peak, realization (BEARISH per University of Michigan study)"})
     if lunar["is_amavasya"]:
-        key_dates.append({"date": "Today", "event": "Amavasya (New Moon)", "impact": "HIGH", "note": "Reset, new beginnings"})
+        key_dates.append({"date": "Today", "event": "Amavasya (New Moon)", "impact": "HIGH", 
+                         "note": "New beginnings, optimism (BULLISH per University of Michigan study)"})
     if lunar["is_ekadashi"]:
         key_dates.append({"date": "Today", "event": "Ekadashi", "impact": "MEDIUM", "note": "Spiritual, low volume"})
     if lunar["is_ashtami"]:

@@ -2,6 +2,17 @@
 
 A Flask research workstation that tests a hypothesis: do planetary cycles, computed from Swiss Ephemeris orbital data, carry information about NIFTY market moves? The cycle features come from a traditional 81-cell timing model, the **Sarvatobhadra Chakra (SBC)**, and every signal is tested out of sample against market controls.
 
+## Framework
+
+The SBC_Tool uses a **hybrid Vedic-Western framework**:
+
+- **Core engine:** Vedic sidereal (Lahiri ayanamsa) with traditional 7 planets + nodes
+- **Macro-cycle layer:** Western outer planets (Uranus, Neptune, Pluto) for systemic analysis
+- **Lunar bias:** Academic research convention (New Moon = BULLISH, Full Moon = BEARISH)
+- **Validation layer:** Economic data (FRED, RBI) and sentiment data (VIX, news, Twitter)
+
+This hybrid approach enables validation of financial astrology research examples (e.g., Saturn-Pluto conjunctions, Neptune-Aquarius bubbles) while maintaining the precision of Vedic nakshatra-based timing. See `docs/HYBRID_FRAMEWORK.md` for details.
+
 ## Features
 
 > **Research tool, not investment advice.** Every planetary-cycle signal here has been tested
@@ -102,7 +113,7 @@ Open http://localhost:8000 in your browser.
 
 ```
 SBC_Tool/
-├── app.py                 # Flask application factory & routes
+├── app.py                 # `app = create_app()` (gunicorn app:app) + engine re-exports
 ├── requirements.txt       # Python dependencies
 ├── pyproject.toml         # Project config (ruff, mypy, pytest)
 ├── sbc/                   # Core planetary-cycle engine
@@ -136,8 +147,10 @@ SBC_Tool/
 │   ├── market_data.py         # NIFTY OHLC, moon rashi
 │   ├── confluence.py          # Multi-factor confluence
 │   ├── db.py                  # SQLite schema & bootstrap
+│   ├── app_factory.py         # create_app(): blueprints, rate limit, write gate, errors, headers
 │   ├── navamsa_pipeline/      # Navamsa/KP data pipeline
-│   └── api/                   # API blueprints (engine, sector)
+│   └── api/                   # Every route: engine_bp + blueprints/ (overview, chart, timing, sectors,
+│                              #   signals, kp, balance, chakra, forecast, research, profile, integrations)
 ├── templates/
 │   └── index.html         # Main SPA template
 ├── static/

@@ -171,7 +171,7 @@ def sentiment_of(net):
     return "NEUTRAL", "flat"
 
 
-def recommendation(analysis, anchor, date_str, weekday, tithi_info):
+def recommendation(analysis, anchor, date_str, weekday, tithi_info, mercury_retrograde=False):
     net = analysis["net"]
     verdict, strength = sentiment_of(net)
     hits = analysis["point_hits"]
@@ -227,19 +227,34 @@ def recommendation(analysis, anchor, date_str, weekday, tithi_info):
     # Build actionable investment directive
     if verdict == "BEARISH":
         bias = "Defensive / Bearish"
-        sizing = "Reduce net directional exposure to 20-40% of normal. Cash preferred. Trim longs into strength. No fresh long initiation."
-        risk = "Tighter stops 0.5-1.0R max per trade. Avoid leverage and intraday momentum amplification."
-        action = "Prefer profit booking / selective short bias on rallies. Avoid fresh long initiation, especially after Bhadra onset if applicable."
+        if mercury_retrograde:
+            sizing = "Reduce net directional exposure to 10-20% of normal. Cash preferred. Wider stops (1.5-2.0R)."
+            risk = "Wider stops (1.5-2.0R max per trade). Avoid leverage. Reduce position size by 50%."
+            action = "Avoid new entries unless strong confluence. Prefer cash. If must trade, use wider stops and smaller size."
+        else:
+            sizing = "Reduce net directional exposure to 20-40% of normal. Cash preferred. Trim longs into strength. No fresh long initiation."
+            risk = "Tighter stops 0.5-1.0R max per trade. Avoid leverage and intraday momentum amplification."
+            action = "Prefer profit booking / selective short bias on rallies. Avoid fresh long initiation, especially after Bhadra onset if applicable."
     elif verdict == "BULLISH":
         bias = "Constructive / Bullish"
-        sizing = "Increase exposure to 60-80% of normal with defined risk. Add on dips in favoured sectors."
-        risk = "Use trailing stops, protect profits. Manage intraday pullbacks."
-        action = "Prefer buying dips and momentum on strength. Initiate fresh longs in favoured sectors."
+        if mercury_retrograde:
+            sizing = "Reduce exposure to 30-40% of normal. Conservative entry only on strong confirmations."
+            risk = "Wider stops (1.5-2.0R max). Avoid leverage. Reduce position size by 50%."
+            action = "Avoid new entries unless strong confluence. Prefer cash. If must trade, use wider stops and smaller size."
+        else:
+            sizing = "Increase exposure to 60-80% of normal with defined risk. Add on dips in favoured sectors."
+            risk = "Use trailing stops, protect profits. Manage intraday pullbacks."
+            action = "Prefer buying dips and momentum on strength. Initiate fresh longs in favoured sectors."
     else:
         bias = "Neutral / Range"
-        sizing = "Keep exposure 40-60% of normal. Avoid large directional bets."
-        risk = "Tight risk, scalp only."
-        action = "Range trade, wait for breakout confirmation."
+        if mercury_retrograde:
+            sizing = "Keep exposure 20-30% of normal. Avoid large directional bets. Wider stops."
+            risk = "Wider stops (1.5-2.0R max). Avoid leverage. Reduce position size by 50%."
+            action = "Avoid new entries unless strong confluence. Prefer cash. If must trade, use wider stops and smaller size."
+        else:
+            sizing = "Keep exposure 40-60% of normal. Avoid large directional bets."
+            risk = "Tight risk, scalp only."
+            action = "Range trade, wait for breakout confirmation."
 
     # Tithi/weekday nuance
     tithi_group = tithi_info["group"]
@@ -253,7 +268,10 @@ def recommendation(analysis, anchor, date_str, weekday, tithi_info):
         "action": action,
         "tithi_note": f"Weekday {weekday} with {tithi_group} tithi {tithi_info['tithi']}. Moon {moon_note}. {tithi_note}.",
         "strength": strength,
+        "mercury_retrograde": mercury_retrograde,
     }
+    if mercury_retrograde:
+        actionable["mercury_note"] = "Mercury retrograde active: higher risk of glitches, miscommunication, volatility. Using wider stops and smaller positions."
 
     return {
         "verdict": verdict,

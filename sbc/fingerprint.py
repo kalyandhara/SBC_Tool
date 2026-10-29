@@ -4,8 +4,9 @@
 JSON-safe dict built from the existing calculators:
 
   planets   Sun..Ketu (Lahiri, sbc.planets) plus Uranus, Neptune, Pluto:
-            longitude, sign, nakshatra (27-star), pada, speed, retrograde,
-            stationary, combust, dignity
+            longitude, ecliptic latitude (Sara; 0 for the mean nodes), sign,
+            nakshatra (27-star), pada, speed, retrograde, stationary,
+            combust, dignity
   aspects   angular aspects (sbc.market_events angles/orbs) with orb and
             applying/separating
   drishti   Vedic sign aspects (7th + special) and same-sign conjunctions
@@ -107,13 +108,28 @@ def _outer_positions(day: dt.date) -> dict[str, tuple[float, float]]:
     return out
 
 
-def _planet_record(name: str, lon: float, speed: float, sun_lon: float) -> dict:
+# Swiss Ephemeris ids for the latitude lookup; the mean nodes lie on the ecliptic.
+_SWE_IDS = {"Sun": swe.SUN, "Moon": swe.MOON, "Mars": swe.MARS, "Mercury": swe.MERCURY,
+            "Jupiter": swe.JUPITER, "Venus": swe.VENUS, "Saturn": swe.SATURN,
+            **dict(OUTERS)}
+
+
+def latitudes(day: dt.date) -> dict[str, float]:
+    """Geocentric ecliptic latitude (deg) of every body at the open (B-44)."""
+    jd = kpe._julday_ist(dt.datetime.combine(day, dt.time(9, 15)))
+    out = {name: swe.calc_ut(jd, body, swe.FLG_MOSEPH)[0][1] for name, body in _SWE_IDS.items()}
+    return {name: out.get(name, 0.0) for name in BODIES}
+
+
+def _planet_record(name: str, lon: float, speed: float, sun_lon: float,
+                   latitude: float = 0.0) -> dict:
     sign_idx = int(lon // 30) % 12
     star_idx = min(int(lon // STAR_SPAN), 26)
     orb = COMBUST_ORB.get(name)
     return {
         "tier": TIER[name],
         "longitude": round(lon, 4),
+        "latitude": round(latitude, 4),
         "sign": sign_idx,
         "sign_name": RASHIS[sign_idx],
         "nakshatra": star_idx,
@@ -259,10 +275,11 @@ def fingerprint(day: dt.date | str) -> dict:
     natured, _ayanamsa, sun, moon, tithi = positioned_planets(day.isoformat(), OPEN_TIME)
     sun_lon = sun["longitude"]
 
-    planets = {p["name"]: _planet_record(p["name"], p["longitude"], p["speed"], sun_lon)
+    lat = latitudes(day)
+    planets = {p["name"]: _planet_record(p["name"], p["longitude"], p["speed"], sun_lon, lat[p["name"]])
                for p in natured}
     for name, (lon, speed) in _outer_positions(day).items():
-        planets[name] = _planet_record(name, lon, speed, sun_lon)
+        planets[name] = _planet_record(name, lon, speed, sun_lon, lat[name])
     planets = {name: planets[name] for name in BODIES}
 
     return {

@@ -4,7 +4,13 @@ import datetime as dt
 
 import pytest
 
-from sbc.muhurta import guru_pushya_window, ravi_pushya_window
+from sbc.muhurta import (
+    ghabad_kind_at,
+    ghabad_status,
+    ghabad_windows,
+    guru_pushya_window,
+    ravi_pushya_window,
+)
 
 D = dt.date
 T = dt.datetime
@@ -88,3 +94,53 @@ def test_yoga_glyphs_use_the_window():
         moon = next(p for p in planets if p["name"] == "Moon")
         names, _ = daily_yoga_glyphs(day, sun, moon, tithi_of(sun["longitude"], moon["longitude"]))
         assert ("Guru Pushya Yoga" in names) is expected
+
+
+# Ghabad windows from the October 2026 table in docs/research/ghabad_muhurat.md.
+# The minutes there are rounded, so the check allows the default 2-minute tolerance.
+GHABAD_OCT_2026 = [
+    ("Ardha-ghabad", T(2026, 10, 1, 6, 3), T(2026, 10, 1, 12, 36)),
+    ("Ghabad", T(2026, 10, 5, 3, 55), T(2026, 10, 5, 23, 10)),
+    ("Ardha-ghabad", T(2026, 10, 6, 2, 9), T(2026, 10, 6, 22, 18)),
+    ("Ghabad", T(2026, 10, 6, 22, 18), T(2026, 10, 7, 0, 36)),
+    ("Ardha-ghabad", T(2026, 10, 7, 21, 41), T(2026, 10, 7, 23, 18)),
+    ("Ardha-ghabad", T(2026, 10, 10, 21, 43), T(2026, 10, 11, 2, 21)),
+    ("Ghabad", T(2026, 10, 15, 1, 14), T(2026, 10, 15, 4, 4)),
+    ("Ardha-ghabad", T(2026, 10, 16, 3, 26), T(2026, 10, 16, 6, 48)),
+    ("Ghabad", T(2026, 10, 16, 6, 48), T(2026, 10, 17, 5, 55)),
+    ("Ardha-ghabad", T(2026, 10, 17, 9, 48), T(2026, 10, 18, 8, 29)),
+    ("Ghabad", T(2026, 10, 22, 14, 49), T(2026, 10, 22, 20, 50)),
+    ("Ardha-ghabad", T(2026, 10, 23, 14, 37), T(2026, 10, 23, 21, 4)),
+    ("Ghabad", T(2026, 10, 23, 21, 4), T(2026, 10, 24, 12, 51)),
+    ("Ardha-ghabad", T(2026, 10, 24, 12, 51), T(2026, 10, 24, 13, 38)),
+    ("Ghabad", T(2026, 10, 28, 4, 8), T(2026, 10, 28, 13, 27)),
+    ("Ardha-ghabad", T(2026, 10, 29, 1, 8), T(2026, 10, 29, 11, 12)),
+    ("Ghabad", T(2026, 10, 29, 11, 12), T(2026, 10, 29, 22, 11)),
+    ("Ardha-ghabad", T(2026, 10, 30, 9, 5), T(2026, 10, 30, 19, 26)),
+]
+
+
+def test_ghabad_windows_match_the_october_table():
+    got = [(w["kind"], w["start"], w["end"]) for w in ghabad_windows(D(2026, 10, 1), D(2026, 10, 31))]
+    assert [k for k, _, _ in got] == [k for k, _, _ in GHABAD_OCT_2026]
+    for (kind, start, end), (want_kind, want_start, want_end) in zip(got, GHABAD_OCT_2026):
+        assert kind == want_kind
+        assert close(start, want_start) and close(end, want_end), (kind, start, end)
+
+
+def test_ghabad_worked_example_on_5_oct():
+    # Sun in Hasta (#13), Moon in Pushya (#8): count 23, tithi Krishna 10 = 25,
+    # 23 * 3 + 25 = 94, remainder 3.
+    s = ghabad_status(D(2026, 10, 5))
+    assert (s["kind"], s["remainder"], s["nakshatra_count"], s["tithi"]) == ("Ghabad", 3, 23, 25)
+
+
+def test_ghabad_kind_at_follows_the_window_edges():
+    assert ghabad_kind_at(T(2026, 10, 5, 3, 0)) is None
+    assert ghabad_kind_at(T(2026, 10, 5, 12, 0)) == "Ghabad"
+    assert ghabad_kind_at(T(2026, 10, 5, 23, 30)) is None
+
+
+def test_ghabad_windows_are_empty_for_a_quiet_day():
+    # 2 Oct is not in the table, so no window should be reported for it.
+    assert ghabad_windows(D(2026, 10, 2), D(2026, 10, 2)) == []

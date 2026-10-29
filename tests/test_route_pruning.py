@@ -17,7 +17,18 @@ API_ONLY = {
     "/healthz", "/webhook/sbc", "/api/sbc/latest",
     "/api/engine/aspect_windows", "/api/engine/fingerprint", "/api/engine/fingerprint/status",
     "/api/engine/forecast/ledger", "/api/engine/intraday_forecast/freeze",
+    # Muhurta / journal endpoints with no panel yet.
+    "/api/engine/trade_journal",
+    # Kota Chakra panel removed from the KP Intraday page 2026-10-19;
+    # the API stays for the freshness tooling and tests.
+    "/api/engine/kota/daily", "/api/engine/kota/weekly", "/api/engine/kota/monthly",
     "/api/engine/intraday_forecast/score", "/api/engine/market/freshness", "/api/engine/version",
+    # Economic / sentiment data infrastructure: refresh + fetch endpoints
+    # for the FRED/RBI and News/VIX caches (sbc.economic_data,
+    # sbc.sentiment_data). Panels are a backlog idea; keys are optional
+    # and the refreshes degrade per-source.
+    "/api/economic/indicators", "/api/economic/refresh",
+    "/api/sentiment/daily", "/api/sentiment/refresh",
 }
 
 

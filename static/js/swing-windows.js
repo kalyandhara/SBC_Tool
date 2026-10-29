@@ -103,7 +103,23 @@
     const series = chart.addCandlestickSeries({
       upColor: "#22c55e", downColor: "#ef4444", wickUpColor: "#22c55e", wickDownColor: "#ef4444", borderVisible: false,
     });
-    series.setData(d.bars.map((b) => ({ time: b.date, open: b.open, high: b.high, low: b.low, close: b.close })));
+    // Extend the time axis past the last bar (blank weekdays) up to the chosen end date or the last
+    // payload date, so future entry/exit bars still show.
+    const lastBar = d.bars[d.bars.length - 1].date;
+    const payloadDays = [...((d.entries && d.entries.dates) || []), ...((d.exits && d.exits.dates) || [])];
+    const horizon = [el("swing-end").value || "", ...payloadDays].reduce((a, b) => (b > a ? b : a), lastBar);
+    const future = [];
+    for (let t = new Date(lastBar + "T00:00:00Z"); ;) {
+      t.setUTCDate(t.getUTCDate() + 1);
+      const iso = t.toISOString().slice(0, 10);
+      if (iso > horizon) break;
+      const wd = t.getUTCDay();
+      if (wd !== 0 && wd !== 6) future.push(iso);
+    }
+    series.setData([
+      ...d.bars.map((b) => ({ time: b.date, open: b.open, high: b.high, low: b.low, close: b.close })),
+      ...future.map((time) => ({ time })),
+    ]);
     const inRange = new Set(d.bars.map((b) => b.date));
     const markers = [];
     for (const s of d.swings) {
@@ -115,6 +131,24 @@
         markers.push({ time: s.exit_session, position: s.direction > 0 ? "aboveBar" : "belowBar",
           color: "#f97316", shape: "circle", text: s.exit_reason === "confluence" ? "EXIT" : s.exit_reason });
       }
+    }
+    // Full-height vertical bars on every ENTRY / EXIT payload date (the same dates the Pine script draws),
+    // so the swing can be judged by eye. A non-session date snaps to the next session.
+    const sessions = [...d.bars.map((b) => b.date), ...future];
+    const snap = (day) => sessions.find((t) => t >= day);
+    const vbars = new Map();
+    const addBars = (payload, color) => {
+      for (const day of (payload && payload.dates) || []) {
+        const t = snap(day);
+        if (t && !vbars.has(t)) vbars.set(t, color);
+      }
+    };
+    addBars(d.exits, "rgba(249,115,22,.35)");
+    addBars(d.entries, "rgba(20,184,166,.35)");
+    if (vbars.size) {
+      const vs = chart.addHistogramSeries({ priceScaleId: "vbars", priceLineVisible: false, lastValueVisible: false, base: 0 });
+      chart.priceScale("vbars").applyOptions({ scaleMargins: { top: 0, bottom: 0 }, visible: false });
+      vs.setData([...vbars].sort((a, b) => (a[0] < b[0] ? -1 : 1)).map(([time, color]) => ({ time, value: 1, color })));
     }
     markers.sort((a, b) => (a.time < b.time ? -1 : a.time > b.time ? 1 : 0));
     series.setMarkers(markers);

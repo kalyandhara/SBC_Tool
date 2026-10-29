@@ -1,0 +1,1074 @@
+[
+ {
+  "date": "2025-01-07",
+  "time": "19:00",
+  "name": "US Trade Balance",
+  "source": "BEA",
+  "et": "08:30 ET",
+  "title": "U.S. International Trade in Goods and Services, November 2024"
+ },
+ {
+  "date": "2025-01-30",
+  "time": "19:00",
+  "name": "US GDP",
+  "source": "BEA",
+  "et": "08:30 ET",
+  "title": "Gross Domestic Product, 4th Quarter and Year 2024 (Advance Estimate)"
+ },
+ {
+  "date": "2025-01-31",
+  "time": "19:00",
+  "name": "US PCE / Personal Income",
+  "source": "BEA",
+  "et": "08:30 ET",
+  "title": "Personal Income and Outlays, December 2024"
+ },
+ {
+  "date": "2025-02-05",
+  "time": "19:00",
+  "name": "US Trade Balance",
+  "source": "BEA",
+  "et": "08:30 ET",
+  "title": "U.S. International Trade in Goods and Services, December and Annual 2024"
+ },
+ {
+  "date": "2025-02-27",
+  "time": "19:00",
+  "name": "US GDP",
+  "source": "BEA",
+  "et": "08:30 ET",
+  "title": "Gross Domestic Product, 4th Quarter and Year 2024 (Second Estimate)"
+ },
+ {
+  "date": "2025-02-28",
+  "time": "19:00",
+  "name": "US PCE / Personal Income",
+  "source": "BEA",
+  "et": "08:30 ET",
+  "title": "Personal Income and Outlays, January 2025"
+ },
+ {
+  "date": "2025-03-06",
+  "time": "19:00",
+  "name": "US Trade Balance",
+  "source": "BEA",
+  "et": "08:30 ET",
+  "title": "U.S. International Trade in Goods and Services, January 2025"
+ },
+ {
+  "date": "2025-03-27",
+  "time": "18:00",
+  "name": "US GDP",
+  "source": "BEA",
+  "et": "08:30 ET",
+  "title": "Gross Domestic Product, 4th Quarter and Year 2024 (Third Estimate), GDP by Industry, and Corporate Profits"
+ },
+ {
+  "date": "2025-03-28",
+  "time": "18:00",
+  "name": "US PCE / Personal Income",
+  "source": "BEA",
+  "et": "08:30 ET",
+  "title": "Personal Income and Outlays, February 2025"
+ },
+ {
+  "date": "2025-03-28",
+  "time": "19:30",
+  "name": "US GDP",
+  "source": "BEA",
+  "et": "10:00 ET",
+  "title": "Gross Domestic Product by State and Personal Income by State, 4th Quarter 2024 and Year 2024 (Preliminary)"
+ },
+ {
+  "date": "2025-04-03",
+  "time": "18:00",
+  "name": "US Trade Balance",
+  "source": "BEA",
+  "et": "08:30 ET",
+  "title": "U.S. International Trade in Goods and Services, February 2025"
+ },
+ {
+  "date": "2025-04-30",
+  "time": "18:00",
+  "name": "US GDP",
+  "source": "BEA",
+  "et": "08:30 ET",
+  "title": "Gross Domestic Product, 1st Quarter 2025 (Advance Estimate)"
+ },
+ {
+  "date": "2025-04-30",
+  "time": "19:30",
+  "name": "US PCE / Personal Income",
+  "source": "BEA",
+  "et": "10:00 ET",
+  "title": "Personal Income and Outlays, March 2025"
+ },
+ {
+  "date": "2025-05-06",
+  "time": "18:00",
+  "name": "US Trade Balance",
+  "source": "BEA",
+  "et": "08:30 ET",
+  "title": "U.S. International Trade in Goods and Services, March 2025"
+ },
+ {
+  "date": "2025-05-29",
+  "time": "18:00",
+  "name": "US GDP",
+  "source": "BEA",
+  "et": "08:30 ET",
+  "title": "Gross Domestic Product, 1st Quarter 2025 (Second Estimate) and Corporate Profits (Preliminary)"
+ },
+ {
+  "date": "2025-05-30",
+  "time": "18:00",
+  "name": "US PCE / Personal Income",
+  "source": "BEA",
+  "et": "08:30 ET",
+  "title": "Personal Income and Outlays, April 2025"
+ },
+ {
+  "date": "2025-06-05",
+  "time": "18:00",
+  "name": "US Trade Balance",
+  "source": "BEA",
+  "et": "08:30 ET",
+  "title": "U.S. International Trade in Goods and Services, Annual Update"
+ },
+ {
+  "date": "2025-06-26",
+  "time": "18:00",
+  "name": "US GDP",
+  "source": "BEA",
+  "et": "08:30 ET",
+  "title": "Gross Domestic Product, 1st Quarter 2025 (Third Estimate), GDP by Industry, and Corporate Profits (Revised)"
+ },
+ {
+  "date": "2025-06-27",
+  "time": "18:00",
+  "name": "US PCE / Personal Income",
+  "source": "BEA",
+  "et": "08:30 ET",
+  "title": "Personal Income and Outlays, May 2025"
+ },
+ {
+  "date": "2025-06-27",
+  "time": "19:30",
+  "name": "US GDP",
+  "source": "BEA",
+  "et": "10:00 ET",
+  "title": "Gross Domestic Product by State and Personal Income by State, 1st quarter 2025"
+ },
+ {
+  "date": "2025-07-03",
+  "time": "18:00",
+  "name": "US Trade Balance",
+  "source": "BEA",
+  "et": "08:30 ET",
+  "title": "U.S. International Trade in Goods and Services, May 2025"
+ },
+ {
+  "date": "2025-07-30",
+  "time": "18:00",
+  "name": "US GDP",
+  "source": "BEA",
+  "et": "08:30 ET",
+  "title": "Gross Domestic Product, 2nd Quarter 2025 (Advance Estimate)"
+ },
+ {
+  "date": "2025-07-31",
+  "time": "18:00",
+  "name": "US PCE / Personal Income",
+  "source": "BEA",
+  "et": "08:30 ET",
+  "title": "Personal Income and Outlays, June 2025"
+ },
+ {
+  "date": "2025-08-05",
+  "time": "18:00",
+  "name": "US Trade Balance",
+  "source": "BEA",
+  "et": "08:30 ET",
+  "title": "U.S. International Trade in Goods and Services, June 2025"
+ },
+ {
+  "date": "2025-08-28",
+  "time": "18:00",
+  "name": "US GDP",
+  "source": "BEA",
+  "et": "08:30 ET",
+  "title": "Gross Domestic Product, 2nd Quarter 2025 (Second Estimate) and Corporate Profits (Preliminary)"
+ },
+ {
+  "date": "2025-08-29",
+  "time": "18:00",
+  "name": "US PCE / Personal Income",
+  "source": "BEA",
+  "et": "08:30 ET",
+  "title": "Personal Income and Outlays, July 2025"
+ },
+ {
+  "date": "2025-09-04",
+  "time": "18:00",
+  "name": "US Trade Balance",
+  "source": "BEA",
+  "et": "08:30 ET",
+  "title": "U.S. International Trade in Goods and Services, July 2025"
+ },
+ {
+  "date": "2025-09-16",
+  "time": "19:30",
+  "name": "US GDP",
+  "source": "BEA",
+  "et": "10:00 ET",
+  "title": "Gross Domestic Product for Puerto Rico, 2023"
+ },
+ {
+  "date": "2025-09-25",
+  "time": "18:00",
+  "name": "US GDP",
+  "source": "BEA",
+  "et": "08:30 ET",
+  "title": "Gross Domestic Product, 2nd Quarter 2025 (Third Estimate), GDP by Industry, Corporate Profits (Revised), and Annual Update"
+ },
+ {
+  "date": "2025-09-26",
+  "time": "18:00",
+  "name": "US PCE / Personal Income",
+  "source": "BEA",
+  "et": "08:30 ET",
+  "title": "Personal Income and Outlays, August 2025"
+ },
+ {
+  "date": "2025-09-26",
+  "time": "19:30",
+  "name": "US GDP",
+  "source": "BEA",
+  "et": "10:00 ET",
+  "title": "Gross Domestic Product by State and Personal Income by State, 2nd quarter 2025 and Personal Consumption Expenditures by State, 2024"
+ },
+ {
+  "date": "2025-11-19",
+  "time": "19:00",
+  "name": "US Trade Balance",
+  "source": "BEA",
+  "et": "08:30 ET",
+  "title": "U.S. International Trade in Goods and Services, August 2025"
+ },
+ {
+  "date": "2025-12-05",
+  "time": "20:30",
+  "name": "US PCE / Personal Income",
+  "source": "BEA",
+  "et": "10:00 ET",
+  "title": "Personal Income and Outlays, September 2025"
+ },
+ {
+  "date": "2025-12-11",
+  "time": "19:00",
+  "name": "US Trade Balance",
+  "source": "BEA",
+  "et": "08:30 ET",
+  "title": "U.S. International Trade in Goods and Services, September 2025"
+ },
+ {
+  "date": "2025-12-23",
+  "time": "19:00",
+  "name": "US GDP",
+  "source": "BEA",
+  "et": "08:30 ET",
+  "title": "Gross Domestic Product, 3rd Quarter 2025 (Initial Estimate) and Corporate Profits (Preliminary)"
+ },
+ {
+  "date": "2026-01-08",
+  "time": "19:00",
+  "name": "US Trade Balance",
+  "source": "BEA",
+  "et": "08:30 ET",
+  "title": "U.S. International Trade in Goods and Services, October 2025"
+ },
+ {
+  "date": "2026-01-22",
+  "time": "19:00",
+  "name": "US GDP",
+  "source": "BEA",
+  "et": "08:30 ET",
+  "title": "Gross Domestic Product, 3rd Quarter 2025 (Updated Estimate), GDP by Industry, and Corporate Profits (Revised)"
+ },
+ {
+  "date": "2026-01-22",
+  "time": "20:30",
+  "name": "US PCE / Personal Income",
+  "source": "BEA",
+  "et": "10:00 ET",
+  "title": "Personal Income and Outlays, October and November 2025"
+ },
+ {
+  "date": "2026-01-23",
+  "time": "19:00",
+  "name": "US GDP",
+  "source": "BEA",
+  "et": "08:30 ET",
+  "title": "Gross Domestic Product by State and Personal Income by State, 3rd quarter 2025"
+ },
+ {
+  "date": "2026-01-29",
+  "time": "00:30",
+  "name": "US FOMC Rate Decision",
+  "source": "static",
+  "et": "14:00 ET",
+  "title": "FOMC statement and rate decision"
+ },
+ {
+  "date": "2026-01-29",
+  "time": "19:00",
+  "name": "US Trade Balance",
+  "source": "BEA",
+  "et": "08:30 ET",
+  "title": "U.S. International Trade in Goods and Services, November 2025"
+ },
+ {
+  "date": "2026-02-05",
+  "time": "19:00",
+  "name": "US GDP",
+  "source": "BEA",
+  "et": "08:30 ET",
+  "title": "Gross Domestic Product by County and Metropolitan Area and Personal Income by County and Metropolitan Area, 2024"
+ },
+ {
+  "date": "2026-02-19",
+  "time": "19:00",
+  "name": "US Trade Balance",
+  "source": "BEA",
+  "et": "08:30 ET",
+  "title": "U.S. International Trade in Goods and Services, December and Annual 2025"
+ },
+ {
+  "date": "2026-02-20",
+  "time": "19:00",
+  "name": "US GDP",
+  "source": "BEA",
+  "et": "08:30 ET",
+  "title": "GDP (Advance Estimate), 4th Quarter and Year 2025"
+ },
+ {
+  "date": "2026-02-20",
+  "time": "19:00",
+  "name": "US PCE / Personal Income",
+  "source": "BEA",
+  "et": "08:30 ET",
+  "title": "Personal Income and Outlays, December 2025"
+ },
+ {
+  "date": "2026-03-12",
+  "time": "18:00",
+  "name": "US Trade Balance",
+  "source": "BEA",
+  "et": "08:30 ET",
+  "title": "U.S. International Trade in Goods and Services, January 2026"
+ },
+ {
+  "date": "2026-03-13",
+  "time": "18:00",
+  "name": "US GDP",
+  "source": "BEA",
+  "et": "08:30 ET",
+  "title": "GDP (Second Estimate), 4th Quarter and Year 2025"
+ },
+ {
+  "date": "2026-03-13",
+  "time": "18:00",
+  "name": "US PCE / Personal Income",
+  "source": "BEA",
+  "et": "08:30 ET",
+  "title": "Personal Income and Outlays, January 2026"
+ },
+ {
+  "date": "2026-03-18",
+  "time": "23:30",
+  "name": "US FOMC Rate Decision",
+  "source": "static",
+  "et": "14:00 ET",
+  "title": "FOMC statement and rate decision"
+ },
+ {
+  "date": "2026-04-02",
+  "time": "18:00",
+  "name": "US Trade Balance",
+  "source": "BEA",
+  "et": "08:30 ET",
+  "title": "U.S. International Trade in Goods and Services, February 2026"
+ },
+ {
+  "date": "2026-04-09",
+  "time": "18:00",
+  "name": "US GDP",
+  "source": "BEA",
+  "et": "08:30 ET",
+  "title": "GDP (Third Estimate), Industries, Corporate Profits, State GDP, and State Personal Income, 4th Quarter and Year 2025"
+ },
+ {
+  "date": "2026-04-09",
+  "time": "18:00",
+  "name": "US PCE / Personal Income",
+  "source": "BEA",
+  "et": "08:30 ET",
+  "title": "Personal Income and Outlays, February 2026"
+ },
+ {
+  "date": "2026-04-29",
+  "time": "23:30",
+  "name": "US FOMC Rate Decision",
+  "source": "static",
+  "et": "14:00 ET",
+  "title": "FOMC statement and rate decision"
+ },
+ {
+  "date": "2026-04-30",
+  "time": "18:00",
+  "name": "US GDP",
+  "source": "BEA",
+  "et": "08:30 ET",
+  "title": "GDP (Advance Estimate), 1st Quarter 2026"
+ },
+ {
+  "date": "2026-04-30",
+  "time": "18:00",
+  "name": "US PCE / Personal Income",
+  "source": "BEA",
+  "et": "08:30 ET",
+  "title": "Personal Income and Outlays, March 2026"
+ },
+ {
+  "date": "2026-05-05",
+  "time": "18:00",
+  "name": "US Trade Balance",
+  "source": "BEA",
+  "et": "08:30 ET",
+  "title": "U.S. International Trade in Goods and Services, March 2026"
+ },
+ {
+  "date": "2026-05-28",
+  "time": "18:00",
+  "name": "US GDP",
+  "source": "BEA",
+  "et": "08:30 ET",
+  "title": "GDP (Second Estimate) and Corporate Profits, 1st Quarter 2026"
+ },
+ {
+  "date": "2026-05-28",
+  "time": "18:00",
+  "name": "US PCE / Personal Income",
+  "source": "BEA",
+  "et": "08:30 ET",
+  "title": "Personal Income and Outlays, April 2026"
+ },
+ {
+  "date": "2026-06-09",
+  "time": "18:00",
+  "name": "US Trade Balance",
+  "source": "BEA",
+  "et": "08:30 ET",
+  "title": "U.S. International Trade in Goods and Services, Annual Update"
+ },
+ {
+  "date": "2026-06-17",
+  "time": "23:30",
+  "name": "US FOMC Rate Decision",
+  "source": "static",
+  "et": "14:00 ET",
+  "title": "FOMC statement and rate decision"
+ },
+ {
+  "date": "2026-06-25",
+  "time": "18:00",
+  "name": "US GDP",
+  "source": "BEA",
+  "et": "08:30 ET",
+  "title": "GDP (Third Estimate), Industries, Corporate Profits, State GDP, and State Personal Income, 1st Quarter 2026"
+ },
+ {
+  "date": "2026-06-25",
+  "time": "18:00",
+  "name": "US PCE / Personal Income",
+  "source": "BEA",
+  "et": "08:30 ET",
+  "title": "Personal Income and Outlays, May 2026"
+ },
+ {
+  "date": "2026-07-07",
+  "time": "18:00",
+  "name": "US Trade Balance",
+  "source": "BEA",
+  "et": "08:30 ET",
+  "title": "U.S. International Trade in Goods and Services, May 2026"
+ },
+ {
+  "date": "2026-07-29",
+  "time": "23:30",
+  "name": "US FOMC Rate Decision",
+  "source": "static",
+  "et": "14:00 ET",
+  "title": "FOMC statement and rate decision"
+ },
+ {
+  "date": "2026-07-30",
+  "time": "18:00",
+  "name": "US GDP",
+  "source": "BEA",
+  "et": "08:30 ET",
+  "title": "GDP (Advance Estimate), 2nd Quarter 2026"
+ },
+ {
+  "date": "2026-07-30",
+  "time": "18:00",
+  "name": "US PCE / Personal Income",
+  "source": "BEA",
+  "et": "08:30 ET",
+  "title": "Personal Income and Outlays, June 2026"
+ },
+ {
+  "date": "2026-08-04",
+  "time": "18:00",
+  "name": "US Trade Balance",
+  "source": "BEA",
+  "et": "08:30 ET",
+  "title": "U.S. International Trade in Goods and Services, June 2026"
+ },
+ {
+  "date": "2026-08-26",
+  "time": "18:00",
+  "name": "US GDP",
+  "source": "BEA",
+  "et": "08:30 ET",
+  "title": "GDP (Second Estimate) and Corporate Profits, 2nd Quarter 2026"
+ },
+ {
+  "date": "2026-08-26",
+  "time": "18:00",
+  "name": "US PCE / Personal Income",
+  "source": "BEA",
+  "et": "08:30 ET",
+  "title": "Personal Income and Outlays, July 2026"
+ },
+ {
+  "date": "2026-09-03",
+  "time": "18:00",
+  "name": "US Trade Balance",
+  "source": "BEA",
+  "et": "08:30 ET",
+  "title": "U.S. International Trade in Goods and Services, July 2026"
+ },
+ {
+  "date": "2026-09-16",
+  "time": "23:30",
+  "name": "US FOMC Rate Decision",
+  "source": "static",
+  "et": "14:00 ET",
+  "title": "FOMC statement and rate decision"
+ },
+ {
+  "date": "2026-09-30",
+  "time": "18:00",
+  "name": "US GDP",
+  "source": "BEA",
+  "et": "08:30 ET",
+  "title": "GDP (Third Estimate), Industries, Corporate Profits, State GDP, and State Personal Income, 2nd Quarter 2026\\; State PCE, 2025"
+ },
+ {
+  "date": "2026-09-30",
+  "time": "18:00",
+  "name": "US PCE / Personal Income",
+  "source": "BEA",
+  "et": "08:30 ET",
+  "title": "Personal Income and Outlays, August 2026"
+ },
+ {
+  "date": "2026-10-06",
+  "time": "18:00",
+  "name": "US Trade Balance",
+  "source": "BEA",
+  "et": "08:30 ET",
+  "title": "U.S. International Trade in Goods and Services, August 2026"
+ },
+ {
+  "date": "2026-10-14",
+  "time": "18:00",
+  "name": "US CPI (Sep)",
+  "source": "manual",
+  "et": "08:30 ET",
+  "detail": "BLS schedule via fedratecalc.com; replaced by the BLS feed on the next refresh"
+ },
+ {
+  "date": "2026-10-15",
+  "time": "18:00",
+  "name": "US PPI (Sep)",
+  "source": "manual",
+  "et": "08:30 ET",
+  "detail": "BLS schedule via fedratecalc.com; replaced by the BLS feed on the next refresh"
+ },
+ {
+  "date": "2026-10-15",
+  "time": "18:00",
+  "name": "US Retail Sales (Sep)",
+  "source": "manual",
+  "et": "08:30 ET",
+  "detail": "Census has no iCalendar feed; keep by hand"
+ },
+ {
+  "date": "2026-10-28",
+  "time": "23:30",
+  "name": "US FOMC Rate Decision",
+  "source": "static",
+  "et": "14:00 ET",
+  "title": "FOMC statement and rate decision"
+ },
+ {
+  "date": "2026-10-29",
+  "time": "18:00",
+  "name": "US GDP",
+  "source": "BEA",
+  "et": "08:30 ET",
+  "title": "GDP (Advance Estimate), 3rd Quarter 2026"
+ },
+ {
+  "date": "2026-10-29",
+  "time": "18:00",
+  "name": "US PCE / Personal Income",
+  "source": "BEA",
+  "et": "08:30 ET",
+  "title": "Personal Income and Outlays, September 2026"
+ },
+ {
+  "date": "2026-11-03",
+  "time": "19:00",
+  "name": "US Midterm Elections",
+  "source": "static",
+  "et": "-",
+  "title": "US midterm elections (polls close through the evening ET; results overnight IST)"
+ },
+ {
+  "date": "2026-11-04",
+  "time": "19:00",
+  "name": "US Trade Balance",
+  "source": "BEA",
+  "et": "08:30 ET",
+  "title": "U.S. International Trade in Goods and Services, September 2026"
+ },
+ {
+  "date": "2026-11-25",
+  "time": "19:00",
+  "name": "US GDP",
+  "source": "BEA",
+  "et": "08:30 ET",
+  "title": "GDP (Second Estimate) and Corporate Profits, 3rd Quarter 2026"
+ },
+ {
+  "date": "2026-11-25",
+  "time": "19:00",
+  "name": "US PCE / Personal Income",
+  "source": "BEA",
+  "et": "08:30 ET",
+  "title": "Personal Income and Outlays, October 2026"
+ },
+ {
+  "date": "2026-12-02",
+  "time": "19:00",
+  "name": "US GDP",
+  "source": "BEA",
+  "et": "08:30 ET",
+  "title": "GDP by County and Personal Income by County, 2025"
+ },
+ {
+  "date": "2026-12-08",
+  "time": "19:00",
+  "name": "US Trade Balance",
+  "source": "BEA",
+  "et": "08:30 ET",
+  "title": "U.S. International Trade in Goods and Services, October 2026"
+ },
+ {
+  "date": "2026-12-10",
+  "time": "00:30",
+  "name": "US FOMC Rate Decision",
+  "source": "static",
+  "et": "14:00 ET",
+  "title": "FOMC statement and rate decision"
+ },
+ {
+  "date": "2026-12-23",
+  "time": "19:00",
+  "name": "US GDP",
+  "source": "BEA",
+  "et": "08:30 ET",
+  "title": "GDP (Third Estimate), Industries, Corporate Profits, State GDP, and State Personal Income, 3rd Quarter 2026"
+ },
+ {
+  "date": "2026-12-23",
+  "time": "19:00",
+  "name": "US PCE / Personal Income",
+  "source": "BEA",
+  "et": "08:30 ET",
+  "title": "Personal Income and Outlays, November 2026"
+ },
+ {
+  "date": "2027-01-07",
+  "time": "19:00",
+  "name": "US Trade Balance",
+  "source": "BEA",
+  "et": "08:30 ET",
+  "title": "U.S. International Trade in Goods and Services, November 2026"
+ },
+ {
+  "date": "2027-01-28",
+  "time": "00:30",
+  "name": "US FOMC Rate Decision",
+  "source": "static",
+  "et": "14:00 ET",
+  "title": "FOMC statement and rate decision (provisional calendar)"
+ },
+ {
+  "date": "2027-01-28",
+  "time": "19:00",
+  "name": "US GDP",
+  "source": "BEA",
+  "et": "08:30 ET",
+  "title": "GDP (Advance Estimate), 4th Quarter and Year 2026"
+ },
+ {
+  "date": "2027-01-28",
+  "time": "19:00",
+  "name": "US PCE / Personal Income",
+  "source": "BEA",
+  "et": "08:30 ET",
+  "title": "Personal Income and Outlays, December 2026"
+ },
+ {
+  "date": "2027-02-04",
+  "time": "19:00",
+  "name": "US Trade Balance",
+  "source": "BEA",
+  "et": "08:30 ET",
+  "title": "U.S. International Trade in Goods and Services, December and Annual 2026"
+ },
+ {
+  "date": "2027-02-25",
+  "time": "19:00",
+  "name": "US GDP",
+  "source": "BEA",
+  "et": "08:30 ET",
+  "title": "GDP (Second Estimate), 4th Quarter and Year 2026"
+ },
+ {
+  "date": "2027-02-25",
+  "time": "19:00",
+  "name": "US PCE / Personal Income",
+  "source": "BEA",
+  "et": "08:30 ET",
+  "title": "Personal Income and Outlays, January 2027"
+ },
+ {
+  "date": "2027-03-09",
+  "time": "19:00",
+  "name": "US Trade Balance",
+  "source": "BEA",
+  "et": "08:30 ET",
+  "title": "U.S. International Trade in Goods and Services, January 2027"
+ },
+ {
+  "date": "2027-03-17",
+  "time": "23:30",
+  "name": "US FOMC Rate Decision",
+  "source": "static",
+  "et": "14:00 ET",
+  "title": "FOMC statement and rate decision (provisional calendar)"
+ },
+ {
+  "date": "2027-03-31",
+  "time": "18:00",
+  "name": "US GDP",
+  "source": "BEA",
+  "et": "08:30 ET",
+  "title": "GDP (Third Estimate), Industries, Corporate Profits, State GDP, and State Personal Income, 4th Quarter and Year 2026"
+ },
+ {
+  "date": "2027-03-31",
+  "time": "18:00",
+  "name": "US PCE / Personal Income",
+  "source": "BEA",
+  "et": "08:30 ET",
+  "title": "Personal Income and Outlays, February 2027"
+ },
+ {
+  "date": "2027-04-06",
+  "time": "18:00",
+  "name": "US Trade Balance",
+  "source": "BEA",
+  "et": "08:30 ET",
+  "title": "U.S. International Trade in Goods and Services, February 2027"
+ },
+ {
+  "date": "2027-04-28",
+  "time": "23:30",
+  "name": "US FOMC Rate Decision",
+  "source": "static",
+  "et": "14:00 ET",
+  "title": "FOMC statement and rate decision (provisional calendar)"
+ },
+ {
+  "date": "2027-04-29",
+  "time": "18:00",
+  "name": "US GDP",
+  "source": "BEA",
+  "et": "08:30 ET",
+  "title": "GDP (Advance Estimate), 1st Quarter 2027"
+ },
+ {
+  "date": "2027-04-29",
+  "time": "18:00",
+  "name": "US PCE / Personal Income",
+  "source": "BEA",
+  "et": "08:30 ET",
+  "title": "Personal Income and Outlays, March 2027"
+ },
+ {
+  "date": "2027-05-05",
+  "time": "18:00",
+  "name": "US Trade Balance",
+  "source": "BEA",
+  "et": "08:30 ET",
+  "title": "U.S. International Trade in Goods and Services, March 2027"
+ },
+ {
+  "date": "2027-05-27",
+  "time": "18:00",
+  "name": "US GDP",
+  "source": "BEA",
+  "et": "08:30 ET",
+  "title": "GDP (Second Estimate) and Corporate Profits, 1st Quarter 2027"
+ },
+ {
+  "date": "2027-05-27",
+  "time": "18:00",
+  "name": "US PCE / Personal Income",
+  "source": "BEA",
+  "et": "08:30 ET",
+  "title": "Personal Income and Outlays, April 2027"
+ },
+ {
+  "date": "2027-06-09",
+  "time": "18:00",
+  "name": "US Trade Balance",
+  "source": "BEA",
+  "et": "08:30 ET",
+  "title": "U.S. International Trade in Goods and Services, April 2027 and Annual Update"
+ },
+ {
+  "date": "2027-06-16",
+  "time": "23:30",
+  "name": "US FOMC Rate Decision",
+  "source": "static",
+  "et": "14:00 ET",
+  "title": "FOMC statement and rate decision (provisional calendar)"
+ },
+ {
+  "date": "2027-06-25",
+  "time": "18:00",
+  "name": "US GDP",
+  "source": "BEA",
+  "et": "08:30 ET",
+  "title": "GDP (Third Estimate), Industries, Corporate Profits, State GDP, and State Personal Income, 1st Quarter 2027"
+ },
+ {
+  "date": "2027-06-25",
+  "time": "18:00",
+  "name": "US PCE / Personal Income",
+  "source": "BEA",
+  "et": "08:30 ET",
+  "title": "Personal Income and Outlays, May 2027"
+ },
+ {
+  "date": "2027-07-07",
+  "time": "18:00",
+  "name": "US Trade Balance",
+  "source": "BEA",
+  "et": "08:30 ET",
+  "title": "U.S. International Trade in Goods and Services, May 2027"
+ },
+ {
+  "date": "2027-07-28",
+  "time": "23:30",
+  "name": "US FOMC Rate Decision",
+  "source": "static",
+  "et": "14:00 ET",
+  "title": "FOMC statement and rate decision (provisional calendar)"
+ },
+ {
+  "date": "2027-07-29",
+  "time": "18:00",
+  "name": "US GDP",
+  "source": "BEA",
+  "et": "08:30 ET",
+  "title": "GDP (Advance Estimate), 2nd Quarter 2027"
+ },
+ {
+  "date": "2027-07-29",
+  "time": "18:00",
+  "name": "US PCE / Personal Income",
+  "source": "BEA",
+  "et": "08:30 ET",
+  "title": "Personal Income and Outlays, June 2027"
+ },
+ {
+  "date": "2027-08-05",
+  "time": "18:00",
+  "name": "US Trade Balance",
+  "source": "BEA",
+  "et": "08:30 ET",
+  "title": "U.S. International Trade in Goods and Services, June 2027"
+ },
+ {
+  "date": "2027-08-25",
+  "time": "18:00",
+  "name": "US GDP",
+  "source": "BEA",
+  "et": "08:30 ET",
+  "title": "GDP (Second Estimate) and Corporate Profits, 2nd Quarter 2027"
+ },
+ {
+  "date": "2027-08-25",
+  "time": "18:00",
+  "name": "US PCE / Personal Income",
+  "source": "BEA",
+  "et": "08:30 ET",
+  "title": "Personal Income and Outlays, July 2027"
+ },
+ {
+  "date": "2027-09-08",
+  "time": "18:00",
+  "name": "US Trade Balance",
+  "source": "BEA",
+  "et": "08:30 ET",
+  "title": "U.S. International Trade in Goods and Services, July 2027"
+ },
+ {
+  "date": "2027-09-22",
+  "time": "23:30",
+  "name": "US FOMC Rate Decision",
+  "source": "static",
+  "et": "14:00 ET",
+  "title": "FOMC statement and rate decision (provisional calendar)"
+ },
+ {
+  "date": "2027-09-30",
+  "time": "18:00",
+  "name": "US GDP",
+  "source": "BEA",
+  "et": "08:30 ET",
+  "title": "GDP (Third Estimate), Industries, Corporate Profits, State GDP, and State Personal Income, 2nd Quarter 2027\\; State Consumer Spending, 2026"
+ },
+ {
+  "date": "2027-09-30",
+  "time": "18:00",
+  "name": "US PCE / Personal Income",
+  "source": "BEA",
+  "et": "08:30 ET",
+  "title": "Personal Income and Outlays, August 2027"
+ },
+ {
+  "date": "2027-10-06",
+  "time": "18:00",
+  "name": "US Trade Balance",
+  "source": "BEA",
+  "et": "08:30 ET",
+  "title": "U.S. International Trade in Goods and Services, August 2027"
+ },
+ {
+  "date": "2027-10-27",
+  "time": "23:30",
+  "name": "US FOMC Rate Decision",
+  "source": "static",
+  "et": "14:00 ET",
+  "title": "FOMC statement and rate decision (provisional calendar)"
+ },
+ {
+  "date": "2027-10-28",
+  "time": "18:00",
+  "name": "US GDP",
+  "source": "BEA",
+  "et": "08:30 ET",
+  "title": "GDP (Advance Estimate), 3rd Quarter 2027"
+ },
+ {
+  "date": "2027-10-28",
+  "time": "18:00",
+  "name": "US PCE / Personal Income",
+  "source": "BEA",
+  "et": "08:30 ET",
+  "title": "Personal Income and Outlays, September 2027"
+ },
+ {
+  "date": "2027-11-04",
+  "time": "18:00",
+  "name": "US Trade Balance",
+  "source": "BEA",
+  "et": "08:30 ET",
+  "title": "U.S. International Trade in Goods and Services, September 2027"
+ },
+ {
+  "date": "2027-11-24",
+  "time": "19:00",
+  "name": "US GDP",
+  "source": "BEA",
+  "et": "08:30 ET",
+  "title": "GDP (Second Estimate) and Corporate Profits, 3rd Quarter 2027"
+ },
+ {
+  "date": "2027-11-24",
+  "time": "19:00",
+  "name": "US PCE / Personal Income",
+  "source": "BEA",
+  "et": "08:30 ET",
+  "title": "Personal Income and Outlays, October 2027"
+ },
+ {
+  "date": "2027-12-01",
+  "time": "19:00",
+  "name": "US GDP",
+  "source": "BEA",
+  "et": "08:30 ET",
+  "title": "Gross Domestic Product by County and Personal Income by County, 2026"
+ },
+ {
+  "date": "2027-12-07",
+  "time": "19:00",
+  "name": "US Trade Balance",
+  "source": "BEA",
+  "et": "08:30 ET",
+  "title": "U.S. International Trade in Goods and Services, October 2027"
+ },
+ {
+  "date": "2027-12-09",
+  "time": "00:30",
+  "name": "US FOMC Rate Decision",
+  "source": "static",
+  "et": "14:00 ET",
+  "title": "FOMC statement and rate decision (provisional calendar)"
+ },
+ {
+  "date": "2027-12-22",
+  "time": "19:00",
+  "name": "US GDP",
+  "source": "BEA",
+  "et": "08:30 ET",
+  "title": "GDP (Third Estimate), Industries, Corporate Profits, State GDP, and State Personal Income, 3rd Quarter 2027"
+ },
+ {
+  "date": "2027-12-22",
+  "time": "19:00",
+  "name": "US PCE / Personal Income",
+  "source": "BEA",
+  "et": "08:30 ET",
+  "title": "Personal Income and Outlays, November 2027"
+ }
+]

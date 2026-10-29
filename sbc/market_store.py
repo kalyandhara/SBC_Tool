@@ -38,6 +38,9 @@ SYMBOLS = {
     "NIFTY": ("^NSEI", "1995-01-01"),
     "SENSEX": ("^BSESN", "1995-01-01"),
     "INDIAVIX": ("^INDIAVIX", "2008-01-01"),
+    "BTC-USD": ("BTC-USD", "2010-07-17"),  # Bitcoin price data
+    "^GSPC": ("^GSPC", "1950-01-03"),     # S&P 500 (NYSE proxy)
+    "^DJI": ("^DJI", "1928-10-01"),       # Dow Jones Industrial Average
 }
 
 # Series for the sector-rule test (sbc.sector_validation): the instruments the
@@ -57,6 +60,19 @@ RESEARCH_SYMBOLS = {
     "RALLIS": ("RALLIS.NS", "2000-01-01"), "DHANUKA": ("DHANUKA.NS", "2000-01-01"),
     "MCLEODRUSS": ("MCLEODRUSS.NS", "2000-01-01"),
 }
+
+# NSE sector indices for the sector-rotation study (docs/research/sector_rotation_preregistration_2026-10-29.md).
+# Keys are ours; values are yfinance tickers. Ticker check 2026-10-29 (row counts and dates only):
+# The 12 available indices registered in Addendum 2 of
+# docs/research/sector_rotation_preregistration_2026-10-29.md. MEDIA, HEALTHCARE and
+# OIL & GAS returned no rows under any ticker tried and are excluded from this study.
+SECTOR_SYMBOLS = {
+    "CNXBANK": "^NSEBANK", "CNXFIN": "NIFTY_FIN_SERVICE.NS", "CNXIT": "^CNXIT", "CNXPHARMA": "^CNXPHARMA",
+    "CNXAUTO": "^CNXAUTO", "CNXFMCG": "^CNXFMCG", "CNXMETAL": "^CNXMETAL",
+    "CNXENERGY": "^CNXENERGY", "CNXREALTY": "^CNXREALTY",
+    "CNXPSUBANK": "^CNXPSUBANK", "CNXINFRA": "^CNXINFRA", "CNXCONSUM": "^CNXCONSUM",
+}
+RESEARCH_SYMBOLS.update({k: (t, "2005-01-01") for k, t in SECTOR_SYMBOLS.items()})
 
 NSE_FIIDII_URL = "https://www.nseindia.com/api/fiidiiTradeReact"
 _NSE_HEADERS = {
@@ -292,6 +308,10 @@ def freshness(now: dt.datetime | None = None) -> dict:
         first, last, count = conn.execute(
             "SELECT MIN(date), MAX(date), COUNT(DISTINCT date) FROM flows").fetchone()
     series["FII_DII"] = {"first": first, "last": last, "rows": count,
-                         "stale": last is None or last < expected.isoformat()}
+                         "stale": last is None or last < expected.isoformat(),
+                         "note": "NSE publishes the latest cash-session flows only; "
+                                 "this series starts at the first refresh, so cumulative "
+                                 "FII totals (e.g. 'FIIs withdrew ~4 lakh crore in 2026') "
+                                 "cannot be audited from this store."}
     return {"expected_last_session": expected.isoformat(), "series": series,
             "stale": any(s["stale"] for s in series.values())}

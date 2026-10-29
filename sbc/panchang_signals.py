@@ -5,6 +5,13 @@ This encodes the consensus "rule-book" the class arrived at for turning the
 Panchanga into a simple intraday equity-index bias.  It is intentionally
 small and tabular so the numbers can be tuned after a backtest.
 
+The 27 nitya yogas (incl. Vyatipata) are computed per moment and exposed
+in panchang_signal().  The "Vyatipata falls" market claim was tested in
+reports/vyatipat_formation_study_2026-10-18.md (375 formations,
+2000-2026): NIFTY actually RISES after formation (+1d +0.36% 64% win,
++5d +2.53% 65% win, p<0.001), bullions are flat - recorded here as a
+candidate bullish window, not yet walk-forward validated.
+
 Trend scale (ordered low -> high):
    -2  Super Bearish
    -1  Bearish
@@ -141,14 +148,17 @@ def trend_label(score):
 
 
 def panchang_signal(planets):
-    """Compute (tithi, paksha, nakshatra, base_bias, final_score, final_label)
-    from a list of planet dicts produced by sbc.planets.positions()."""
+    """Compute (tithi, paksha, nakshatra, nitya yoga, base_bias,
+    final_score, final_label) from a list of planet dicts produced by
+    sbc.planets.positions()."""
     sun = next(p for p in planets if p["name"] == "Sun")
     moon = next(p for p in planets if p["name"] == "Moon")
-    from .nakshatra import paksha_of, tithi_of
+    from .nakshatra import VYATIPATA_INDEX, nitya_yoga_of, paksha_of, tithi_of
     tithi = tithi_of(sun["longitude"], moon["longitude"])
     paksha = paksha_of(tithi)
     nakshatra = moon["nakshatra"]
+    yoga_index, yoga_name = nitya_yoga_of(sun["longitude"],
+                                          moon["longitude"])
     base = tithi_bias(tithi)
     score = final_trend(tithi, nakshatra)
     return {
@@ -156,6 +166,9 @@ def panchang_signal(planets):
         "tithi_name": TITHI_NAMES[tithi - 1],
         "paksha": paksha,
         "nakshatra": nakshatra,
+        "nitya_index": yoga_index,
+        "nitya_yoga": yoga_name,
+        "vyatipata_active": yoga_index == VYATIPATA_INDEX,
         "base_bias": base,
         "final_score": score,
         "final_label": trend_label(score),

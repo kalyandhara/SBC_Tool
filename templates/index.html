@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <link rel="icon" type="image/svg+xml" href="/static/favicon.svg">
   <title>Sarvatobhadra Chakra - Market Prediction</title>
-  <link rel="stylesheet" href="/static/style.css?v=22">
+  <link rel="stylesheet" href="/static/style.css?v=32">
   <script src="/static/chart.umd.min.js"></script>
   <script src="/static/js/api-token.js"></script>
 </head>
@@ -66,34 +66,53 @@
   <nav class="nav-tabs-bar" aria-label="Workspaces">
     <div class="wrap nav-tabs" id="workspace-tabs" role="tablist">
       <button class="nav-tab active" data-tab="tab-overview" role="tab" aria-selected="true" aria-controls="tab-overview">
-        <span class="tab-icon">⚡</span> Executive Overview
+        <span class="tab-icon" aria-hidden="true">⚡</span> Executive Overview
       </button>
       <button class="nav-tab" data-tab="tab-chart" role="tab" aria-selected="false" aria-controls="tab-chart">
-        <span class="tab-icon">📈</span> Chart &amp; Timing
+        <span class="tab-icon" aria-hidden="true">📈</span> Chart &amp; Timing
       </button>
       <button class="nav-tab" data-tab="tab-sectors" role="tab" aria-selected="false" aria-controls="tab-sectors">
-        <span class="tab-icon">🎯</span> Sector Heatmap
+        <span class="tab-icon" aria-hidden="true">🎯</span> Sector Heatmap
       </button>
+      <button class="nav-tab" data-tab="tab-calendar" role="tab" aria-selected="false" aria-controls="tab-calendar">
+        <span class="tab-icon" aria-hidden="true">🗓️</span> Forward Calendar
+      </button>
+      <button class="nav-tab" data-tab="tab-transit" role="tab" aria-selected="false" aria-controls="tab-transit">
+        <span class="tab-icon" aria-hidden="true">🪐</span> Transit Report
+      </button>
+      <button class="nav-tab" data-tab="tab-screener" role="tab" aria-selected="false" aria-controls="tab-screener">
+        <span class="tab-icon" aria-hidden="true">🚀</span> Momentum Screener
+      </button>
+      <button class="nav-tab" data-tab="tab-rotation" role="tab" aria-selected="false" aria-controls="tab-rotation">
+        <span class="tab-icon" aria-hidden="true">🔭</span> Sector Rotation
+      </button>
+      <button class="nav-tab" data-tab="tab-bullion" role="tab" aria-selected="false" aria-controls="tab-bullion">
+        <span class="tab-icon" aria-hidden="true">🥇</span> Bullion Week
+      </button>
+      <span id="nav-asof" class="nav-asof" title="The session most pages are computed for. Change it with the Date field above." aria-live="polite"></span>
       <details class="advanced-workspaces">
-        <summary>Advanced analysis</summary>
+        <summary title="Pages whose signals have not beaten the base rate in testing">Research · unvalidated</summary>
         <div class="advanced-workspace-tabs">
-          <button class="nav-tab" data-tab="tab-research" role="tab" aria-selected="false" aria-controls="tab-research">
-            <span class="tab-icon">🔬</span> Research Lab
-          </button>
           <button class="nav-tab" data-tab="tab-kp" role="tab" aria-selected="false" aria-controls="tab-kp">
-            <span class="tab-icon">⏱️</span> KP Intraday
+            <span class="tab-icon" aria-hidden="true">⏱️</span> KP Intraday
+          </button>
+          <button class="nav-tab" data-tab="tab-kp-nifty" role="tab" aria-selected="false" aria-controls="tab-kp-nifty">
+            <span class="tab-icon" aria-hidden="true">🪐</span> KP Chart (NIFTY)
+          </button>
+          <button class="nav-tab" data-tab="tab-kp-report" role="tab" aria-selected="false" aria-controls="tab-kp-report">
+            <span class="tab-icon" aria-hidden="true">📄</span> KP Intraday Report
+          </button>
+          <button class="nav-tab" data-tab="tab-crash" role="tab" aria-selected="false" aria-controls="tab-crash">
+            <span class="tab-icon" aria-hidden="true">⚠️</span> Crash Windows
           </button>
           <button class="nav-tab" data-tab="tab-balance" role="tab" aria-selected="false" aria-controls="tab-balance">
-            <span class="tab-icon">⚖️</span> Monthly Projection
+            <span class="tab-icon" aria-hidden="true">⚖️</span> Monthly Projection
           </button>
           <button class="nav-tab" data-tab="tab-analogs" role="tab" aria-selected="false" aria-controls="tab-analogs">
-            <span class="tab-icon">🔭</span> Analog Lab
-          </button>
-          <button class="nav-tab" data-tab="tab-calendar" role="tab" aria-selected="false" aria-controls="tab-calendar">
-            <span class="tab-icon">🗓️</span> Forward Calendar
+            <span class="tab-icon" aria-hidden="true">🔭</span> Analog Lab
           </button>
           <button class="nav-tab" data-tab="tab-swing" role="tab" aria-selected="false" aria-controls="tab-swing">
-            <span class="tab-icon">🌊</span> Swing Windows
+            <span class="tab-icon" aria-hidden="true">🌊</span> Swing Windows
           </button>
         </div>
       </details>
@@ -215,7 +234,7 @@
                 <label>Birthdate (Gregorian)
                   <div class="week-picker-wrap">
                     <input type="date" id="bd-date" required class="week-picker-input">
-                    <span class="calendar-icon" onclick="document.getElementById('bd-date').showPicker?.() || document.getElementById('bd-date').focus()">
+                    <span class="calendar-icon" data-picker-for="bd-date">
                       <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
                     </span>
                     <div class="week-calendar-dropdown hidden" id="bd-date-calendar"></div>
@@ -226,7 +245,7 @@
                 <label>Birthtime (0–24 hrs)
                   <div class="week-picker-wrap">
                     <input type="time" id="bd-time" step="1" required class="time-picker-input">
-                    <span class="calendar-icon time-icon" onclick="document.getElementById('bd-time').showPicker?.() || document.getElementById('bd-time').focus()">
+                    <span class="calendar-icon time-icon" data-picker-for="bd-time">
                       <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
                     </span>
                   </div>
@@ -256,17 +275,17 @@
                   <div class="coord-block">
                     <span class="coord-label">Longitude</span>
                     <div class="deg-min-sec">
-                      <input type="number" placeholder="°" min="-180" max="180" id="lon-deg">°
-                      <input type="number" placeholder="′" min="0" max="59" id="lon-min">′
-                      <input type="number" placeholder="″" min="0" max="59" id="lon-sec">″
+                      <input type="number" placeholder="°" min="-180" max="180" id="lon-deg" aria-label="Longitude degrees">°
+                      <input type="number" placeholder="′" min="0" max="59" id="lon-min" aria-label="Longitude minutes">′
+                      <input type="number" placeholder="″" min="0" max="59" id="lon-sec" aria-label="Longitude seconds">″
                     </div>
                   </div>
                   <div class="coord-block">
                     <span class="coord-label">Latitude</span>
                     <div class="deg-min-sec">
-                      <input type="number" placeholder="°" min="-90" max="90" id="lat-deg">°
-                      <input type="number" placeholder="′" min="0" max="59" id="lat-min">′
-                      <input type="number" placeholder="″" min="0" max="59" id="lat-sec">″
+                      <input type="number" placeholder="°" min="-90" max="90" id="lat-deg" aria-label="Latitude degrees">°
+                      <input type="number" placeholder="′" min="0" max="59" id="lat-min" aria-label="Latitude minutes">′
+                      <input type="number" placeholder="″" min="0" max="59" id="lat-sec" aria-label="Latitude seconds">″
                     </div>
                   </div>
                 </div>
@@ -296,15 +315,15 @@
                 </label>
               </div>
             </div>
-            <div class="profile-controls" style="display:flex;gap:8px;align-items:center;margin-bottom:8px">
-              <select id="bd-profile-select" style="flex:1">
+            <div class="profile-controls u-row u-center-y u-mb8">
+              <select class="u-flex1" id="bd-profile-select" aria-label="Saved birth profile">
                 <option value="">-- Select saved profile --</option>
               </select>
               <button type="button" class="btn btn-secondary" id="bd-profile-rename">Rename</button>
               <button type="button" class="btn btn-secondary" id="bd-profile-default">Set Default</button>
               <button type="button" class="btn btn-secondary" id="bd-profile-delete">Delete</button>
               <button type="button" class="btn btn-secondary" id="bd-profile-export">Export</button>
-              <input type="file" id="bd-profile-import" accept="application/json" style="display:none">
+              <input type="file" id="bd-profile-import" aria-label="Import birth profile file" accept="application/json" style="display:none">
               <button type="button" class="btn btn-secondary" id="bd-profile-import-btn">Import</button>
             </div>
             <div class="form-actions">
@@ -312,7 +331,7 @@
               <button type="button" class="btn" id="bd-save">Save Birth Profile</button>
               <button type="button" class="btn" id="bd-generate">Generate Recommendations</button>
               <button type="submit" class="btn">OK</button>
-              <button type="button" class="btn btn-secondary" onclick="document.getElementById('birth-data-form').reset()">Cancel</button>
+              <button type="button" class="btn btn-secondary" data-reset-form="birth-data-form">Cancel</button>
             </div>
           </form>
           <div id="wellness-output" class="wellness-output hidden"></div>
@@ -492,12 +511,12 @@
           <h2>Rahu/Ketu Trap Calendar</h2>
           <span class="panel-sub">Industry-wise daily trap scores · v1</span>
         </div>
-        <div class="trap-controls" style="display:flex;gap:8px;flex-wrap:wrap;margin:8px 0">
-          <label style="font-size:13px">Start <input type="date" id="rk-start" style="margin-left:4px"></label>
-          <label style="font-size:13px">End <input type="date" id="rk-end" style="margin-left:4px"></label>
-          <button id="rk-run" class="btn btn-primary" style="margin-left:auto">Load Calendar</button>
+        <div class="trap-controls u-row u-wrap u-my8">
+          <label class="u-fs13">Start <input class="u-ml4" type="date" id="rk-start"></label>
+          <label class="u-fs13">End <input class="u-ml4" type="date" id="rk-end"></label>
+          <button id="rk-run" class="btn btn-primary u-mlauto">Load Calendar</button>
         </div>
-        <div id="rk-heatmap" style="overflow:auto;max-height:600px"></div>
+        <div class="u-scroll600" id="rk-heatmap"></div>
       </section>
 
       <!-- Upcoming Yoga Alerts -->
@@ -517,31 +536,6 @@
           <button class="btn btn-sm btn-secondary" id="toggle-trading-details">Show Details</button>
         </div>
         <div id="trading-signals-details" class="hidden">
-          <div id="astro-score" class="panel-sub" style="text-align:center;margin:20px 0"></div>
-          <div class="monthly-heatmap-controls" style="margin:12px 0">
-            <label>Sector
-              <select id="nakshatra-sector-select" class="form-control">
-                <option>Nifty Bank</option>
-                <option>Nifty IT</option>
-                <option>Nifty Auto</option>
-                <option>Nifty Metal</option>
-                <option>Nifty FMCG</option>
-                <option>Nifty Pharma</option>
-                <option>Nifty Energy</option>
-                <option>Nifty Realty</option>
-              </select>
-            </label>
-            <button id="trading-predicted-actual-load" class="btn" style="margin-left:8px" title="Experimental: not validated">Load Projection vs Actual <span class="experimental-badge">Experimental</span></button>
-          </div>
-          <div id="trading-signals-predicted-actual" style="height:650px;margin-top:24px">
-            <div style="display:flex;gap:12px;margin-bottom:8px;font-size:12px;color:#94a3b8">
-              <span>Top: SBC intraday projection (/api/intraday_projection) &mdash; <strong style="color:var(--accent)">experimental, not validated</strong></span>
-              <span>Bottom: Actual price candles</span>
-            </div>
-            <div id="predicted-actual-top" style="height:300px;border:1px solid #1e293b;border-radius:6px"></div>
-            <div style="height:8px"></div>
-            <div id="predicted-actual-bottom" style="height:340px;border:1px solid #1e293b;border-radius:6px"></div>
-          </div>
           <h1 id="astro-score-label">&mdash;</h1>
           <div id="astro-score-sub">Loading live panchanga&hellip;</div>
           <div id="astro-signals-list"></div>
@@ -549,9 +543,40 @@
             <div><b>⚡ REVERSAL WINDOWS ACTIVE TODAY</b></div>
             <div id="reversal-details"></div>
           </div>
-          <div id="sector-map" style="margin-top:20px">
-            <h3>Today's Sector Map <span id="sector-map-overall" style="float:right"></span></h3>
+          <div class="u-mt20" id="sector-map">
+            <h3>Today's Sector Map <span class="u-fr" id="sector-map-overall"></span></h3>
             <div id="sector-map-items"></div>
+          </div>
+          <div class="msc" id="moon-signal-check">
+            <h3>Moon-sign signal check</h3>
+            <p class="msc-intro">The Moon's sidereal sign at 09:15 IST gives a bullish or bearish call for the next session's close. This checks that call against the base rate.</p>
+            <form class="research-controls" id="msc-form">
+              <label>Index
+                <select id="msc-symbol">
+                  <option value="NIFTY" selected>NIFTY 50</option>
+                  <option value="SENSEX">SENSEX</option>
+                  <option value="NIFTYBANK">Nifty Bank</option>
+                  <option value="NIFTYIT">Nifty IT</option>
+                  <option value="NIFTYAUTO">Nifty Auto</option>
+                  <option value="NIFTYMETAL">Nifty Metal</option>
+                  <option value="NIFTYFMCG">Nifty FMCG</option>
+                  <option value="NIFTYPHARMA">Nifty Pharma</option>
+                  <option value="NIFTYENERGY">Nifty Energy</option>
+                  <option value="NIFTYREALTY">Nifty Realty</option>
+                </select>
+              </label>
+              <label>Period
+                <select id="msc-years"><option value="1">1 year</option><option value="2" selected>2 years</option><option value="5">5 years</option><option value="10">10 years</option></select>
+              </label>
+              <label class="msc-check"><input type="checkbox" id="msc-multi" checked> Weekly sign agrees</label>
+              <label class="msc-check"><input type="checkbox" id="msc-regime"> Skip 1st and 15th</label>
+              <label class="msc-check" title="Keeps a day only if the next session opens in the called direction. That open isn't known when the call is made."><input type="checkbox" id="msc-gap"> Gap filter (look-ahead)</label>
+              <button type="submit" class="btn">Run check</button>
+              <button type="button" class="btn btn-secondary" id="msc-csv" disabled>Export CSV</button>
+            </form>
+            <div id="msc-status" class="nifty-chart-status" role="status" aria-live="polite">NIFTY and SENSEX use local data; sector indices download from Yahoo.</div>
+            <div id="msc-score" class="msc-score"></div>
+            <div id="msc-chart" class="msc-chart" aria-label="Close price with signal bands, and rolling hit rate against the base rate"></div>
           </div>
         </div>
       </section>
@@ -619,11 +644,11 @@
         <div id="intraday-proj-status" class="nifty-chart-status"></div>
         <div id="intraday-proj-chart" class="intraday-proj-chart"></div>
         <div id="intraday-proj-legend" class="nifty-chart-legend">
-          <span><i style="display:inline-block;width:14px;height:3px;border-radius:2px;background:#3b82f6;margin-right:5px"></i> Cumulative KP path</span>
-          <span><i style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#f59e0b;margin-right:5px"></i> Reversal turning points</span>
-          <span><i style="display:inline-block;width:10px;height:10px;border-radius:2px;background:rgba(34,197,94,0.85);margin-right:5px"></i> Benefic hora momentum</span>
-          <span><i style="display:inline-block;width:10px;height:10px;border-radius:2px;background:rgba(239,68,68,0.85);margin-right:5px"></i> Malefic hora momentum</span>
-          <span><i style="display:inline-block;width:10px;height:10px;border-radius:2px;background:rgba(148,163,184,0.6);margin-right:5px"></i> Dahan (Bhadra) muted</span>
+          <span><i class="sw sw-line sw-c-blue"></i> Cumulative KP path</span>
+          <span><i class="sw sw-dot sw-c-amber"></i> Reversal turning points</span>
+          <span><i class="sw sw-sq10 sw-c-bull"></i> Benefic hora momentum</span>
+          <span><i class="sw sw-sq10 sw-c-bear"></i> Malefic hora momentum</span>
+          <span><i class="sw sw-sq10 sw-c-neutral"></i> Dahan (Bhadra) muted</span>
           <span>Shaded bands: hora lord</span>
         </div>
         <div id="intraday-proj-tip" class="nifty-chart-tip hidden"></div>
@@ -671,7 +696,7 @@
           <span class="panel-sub" id="futurecast-summary"></span>
         </div>
         <p class="backtest-note" id="futurecast-note"></p>
-        <div id="futurecast-results" class="backtest-results"></div>
+        <div id="futurecast-results" class="backtest-results panel-loading">Loads with the prediction&hellip;</div>
       </section>
 
       <!-- Bullish Futurecast 1Y Window -->
@@ -686,7 +711,7 @@
             <span class="past-label"></span>
             <span class="future-label"></span>
           </div>
-          <div id="bullish-timeline" class="bullish-timeline" role="list" aria-label="Bullish futurecast timeline"></div>
+          <div id="bullish-timeline" class="bullish-timeline panel-loading" role="list" aria-label="Bullish futurecast timeline">Loads with the prediction&hellip;</div>
           <div id="bullish-center-marker" class="bullish-center-marker" aria-hidden="true">
             <span class="center-label">TODAY</span>
             <span class="center-line"></span>
@@ -697,6 +722,98 @@
     </div>
 
     <!-- ============================================================== -->
+    <!-- TAB 2b: PLANET TRANSIT REPORT -->
+    <div id="tab-transit" class="tab-pane" role="tabpanel">
+      <section id="transit-report-page" class="panel">
+        <div class="panel-head">
+          <h2>🪐 Planet Transit Report</h2>
+          <span class="panel-sub">Exact zodiac, nakshatra and pada transit timings for all 12 bodies, in your city's local time &middot; Swiss Ephemeris, 1-second precision &middot; Excel download</span>
+        </div>
+        <div class="transit-controls">
+          <label>City
+            <input type="text" id="transit-city" list="transit-city-list" value="Mumbai" autocomplete="off" placeholder="Type a city...">
+            <datalist id="transit-city-list"></datalist>
+          </label>
+          <label>From <input type="date" id="transit-start"></label>
+          <label>To <input type="date" id="transit-end"></label>
+          <label>Ayanamsa
+            <select id="transit-ayanamsa">
+              <option value="lahiri" selected>Lahiri</option>
+              <option value="kp">KP (Krishnamurti)</option>
+              <option value="raman">Raman</option>
+            </select>
+          </label>
+          <label>Node
+            <select id="transit-node">
+              <option value="mean" selected>Mean</option>
+              <option value="true">True</option>
+            </select>
+          </label>
+          <label>Transit types
+            <span class="transit-checks" id="transit-types">
+              <label class="chk"><input type="checkbox" value="sign" checked> Zodiac</label>
+              <label class="chk"><input type="checkbox" value="nakshatra" checked> Nakshatra</label>
+              <label class="chk"><input type="checkbox" value="pada" checked> Pada</label>
+            </span>
+          </label>
+          <label>Planets
+            <span class="transit-checks" id="transit-planets"></span>
+            <button type="button" id="transit-planets-toggle" class="link-btn">all / none</button>
+          </label>
+          <button id="transit-generate" class="btn">⬇️ Generate Excel</button>
+        </div>
+        <div id="transit-status" class="transit-status" aria-live="polite"></div>
+      </section>
+    </div>
+
+    <!-- TAB 2c: NSE MOMENTUM SCREENER -->
+    <div id="tab-screener" class="tab-pane" role="tabpanel">
+      <section id="screener-page" class="panel">
+        <div class="panel-head">
+          <h2>🚀 NSE Momentum Screener</h2>
+          <span class="panel-sub">Supertrend &middot; RSI &middot; Pivot &middot; Bollinger &middot; EMA crossover across NSE universes &middot; entry, stop-loss and live trade status in an Excel report</span>
+        </div>
+        <div class="transit-controls">
+          <label>Universe
+            <select id="scr-universe"></select>
+          </label>
+          <label>Watchlist (optional)
+            <input type="text" id="scr-watchlist" placeholder="RELIANCE, TCS, ^NSEI">
+          </label>
+          <label>Mode
+            <select id="scr-mode">
+              <option value="full" selected>Full 4-rule momentum</option>
+              <option value="rsi">RSI only</option>
+              <option value="ema">10/30 EMA crossover</option>
+            </select>
+          </label>
+          <label>Timeframe
+            <select id="scr-timeframe">
+              <option value="5m">5 min</option>
+              <option value="10m">10 min</option>
+              <option value="15m">15 min</option>
+              <option value="1h">1 hour</option>
+              <option value="1d" selected>Daily</option>
+              <option value="1wk">Weekly</option>
+            </select>
+          </label>
+          <label>Scan date
+            <input type="date" id="scr-end">
+          </label>
+          <label>Lookback (days)
+            <input type="number" id="scr-lookback" min="5" placeholder="default">
+          </label>
+          <label class="chk scr-ha-wrap">
+            <input type="checkbox" id="scr-ha"> Heikin Ashi candles
+          </label>
+          <button id="scr-run" class="btn">🔍 Run Scan</button>
+          <button id="scr-download" class="btn btn-secondary">⬇️ Excel Report</button>
+        </div>
+        <div id="scr-status" class="transit-status" aria-live="polite"></div>
+        <div id="scr-results"></div>
+      </section>
+    </div>
+
     <!-- TAB 3: SECTOR HEATMAP & COMMODITIES -->
     <!-- ============================================================== -->
     <div id="tab-sectors" class="tab-pane" role="tabpanel">
@@ -743,7 +860,7 @@
       <section id="monthly-heatmap" class="panel monthly-heatmap-panel" data-sector-category="all">
         <div class="panel-head">
           <h2>Monthly Sector Confluence Heatmap</h2>
-          <span class="panel-sub" id="monthly-heatmap-sub">SBC nakshatra-vedha + planetary transit confluence &middot; sector &times; day, with lunar timing strip</span>
+          <span class="panel-sub" id="monthly-heatmap-sub">SBC nakshatra-vedha + planetary transit confluence &middot; sector month totals &middot; strongest days coloured &middot; lunar markers on the date axis</span>
         </div>
         <div class="monthly-heatmap-controls">
           <label>From
@@ -1012,42 +1129,26 @@
           <button id="kp-intraday-run" class="btn">⚡ Generate Report</button>
           <button id="kp-intraday-sample" class="btn btn-secondary" title="Compute this month's KP data from Swiss Ephemeris">Generate KP Data</button>
           <button id="kp-intraday-path" class="btn btn-secondary" title="Experimental: no validated edge">📈 Intraday Path (experimental)</button>
+          <button type="button" class="btn btn-secondary infographic-btn" data-infographic="kp" data-params="kp-intraday-date:date,kp-intraday-instrument:instrument" title="Download a PNG card for this tab">🖼 Infographic</button>
         </div>
         <div id="kp-intraday-path-chart" class="kp-intraday-chart" style="display:none;">
           <h3>Intraday Path (cumulative KP composite score) <span class="experimental-badge">Experimental</span></h3>
           <p class="experimental-note"><strong>Experimental &mdash; no validated edge.</strong> Back-test on Swiss-Ephemeris KP data, 4 Aug&ndash;30 Sep 2026 (41 days): hourly direction hit 50.8%, regime-shift hit 49.7%, correlation with returns +0.004 &mdash; indistinguishable from chance. Shown for research only; do not trade on it. Details: <code>docs/INTRADAY_PATH_VALIDATION.md</code>.</p>
-          <div id="kp-path-container" style="height: 320px; width: 100%;"></div>
-          <div id="kp-nifty-intraday-wrap" style="margin-top:24px; display:none;">
+          <div class="u-h320 u-w100" id="kp-path-container"></div>
+          <div class="u-mt24" id="kp-nifty-intraday-wrap" style="display:none;">
             <h4>NIFTY Intraday Chart (3-min)</h4>
-            <div id="kp-nifty-intraday-disabled" style="text-align:center; padding:40px; color:#94a3b8;">Intraday chart is unavailable for future dates.</div>
-            <div id="kp-nifty-intraday-frame" style="height:380px; width:100%; border:1px solid #1e293b; border-radius:6px; display:none;">
+            <div class="empty-note" id="kp-nifty-intraday-disabled">Intraday chart is unavailable for future dates.</div>
+            <div class="chart-box u-h380" id="kp-nifty-intraday-frame" style="display:none;">
               <!-- TradingView embed will be injected here -->
             </div>
           </div>
-          <pre id="kp-path-data" style="font-size:11px; white-space: pre-wrap;"></pre>
+          <pre class="u-pre11" id="kp-path-data"></pre>
         </div>
         <div id="kp-intraday-content" class="kp-intraday-content"></div>
 
-      <!-- Kota Chakra Prediction -->
-      <div id="kota-chakra-panel" class="kp-intraday-chart" style="margin-top:24px;">
-        <h3>🏰 Kota Chakra Prediction</h3>
-        <div style="display:flex; gap:8px; margin-bottom:12px;">
-          <select id="kota-date"></select>
-          <select id="kota-instrument">
-            <option value="NIFTY">NIFTY</option>
-            <option value="BANKNIFTY">BANKNIFTY</option>
-          </select>
-          <button id="kota-load-daily" class="btn">Load Daily</button>
-          <button id="kota-load-weekly" class="btn btn-secondary">Load Weekly</button>
-          <button id="kota-load-monthly" class="btn btn-secondary">Load Monthly</button>
-        </div>
-        <div id="kota-asof" class="asof-slot"></div>
-        <div id="kota-table-wrap"></div>
-      </div>
-
       <!-- KP Intraday Price Chart -->
       <div id="kp-intraday-chart" class="kp-intraday-chart">
-        <div id="kp-chart-container" style="height: 400px; width: 100%;"></div>
+        <div class="u-h400 u-w100" id="kp-chart-container"></div>
         <div class="kp-chart-legend">
           <span><i class="mk mk-bull"></i> Bullish Window</span>
           <span><i class="mk mk-bear"></i> Bearish Window</span>
@@ -1055,6 +1156,130 @@
           <span><i class="mk mk-warning"></i> Exhaustion Warning</span>
         </div>
       </div>
+      </section>
+    </div>
+
+    <!-- ============================================================== -->
+    <!-- TAB KP NIFTY ONLY -->
+    <!-- ============================================================== -->
+    <div id="tab-kp-nifty" class="tab-pane" role="tabpanel">
+      <section id="kp-nifty-page" class="panel kp-intraday-panel">
+        <div class="panel-head">
+          <h2>KP Chart · NIFTY Only <span class="experimental-badge">Experimental</span></h2>
+          <span class="panel-sub">Rule-based intraday trend change signals for NIFTY index futures using KP astrology &middot; back-tested with no edge over chance; research only</span>
+        </div>
+        <div class="kp-intraday-controls">
+          <label>Trading Day
+            <div class="week-picker-wrap">
+              <input type="date" id="kp-nifty-date" class="week-picker-input">
+              <div id="kp-nifty-calendar" class="week-calendar-dropdown hidden"></div>
+            </div>
+          </label>
+          <label>Instrument
+            <select id="kp-nifty-instrument" disabled>
+              <option value="NIFTY" selected>NIFTY</option>
+            </select>
+          </label>
+          <label>Format
+            <select id="kp-nifty-format">
+              <option value="html">HTML Interactive Report</option>
+              <option value="json">JSON Structured Data</option>
+              <option value="docx">Word document (.docx)</option>
+            </select>
+          </label>
+          <button id="kp-nifty-run" class="btn">⚡ Generate NIFTY Report</button>
+          <button id="kp-nifty-sample" class="btn btn-secondary" title="Compute this month's KP data from Swiss Ephemeris">Generate KP Data</button>
+          <button type="button" class="btn btn-secondary infographic-btn" data-infographic="kp_chart" data-params="kp-nifty-date:date" title="Download a PNG card for this tab">🖼 Infographic</button>
+        </div>
+        <div id="kp-nifty-content" class="kp-intraday-content"></div>
+      </section>
+    </div>
+
+    <!-- ============================================================== -->
+    <!-- TAB KP INTRADAY REPORT VIEW -->
+    <!-- ============================================================== -->
+    <div id="tab-kp-report" class="tab-pane" role="tabpanel">
+      <section id="kp-report-page" class="panel">
+        <div class="panel-head">
+          <h2>KP Intraday Trend Change Prediction Report</h2>
+          <span class="panel-sub">Live report for the header date's NSE session · Research only, back-tested at chance</span>
+          <div class="panel-actions"><button type="button" class="btn btn-secondary infographic-btn" data-infographic="kp_report" data-params="" title="Download a PNG card for this tab">🖼 Infographic</button></div>
+        </div>
+        <div class="panel-body">
+          <p id="kp-report-status" class="nifty-chart-status" role="status" aria-live="polite">Opens on the live report for the session in the header date.</p>
+          <div id="kp-report-text" class="kp-intraday-content"></div>
+        </div>
+      </section>
+    </div>
+
+    <!-- ============================================================== -->
+    <!-- TAB CRASH WINDOWS -->
+    <!-- ============================================================== -->
+    <div id="tab-crash" class="tab-pane" role="tabpanel">
+      <section id="crash-windows-page" class="panel">
+        <div class="panel-head">
+          <h2>Indicative Market Crash Windows — Planetary Combinations <span class="experimental-badge">Research</span></h2>
+          <span class="panel-sub">Planetary combination risk windows with historical lift scoring · Research only</span>
+        </div>
+        <div class="crash-controls">
+          <label>Period Start
+            <input type="date" id="crash-start-date">
+          </label>
+          <label>Period End
+            <input type="date" id="crash-end-date">
+          </label>
+          <button id="crash-generate" class="btn">⚡ Generate Report</button>
+          <button type="button" class="btn btn-secondary infographic-btn" data-infographic="crash" data-params="crash-start-date:start,crash-end-date:end" title="Download a PNG card for this tab">🖼 Infographic</button>
+        </div>
+        <div id="crash-report-content" class="crash-report-content panel-body">
+          <div class="crash-report" id="crash-report-text">
+            <header class="crash-head">
+              <h3>Indicative Market Crash Windows — Planetary Combinations</h3>
+              <p class="crash-meta" id="crash-report-meta">Period analysed: 01-10-2026 to 31-12-2026    |    Generated: 07-10-2026    |    Sidereal (Lahiri), mean nodes</p>
+            </header>
+            <section class="crash-sec">
+              <h4>1. Summary</h4>
+              <div class="crash-kpis">
+                <div><span>Days scanned</span><b>92</b></div>
+                <div><span>Risk periods</span><b>1</b></div>
+                <div><span>HIGH / ELEVATED</span><b>1 / 0</b></div>
+                <div><span>Days covered</span><b>8</b></div>
+              </div>
+              <p>Strongest window: 06-11-2026 to 13-11-2026, peak score 2.36 on 06-11-2026 — Sun debilitated in Libra, Jupiter in a fire sign, Mars debilitated in Cancer, Sun–Saturn in 6/8 (shadashtak), Mercury retrograde, Guru-Chandal (Jupiter with Rahu/Ketu), Venus in 11th house (Mumbai open).</p>
+              <p class="muted">Neither of the two strongest slow-cycle signals (Saturn–Uranus, Jupiter–Saturn hard aspects) is active in this range, so any windows below rely on shorter-term triggers.</p>
+            </section>
+            <section class="crash-sec">
+              <h4>2. Indicative crash / correction periods</h4>
+              <div class="analog-table-wrap"><table class="analog-table crash-table">
+                <thead><tr><th>#</th><th>Period</th><th>Days</th><th>Level</th><th>Peak score</th><th>Peak date</th></tr></thead>
+                <tbody><tr><td>1</td><td class="nowrap">06-11-2026 → 13-11-2026<br><span class="muted">HIGH days: 06-11 → 12-11</span></td><td class="num">8</td><td><span class="crash-level high">HIGH</span></td><td class="num">2.36</td><td class="nowrap">06-11-2026</td></tr></tbody>
+              </table></div>
+              <h5>Reasons for period 1</h5>
+              <div class="analog-table-wrap"><table class="analog-table crash-table">
+                <thead><tr><th>Combination</th><th>Active dates</th><th>Position</th><th>Meaning</th><th>Lift</th><th>Seen in</th></tr></thead>
+                <tbody><tr><td><strong>Jupiter in a fire sign</strong></td><td class='nowrap'>06-11-2026 to 13-11-2026</td><td>Jupiter Leo 0°</td><td>Expansive Jupiter in fiery signs; associated with speculative excess before the fall.</td><td class='num'>1.82×</td><td class='crash-seen'>1987, 1992, 2000, 2004, 2008 (x3), 2011, 2015, 2016, 2020 (x2)</td></tr><tr><td><strong>Venus in 11th house (Mumbai open)</strong></td><td class='nowrap'>06-11-2026 to 13-11-2026</td><td>Lagna Scorpio at 09:15 IST, Venus Vir 29° in 11th</td><td>Venus in the house of gains; appeared in 46% of crash days vs 27% expected.</td><td class='num'>1.73×</td><td class='crash-seen'>1929, 1990, 1992, 1998, 2000, 2001, 2008, 2011, 2015, 2018, 2024, 2025</td></tr><tr><td><strong>Sun debilitated in Libra</strong></td><td class='nowrap'>06-11-2026 to 13-11-2026</td><td>Sun Lib 19°</td><td>Weak Sun (authority, confidence). Note: falls every mid-Oct to mid-Nov, so it overlaps the &quot;October effect&quot;.</td><td class='num'>1.88×</td><td class='crash-seen'>1929, 1987, 1997, 2008</td></tr><tr><td><strong>Sun–Saturn in 6/8 (shadashtak)</strong></td><td class='nowrap'>06-11-2026 to 13-11-2026</td><td>Sun Lib 19° / Saturn Pis 14°</td><td>Sun and Saturn in mutually hostile 6/8 positions.</td><td class='num'>1.50×</td><td class='crash-seen'>1990, 1997, 2008, 2010, 2016, 2024</td></tr><tr><td><strong>Mercury retrograde</strong></td><td class='nowrap'>06-11-2026 to 13-11-2026</td><td>Mercury retrograde at Lib 15°</td><td>Errors, miscommunication and technical breakdowns (2010 Flash Crash, 2024 carry unwind).</td><td class='num'>1.41×</td><td class='crash-seen'>1962, 1987, 2008, 2010, 2011, 2024, 2025</td></tr><tr><td><strong>Mars debilitated in Cancer</strong></td><td class='nowrap'>06-11-2026 to 12-11-2026</td><td>Mars Can 26°</td><td>Weak, emotional Mars; seen in fast, liquidity-driven panics.</td><td class='num'>1.52×</td><td class='crash-seen'>1998, 2010, 2015, 2025</td></tr><tr><td><strong>Guru-Chandal (Jupiter with Rahu/Ketu)</strong></td><td class='nowrap'>06-11-2026 to 13-11-2026</td><td>Jupiter Leo 0° with Ketu</td><td>Jupiter (finance, wisdom) afflicted by the nodes; confirming factor.</td><td class='num'>1.27×</td><td class='crash-seen'>1990, 2001, 2016, 2020 (x2)</td></tr></tbody>
+              </table></div>
+            </section>
+            <section class="crash-sec">
+              <h4>3. Combination calendar</h4>
+              <p class="muted">When each combination is active in the range (whether or not the day crossed the threshold).</p>
+              <div class="analog-table-wrap"><table class="analog-table crash-table">
+                <thead><tr><th>Combination</th><th>Type</th><th>Lift</th><th>Weight</th><th>Active dates in range</th></tr></thead>
+                <tbody><tr class='crash-off'><td>Venus in 11th house in a water sign (Mumbai open)</td><td><span class='crash-type trig'>Trigger</span></td><td class='num'>2.80</td><td class='num'>0.90</td><td>Not active</td></tr><tr class='crash-off'><td>Saturn–Uranus hard aspect</td><td><span class='crash-type slow'>Slow backdrop</span></td><td class='num'>2.11</td><td class='num'>0.74</td><td>Not active</td></tr><tr class='crash-off'><td>Jupiter–Saturn hard aspect</td><td><span class='crash-type slow'>Slow backdrop</span></td><td class='num'>2.09</td><td class='num'>0.73</td><td>Not active</td></tr><tr class='crash-on'><td>Jupiter in a fire sign</td><td><span class='crash-type slow'>Slow backdrop</span></td><td class='num'>1.82</td><td class='num'>0.58</td><td>31-10-2026 – 31-12-2026</td></tr><tr class='crash-on'><td>Venus in 11th house (Mumbai open)</td><td><span class='crash-type trig'>Trigger</span></td><td class='num'>1.73</td><td class='num'>0.52</td><td>06-11-2026 – 13-11-2026; 23-11-2026 – 15-12-2026</td></tr><tr class='crash-off'><td>Kaal Sarp (all 7 planets one side of Rahu–Ketu)</td><td><span class='crash-type trig'>Trigger</span></td><td class='num'>2.03</td><td class='num'>0.46</td><td>Not active</td></tr><tr class='crash-off'><td>Saturn in Capricorn</td><td><span class='crash-type slow'>Slow backdrop</span></td><td class='num'>1.81</td><td class='num'>0.41</td><td>Not active</td></tr><tr class='crash-on'><td>Sun debilitated in Libra</td><td><span class='crash-type seas'>Seasonal</span></td><td class='num'>1.88</td><td class='num'>0.39</td><td>18-10-2026 – 16-11-2026</td></tr><tr class='crash-on'><td>Sun–Saturn in 6/8 (shadashtak)</td><td><span class='crash-type trig'>Trigger</span></td><td class='num'>1.50</td><td class='num'>0.27</td><td>18-10-2026 – 16-11-2026</td></tr><tr class='crash-off'><td>Venus in a water sign</td><td><span class='crash-type trig'>Trigger</span></td><td class='num'>1.40</td><td class='num'>0.26</td><td>Not active</td></tr><tr class='crash-on'><td>Mercury retrograde</td><td><span class='crash-type trig'>Trigger</span></td><td class='num'>1.41</td><td class='num'>0.24</td><td>25-10-2026 – 13-11-2026</td></tr><tr class='crash-on'><td>Mars debilitated in Cancer</td><td><span class='crash-type trig'>Trigger</span></td><td class='num'>1.52</td><td class='num'>0.23</td><td>01-10-2026 – 12-11-2026</td></tr><tr class='crash-off'><td>Saturn–Pluto hard aspect</td><td><span class='crash-type slow'>Slow backdrop</span></td><td class='num'>1.29</td><td class='num'>0.16</td><td>Not active</td></tr><tr class='crash-off'><td>Mars–Saturn hard aspect</td><td><span class='crash-type trig'>Trigger</span></td><td class='num'>1.27</td><td class='num'>0.15</td><td>Not active</td></tr><tr class='crash-on'><td>Guru-Chandal (Jupiter with Rahu/Ketu)</td><td><span class='crash-type trig'>Trigger</span></td><td class='num'>1.27</td><td class='num'>0.14</td><td>31-10-2026 – 05-12-2026</td></tr></tbody>
+              </table></div>
+            </section>
+            <section class="crash-sec">
+              <h4>4. Eclipses in the range (reference only)</h4>
+              <p class="muted">In the historical study, eclipses within ±15 days showed no edge (lift 0.95); listed for completeness.</p>
+              <p>None in this range.</p>
+            </section>
+            <section class="crash-sec">
+              <h4>5. How the score works</h4>
+              <ul class="crash-how"><li>Each day&#x27;s planetary positions are computed (11:30 IST; sidereal Lahiri; mean Rahu/Ketu). The Venus-in-11th tests use the Mumbai 09:15 IST opening-bell chart with whole-sign houses.</li><li>Each active combination adds its weight. Weight = (historical lift − 1) × n/(n+5), where lift compares how often the combination appeared on 26 crash days (1929–2025) with how often it appears on any weekday since 1925, and n is the number of crash days it appeared on. Combinations seen in only a few crashes are discounted.</li><li>ELEVATED = score ≥ 1.85 (about the top 10% of all days since 1925). HIGH = score ≥ 2.36 (about the top 3%). Flagged days less than 4 days apart are joined into one period.</li><li>Historically, about 42% of crash days scored ELEVATED or higher and about 23% scored HIGH, against 10% and 3% of ordinary days. These figures are in-sample (the weights come from the same crash days), so expect weaker results going forward. Most flagged periods will not contain a crash, and many crashes occur outside flagged periods.</li><li>None of the combinations passed a strict multiple-testing correction in the research. Use the windows as a risk-management prompt (position size, stops, hedges) alongside technical and macro confirmation — not as a sell signal.</li></ul>
+              <p class="crash-foot">Research tool only. Not investment advice.</p>
+            </section>
+          </div>
+        </div>
       </section>
     </div>
 
@@ -1075,11 +1300,12 @@
             </div>
           </label>
           <button id="daily-balance-run" class="btn">⚡ Generate</button>
+          <button type="button" class="btn btn-secondary infographic-btn" data-infographic="monthly" data-params="daily-balance-date:month" title="Download a PNG card for this tab">🖼 Infographic</button>
         </div>
         <div id="daily-balance-content" class="daily-balance-content">
-          <div id="daily-balance-chart-container" style="height: 420px; width: 100%;"></div>
+          <div class="u-h420 u-w100" id="daily-balance-chart-container"></div>
           <div class="daily-balance-legend">
-            <span><i class="line-swatch" style="background:#1E88E5"></i> SBC confluence (blend)</span>
+            <span><i class="line-swatch sw-c-material-blue"></i> SBC confluence (blend)</span>
             <span><i class="zone-swatch bull"></i> Bullish zone</span>
             <span><i class="zone-swatch neutral"></i> Neutral zone</span>
             <span><i class="zone-swatch bear"></i> Bearish zone</span>
@@ -1103,80 +1329,14 @@
         <div id="cm-summary" class="cm-summary"></div>
         <div id="cm-matrix" class="cm-matrix"></div>
         <div id="cm-legend" class="nifty-chart-legend">
-          <span><i style="display:inline-block;width:12px;height:12px;border-radius:2px;background:#3d8b40;margin-right:5px"></i> BULLISH</span>
-          <span><i style="display:inline-block;width:12px;height:12px;border-radius:2px;background:#cc4b3d;margin-right:5px"></i> BEARISH</span>
-          <span><i style="display:inline-block;width:12px;height:12px;border-radius:2px;background:#c9993a;margin-right:5px"></i> NEUTRAL / no signal</span>
+          <span><i class="sw sw-sq12 sw-c-green"></i> BULLISH</span>
+          <span><i class="sw sw-sq12 sw-c-red"></i> BEARISH</span>
+          <span><i class="sw sw-sq12 sw-c-gold"></i> NEUTRAL / no signal</span>
         </div>
       </section>
     </div>
 
     <!-- TAB 6: ASTRO RESEARCH LAB -->
-    <div id="tab-research" class="tab-pane" role="tabpanel">
-      <section class="panel research-lab-panel">
-        <div class="panel-head">
-          <h2>Astro Research Lab</h2>
-          <span class="panel-sub">Event studies compare lunar signals with a market-wide baseline.</span>
-        </div>
-        <div class="research-controls">
-          <label>Market
-            <select id="research-ticker">
-              <option value="^NSEI">NIFTY 50</option>
-              <option value="^NSEBANK">NIFTY Bank</option>
-            </select>
-          </label>
-          <label>Event
-            <select id="research-event">
-              <option value="new_moon">New Moon</option>
-              <option value="full_moon">Full Moon</option>
-            </select>
-          </label>
-          <label>Forward window
-            <select id="research-horizon">
-              <option value="1">1 day</option>
-              <option value="5" selected>5 days</option>
-              <option value="10">10 days</option>
-              <option value="20">20 days</option>
-            </select>
-          </label>
-          <label>Start <input type="date" id="research-start"></label>
-          <label>End <input type="date" id="research-end"></label>
-          <label>Cost (bps) <input type="number" id="research-cost-bps" value="10" min="0" max="1000"></label>
-          <button id="research-run" class="btn">Run study</button>
-          <label>Train days <input type="number" id="research-train-days" value="730" min="90" max="3650"></label>
-          <label>Test days <input type="number" id="research-test-days" value="180" min="30" max="730"></label>
-          <label>Step days <input type="number" id="research-step-days" value="180" min="30" max="730"></label>
-          <button id="research-walk-forward-run" class="btn btn-secondary">Run walk-forward</button>
-        </div>
-        <div id="research-status" class="nifty-chart-status" role="status" aria-live="polite"></div>
-        <div id="research-results" class="research-results"></div>
-        <div id="research-walk-forward-results" class="research-results"></div>
-        <div class="research-subsection">
-          <h3>Planetary Aspect Research Grid</h3>
-          <div class="research-controls">
-            <label>Planet A <input id="research-planet-a" placeholder="e.g. Jupiter"></label>
-            <label>Planet B <input id="research-planet-b" placeholder="e.g. Saturn"></label>
-            <label>Aspect
-              <select id="research-aspect"><option value="">All aspects</option><option>conjunction</option><option>sextile</option><option>square</option><option>trine</option><option>opposition</option></select>
-            </label>
-            <button id="research-aspect-run" class="btn btn-secondary">Load aspect grid</button>
-          </div>
-          <div id="research-aspect-results" class="research-results"></div>
-        </div>
-        <div class="research-subsection">
-          <h3>Solar/Lunar Cycles</h3>
-          <button id="research-cycle-run" class="btn btn-secondary">Load cycle explorer</button>
-          <div id="research-cycle-results" class="research-results"></div>
-        </div>
-        <div class="research-exports">
-          <a id="research-export-json" class="btn btn-secondary" href="#">JSON</a>
-          <a id="research-export-csv" class="btn btn-secondary" href="#">CSV</a>
-          <a id="research-export-md" class="btn btn-secondary" href="#">Markdown</a>
-        </div>
-      </section>
-    </div>
-
-
-
     <div id="tab-analogs" class="tab-pane" role="tabpanel">
       <section class="panel analog-lab">
         <div class="panel-head">
@@ -1207,6 +1367,7 @@
           </label>
           <label>Analogs <input type="number" id="analog-k" value="30" min="5" max="100"></label>
           <button type="submit" class="btn">Find analogs</button>
+          <button type="button" class="btn btn-secondary infographic-btn" data-infographic="analog" data-params="analog-date:date,analog-horizon:horizon,analog-variant:variant,analog-k:k" title="Download a PNG card for this tab">🖼 Infographic</button>
         </form>
         <div id="analog-status" class="nifty-chart-status" role="status" aria-live="polite"></div>
         <div id="analog-results"></div>
@@ -1214,6 +1375,24 @@
     </div>
 
     <div id="tab-calendar" class="tab-pane" role="tabpanel">
+      <section id="upcoming-sector-preview" class="panel analog-lab" aria-labelledby="usp-title">
+        <div class="panel-head">
+          <h2 id="usp-title">Upcoming planetary events: historical sector pattern</h2>
+          <span class="panel-sub">Sector returns relative to NIFTY after past occurrences of each event. Descriptive, not graded.</span>
+        </div>
+        <div class="sr-controls">
+          <label><span>Window </span>
+            <select id="usp-days" aria-label="Days ahead">
+              <option value="30">30 days</option>
+              <option value="60" selected>60 days</option>
+              <option value="90">90 days</option>
+              <option value="180">180 days</option>
+            </select>
+          </label>
+        </div>
+        <div id="usp-status" class="nifty-chart-status" role="status" aria-live="polite"></div>
+        <div id="usp-results"></div>
+      </section>
       <section class="panel analog-lab">
         <div class="panel-head">
           <h2>Forward Calendar</h2>
@@ -1233,11 +1412,139 @@
             </select>
           </label>
           <button type="submit" class="btn">Build calendar</button>
+          <button type="button" class="btn btn-secondary infographic-btn" data-infographic="calendar" data-params="calendar-start:start,calendar-weeks:weeks" title="Download a PNG card for this tab">🖼 Infographic</button>
           <a id="calendar-open-html" class="btn btn-secondary" href="/api/engine/calendar?format=html" target="_blank" rel="noopener">Open as page</a>
         </form>
         <div id="calendar-status" class="nifty-chart-status" role="status" aria-live="polite"></div>
         <p id="calendar-stored" class="analog-note"></p>
         <div id="calendar-results"></div>
+      </section>
+      <section class="panel analog-lab" id="planet-motion">
+        <div class="panel-head">
+          <h2>Planet Motion</h2>
+          <span class="panel-sub">Stations to the minute (IST, true-node Rahu included), and daily declination, ecliptic latitude and speed at 09:15 IST.</span>
+        </div>
+        <div class="analog-banner" role="note">
+          <strong>Display only.</strong>
+          None of these series has been tested as a predictor.
+        </div>
+        <form id="pm-form" class="research-controls">
+          <label>Start <input type="date" id="pm-start"></label>
+          <label>End <input type="date" id="pm-end"></label>
+          <label>Chart
+            <select id="pm-metric">
+              <option value="declination" selected>Declination (Kranti)</option>
+              <option value="latitude">Ecliptic latitude (Śara)</option>
+              <option value="speed">Speed (°/day)</option>
+            </select>
+          </label>
+          <button type="submit" class="btn">Show</button>
+        </form>
+        <div id="pm-status" class="nifty-chart-status" role="status" aria-live="polite"></div>
+        <div id="pm-stations"></div>
+        <div id="pm-chart" class="ifc-chart pm-chart" aria-label="Planet series chart"></div>
+      </section>
+      <section class="panel analog-lab" id="monthly-score">
+        <div class="panel-head">
+          <h2>Monthly Score</h2>
+          <span class="panel-sub">One SBC composite score per calendar day (fingerprint classical net), beside the NIFTY closes so far. Hollow markers are non-trading days.</span>
+        </div>
+        <div class="analog-banner" role="note">
+          <strong>Hypothetical, unvalidated.</strong>
+          The score has not been tested as a predictor. Read it against the closes, not as a forecast.
+        </div>
+        <form id="ms-form" class="research-controls">
+          <label>Month <input type="month" id="ms-month"></label>
+          <button type="submit" class="btn">Show</button>
+        </form>
+        <div id="ms-status" class="nifty-chart-status" role="status" aria-live="polite"></div>
+        <p id="ms-meta" class="analog-note"></p>
+        <div id="ms-chart" class="ifc-chart pm-chart" aria-label="Monthly score chart"></div>
+      </section>
+      <section class="panel analog-lab" id="aspect-table-panel">
+        <div class="panel-head">
+          <h2>Aspect Table</h2>
+          <span class="panel-sub">Exact-time geocentric sidereal aspects with Moon included, IST to the minute. KSc/KSp mark orb-entry events.</span>
+        </div>
+        <div class="analog-banner" role="note">
+          <strong>Traditional timing, untested.</strong>
+          These are exact aspect moments from classical astrology. KSc/KSp indicate when planets enter the aspect orb. Not a forecast.
+        </div>
+        <form id="at-form" class="research-controls">
+          <label>Start <input type="date" id="at-start"></label>
+          <label>End <input type="date" id="at-end"></label>
+          <label>Planet
+            <select id="at-planet">
+              <option value="">All planets</option>
+              <option value="Sun">Sun</option>
+              <option value="Moon">Moon</option>
+              <option value="Mercury">Mercury</option>
+              <option value="Venus">Venus</option>
+              <option value="Mars">Mars</option>
+              <option value="Jupiter">Jupiter</option>
+              <option value="Saturn">Saturn</option>
+              <option value="Uranus">Uranus</option>
+              <option value="Neptune">Neptune</option>
+              <option value="Pluto">Pluto</option>
+              <option value="Rahu">Rahu</option>
+              <option value="Ketu">Ketu</option>
+            </select>
+          </label>
+          <label>Aspect
+            <select id="at-aspect">
+              <option value="">All aspects</option>
+              <option value="0">Conjunction (0°)</option>
+              <option value="30">Sextile (30°)</option>
+              <option value="45">Semi-square (45°)</option>
+              <option value="60">Sextile (60°)</option>
+              <option value="90">Square (90°)</option>
+              <option value="120">Trine (120°)</option>
+              <option value="135">Sesquiquadrate (135°)</option>
+              <option value="150">Inconjunct (150°)</option>
+              <option value="180">Opposition (180°)</option>
+              <option value="KSc">KSc (orb entry)</option>
+              <option value="KSp">KSp (conjunction orb entry)</option>
+            </select>
+          </label>
+          <button type="submit" class="btn">Show aspects</button>
+        </form>
+        <div id="at-status" class="nifty-chart-status" role="status" aria-live="polite"></div>
+        <div id="at-results"></div>
+      </section>
+      <section class="panel analog-lab" id="transit-almanac">
+        <div class="panel-head">
+          <h2>Transit Almanac</h2>
+          <span class="panel-sub">A year of stations, sign changes, exact aspects and eclipses, Pluto to Mercury plus the Moon's nodes. Dates in IST.</span>
+        </div>
+        <div class="analog-banner" role="note">
+          <strong>Traditional readings, untested.</strong>
+          The meanings are classical astrology in plain words. None has been tested against NIFTY or bullion prices yet.
+        </div>
+        <form id="ta-form" class="research-controls">
+          <label>Year <input type="number" id="ta-year" min="1990" max="2050" step="1"></label>
+          <label>Zodiac
+            <select id="ta-zodiac">
+              <option value="sidereal" selected>Sidereal (Lahiri)</option>
+              <option value="tropical">Tropical (Western)</option>
+            </select>
+          </label>
+          <label class="ta-check"><span>Fast planets</span><span><input type="checkbox" id="ta-fast"> Venus &amp; Mercury aspects</span></label>
+          <button type="submit" class="btn">Show year</button>
+        </form>
+        <div id="ta-status" class="nifty-chart-status" role="status" aria-live="polite"></div>
+        <div id="ta-chart" class="ta-chart"></div>
+        <div class="ta-legend" aria-hidden="true">
+          <span><i class="ta-fire"></i>Fire</span><span><i class="ta-earth"></i>Earth</span><span><i class="ta-air"></i>Air</span><span><i class="ta-water"></i>Water</span>
+          <span>Solid direct, dotted retrograde</span><span>▲ aspect (red tense, teal easy, gold conjunction)</span><span>◆ station · | sign change · ● eclipse</span>
+        </div>
+        <div class="research-controls ta-filter" id="ta-filter" role="group" aria-label="Event filter">
+          <button type="button" class="ta-seg" data-f="all" aria-pressed="true">All</button>
+          <button type="button" class="ta-seg" data-f="station" aria-pressed="false">Stations</button>
+          <button type="button" class="ta-seg" data-f="ingress" aria-pressed="false">Sign changes</button>
+          <button type="button" class="ta-seg" data-f="aspect" aria-pressed="false">Aspects</button>
+          <button type="button" class="ta-seg" data-f="eclipse" aria-pressed="false">Eclipses</button>
+        </div>
+        <div id="ta-ledger"></div>
       </section>
     </div>
 
@@ -1276,6 +1583,32 @@
 
     <!-- Global Disclaimer -->
     <p class="disclaimer">For study and research. Not financial advice. Financial markets involve substantial risk of loss. Trade on your own analysis.</p>
+    <div id="tab-rotation" class="tab-pane" role="tabpanel">
+      <div id="sr-status" class="nifty-chart-status" role="status" aria-live="polite"></div>
+      <div id="sr-root" class="sr-root"></div>
+    </div>
+
+    <div id="tab-bullion" class="tab-pane" role="tabpanel">
+      <section class="panel analog-lab">
+        <div class="panel-head">
+          <h2>Bullion Week</h2>
+          <span class="panel-sub">Gold and silver on MCX, Monday to Friday: Rahu Kaal, horas, the Moon's nakshatra and KP sub-lord through the session, sky events and US data.</span>
+        </div>
+        <div class="analog-banner" role="note">
+          <strong>Hypotheses, not signals.</strong>
+          Sub-lord readings follow a published bullion sheet and have not been tested. The nakshatra record shows how often gold and silver closed up, next to the base rate.
+        </div>
+        <form id="bw-form" class="research-controls">
+          <label>Week of <input type="date" id="bw-start"></label>
+          <button type="submit" class="btn">Build week</button>
+        </form>
+        <div id="bw-status" class="nifty-chart-status" role="status" aria-live="polite"></div>
+        <div id="bw-week" class="bw-week"></div>
+        <div id="bw-day"></div>
+        <div id="bw-context" class="bw-context"></div>
+      </section>
+    </div>
+
   </main>
 
   <footer class="footer">
@@ -1285,1512 +1618,30 @@
   <!-- Client-Side Scripts -->
   <script src="/static/js/freshness.js?v=1"></script>
   <script src="/static/vendor/lightweight-charts.js?v=4"></script>
-  <script src="/static/nifty-chart.js?v=17"></script>
-  <script src="/static/app.js?v=37"></script>
+  <script src="/static/nifty-chart.js?v=18"></script>
+  <script src="/static/app.js?v=45"></script>
+  <script src="/static/js/kp-intraday.js?v=1"></script>
+  <script src="/static/js/overview-calendars.js?v=1"></script>
+  <script src="/static/js/sector-dashboard.js?v=1"></script>
   <script src="/static/intraday-projection.js?v=2"></script>
   <script src="/static/intraday-forecast.js?v=7"></script>
   <script src="/static/js/analog-lab.js?v=2"></script>
   <script src="/static/js/forecast-card.js?v=2"></script>
   <script src="/static/js/forward-calendar.js?v=3"></script>
-  <script src="/static/js/swing-windows.js?v=4"></script>
-  <script>
-  document.addEventListener('DOMContentLoaded', function(){
-    const cityInput = document.getElementById('bd-city');
-    const lonDeg = document.getElementById('lon-deg');
-    const lonMin = document.getElementById('lon-min');
-    const lonSec = document.getElementById('lon-sec');
-    const latDeg = document.getElementById('lat-deg');
-    const latMin = document.getElementById('lat-min');
-    const latSec = document.getElementById('lat-sec');
-    function toDMS(dec){
-      // Round once, in whole arc-seconds, then split. Rounding the seconds
-      // after flooring minutes turned 22.7 into 22°41'60" (float drift),
-      // which the 0-59 seconds field rejects.
-      const sign = dec < 0 ? -1 : 1;
-      const total = Math.round(Math.abs(dec) * 3600);
-      const d = Math.floor(total / 3600);
-      const m = Math.floor((total % 3600) / 60);
-      const s = total % 60;
-      return {d: d*sign, m, s};
-    }
-    function fillCoords(lat, lon){
-      const la = toDMS(lat);
-      const lo = toDMS(lon);
-      if(latDeg) latDeg.value = la.d;
-      if(latMin) latMin.value = la.m;
-      if(latSec) latSec.value = la.s;
-      if(lonDeg) lonDeg.value = lo.d;
-      if(lonMin) lonMin.value = lo.m;
-      if(lonSec) lonSec.value = lo.s;
-    }
-    async function searchCities(q, country){
-      if(!q || q.length < 2) return [];
-      const url = new URL('/api/cities/search', window.location.origin);
-      url.searchParams.set('q', q);
-      if(country) url.searchParams.set('country', country);
-      const res = await fetch(url);
-      if(!res.ok) return [];
-      return await res.json();
-    }
-    // B-14: results list instead of alert(); click (or Enter) picks a city.
-    const cityStatus = document.getElementById('bd-city-status');
-    const cityList = document.getElementById('bd-city-results');
-    const escHtml = (v) => String(v ?? '').replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
-    function setCityStatus(msg){ if(cityStatus) cityStatus.textContent = msg; }
-    function hideCities(){ if(cityList){ cityList.classList.add('hidden'); cityList.innerHTML = ''; } }
-    function pickCity(r){
-      const parts = [r.name, r.admin, r.country].filter(Boolean);
-      cityInput.value = parts.join(', ');
-      fillCoords(r.lat, r.lon);
-      setCityStatus(`Selected ${parts.join(', ')} (${r.lat.toFixed(4)}, ${r.lon.toFixed(4)}${r.timezone ? ', ' + r.timezone : ''})`);
-      hideCities();
-    }
-    function showCities(results){
-      if(!cityList) return;
-      if(!results.length){ hideCities(); setCityStatus('No matching city with 15,000+ people. Enter the coordinates by hand.'); return; }
-      setCityStatus(`${results.length} match${results.length === 1 ? '' : 'es'}`);
-      cityList.innerHTML = results.map((r, i) => `
-        <li role="option" tabindex="0" data-i="${i}">
-          <strong>${escHtml(r.name)}</strong> <span class="muted">${escHtml([r.admin, r.country].filter(Boolean).join(', '))}</span>
-          <span class="city-pop">${Number(r.population || 0).toLocaleString()}</span>
-        </li>`).join('');
-      cityList.classList.remove('hidden');
-      cityList.querySelectorAll('li').forEach(li => {
-        const r = results[Number(li.dataset.i)];
-        li.addEventListener('click', () => pickCity(r));
-        li.addEventListener('keydown', (e) => { if(e.key === 'Enter'){ e.preventDefault(); pickCity(r); } });
-      });
-    }
-    async function runCitySearch(country){
-      const q = cityInput?.value?.trim();
-      if(!q || q.length < 2){ hideCities(); setCityStatus('Type at least 2 letters of the city name.'); return; }
-      try { showCities(await searchCities(q, country)); }
-      catch { hideCities(); setCityStatus('City search failed. Try again.'); }
-    }
-    document.querySelectorAll('.city-buttons button').forEach(btn=>{
-      btn.addEventListener('click', () => runCitySearch(btn.dataset.country || ''));
-    });
-    let cityTimer = null;
-    cityInput?.addEventListener('input', () => {
-      clearTimeout(cityTimer);
-      cityTimer = setTimeout(() => runCitySearch(''), 300);
-    });
-    cityInput?.addEventListener('keydown', (e) => {
-      if(e.key === 'Escape') hideCities();
-      if(e.key === 'ArrowDown'){ const first = cityList?.querySelector('li'); if(first){ e.preventDefault(); first.focus(); } }
-    });
-  });
-  </script>
-  <script>
-  document.addEventListener('DOMContentLoaded', function(){
-    const loadBtn = document.getElementById('bd-load');
-    const saveBtn = document.getElementById('bd-save');
-    const genBtn = document.getElementById('bd-generate');
-    const out = document.getElementById('wellness-output');
-    const profileSelect = document.getElementById('bd-profile-select');
-    const profileRenameBtn = document.getElementById('bd-profile-rename');
-    const profileDefaultBtn = document.getElementById('bd-profile-default');
-    const profileDeleteBtn = document.getElementById('bd-profile-delete');
-    const profileExportBtn = document.getElementById('bd-profile-export');
-    const profileImportBtn = document.getElementById('bd-profile-import-btn');
-    const profileImportInput = document.getElementById('bd-profile-import');
-    async function refreshProfileList(){
-      try{
-        const res = await fetch('/api/astro/profile?user_key=default');
-        if(res.ok){
-          const profiles = await res.json();
-          profileSelect.innerHTML = '<option value="">-- Select saved profile --</option>';
-          profiles.forEach(p=>{
-            const d = p.data;
-            const name = p.name || '';
-            const label = `${name? name+': ':''}${d.date||'?' } ${d.city||''} ${p.created_at||''}`.trim();
-            const opt = document.createElement('option');
-            opt.value = p.id;
-            opt.textContent = label + (p.is_default? ' ★': '');
-            opt.dataset.profile = JSON.stringify(p);
-            profileSelect.appendChild(opt);
-          });
-        }
-      }catch{}
-    }
-    refreshProfileList().then(async ()=>{
-      // Auto-load default profile if exists
-      try{
-        const res = await fetch('/api/astro/profile?user_key=default');
-        if(res.ok){
-          const profiles = await res.json();
-          const def = profiles.find(p=>p.is_default);
-          if(def){
-            const d = def.data;
-            if(d.date) document.getElementById('bd-date').value = d.date;
-            if(d.time) document.getElementById('bd-time').value = d.time;
-            if(d.gender) document.getElementById('bd-gender').value = d.gender;
-            if(d.city) document.getElementById('bd-city').value = d.city;
-            if(d.tz_hours) document.getElementById('tz-hours').value = d.tz_hours;
-            if(d.tz_mins) document.getElementById('tz-mins').value = d.tz_mins;
-            if(d.lat){ document.getElementById('lat-deg').value = d.lat.deg; document.getElementById('lat-min').value = d.lat.min; document.getElementById('lat-sec').value = d.lat.sec; }
-            if(d.lon){ document.getElementById('lon-deg').value = d.lon.deg; document.getElementById('lon-min').value = d.lon.min; document.getElementById('lon-sec').value = d.lon.sec; }
-            if(d.altitude) document.getElementById('bd-altitude').value = d.altitude;
-            if(d.pressure) document.getElementById('bd-pressure').value = d.pressure;
-            if(d.temp) document.getElementById('bd-temp').value = d.temp;
-            localStorage.setItem('sbc_birth_profile', JSON.stringify(d));
-          }
-        }
-      }catch{}
-    });
-    if(profileSelect){
-      profileSelect.addEventListener('change', function(){
-        const opt = this.options[this.selectedIndex];
-        if(!opt.value) return;
-        const p = JSON.parse(opt.dataset.profile);
-        const d = p.data;
-        if(d.date) document.getElementById('bd-date').value = d.date;
-        if(d.time) document.getElementById('bd-time').value = d.time;
-        if(d.gender) document.getElementById('bd-gender').value = d.gender;
-        if(d.city) document.getElementById('bd-city').value = d.city;
-        if(d.tz_hours) document.getElementById('tz-hours').value = d.tz_hours;
-        if(d.tz_mins) document.getElementById('tz-mins').value = d.tz_mins;
-        if(d.lat){ document.getElementById('lat-deg').value = d.lat.deg; document.getElementById('lat-min').value = d.lat.min; document.getElementById('lat-sec').value = d.lat.sec; }
-        if(d.lon){ document.getElementById('lon-deg').value = d.lon.deg; document.getElementById('lon-min').value = d.lon.min; document.getElementById('lon-sec').value = d.lon.sec; }
-        if(d.altitude) document.getElementById('bd-altitude').value = d.altitude;
-        if(d.pressure) document.getElementById('bd-pressure').value = d.pressure;
-        if(d.temp) document.getElementById('bd-temp').value = d.temp;
-        localStorage.setItem('sbc_birth_profile', JSON.stringify(d));
-      });
-    }
-    if(profileRenameBtn){
-      profileRenameBtn.addEventListener('click', async function(){
-        const id = profileSelect.value;
-        if(!id) { alert('Select a profile first'); return; }
-        const name = prompt('Enter profile name');
-        if(!name) return;
-        try{
-          const res = await fetch('/api/astro/profile/'+id, {method:'PUT', headers:{'Content-Type':'application/json'}, body: JSON.stringify({name})});
-          if(res.ok){
-            await refreshProfileList();
-            alert('Profile renamed');
-          }else{ alert('Rename failed'); }
-        }catch{ alert('Rename failed'); }
-      });
-    }
-    if(profileDefaultBtn){
-      profileDefaultBtn.addEventListener('click', async function(){
-        const id = profileSelect.value;
-        if(!id) { alert('Select a profile first'); return; }
-        try{
-          const res = await fetch('/api/astro/profile/'+id+'/default', {method:'POST'});
-          if(res.ok){ alert('Set as default'); } else { alert('Failed'); }
-        }catch{ alert('Failed'); }
-      });
-    }
-    if(profileExportBtn){
-      profileExportBtn.addEventListener('click', async function(){
-        try{
-          const res = await fetch('/api/astro/profile/export?user_key=default');
-          if(res.ok){
-            const data = await res.json();
-            const blob = new Blob([JSON.stringify(data, null, 2)], {type:'application/json'});
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = 'sbc_profiles_export.json';
-            a.click();
-            URL.revokeObjectURL(url);
-          }
-        }catch{ alert('Export failed'); }
-      });
-    }
-    if(profileImportBtn){
-      profileImportBtn.addEventListener('click', function(){ profileImportInput.click(); });
-      profileImportInput.addEventListener('change', async function(e){
-        const file = e.target.files[0];
-        if(!file) return;
-        const text = await file.text();
-        try{
-          const data = JSON.parse(text);
-          const res = await fetch('/api/astro/profile/import', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(data)});
-          if(res.ok){
-            alert('Import successful');
-            await refreshProfileList();
-          }else{ alert('Import failed'); }
-        }catch{ alert('Import failed'); }
-        e.target.value = '';
-      });
-    }
-    if(profileDeleteBtn){
-      profileDeleteBtn.addEventListener('click', async function(){
-        const id = profileSelect.value;
-        if(!id) { alert('Select a profile first'); return; }
-        if(!confirm('Delete selected profile?')) return;
-        try{
-          const res = await fetch('/api/astro/profile/'+id, {method:'DELETE'});
-          if(res.ok){
-            await refreshProfileList();
-            alert('Profile deleted');
-          }else{
-            alert('Delete failed');
-          }
-        }catch{ alert('Delete failed'); }
-      });
-    }
-    if(loadBtn){
-      loadBtn.addEventListener('click', async function(){
-        try{
-          const res = await fetch('/api/astro/profile?user_key=default');
-          if(res.ok){
-            const profiles = await res.json();
-            if(profiles.length>0){
-              const d = profiles[0].data;
-              if(d.date) document.getElementById('bd-date').value = d.date;
-              if(d.time) document.getElementById('bd-time').value = d.time;
-              if(d.gender) document.getElementById('bd-gender').value = d.gender;
-              if(d.city) document.getElementById('bd-city').value = d.city;
-              if(d.tz_hours) document.getElementById('tz-hours').value = d.tz_hours;
-              if(d.tz_mins) document.getElementById('tz-mins').value = d.tz_mins;
-              if(d.lat){ document.getElementById('lat-deg').value = d.lat.deg; document.getElementById('lat-min').value = d.lat.min; document.getElementById('lat-sec').value = d.lat.sec; }
-              if(d.lon){ document.getElementById('lon-deg').value = d.lon.deg; document.getElementById('lon-min').value = d.lon.min; document.getElementById('lon-sec').value = d.lon.sec; }
-              if(d.altitude) document.getElementById('bd-altitude').value = d.altitude;
-              if(d.pressure) document.getElementById('bd-pressure').value = d.pressure;
-              if(d.temp) document.getElementById('bd-temp').value = d.temp;
-              localStorage.setItem('sbc_birth_profile', JSON.stringify(d));
-              alert('Latest profile loaded');
-            }else{
-              alert('No saved profiles');
-            }
-          }
-        }catch{ alert('Load failed'); }
-      });
-    }
-    if(saveBtn){
-      saveBtn.addEventListener('click', async function(){
-        const data = {
-          date: document.getElementById('bd-date')?.value,
-          time: document.getElementById('bd-time')?.value,
-          gender: document.getElementById('bd-gender')?.value,
-          city: document.getElementById('bd-city')?.value,
-          tz_hours: document.getElementById('tz-hours')?.value,
-          tz_mins: document.getElementById('tz-mins')?.value,
-          lat: {deg: document.getElementById('lat-deg')?.value, min: document.getElementById('lat-min')?.value, sec: document.getElementById('lat-sec')?.value},
-          lon: {deg: document.getElementById('lon-deg')?.value, min: document.getElementById('lon-min')?.value, sec: document.getElementById('lon-sec')?.value},
-          altitude: document.getElementById('bd-altitude')?.value,
-          pressure: document.getElementById('bd-pressure')?.value,
-          temp: document.getElementById('bd-temp')?.value,
-          saved_at: new Date().toISOString()
-        };
-        localStorage.setItem('sbc_birth_profile', JSON.stringify(data));
-        try{
-          const res = await fetch('/api/astro/profile', {
-            method:'POST',
-            headers:{'Content-Type':'application/json'},
-            body: JSON.stringify(data)
-          });
-          if(res.ok){
-            alert('Birth profile saved locally and on server');
-          }else{
-            alert('Saved locally; server save failed');
-          }
-        }catch{
-          alert('Saved locally; server unavailable');
-        }
-      });
-    }
-      // Load saved profile on page load
-    try{
-      const saved = localStorage.getItem('sbc_birth_profile');
-      if(saved){
-        const d = JSON.parse(saved);
-        if(d.date) document.getElementById('bd-date').value = d.date;
-        if(d.time) document.getElementById('bd-time').value = d.time;
-        if(d.gender) document.getElementById('bd-gender').value = d.gender;
-        if(d.city) document.getElementById('bd-city').value = d.city;
-        if(d.tz_hours) document.getElementById('tz-hours').value = d.tz_hours;
-        if(d.tz_mins) document.getElementById('tz-mins').value = d.tz_mins;
-        if(d.lat) { document.getElementById('lat-deg').value = d.lat.deg; document.getElementById('lat-min').value = d.lat.min; document.getElementById('lat-sec').value = d.lat.sec; }
-        if(d.lon) { document.getElementById('lon-deg').value = d.lon.deg; document.getElementById('lon-min').value = d.lon.min; document.getElementById('lon-sec').value = d.lon.sec; }
-        if(d.altitude) document.getElementById('bd-altitude').value = d.altitude;
-        if(d.pressure) document.getElementById('bd-pressure').value = d.pressure;
-        if(d.temp) document.getElementById('bd-temp').value = d.temp;
-      }
-    }catch{}
-    // Sync habit streaks from server on load
-    try{
-      fetch('/api/habits/streaks?user_key=default').then(r=>r.json()).then(data=>{
-        window.sbc_habit_server = data;
-        // Reminder for missed habits
-        if('Notification' in window && Notification.permission === 'granted'){
-          const today = localTodayISO();
-          const habits = ['meditation','steps','colour'];
-          habits.forEach(h=>{
-            const server = data[h];
-            if(!server || !server.last || server.last !== today){
-              const title = 'SBC Wellness Reminder';
-              const body = `You haven’t logged ${h} today. Keep the streak!`;
-              try{ new Notification(title, {body}); }catch{}
-            }
-          });
-        }else if('Notification' in window && Notification.permission !== 'denied'){
-          Notification.requestPermission().then(p=>{ if(p==='granted'){ /* reminders will fire on next load */ } });
-        }
-      });
-    }catch{}
-    if(!genBtn) return;
-    const sunSigns = [
-      {name:'Capricorn', start:[12,22], end:[1,19]},
-      {name:'Aquarius', start:[1,20], end:[2,18]},
-      {name:'Pisces', start:[2,19], end:[3,20]},
-      {name:'Aries', start:[3,21], end:[4,19]},
-      {name:'Taurus', start:[4,20], end:[5,20]},
-      {name:'Gemini', start:[5,21], end:[6,20]},
-      {name:'Cancer', start:[6,21], end:[7,22]},
-      {name:'Leo', start:[7,23], end:[8,22]},
-      {name:'Virgo', start:[8,23], end:[9,22]},
-      {name:'Libra', start:[9,23], end:[10,22]},
-      {name:'Scorpio', start:[10,23], end:[11,21]},
-      {name:'Sagittarius', start:[11,22], end:[12,21]}
-    ];
-    function getSunSign(dateStr){
-      if(!dateStr) return '-';
-      const d = new Date(dateStr+'T00:00:00');
-      const m = d.getMonth()+1;
-      const day = d.getDate();
-      for(const s of sunSigns){
-        const [sm,sd]=s.start;
-        const [em,ed]=s.end;
-        if(sm<em || sm===em){
-          if((m===sm && day>=sd)||(m===em && day<=ed)) return s.name;
-        }else{
-          if((m===sm && day>=sd)||(m===em && day<=ed)) return s.name;
-        }
-      }
-      return '-';
-    }
-    const dayColours = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
-    const colourMap = {
-      0:'Orange/Red',1:'White',2:'Red',3:'Green',4:'Yellow',5:'White',6:'Black'
-    };
-    function getTodayColour(){
-      const today = new Date();
-      return colourMap[today.getDay()];
-    }
-    genBtn.addEventListener('click', async function(){
-      const dateVal = document.getElementById('bd-date')?.value;
-      const timeVal = document.getElementById('bd-time')?.value;
-      const gender = document.getElementById('bd-gender')?.value;
-      const city = document.getElementById('bd-city')?.value;
-      let tzH = document.getElementById('tz-hours')?.value;
-      let tzM = document.getElementById('tz-mins')?.value;
-      const sunSign = getSunSign(dateVal);
-      const todayColour = getTodayColour();
-      const todayName = dayColours[new Date().getDay()];
-      let html = '<h3>Personal Astro-Wellness Plan</h3>';
-      html += '<p><b>Birth data:</b> '+(dateVal||'-')+' '+(timeVal||'-')+' '+(city||'-')+' '+(gender||'-')+'</p>';
-      html += '<p><b>Western Sun Sign:</b> '+sunSign+' <span style="opacity:.7">Vedic chart requires exact time/place for Moon, Rahu/Ketu.</span></p>';
-      if(dateVal && timeVal){
-        try{
-          // Auto-detect timezone from lat/lon if available
-          let tzName = null;
-          const latDeg = parseFloat(document.getElementById('lat-deg')?.value||0);
-          const latMin = parseFloat(document.getElementById('lat-min')?.value||0);
-          const latSec = parseFloat(document.getElementById('lat-sec')?.value||0);
-          const lonDeg = parseFloat(document.getElementById('lon-deg')?.value||0);
-          const lonMin = parseFloat(document.getElementById('lon-min')?.value||0);
-          const lonSec = parseFloat(document.getElementById('lon-sec')?.value||0);
-          const latDec = Math.abs(latDeg)+latMin/60+latSec/3600;
-          const lonDec = Math.abs(lonDeg)+lonMin/60+lonSec/3600;
-          const latSign = latDeg<0?-1:1;
-          const lonSign = lonDeg<0?-1:1;
-          const latFinal = latSign*latDec;
-          const lonFinal = lonSign*lonDec;
-          if(Math.abs(latFinal)>0.1 && Math.abs(lonFinal)>0.1){
-            try{
-              const tzRes = await fetch('/api/tz/from_coords?lat='+latFinal+'&lon='+lonFinal);
-              if(tzRes.ok){
-                const tzData = await tzRes.json();
-                tzName = tzData.timezone;
-                // Get accurate offset from server
-                if(dateVal && timeVal && tzName){
-                  try{
-                    const offRes = await fetch(`/api/tz/offset?tz=${encodeURIComponent(tzName)}&date=${encodeURIComponent(dateVal)}&time=${encodeURIComponent(timeVal)}`);
-                    if(offRes.ok){
-                      const offData = await offRes.json();
-                      if(document.getElementById('tz-hours')) document.getElementById('tz-hours').value = offData.offset_hours;
-                      if(document.getElementById('tz-mins')) document.getElementById('tz-mins').value = Math.abs(offData.offset_mins);
-                    }
-                  }catch{}
-                }
-              }
-            }catch{}
-          }
-          let params;
-          if(tzName){
-            params = new URLSearchParams({date:dateVal,time:timeVal,tz:tzName});
-          }else{
-            const tzH = document.getElementById('tz-hours')?.value || '5';
-            const tzM = document.getElementById('tz-mins')?.value || '30';
-            params = new URLSearchParams({date:dateVal,time:timeVal,tz_hours:tzH,tz_mins:tzM});
-          }
-          const res = await fetch('/api/astro/personal?'+params.toString());
-          if(res.ok){
-            const data = await res.json();
-            html += '<p><b>Vedic positions (sidereal):</b> Sun '+ (data.sun?.sign||'-') +' Nakshatra '+ (data.sun?.nakshatra||'-') +', Moon '+ (data.moon?.sign||'-') +' '+ (data.moon?.nakshatra||'-') +'</p>';
-            html += '<p><b>Rahu/Ketu:</b> Rahu '+ (data.rahu?.sign||'-') +', Ketu '+ (data.ketu?.sign||'-') +'</p>';
-            // Personal SBC overlay suggestion
-            const moonNak = data.moon?.nakshatra || '-';
-            html += `<p><b>Personal SBC Overlay:</b> Moon in ${moonNak}. This nakshatra aligns with the SBC border ring – monitor vedhas on the corresponding cell and Pancha-Shakha points for personal market timing.</p>`;
-            // Update grid header with personal overlay badge
-            try{
-              const gridSub = document.getElementById('grid-sub');
-              if(gridSub){
-                gridSub.textContent = `Personal Moon: ${moonNak} • `;
-              }
-              // Attempt cell-level highlight
-              setTimeout(()=>{
-                try{
-                  const walker = document.createTreeWalker(document.getElementById('grid')||document.body, NodeFilter.SHOW_TEXT);
-                  const nodes = [];
-                  let n;
-                  while(n = walker.nextNode()){
-                    if(n.nodeValue && n.nodeValue.includes(moonNak)){
-                      nodes.push(n.parentElement);
-                    }
-                  }
-                  const seen = new Set();
-                  nodes.forEach(el=>{
-                    let cur = el;
-                    while(cur && cur !== document.body){
-                      if(cur.classList && cur.classList.contains('grid-cell')){
-                        if(!seen.has(cur)){
-                          cur.classList.add('personal-highlight');
-                          seen.add(cur);
-                        }
-                        break;
-                      }
-                      cur = cur.parentElement;
-                    }
-                  });
-                }catch{}
-              }, 500);
-            }catch{}
-            // Personal Natal Highlights table
-            const planets = data.planets||[];
-            const tbl = ['<table style="width:100%;font-size:12px;border-collapse:collapse"><thead><tr><th style="text-align:left;padding:4px">Planet</th><th style="text-align:left;padding:4px">Sign</th><th style="text-align:left;padding:4px">Nakshatra</th><th style="text-align:left;padding:4px">Pada</th></tr></thead><tbody>'];
-            planets.forEach(p=>{
-              tbl.push(`<tr><td style="padding:4px;border-top:1px solid var(--line)">${p.name}</td><td style="padding:4px;border-top:1px solid var(--line)">${p.sign||'-'}</td><td style="padding:4px;border-top:1px solid var(--line)">${p.nakshatra||'-'}</td><td style="padding:4px;border-top:1px solid var(--line)">${p.pada||'-'}</td></tr>`);
-            });
-            tbl.push('</tbody></table>');
-            html += '<p><b>Personal Natal Highlights:</b></p>'+tbl.join('');
-          }else{
-            html += '<p><i>Astro API error</i></p>';
-          }
-        }catch(e){ html += '<p><i>Could not fetch astro data</i></p>'; }
-      }
-      html += '<div style="margin:8px 0"><button type="button" class="btn" id="log-meditation">Log 20 min Meditation</button> <span id="med-streak" style="margin-left:8px;opacity:.8"></span> <button type="button" class="btn" id="log-steps" style="margin-left:12px">Log 10k Steps</button> <span id="steps-streak" style="margin-left:8px;opacity:.8"></span> <button type="button" class="btn" id="log-colour" style="margin-left:12px">Log Today’s Colour</button> <span id="colour-streak" style="margin-left:8px;opacity:.8"></span> <button type="button" class="btn" id="weekly-summary" style="margin-left:12px">Weekly Summary</button> <button type="button" class="btn" id="export-habits" style="margin-left:12px">Export Habits CSV</button> <button type="button" class="btn" id="show-chart" style="margin-left:12px">7-day Chart</button></div><div id="habit-chart" style="margin-top:12px"></div>';
-      html += '<ul>';
-      html += '<li><b>Meditation:</b> 20 min daily breath-focus, same spot/time. First 40 days mind-clean up.</li>';
-      html += '<li><b>Rahu-Ketu balance:</b> Ketu → meditation/trance; Rahu → 10k steps / gym daily.</li>';
-      html += '<li><b>Colour for today ('+todayName+'):</b> '+todayColour+' – wear only if the ruling planet is strong in your chart.</li>';
-      html += '<li><b>Wealth signs:</b> Check Taurus, Virgo, Capricorn strength in Vedic chart; strengthen via mantras/rituals.</li>';
-      html += '<li><b>30-day plan:</b> Days 1-7 meditate, 8-14 white horse symbol, 15-21 silver square in wallet, 22-28 compute chart, 29-30 Rahu/Ketu remedy.</li>';
-      html += '</ul>';
-      html += '<p><i>Note: Spiritual/psychological guidance only. Consult a qualified astrologer and financial advisor.</i></p>';
-      out.innerHTML = html;
-      out.classList.remove('hidden');
-      // Meditation streak handling
-      try{
-        const logBtn = out.querySelector('#log-meditation');
-        const streakSpan = out.querySelector('#med-streak');
-        const stepsBtn = out.querySelector('#log-steps');
-        const stepsSpan = out.querySelector('#steps-streak');
-        const colourBtn = out.querySelector('#log-colour');
-        const colourSpan = out.querySelector('#colour-streak');
-        const medKey = 'sbc_meditation_streak';
-        const stepsKey = 'sbc_steps_streak';
-        const colourKey = 'sbc_colour_streak';
-        const medData = JSON.parse(localStorage.getItem(medKey)||'{"last":"", "streak":0}');
-        const stepsData = JSON.parse(localStorage.getItem(stepsKey)||'{"last":"", "streak":0}');
-        const colourData = JSON.parse(localStorage.getItem(colourKey)||'{"last":"", "streak":0}');
-        const updateStreak = (data, span, habitKey)=>{
-          let streak = data.streak;
-          if(window.sbc_habit_server && window.sbc_habit_server[habitKey]){
-            streak = window.sbc_habit_server[habitKey].streak;
-          }
-          const txt = `Streak: ${streak} day${streak!==1?'s':''}`;
-          if(span) span.textContent = txt;
-        };
-        updateStreak(medData, streakSpan, 'meditation');
-        updateStreak(stepsData, stepsSpan, 'steps');
-        updateStreak(colourData, colourSpan, 'colour');
-        updateStreak(stepsData, stepsSpan);
-        updateStreak(colourData, colourSpan);
-        if(logBtn){
-          logBtn.addEventListener('click', async ()=>{
-            const now = localTodayISO();
-            if(medData.last !== now){
-              if(medData.last){
-                const prev = new Date(medData.last);
-                const cur = new Date(now);
-                const diff = (cur - prev)/86400000;
-                medData.streak = diff===1 ? medData.streak+1 : diff>1?1: medData.streak;
-              }else{
-                medData.streak = 1;
-              }
-              medData.last = now;
-              localStorage.setItem(medKey, JSON.stringify(medData));
-              updateStreak(medData, streakSpan);
-              try{ await fetch('/api/habits/log', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({habit_type:'meditation', date:now})}); }catch{}
-              alert('Meditation logged! Keep the streak going.');
-            }else{
-              alert('Already logged today.');
-            }
-          });
-        }
-        if(stepsBtn){
-          stepsBtn.addEventListener('click', async ()=>{
-            const now = localTodayISO();
-            if(stepsData.last !== now){
-              if(stepsData.last){
-                const prev = new Date(stepsData.last);
-                const cur = new Date(now);
-                const diff = (cur - prev)/86400000;
-                stepsData.streak = diff===1 ? stepsData.streak+1 : diff>1?1: stepsData.streak;
-              }else{
-                stepsData.streak = 1;
-              }
-              stepsData.last = now;
-              localStorage.setItem(stepsKey, JSON.stringify(stepsData));
-              updateStreak(stepsData, stepsSpan);
-              try{ await fetch('/api/habits/log', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({habit_type:'steps', date:now})}); }catch{}
-              alert('Steps logged! Rahu balance maintained.');
-            }else{
-              alert('Already logged today.');
-            }
-          });
-        }
-        if(colourBtn){
-          colourBtn.addEventListener('click', async ()=>{
-            const now = localTodayISO();
-            if(colourData.last !== now){
-              if(colourData.last){
-                const prev = new Date(colourData.last);
-                const cur = new Date(now);
-                const diff = (cur - prev)/86400000;
-                colourData.streak = diff===1 ? colourData.streak+1 : diff>1?1: colourData.streak;
-              }else{
-                colourData.streak = 1;
-              }
-              colourData.last = now;
-              localStorage.setItem(colourKey, JSON.stringify(colourData));
-              updateStreak(colourData, colourSpan);
-              try{ await fetch('/api/habits/log', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({habit_type:'colour', date:now})}); }catch{}
-              alert('Today’s colour logged!');
-            }else{
-              alert('Already logged today.');
-            }
-          });
-        }
-        const weeklyBtn = out.querySelector('#weekly-summary');
-        if(weeklyBtn){
-          weeklyBtn.addEventListener('click', ()=>{
-            alert(`Weekly Summary
-Meditation streak: ${medData.streak} days, last: ${medData.last||'never'}
-Steps streak: ${stepsData.streak} days, last: ${stepsData.last||'never'}
-Colour streak: ${colourData.streak} days, last: ${colourData.last||'never'}`);
-          });
-        }
-        const exportBtn = out.querySelector('#export-habits');
-        if(exportBtn){
-          exportBtn.addEventListener('click', ()=>{
-            const csv = `Habit,Streak,Last Logged\nMeditation,${medData.streak},${medData.last||''}\nSteps,${stepsData.streak},${stepsData.last||''}\nColour,${colourData.streak},${colourData.last||''}`;
-            const blob = new Blob([csv], {type:'text/csv'});
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = 'sbc_habits_export.csv';
-            a.click();
-            URL.revokeObjectURL(url);
-          });
-        }
-        const chartBtn = out.querySelector('#show-chart');
-        const chartDiv = out.querySelector('#habit-chart');
-        if(chartBtn && chartDiv){
-          chartBtn.addEventListener('click', async ()=>{
-            try{
-              const res = await fetch('/api/habits/history?user_key=default&days=7');
-              if(!res.ok) return;
-              const hist = await res.json();
-              let html = '<div style="display:flex;gap:12px;margin-top:8px">';
-              const habits = ['meditation','steps','colour'];
-              const labels = ['Meditation','Steps','Colour'];
-              const today = new Date();
-              for(let i=6;i>=0;i--){
-                const d = new Date(today);
-                d.setDate(today.getDate()-i);
-                const ds = isoDateOf(d);
-                html += `<div style="text-align:center"><div style="font-size:10px;opacity:.7">${ds.slice(5)}</div>`;
-                habits.forEach((h,idx)=>{
-                  const cnt = (hist[h] && hist[h][ds]) ? 1 : 0;
-                  html += `<div style="height:${cnt?24:8}px;width:24px;background:${cnt?'#4caf50':'#333'};margin:2px auto;border-radius:2px"></div>`;
-                });
-                html += `</div>`;
-              }
-      html += '</div>';
-      chartDiv.innerHTML = html;
-    }catch{}
-  });
-}
-    }catch{}
-    out.scrollIntoView({behavior:'smooth'});
-  });
-});
-
-// Trading Signals Astro Technical
-document.addEventListener('DOMContentLoaded', async ()=>{
-  // Every row below comes from /api/astro/personal (build_response + Bhadra
-  // calendar). Nothing is defaulted: a missing field shows as unavailable.
-  const today = localTodayISO();
-  let astro = null;
-  try {
-    const res = await fetch(`/api/astro/personal?date=${today}`);
-    if(res.ok) astro = await res.json();
-  } catch(e){}
-  const scoreLabel = document.getElementById('astro-score-label');
-  const scoreSub = document.getElementById('astro-score-sub');
-  const list = document.getElementById('astro-signals-list');
-  const fmtTime = iso => iso ? iso.slice(11,16) : '?';
-  const fmtDay = iso => iso ? iso.slice(5,10) : '?';
-  if(!astro || astro.error){
-    if(scoreLabel) scoreLabel.textContent = 'UNAVAILABLE';
-    if(scoreSub) scoreSub.textContent = 'Live panchanga could not be loaded.';
-  } else {
-    const vedhaNet = typeof astro.vedha_net === 'number' ? astro.vedha_net : null;
-    const t = astro.tithi;
-    const weekday = astro.weekday || '';
-    const moonNak = astro.moon?.nakshatra || null;
-    const tithiLabel = t ? `${t.paksha} ${t.name}` : 'tithi n/a';
-    const signals = [];
-    if(vedhaNet !== null){
-      signals.push({icon: vedhaNet>0?'green':vedhaNet<0?'red':'grey',
-        title:`SBC VEDHA NET ${vedhaNet.toFixed(2)}`,
-        sub: vedhaNet>0?'benefic vedhas dominate':vedhaNet<0?'malefic vedhas dominate':'balanced'});
-    }
-    if(t){
-      signals.push({icon: t.moon_benefic?'green':'red', title: tithiLabel.toUpperCase(), sub: t.moon_note || ''});
-      if(weekday){
-        const match = (t.group_weekdays||[]).includes(weekday);
-        signals.push({icon: match?'green':'grey', title: weekday.toUpperCase(),
-          sub: match ? `matches ${t.group} tithi weekdays` : `${t.group} tithi favours ${(t.group_weekdays||[]).join('/')||'—'}`});
-      }
-    }
-    if(moonNak){
-      signals.push({icon:'grey', title:`MOON IN ${moonNak.toUpperCase()}`, sub: astro.moon?.sign ? `${astro.moon.sign} (sidereal)` : ''});
-    }
-    const b = astro.bhadra;
-    if(b){
-      if(b.active_today){
-        const spans = b.windows_today.map(w=>`${fmtDay(w.begin)} ${fmtTime(w.begin)}–${fmtDay(w.end)} ${fmtTime(w.end)}`).join(', ');
-        signals.push({icon:'red', title:'BHADRA (VISHTI) TODAY', sub:`${spans} IST · avoid initiating major positions inside the window`});
-      } else {
-        signals.push({icon:'green', title:'NO BHADRA TODAY',
-          sub: b.next ? `next: ${fmtDay(b.next.begin)} ${fmtTime(b.next.begin)}–${fmtDay(b.next.end)} ${fmtTime(b.next.end)} IST` : ''});
-      }
-    }
-    if(scoreLabel){
-      scoreLabel.textContent = vedhaNet===null ? '—' : vedhaNet>0?'BULLISH':vedhaNet<0?'BEARISH':'NEUTRAL';
-      scoreLabel.insertAdjacentHTML('afterend', '<hr style="border:none;border-top:1px solid var(--border);margin:12px 0">');
-    }
-    if(scoreSub){
-      scoreSub.textContent = [vedhaNet!==null?`Vedha net ${vedhaNet.toFixed(2)}`:null, weekday, tithiLabel, moonNak?`${moonNak} Nak`:null]
-        .filter(Boolean).join(' · ');
-    }
-    if(list){
-      list.innerHTML = signals.map(s=>`
-        <div class="signal-row" style="display:flex;align-items:flex-start;gap:12px;padding:12px 0;border-bottom:1px solid var(--border)">
-          <div class="signal-dot ${s.icon}" style="width:24px;height:24px;border-radius:50%;background:var(--dot-bg);display:flex;align-items:center;justify-content:center">●</div>
-          <div><b>${esc(s.title)}</b><div style="opacity:.7;font-size:13px">${esc(s.sub)}</div></div>
-        </div>
-      `).join('');
-    }
-    const rz = document.getElementById('reversal-zone');
-    const rd = document.getElementById('reversal-details');
-    const wins = astro.reversal_windows || [];
-    if(rz && rd){
-      rz.classList.toggle('hidden', wins.length === 0);
-      rd.innerHTML = wins.map(w=>`<div>${esc(w.level)} · ${esc(w.bias)} — ${esc(w.title)}</div>`).join('');
-    }
-  }
-  // Hide details toggle with aria
-  const toggleBtn = document.getElementById('toggle-trading-details');
-  const detailsEl = document.getElementById('trading-signals-details');
-  if(toggleBtn && detailsEl){
-    toggleBtn.setAttribute('aria-controls','trading-signals-details');
-    toggleBtn.setAttribute('aria-expanded','false');
-    toggleBtn.addEventListener('click', ()=>{
-      const hidden = detailsEl.classList.toggle('hidden');
-      toggleBtn.setAttribute('aria-expanded', String(!hidden));
-      toggleBtn.textContent = hidden ? 'Show Details' : 'Hide Details';
-    });
-  }
-
-  // Integrate backtest accuracy into Astro Score display
-  const astroScoreSub = document.getElementById('astro-score-sub');
-  async function refreshAstroAccuracy(){
-    if(!astroScoreSub) return;
-    try{
-      const res = await fetch(`/api/backtest/moon?ticker=^NSEI&multi_tf=true&regime=true&volume=true&vedha=false`);
-      const data = await res.json();
-      if(!data.error && data.samples>0){
-        let acc = document.getElementById('astro-score-accuracy');
-        if(!acc){ acc = document.createElement('div'); acc.id = 'astro-score-accuracy'; acc.style.opacity = '.7'; astroScoreSub.after(acc); }
-        acc.textContent = `Moon backtest accuracy ${(data.accuracy*100).toFixed(1)}% (${data.samples} samples)`;
-      }
-    }catch(e){}
-  }
-  refreshAstroAccuracy();
-  // Moon Rashi Backtest UI
-  const backtestBtn = document.createElement('button');
-  backtestBtn.textContent='Run Moon Backtest';
-  backtestBtn.className='btn btn-sm';
-  backtestBtn.style.marginLeft='8px';
-  const sectorSelect = document.getElementById('nakshatra-sector-select');
-  const controlsContainer = sectorSelect ? sectorSelect.closest('div') : null;
-  const backtestResult = document.createElement('div');
-  backtestResult.id='moon-backtest-result';
-  backtestResult.style.marginTop='8px';
-  backtestResult.style.fontSize='12px';
-  backtestResult.style.color='#cbd5e1';
-  const backtestTable = document.createElement('div');
-  backtestTable.id='moon-backtest-table';
-  backtestTable.style.marginTop='6px';
-  backtestTable.style.maxHeight='200px';
-  backtestTable.style.overflow='auto';
-  backtestTable.style.fontSize='11px';
-  const walkforwardDiv=document.createElement('div');
-  walkforwardDiv.id='walkforward-div';
-  walkforwardDiv.style.marginTop='8px';
-  walkforwardDiv.style.fontSize='12px';
-  walkforwardDiv.style.color='#cbd5e1';
-  const   wfBtn=document.createElement('button');
-  wfBtn.textContent='Walk-Forward Chart';
-  wfBtn.className='btn btn-sm';
-  wfBtn.style.marginLeft='8px';
-  wfBtn.addEventListener('click', async ()=>{
-    walkforwardDiv.textContent='Loading...';
-    try{
-      const res=await fetch('/api/backtest/walkforward?ticker=^NSEI&window=365&step=90');
-      const data=await res.json();
-      if(data.error){walkforwardDiv.textContent='Error: '+data.error; return;}
-      let html='<table style="width:100%;border-collapse:collapse"><tr><th>Train Start</th><th>Test End</th><th>Samples</th><th>Accuracy</th></tr>';
-      data.results.forEach(r=>{html+=`<tr><td>${r.train_start}</td><td>${r.test_end}</td><td>${r.samples}</td><td>${r.accuracy? (r.accuracy*100).toFixed(1)+'%':'-'} </td></tr>`;});
-      html+='</table>';
-      walkforwardDiv.innerHTML=html;
-    }catch(e){walkforwardDiv.textContent='Error';}
-  });
-  const signalBtn=document.createElement('button');
-  signalBtn.textContent='Live Moon Signals';
-  signalBtn.className='btn btn-sm';
-  signalBtn.style.marginLeft='8px';
-  const signalDiv=document.createElement('div');
-  signalDiv.id='moon-signals-div';
-  signalDiv.style.marginTop='8px';
-  signalDiv.style.fontSize='12px';
-  signalDiv.style.color='#cbd5e1';
-  signalBtn.addEventListener('click', async ()=>{
-    signalDiv.textContent='Loading...';
-    try{
-      const sectorMapSig = {
-        'Nifty Bank':'^NSEBANK',
-        'Nifty IT':'^CNXIT',
-        'Nifty Auto':'^CNXAUTO',
-        'Nifty Metal':'^CNXMETAL',
-        'Nifty FMCG':'^CNXFMCG',
-        'Nifty Pharma':'^CNXPHARMA',
-        'Nifty Energy':'^CNXENERGY',
-        'Nifty Realty':'^CNXREALTY',
-        'Nifty Large Caps':'^NSEI'
-      };
-      const tickerSig = sectorMapSig[sectorSelect.value] || '^NSEI';
-      const res=await fetch(`/api/signal/moon?ticker=${encodeURIComponent(tickerSig)}&days=30`);
-      const data=await res.json();
-      if(data.error){signalDiv.textContent='Error: '+data.error; return;}
-      let html='<table style="width:100%;border-collapse:collapse"><tr><th>Date</th><th>Rashi</th><th>Trend</th><th>Close</th></tr>';
-      data.signals.forEach(s=>{html+=`<tr><td>${s.date}</td><td>${s.rashi}</td><td>${s.trend}</td><td>${s.close.toFixed(2)}</td></tr>`;});
-      html+='</table>';
-      signalDiv.innerHTML=html;
-    }catch(e){signalDiv.textContent='Error';}
-  });
-  if(controlsContainer){
-    controlsContainer.appendChild(backtestResult);
-    controlsContainer.appendChild(backtestTable);
-    controlsContainer.appendChild(wfBtn);
-    controlsContainer.appendChild(walkforwardDiv);
-    controlsContainer.appendChild(signalBtn);
-    controlsContainer.appendChild(signalDiv);
-  }
-  const togglesDiv = document.createElement('div');
-  togglesDiv.style.marginTop='6px';
-  togglesDiv.style.fontSize='12px';
-  const makeToggle=(label,key,def)=>{const id='bt-'+key; const wrap=document.createElement('label'); wrap.style.marginRight='12px'; const cb=document.createElement('input'); cb.type='checkbox'; cb.id=id; cb.checked=def; wrap.appendChild(cb); wrap.appendChild(document.createTextNode(' '+label)); togglesDiv.appendChild(wrap); return cb;};
-  const multiCb=makeToggle('Multi-TF','multi',true);
-  const regimeCb=makeToggle('Regime','regime',true);
-  const volCb=makeToggle('Volume','volume',true);
-  const vedhaCb=makeToggle('Vedha','vedha',false);
-  if(controlsContainer){
-    controlsContainer.insertBefore(togglesDiv, backtestResult);
-  }
-  let lastData=null;
-  const exportBtn=document.createElement('button');
-  exportBtn.textContent='Export CSV';
-  exportBtn.className='btn btn-sm';
-  exportBtn.style.marginLeft='8px';
-  exportBtn.disabled=true;
-  if(controlsContainer){
-    controlsContainer.insertBefore(exportBtn, backtestResult);
-  }
-  exportBtn.addEventListener('click', ()=>{
-    if(!lastData) return;
-    const rows=[['date','expected','actual','match']].concat(lastData.results.map(r=>[r.date,r.expected,r.actual,r.match]));
-    const csv=rows.map(r=>r.join(',')).join('\n');
-    const blob=new Blob([csv],{type:'text/csv'});
-    const url=URL.createObjectURL(blob);
-    const a=document.createElement('a');
-    a.href=url; a.download='moon_backtest.csv'; a.click();
-    URL.revokeObjectURL(url);
-  });
-  backtestBtn.addEventListener('click', async ()=>{
-    backtestResult.textContent='Running...';
-    exportBtn.disabled=true;
-    try{
-      const sectorMap = {
-        'Nifty Bank':'^NSEBANK',
-        'Nifty IT':'^CNXIT',
-        'Nifty Auto':'^CNXAUTO',
-        'Nifty Metal':'^CNXMETAL',
-        'Nifty FMCG':'^CNXFMCG',
-        'Nifty Pharma':'^CNXPHARMA',
-        'Nifty Energy':'^CNXENERGY',
-        'Nifty Realty':'^CNXREALTY',
-        'Nifty Large Caps':'^NSEI',
-        'Nifty PSU': 'NSEI',
-        'Nifty Infra': 'NSEI',
-        'Nifty Gold': 'NIFTYGO',
-        'Nifty Defense': 'INDIADEF'
-      };
-      const sector = sectorSelect.value;
-      const ticker = sectorMap[sector] || '^NSEBANK';
-      const res = await fetch(`/api/backtest/moon?ticker=${encodeURIComponent(ticker)}&multi_tf=${multiCb.checked}&regime=${regimeCb.checked}&volume=${volCb.checked}&vedha=${vedhaCb.checked}`);
-      const data = await res.json();
-      if(data.error){
-        backtestResult.textContent='Error: '+data.error;
-      }else{
-        lastData=data;
-        backtestResult.textContent=`Samples ${data.samples} | Correct ${data.correct} | Accuracy ${(data.accuracy*100).toFixed(2)}%`;
-        exportBtn.disabled=false;
-        const rows=data.results.slice(0,200);
-        let html='<table style="width:100%;border-collapse:collapse"><thead><tr><th style="text-align:left;padding:2px">date</th><th>expected</th><th>actual</th><th>match</th></tr></thead><tbody>';
-        rows.forEach(r=>{html+=`<tr><td style="padding:2px">${r.date}</td><td style="padding:2px;text-align:center">${r.expected}</td><td style="padding:2px;text-align:center">${r.actual}</td><td style="padding:2px;text-align:center">${r.match?'✓':'✗'}</td></tr>`;});
-        html+='</tbody></table>';
-        backtestTable.innerHTML=html;
-      }
-    }catch(e){
-      backtestResult.textContent='Error: '+e;
-    }
-  });
-  // Nakshatra Astro Chart loader
-  let nakshatraChartInstance = null;
-  document.getElementById('nakshatra-chart-load')?.addEventListener('click', async ()=>{
-    const sector = document.getElementById('nakshatra-sector-select').value;
-    const container = document.getElementById('nakshatra-astro-chart');
-    // destroy previous instance
-    if(nakshatraChartInstance){
-      try{ nakshatraChartInstance.remove(); }catch(e){}
-      nakshatraChartInstance = null;
-    }
-    container.innerHTML = '<div style="padding:20px">Loading '+sector+' astro chart...</div>';
-    try {
-      const tickerMap = {
-        'Nifty Bank':'^NSEBANK',
-        'Nifty IT':'^CNXIT',
-        'Nifty Auto':'^CNXAUTO',
-        'Nifty Metal':'^CNXMETAL',
-        'Nifty FMCG':'^CNXFMCG',
-        'Nifty Pharma':'^CNXPHARMA',
-        'Nifty Energy':'^CNXENERGY',
-        'Nifty Realty':'^CNXREALTY'
-      };
-      // Fallback aliases for yfinance
-      const tickerFallback = {
-        '^CNXIT':'^NSEIT',
-        '^CNXAUTO':'^NSEAUTO',
-        '^CNXMETAL':'^NSEMETAL',
-        '^CNXFMCG':'^NSEFMCG',
-        '^CNXPHARMA':'^NSEPHARMA',
-        '^CNXENERGY':null,
-        '^CNXREALTY':'^NSEREALTY'
-      };
-      let ticker = tickerMap[sector] || '^NSEBANK';
-      let res = await fetch(`/api/price?ticker=${encodeURIComponent(ticker)}&days=90`);
-      let candles = [];
-      if(!res.ok || (await res.clone().json()).length===0){
-        // try fallback
-        const fb = tickerFallback[ticker];
-        if(fb){
-          ticker = fb;
-          res = await fetch(`/api/price?ticker=${encodeURIComponent(ticker)}&days=90`);
-        }
-      }
-      if(!res.ok) throw new Error('Price fetch failed');
-      candles = await res.json();
-      if(!candles.length) throw new Error('No price data for '+ticker);
-      // Data-as-of stamp from the response headers (B-05)
-      const priceAsOf = res.headers.get('X-Data-As-Of');
-      const priceFresh = priceAsOf ? {as_of: priceAsOf, stale: res.headers.get('X-Data-Stale') === '1',
-        expected: res.headers.get('X-Data-Expected'),
-        sessions_behind: Number(res.headers.get('X-Data-Sessions-Behind') || 0)} : null;
-      // Create lightweight chart if available
-      if(window.LightweightCharts && container){
-        container.innerHTML = '';
-        const controlsBar = document.createElement('div');
-        controlsBar.style.display='flex';
-        controlsBar.style.gap='8px';
-        controlsBar.style.alignItems='center';
-        controlsBar.style.marginBottom='8px';
-        controlsBar.style.fontSize='12px';
-        controlsBar.innerHTML = `
-          <label>Start <input id="ts-start" type="date" style="background:#0b1220;color:#cbd5e1;border:1px solid #334155;border-radius:4px;padding:2px 4px;"></label>
-          <label>End <input id="ts-end" type="date" style="background:#0b1220;color:#cbd5e1;border:1px solid #334155;border-radius:4px;padding:2px 4px;"></label>
-          <select id="ts-months" style="background:#0b1220;color:#cbd5e1;border:1px solid #334155;border-radius:4px;padding:2px 4px;">
-            <option value="1">1 month</option>
-            <option value="3" selected>3 months</option>
-            <option value="6">6 months</option>
-            <option value="12">12 months</option>
-          </select>
-          <button id="ts-load" class="btn btn-sm" style="background:#f59e0b;border:none;border-radius:4px;padding:4px 8px;cursor:pointer;">Load Chart</button>
-          <span style="margin-left:8px;opacity:.7">Crash score</span>
-        `;
-        container.appendChild(controlsBar);
-        if(priceFresh && window.SBCFreshness){
-          const asof = document.createElement('div');
-          asof.className = 'asof-slot';
-          asof.innerHTML = SBCFreshness.badge(priceFresh, ticker);
-          container.appendChild(asof);
-        }
-        // Wire Load Chart button to re-apply visible range
-        const tsLoadBtn = controlsBar.querySelector('#ts-load');
-        const tsStart = controlsBar.querySelector('#ts-start');
-        const tsEnd = controlsBar.querySelector('#ts-end');
-        const tsMonths = controlsBar.querySelector('#ts-months');
-        const wrapper = document.createElement('div');
-        wrapper.style.position='relative';
-        wrapper.style.paddingTop='26px';
-        container.appendChild(wrapper);
-        const legend = document.createElement('div');
-        legend.style.position='absolute';legend.style.top='8px';legend.style.right='8px';legend.style.background='rgba(0,0,0,0.6)';legend.style.padding='6px 10px';legend.style.borderRadius='6px';legend.style.fontSize='12px';legend.style.zIndex='10';
-        const did = 'download-chart-'+Math.random().toString(36).slice(2);
-        legend.innerHTML = `<span style="margin-left:4px">🟢 Bullish prediction</span> <span style="margin-left:12px">🔴 Bearish prediction</span> <span style="margin-left:12px">🟡 Reversal / risk alert</span> <span style="margin-left:12px">🟠 Crash calendar severity</span> <span style="margin-left:12px">● Price</span> <button id="${did}" class="btn btn-sm" style="margin-left:12px">Download CSV</button>`;
-        wrapper.appendChild(legend);
-        const chart = LightweightCharts.createChart(wrapper, {layout:{background:{type:'solid', color:'#0b1220'}}, width: Math.max(container.clientWidth||800,800), height:500});
-        // Horizontal date bar
-        const dateBar = document.createElement('div');
-        dateBar.style.position='absolute';
-        dateBar.style.top='0';
-        dateBar.style.left='0';
-        dateBar.style.right='0';
-        dateBar.style.height='22px';
-        dateBar.style.background='rgba(0,0,0,0.4)';
-        dateBar.style.color='#cbd5e1';
-        dateBar.style.fontSize='11px';
-        dateBar.style.display='flex';
-        dateBar.style.alignItems='center';
-        dateBar.style.padding='0 8px';
-        dateBar.style.justifyContent='space-between';
-        dateBar.style.zIndex='5';
-        const rangeLabel = document.createElement('span');
-        rangeLabel.textContent='Loading range...';
-        const presetBox = document.createElement('div');
-        ['1M','3M','6M','1Y'].forEach(p=>{
-          const b=document.createElement('button');
-          b.textContent=p;
-          b.style.marginLeft='6px';
-          b.style.padding='2px 6px';
-          b.style.fontSize='10px';
-          b.style.background='#f59e0b';
-          b.style.border='none';
-          b.style.borderRadius='4px';
-          b.style.cursor='pointer';
-          b.onclick=()=>{ setRange(p); };
-          presetBox.appendChild(b);
-        });
-        dateBar.appendChild(rangeLabel);
-        dateBar.appendChild(presetBox);
-        wrapper.appendChild(dateBar);
-        nakshatraChartInstance = chart;
-        // Resize observer
-        const ro = new ResizeObserver(entries=>{
-          for(const entry of entries){
-            const {width} = entry.contentRect;
-            chart.applyOptions({width: width});
-          }
-        });
-        ro.observe(wrapper);
-        const candlestickSeries = chart.addCandlestickSeries();
-        candlestickSeries.setData(candles);
-        // Fetch SBC vedha daily for selected sector
-        const vedhaRes = await fetch(`/api/vedha_daily?sector=${encodeURIComponent(sector)}&days=90`);
-        const vedhaData = await vedhaRes.json();
-        // Vedha line disabled to avoid scale distortion; use markers only
-        // const vedhaSeries = chart.addLineSeries({color:'#22c55e', lineWidth:2});
-        // Background severity bands similar to Chart & Timing
-        const severitySeries = chart.addHistogramSeries({
-          priceFormat: {type:'price', precision:0},
-          priceScaleId: 'right',
-          color: '#ef4444',
-          priceScale: {scaleMargins:{top:0.8,bottom:0.2}, visible:false}
-        });
-        const severityData = candles.map((c,i)=>{
-          const v = vedhaData[i];
-          const score = v && typeof v.score==='number' ? v.score : 0;
-          // Map score to severity height
-          const severity = Math.abs(score)*500;
-          return {time:c.time, value: severity, color: score>=0 ? '#22c55e' : '#ef4444'};
-        });
-        severitySeries.setData(severityData);
-        document.getElementById(did)?.addEventListener('click', ()=>{
-          const rows = [['date','open','high','low','close','vedha','nakshatra_idx']];
-          candles.forEach((c,i)=>{
-            const v = vedhaData[i]||{};
-            rows.push([new Date(c.time*1000).toISOString().split('T')[0],c.open,c.high,c.low,c.close,v.score||'',v.nakshatra_idx||'']);
-          });
-          const csv = rows.map(r=>r.join(',')).join('\n');
-          const blob = new Blob([csv],{type:'text/csv'});
-          const a = document.createElement('a');
-          a.href = URL.createObjectURL(blob);
-          a.download = `${sector.replace(/\s+/g,'_')}_astro_chart.csv`;
-          a.click();
-        });
-        // Nakshatra markers - throttled to avoid clutter
-        const nakshatras = ['Ashwini','Bharani','Krittika','Rohini','Mrigashira','Ardra','Punarvasu','Pushya','Ashlesha','Magha','Purva Phalguni','Uttara Phalguni','Hasta','Chitra','Swati','Vishakha','Anuradha','Jyeshtha','Mula','Purva Ashadha','Uttara Ashadha','Shravana','Dhanishta','Shatabhisha','Purva Bhadrapada','Uttara Bhadrapada','Revati'];
-        const markers = candles.map((c,i)=>{
-          const v = vedhaData[i];
-          if(!v || v.score==null || v.nakshatra_idx==null) return null;
-          // One marker per candle, arrow up/down based on vedha score
-          return {
-            time: c.time,
-            position: v.score>=0 ? 'aboveBar' : 'belowBar',
-            color: v.score>=0 ? '#22c55e' : '#ef4444',
-            shape: v.score>=0 ? 'arrowUp' : 'arrowDown',
-            text: ''
-          };
-        }).filter(Boolean);
-        candlestickSeries.setMarkers(markers);
-        // Default window: adaptive to data, 1 month prior to last available candle
-        const lastCandleTime = Math.max(...candles.map(c=>c.time));
-        const firstCandleTime = Math.min(...candles.map(c=>c.time));
-        const oneMonthSec = 30*86400;
-        const defaultFrom = lastCandleTime - oneMonthSec;
-        const finalFrom = Math.max(defaultFrom, firstCandleTime);
-        chart.timeScale().setVisibleRange({from: finalFrom, to: lastCandleTime});
-        // Wire controls bar Load button to re-fetch and re-render
-        if(tsLoadBtn){
-          tsLoadBtn.addEventListener('click', async ()=>{
-            const startVal = tsStart.value;
-            const endVal = tsEnd.value;
-            let startParam = startVal;
-            let endParam = endVal;
-            if(!startVal || !endVal){
-              const months = parseInt(tsMonths.value)||3;
-              const days = months*30;
-              const endDate = new Date(lastCandleTime*1000);
-              const startDate = new Date(endDate.getTime() - days*86400000);
-              startParam = startDate.toISOString().slice(0,10);
-              endParam = endDate.toISOString().slice(0,10);
-              tsStart.value = startParam;
-              tsEnd.value = endParam;
-            }
-            try{
-              // Re-fetch price
-              let priceUrl = `/api/price?ticker=${encodeURIComponent(ticker)}&start=${encodeURIComponent(startParam)}&end=${encodeURIComponent(endParam)}`;
-              let resP = await fetch(priceUrl);
-              if(!resP.ok) throw new Error('Price re-fetch failed');
-              const newCandles = await resP.json();
-              if(!newCandles.length) throw new Error('No price data for range');
-              candlestickSeries.setData(newCandles);
-              // Re-fetch vedha
-              const vedhaUrl = `/api/vedha_daily?sector=${encodeURIComponent(sector)}&start=${encodeURIComponent(startParam)}&end=${encodeURIComponent(endParam)}`;
-              const resV = await fetch(vedhaUrl);
-              const vedhaDataNew = await resV.json();
-              // Update markers
-              const markersNew = newCandles.map((c,i)=>{
-                const v = vedhaDataNew[i];
-                if(!v || v.score==null || v.nakshatra_idx==null) return null;
-                return {
-                  time: c.time,
-                  position: v.score>=0 ? 'aboveBar' : 'belowBar',
-                  color: v.score>=0 ? '#22c55e' : '#ef4444',
-                  shape: v.score>=0 ? 'arrowUp' : 'arrowDown',
-                  text: ''
-                };
-              }).filter(Boolean);
-              candlestickSeries.setMarkers(markersNew);
-              // Update severity
-              const severityDataNew = newCandles.map((c,i)=>{
-                const v = vedhaDataNew[i];
-                const score = v && typeof v.score==='number' ? v.score : 0;
-                const severity = Math.abs(score)*500;
-                return {time:c.time, value: severity, color: score>=0 ? '#22c55e' : '#ef4444'};
-              });
-              severitySeries.setData(severityDataNew);
-              // Update visible range
-              const first = Math.min(...newCandles.map(c=>c.time));
-              const last = Math.max(...newCandles.map(c=>c.time));
-              chart.timeScale().setVisibleRange({from:first, to:last});
-            }catch(e){
-              console.error(e);
-              alert('Failed to reload chart: '+e);
-            }
-          });
-          // Pre-fill dates
-          tsStart.value = new Date(lastCandleTime*1000 - oneMonthSec*1000).toISOString().slice(0,10);
-          tsEnd.value = new Date(lastCandleTime*1000).toISOString().slice(0,10);
-        }
-        // Update date bar on range change
-        const updateRangeLabel = (range)=>{
-          if(range){
-            const from = new Date(range.from*1000).toLocaleDateString();
-            const to = new Date(range.to*1000).toLocaleDateString();
-            rangeLabel.textContent = `${from}  →  ${to}`;
-          }
-        };
-        chart.timeScale().subscribeVisibleTimeRangeChange(updateRangeLabel);
-        const setRange = (preset)=>{
-          const daysMap={ '1M':60,'3M':180,'6M':360,'1Y':730 };
-          const days = daysMap[preset]||180;
-          const firstCandleTime = Math.min(...candles.map(c=>c.time));
-          const lastCandleTime = Math.max(...candles.map(c=>c.time));
-          const half = Math.floor(days*86400/2);
-          let from = lastCandleTime - half;
-          let to = lastCandleTime + half;
-          from = Math.max(from, firstCandleTime);
-          to = Math.min(to, lastCandleTime);
-          chart.timeScale().setVisibleRange({from, to});
-        };
-        // Proper hover tooltip
-        const tooltip = document.createElement('div');
-        tooltip.style.position='absolute';
-        tooltip.style.pointerEvents='none';
-        tooltip.style.background='rgba(0,0,0,0.85)';
-        tooltip.style.color='#fff';
-        tooltip.style.padding='6px 8px';
-        tooltip.style.borderRadius='6px';
-        tooltip.style.fontSize='12px';
-        tooltip.style.display='none';
-        tooltip.style.zIndex='1000';
-        wrapper.appendChild(tooltip);
-        chart.subscribeCrosshairMove(param=>{
-          if(!param.time || !param.seriesPricesValue) { tooltip.style.display='none'; return; }
-          const v = vedhaData.find(v=> new Date(v.date).getTime()/1000 === param.time);
-          const nakName = v && v.nakshatra_idx!=null ? nakshatras[v.nakshatra_idx%27] : '';
-          const score = v && v.score!=null ? v.score.toFixed(2) : '—';
-          tooltip.innerHTML = `Date: ${new Date(param.time*1000).toLocaleDateString()}<br>Vedha: ${score}<br>Nakshatra: ${nakName}`;
-          const coords = param.point;
-          if(coords){
-            tooltip.style.left = (coords.x+10)+'px';
-            tooltip.style.top = (coords.y+10)+'px';
-            tooltip.style.display='block';
-          }
-        });
-      } else {
-        container.innerHTML = '<div style="padding:20px">Chart library not available.</div>';
-      }
-    } catch(e){
-      container.innerHTML = '<div style="padding:20px;color:red">Failed: '+e+'</div>';
-    }
-  });
-
-  // Sector map live from monthly heatmap
-  try {
-    const hmRes = await fetch(`/api/monthly_heatmap?date=${today}&days=1`);
-    if(hmRes.ok){
-      const hm = await hmRes.json();
-      const sectors = [];
-      const dates = hm.dates||[];
-      const matrix = hm.matrix||{};
-      const d = dates[0]||today;
-      Object.entries(matrix).forEach(([sector, vals])=>{
-        const v = vals[d]||0;
-        const score = Math.min(10, Math.max(0, Math.round(Math.abs(v)*2)));
-        const dir = v>=0?'up':'down';
-        sectors.push({name: sector, score:`${score}/10`, dir});
-      });
-      const overall = document.getElementById('sector-map-overall');
-      if(overall && sectors.length){
-        const up = sectors.filter(x=>x.dir==='up').length, down = sectors.length - up;
-        overall.textContent = up>down ? `BULLISH ${up}/${sectors.length}` : down>up ? `BEARISH ${down}/${sectors.length}` : 'MIXED';
-      }
-      const sm = document.getElementById('sector-map-items');
-      if(sm){
-        sm.innerHTML = sectors.slice(0,12).map(sec=>`
-          <span style="display:inline-block;margin:4px 6px;padding:4px 8px;border-radius:4px;background:#1f2937;color:#e5e7eb;border:1px solid #374151">
-            ${sec.dir==='up'?'▲':'▼'} ${sec.name} ${sec.score}
-          </span>
-        `).join('');
-      }
-    }
-  } catch(e){}
-
-});
-
-// Daily Nakshatra Sector Dashboard
-document.addEventListener('DOMContentLoaded', ()=>{
-  const runBtn = document.getElementById('nakshatra-run');
-  const chartBtn = document.getElementById('nakshatra-chart-run');
-  const chartRange = document.getElementById('nakshatra-chart-range');
-  const chartImg = document.getElementById('nakshatra-chart');
-  const chartStatus = document.getElementById('nakshatra-chart-status');
-  const dateEl = document.getElementById('nakshatra-date');
-  const statusEl = document.getElementById('nakshatra-status');
-  const contentEl = document.getElementById('nakshatra-content');
-  if(!runBtn) return;
-  if(!dateEl.value){
-    const today = localTodayISO();
-    dateEl.value = today;
-  }
-  async function generate(){
-    if(!dateEl.value){ statusEl.textContent='Pick a date'; return; }
-    statusEl.textContent='Computing...';
-    try{
-      const date = dateEl.value;
-      const res = await fetch(`/api/daily_confluence?date=${encodeURIComponent(date)}&days=7`);
-      if(!res.ok) throw new Error('API error');
-      const data = await res.json();
-      const nak = data.moon_nakshatra || 'Unknown';
-      const keywords = data.keywords || [];
-      const vedhaNet = Number(data.vedha_net) || 0;
-      const direction = vedhaNet>0?'Bullish':vedhaNet<0?'Bearish':'Neutral';
-      let html = `<h3>Date: ${date}</h3>`;
-      html += `<p><b>Moon Nakshatra:</b> ${nak}</p>`;
-      html += `<p><b>SBC Vedha Net:</b> ${vedhaNet.toFixed(2)} → ${direction}</p>`;
-      html += `<p><b>Predicted Sector Keywords:</b> ${keywords.join(', ') || '—'}</p>`;
-      html += `<p><b>Trading Bias:</b> ${direction} ${keywords.join(' / ') || ''}</p>`;
-      // 7-day forecast table
-      html += `<h4>7-Day Forecast</h4><table border="1" cellpadding="4" style="border-collapse:collapse;font-size:12px"><tr><th>Date</th><th>Nakshatra</th><th>Keywords</th><th>Vedha Net</th><th>Direction</th></tr>`;
-      for (const row of data.forecast || []) {
-        const n = row.nakshatra || '';
-        const kws = (row.keywords||[]).join(', ');
-        const vn = Number(row.vedha_net) || 0;
-        html += `<tr><td>${row.date}</td><td>${n}</td><td>${kws}</td><td>${vn.toFixed(2)}</td><td>${row.direction}</td></tr>`;
-      }
-      html += `</table>`;
-      html += `<button id="export-nakshatra-csv" class="btn" style="margin-top:8px">Export 7-Day CSV</button>`;
-      contentEl.innerHTML = html;
-      // export handler
-      const expBtn = document.getElementById('export-nakshatra-csv');
-      if(expBtn){
-        expBtn.onclick = ()=>{
-          // RFC 4180: quote a field only when it contains a comma, quote or
-          // newline, and escape embedded quotes by doubling them.
-          const csvField = v =>{
-            const s = String(v ?? '');
-            return /[",\n\r]/.test(s) ? '"'+s.replace(/"/g,'""')+'"' : s;
-          };
-          let csv = 'Date,Nakshatra,Keywords,Vedha Net,Direction\n';
-          // build from the fetched data, not the rendered table
-          for (const row of data.forecast || []) {
-            csv += [
-              row.date,
-              row.nakshatra || '',
-              (row.keywords||[]).join(', '),
-              (Number(row.vedha_net)||0).toFixed(2),
-              row.direction,
-            ].map(csvField).join(',')+'\n';
-          }
-          const blob = new Blob([csv], {type:'text/csv'});
-          const url = URL.createObjectURL(blob);
-          const a = document.createElement('a');
-          a.href = url;
-          a.download = 'nakshatra_forecast.csv';
-          a.click();
-          URL.revokeObjectURL(url);
-        };
-      }
-      statusEl.textContent='';
-    }catch(e){
-      statusEl.textContent='Failed: '+e.message;
-    }
-  }
-  runBtn.addEventListener('click', generate);
-  if(chartBtn){
-    chartBtn.addEventListener('click', async ()=>{
-      const date = dateEl.value;
-      if(!date){ chartStatus.textContent = 'Pick a date before plotting.'; chartStatus.className = 'nifty-chart-status error'; return; }
-      chartStatus.textContent = 'Generating native Python chart from NIFTY data...';
-      chartStatus.className = 'nifty-chart-status';
-      chartBtn.disabled = true;
-      try{
-        const res = await fetch(`/api/nakshatra_chart?date=${encodeURIComponent(date)}&months=${encodeURIComponent(chartRange.value)}`);
-        if(!res.ok) throw new Error('chart unavailable');
-        const blob = await res.blob();
-        if(chartImg.dataset.objectUrl) URL.revokeObjectURL(chartImg.dataset.objectUrl);
-        const objectUrl = URL.createObjectURL(blob);
-        chartImg.dataset.objectUrl = objectUrl;
-        chartImg.src = objectUrl;
-        chartImg.classList.remove('hidden');
-        chartStatus.textContent = 'Native Python chart ready.';
-      }catch(e){
-        chartStatus.textContent = 'Native chart unavailable. Check NIFTY data and try again.';
-        chartStatus.className = 'nifty-chart-status error';
-      }finally{ chartBtn.disabled = false; }
-    });
-  }
-  generate();
-  // Predicted vs Actual chart loader for Trading Signals Astro Technical
-  (async ()=>{
-    const loadBtn = document.getElementById('trading-predicted-actual-load');
-    if(!loadBtn) return;
-    const sectorSelect = document.getElementById('nakshatra-sector-select');
-    const topDiv = document.getElementById('predicted-actual-top');
-    const bottomDiv = document.getElementById('predicted-actual-bottom');
-    let topChart, bottomChart, topSeries, bottomSeries;
-    loadBtn.addEventListener('click', async ()=>{
-      try{
-        const sector = sectorSelect?.value || 'Nifty Large Caps';
-        const tickerMap = {
-          'Nifty Bank':'^NSEBANK','Nifty IT':'^CNXIT','Nifty Auto':'^CNXAUTO',
-          'Nifty Metal':'^CNXMETAL','Nifty FMCG':'^CNXFMCG','Nifty Pharma':'^CNXPHARMA',
-          'Nifty Energy':'^CNXENERGY','Nifty Realty':'^CNXREALTY','Nifty Large Caps':'^NSEI'
-        };
-        const ticker = tickerMap[sector] || '^NSEI';
-        const dateEl = document.getElementById('date');
-        const selDate = dateEl?.value || localTodayISO();
-        const priceRes = await fetch(`/api/price?ticker=${encodeURIComponent(ticker)}&start=${encodeURIComponent(selDate)}&end=${encodeURIComponent(selDate)}&interval=3m`);
-        const candles = await priceRes.json();
-        const projRes = await fetch(`/api/intraday_projection?sector=${encodeURIComponent(sector)}&date=${selDate}`);
-        let proj = [];
-        try{ proj = await projRes.json(); }catch(e){ proj = []; }
-        if(!topChart && window.LightweightCharts && topDiv && bottomDiv){
-          topChart = LightweightCharts.createChart(topDiv,{layout:{background:{type:'solid',color:'#0b1220'}},width:topDiv.clientWidth,height:300});
-          bottomChart = LightweightCharts.createChart(bottomDiv,{layout:{background:{type:'solid',color:'#0b1220'}},width:bottomDiv.clientWidth,height:340});
-          topSeries = topChart.addCandlestickSeries({upColor:'#22c55e',downColor:'#ef4444',borderVisible:false,wickUpColor:'#22c55e',wickDownColor:'#ef4444'});
-          bottomSeries = bottomChart.addCandlestickSeries();
-          // sync time scales
-          topChart.timeScale().subscribeVisibleTimeRangeChange(range=>{
-            if(range && bottomChart) bottomChart.timeScale().setVisibleRange(range);
-          });
-          bottomChart.timeScale().subscribeVisibleTimeRangeChange(range=>{
-            if(range && topChart) topChart.timeScale().setVisibleRange(range);
-          });
-          // sync crosshair - optional; keep simple time sync
-          // topChart.subscribeCrosshairMove(param=>{
-          //   if(bottomChart && param.time) bottomChart.timeScale().setVisibleRange(bottomChart.timeScale().getVisibleRange()||{from:param.time-3600,to:param.time+3600});
-          // });
-          // bottomChart.subscribeCrosshairMove(param=>{
-          //   if(topChart && param.time) topChart.timeScale().setVisibleRange(topChart.timeScale().getVisibleRange()||{from:param.time-3600,to:param.time+3600});
-          // });
-          const ro = new ResizeObserver(()=>{
-            topChart.applyOptions({width:topDiv.clientWidth});
-            bottomChart.applyOptions({width:bottomDiv.clientWidth});
-          });
-          ro.observe(topDiv); ro.observe(bottomDiv);
-        }
-        const rawPoints = Array.isArray(proj.points) ? proj.points : (Array.isArray(proj.hours) ? proj.hours : []);
-        const predPoints = rawPoints.map(p=>{const t = typeof p.time==='number' ? p.time : Math.floor(new Date(p.time).getTime()/1000); const v = p.score ?? p.projection ?? 0; return {time:t,open:v,high:v,low:v,close:v};});
-        if(predPoints.length){ topSeries.setData(predPoints); }else{
-          const vedhaRes = await fetch(`/api/vedha_daily?sector=${encodeURIComponent(sector)}&days=90`);
-          const vedha = await vedhaRes.json();
-          const placeholder = candles.slice(0,100).map((c,i)=>{const v=(vedha[i]?.score||0)*100; return {time:c.time,open:v,high:v,low:v,close:v};});
-          topSeries.setData(placeholder);
-        }
-        bottomSeries.setData(candles);
-        topChart.timeScale().fitContent();
-        bottomChart.timeScale().fitContent();
-      }catch(e){ console.error('Predicted vs Actual load error',e); alert('Failed to load Predicted vs Actual'); }
-    });
-  })();
-});
-  </script>
-  <script>
-  document.addEventListener('DOMContentLoaded',()=>{
-    const runBtn=document.getElementById('rk-run');
-    const startEl=document.getElementById('rk-start');
-    const endEl=document.getElementById('rk-end');
-    const heatDiv=document.getElementById('rk-heatmap');
-    if(!runBtn) return;
-    const today=new Date();
-    const fmt=d=>isoDateOf(d);
-    const nseHolidays = new Set([
-      '2025-01-26','2025-03-14','2025-03-31','2025-04-14','2025-04-18','2025-05-01','2025-08-15','2025-10-02','2025-10-20','2025-11-01','2025-11-05','2025-11-24','2025-12-25',
-      '2026-01-26','2026-03-13','2026-03-30','2026-04-14','2026-04-17','2026-05-01','2026-08-15','2026-10-02','2026-10-19','2026-11-01','2026-11-04','2026-11-23','2026-12-25'
-    ]);
-    const isTradingDay = dStr=>{ const dt=new Date(dStr); const w=dt.getDay(); return w!==0 && w!==6 && !nseHolidays.has(dStr); };
-    const nextTradingDays = (startDate, n)=>{ const dates=[]; let d=new Date(startDate); while(dates.length<n){ const ds=fmt(d); if(isTradingDay(ds)) dates.push(new Date(d)); d.setDate(d.getDate()+1); } return dates; };
-    const tradingDates = nextTradingDays(today,5);
-    const startDt = tradingDates[0];
-    const endDt = tradingDates[4];
-    if(!startEl.value) startEl.value=fmt(startDt);
-    if(!endEl.value) endEl.value=fmt(endDt);
-    const dayName=d=>new Date(d+'T00:00:00').toLocaleDateString('en-US',{weekday:'long'});
-    const levelColor=s=>{
-      if(s>=9) return '#ef4444';
-      if(s>=6) return '#f97316';
-      if(s>=3) return '#eab308';
-      return '#22c55e';
-    };
-    runBtn.addEventListener('click',async()=>{
-      heatDiv.innerHTML='<div style="padding:8px">Loading...</div>';
-      try{
-        const start=startEl.value; const end=endEl.value;
-        if(!start||!end){ heatDiv.innerHTML='Select start and end dates.'; return; }
-        const res=await fetch(`/api/rahu_ketu_trap_calendar?start=${encodeURIComponent(start)}&end=${encodeURIComponent(end)}`);
-        if(!res.ok) throw new Error('API error');
-        const data=await res.json();
-        const calendar=data.calendar||[];
-        if(!calendar.length){ heatDiv.innerHTML='<div style="padding:8px">No data</div>'; return; }
-        // collect industries
-        const indSet=new Set();
-        calendar.forEach(day=>{ (day.signals||[]).forEach(s=>indSet.add(s.industry)); });
-        const industries=[...indSet];
-        // header
-        let html=`<table style="border-collapse:collapse;font-size:11px;width:100%;overflow:auto"><thead><tr style="background:#0b1220">`;
-        html+=`<th style="padding:4px;border:1px solid #334155;position:sticky;left:0;background:#0b1220">Date</th>`;
-        html+=`<th style="padding:4px;border:1px solid #334155">Day</th>`;
-        html+=`<th style="padding:4px;border:1px solid #334155">NSE?</th>`;
-        industries.forEach(ind=>{ html+=`<th style="padding:4px;border:1px solid #334155;min-width:110px">${ind}</th>`; });
-        html+=`<th style="padding:4px;border:1px solid #334155">Rahu/Ketu Status</th>`;
-        html+=`</tr></thead><tbody>`;
-        calendar.forEach(day=>{
-          const date=day.date;
-          if(!isTradingDay(date)) return;
-          const dayNameStr=dayName(date);
-          const nse='<span style="color:#22c55e">✓ Open</span>';
-          html+=`<tr>`;
-          html+=`<td style="padding:4px;border:1px solid #334155;position:sticky;left:0;background:#0b1220">${date}</td>`;
-          html+=`<td style="padding:4px;border:1px solid #334155">${dayNameStr}</td>`;
-          html+=`<td style="padding:4px;border:1px solid #334155">${nse}</td>`;
-          // map signals by industry
-          const sigMap={};
-          (day.signals||[]).forEach(s=>{ sigMap[s.industry.toUpperCase()]=s; });
-          industries.forEach(ind=>{
-            const s=sigMap[ind.toUpperCase()];
-            if(!s){ html+=`<td style="padding:4px;border:1px solid #334155;background:#1f2937">—</td>`; return; }
-            const score=s.score||0;
-            const level=s.level||'GREEN';
-            const reasons=(s.reasons||[]).join(' · ');
-            const title=`${s.ruling_planet} | Rahu:${s.rahu_nakshatra} Ketu:${s.ketu_nakshatra} Moon:${s.moon_nakshatra} | ${reasons}`;
-            html+=`<td title="${title.replace(/"/g,'&quot;')}" style="padding:4px;border:1px solid #334155;background:${levelColor(score)};text-align:center">${score}<br><span style="font-size:9px;opacity:.8">${level}</span></td>`;
-          });
-          // status column: first signal's nodes
-          const firstSig=(day.signals||[])[0];
-          const rahuN=firstSig?.rahu_nakshatra||'-';
-          const ketuN=firstSig?.ketu_nakshatra||'-';
-          html+=`<td style="padding:4px;border:1px solid #334155;font-size:10px">Rahu:${rahuN}<br>Ketu:${ketuN}</td>`;
-          html+=`</tr>`;
-        });
-        html+=`</tbody></table>`;
-        heatDiv.innerHTML=html;
-      }catch(e){ heatDiv.innerHTML='Error loading calendar: '+e.message; }
-    });
-    runBtn.click();
-  });
-  </script>
+  <script src="/static/js/aspect-table.js?v=1"></script>
+  <script src="/static/js/infographic.js?v=1"></script>
+  <script src="/static/js/planet-series.js?v=1"></script>
+  <script src="/static/js/monthly-score.js?v=1"></script>
+  <script src="/static/js/swing-windows.js?v=5"></script>
+  <script src="/static/js/birth-city.js?v=2"></script>
+  <script src="/static/js/profiles-habits.js?v=2"></script>
+  <script src="/static/js/trading-signals.js?v=3"></script>
+  <script src="/static/js/moon-signal-check.js?v=1"></script>
+  <script src="/static/js/rahu-ketu-trap.js?v=3"></script>
+  <script src="/static/js/transit-almanac.js?v=3"></script>
+  <script src="/static/js/sector-rotation.js?v=2"></script>
+  <script src="/static/js/upcoming-sector-preview.js?v=3"></script>
+  <script src="/static/js/bullion-week.js?v=4"></script>
   <footer class="site-footer">
     <div class="wrap">
       <small>For informational purposes only. Astrological market timing is not financial advice. Trade at your own risk.</small>

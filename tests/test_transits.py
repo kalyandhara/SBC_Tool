@@ -67,7 +67,8 @@ def test_sign_ingresses_mars_2022():
     assert pisces["from_label"] in ("Aquarius", "Aries")
     for e in events:
         assert set(e) == {"planet", "kind", "label", "from_label",
-                          "longitude", "pada", "utc", "utc_date", "ist_date"}
+                          "longitude", "pada", "motion", "re_entry",
+                          "gandanta", "utc", "utc_date", "ist_date"}
         assert 0.0 <= e["longitude"] < 360.0
 
 
