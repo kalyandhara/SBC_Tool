@@ -156,13 +156,14 @@ def descriptive_summary(rows: list[dict]) -> dict:
             "beat_rate": beat / n_raw if n_raw else None}
 
 
-# Rotation groups, fixed in the pre-registration ("Rotation pattern labels").
+# Rotation groups, fixed in the pre-registration ("Rotation pattern labels"). Keys are the
+# sector keys from sbc.market_store.SECTOR_SYMBOLS.
 GROUPS = {
-    "PHARMA": "Defensive", "FMCG": "Defensive", "HEALTH": "Defensive", "CONSUM": "Defensive",
-    "IT": "Growth", "MEDIA": "Growth", "AUTO": "Growth",
-    "BANK": "Risk-On", "FIN": "Risk-On", "REALTY": "Risk-On", "METAL": "Risk-On",
-    "INFRA": "Risk-On", "PSUBANK": "Risk-On",
-    "ENERGY": "Neutral", "OILGAS": "Neutral",
+    "CNXPHARMA": "Defensive", "CNXFMCG": "Defensive", "CNXHEALTH": "Defensive", "CNXCONSUM": "Defensive",
+    "CNXIT": "Growth", "CNXMEDIA": "Growth", "CNXAUTO": "Growth",
+    "CNXBANK": "Risk-On", "CNXFIN": "Risk-On", "CNXREALTY": "Risk-On", "CNXMETAL": "Risk-On",
+    "CNXINFRA": "Risk-On", "CNXPSUBANK": "Risk-On",
+    "CNXENERGY": "Neutral", "CNXOILGAS": "Neutral",
 }
 
 

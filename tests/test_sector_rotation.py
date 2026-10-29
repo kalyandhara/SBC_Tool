@@ -139,20 +139,19 @@ def test_insufficient_below_minimum_signal_days():
 
 
 def test_rotation_pattern_majority():
-    label, top5 = sr.rotation_pattern(["FMCG", "PHARMA", "HEALTH", "IT", "AUTO"])
-    assert label == "Defensive" and top5 == ["FMCG", "PHARMA", "HEALTH", "IT", "AUTO"]
+    label, top5 = sr.rotation_pattern(["CNXFMCG", "CNXPHARMA", "CNXHEALTH", "CNXIT", "CNXAUTO"])
+    assert label == "Defensive" and top5 == ["CNXFMCG", "CNXPHARMA", "CNXHEALTH", "CNXIT", "CNXAUTO"]
 
 
 def test_rotation_pattern_tie_is_mixed():
-    label, _ = sr.rotation_pattern(["FMCG", "IT"])
+    label, _ = sr.rotation_pattern(["CNXFMCG", "CNXIT"])
     assert label == "Mixed"
 
 
 def test_rotation_pattern_uses_sector_keys_from_preregistration():
     # Pre-registration section "Rotation pattern labels" names the sectors; every one must map.
-    names = {"PHARMA", "FMCG", "HEALTH", "CONSUM", "IT", "MEDIA", "AUTO",
-             "BANK", "FIN", "REALTY", "METAL", "INFRA", "PSUBANK", "ENERGY", "OILGAS"}
-    assert names <= set(sr.GROUPS)
+    from sbc import market_store as ms
+    assert set(ms.SECTOR_SYMBOLS) == set(sr.GROUPS)
 
 
 def test_confidence_no_call_by_default():
