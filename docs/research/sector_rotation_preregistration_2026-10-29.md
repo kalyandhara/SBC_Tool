@@ -134,3 +134,15 @@ Rotation-pattern groups apply only to the registered sectors: Defensive = FMCG, 
 ## Addendum 3: sector history pull (2026-10-29)
 
 Logged before any analysis uses the data. The first full history pull for the 12 registered sector indices, via `scripts/refresh_market_data.py --research --full` (yfinance, `end` = 2026-10-29 settled session). This stores daily bars for `CNXBANK`, `CNXFIN`, `CNXIT`, `CNXPHARMA`, `CNXAUTO`, `CNXFMCG`, `CNXMETAL`, `CNXENERGY`, `CNXREALTY`, `CNXPSUBANK`, `CNXINFRA`, `CNXCONSUM` into `data/market.db` under the symbol key. Per stress-test branch 8, this pull stores prices required for the report; prior pulls (Addendum 1) read counts and dates only. The pull date and the per-series last session are recorded in the generated report's `input.last_session` block and its `price_sha256` hash.
+
+## Addendum 4: event-combination slices (2026-10-29)
+
+Logged before the report is regenerated with this slice. The approved scope for the what-if scenario filter is event combinations only. No VIX or market-regime condition is added, and no new data is pulled.
+
+**Definition.** A combination is two or more distinct core event kinds that fall in the same cluster under the registered rule (anchors fewer than `CLUSTER_GAP` = 20 sessions apart). Same-kind repeats are not combinations. For each combination the unit is the cluster, and its anchor is the earliest member session. Window returns are taken from that anchor at the registered horizons (T+5, T+10, T+20), relative to NIFTY over the same window.
+
+**Reused parameters, none new.** `CLUSTER_GAP` = 20 sessions; `MIN_CLUSTERS` = 8 independent clusters as the thin-sample floor; the same heat buckets, rank rule and pattern labels as the single-event tables.
+
+**Status.** Descriptive, not graded. Each combination carries its cluster count and the thin-sample flag. No p-value, q-value or pass flag is produced. The confirmatory list stays empty, so combinations cannot produce a High forecast.
+
+**Multiplicity.** Combinations are a descriptive slice of the same history, so they are not tested. Any combination reported as having an edge must be re-registered as a confirmatory hypothesis in a later registration, not promoted from this table.
