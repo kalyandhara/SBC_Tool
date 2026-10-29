@@ -23,6 +23,8 @@ REPORTS = os.path.join(ROOT, "reports")
 EVENTS = {"MERCURY_RETROGRADE_START", "SOLAR_ECLIPSE", "LUNAR_ECLIPSE",
           "JUPITER_INGRESS", "SATURN_INGRESS", "all"}
 HORIZONS = {"5", "10", "20"}
+COMBO_CAVEAT = ("Descriptive, not graded. Combinations share clusters, so they are not independent evidence. "
+                "No pre-registered edge. Not trading advice.")
 UPCOMING_WINDOWS = {30, 60, 90, 180}  # days ahead; a window of 180 days never leaves the next calendar year
 EVENT_LABEL = {
     "MERCURY_RETROGRADE_START": "Mercury retrograde start",
@@ -56,6 +58,28 @@ def sector_rotation():
     if data is None:
         abort(404)
     return jsonify({"event": event, "h": int(h), "data": data})
+
+
+@sector_rotation_bp.route("/api/sector_rotation/combinations")
+def sector_rotation_combinations():
+    """One event-combination slice (Addendum 4), or the list of pairs the report holds.
+
+    The pair must be a key the report itself produced, so nothing from the request is trusted as a key.
+    """
+    data = _latest_report()
+    if data is None:
+        abort(404)
+    combos = data.get("combinations", {})
+    pair = request.args.get("pair")
+    if pair is None:
+        return jsonify({"pairs": sorted(combos), "caveat": COMBO_CAVEAT})
+    h = request.args.get("h", "5")
+    if pair not in combos or h not in HORIZONS:
+        abort(400)
+    block = combos[pair][h]
+    return jsonify({"pair": pair, "h": int(h), "clusters": block["clusters"],
+                    "sectors": block["sectors"], "sector_floor": sr.MIN_CLUSTERS,
+                    "caveat": COMBO_CAVEAT})
 
 
 @sector_rotation_bp.route("/api/sector_rotation/upcoming")

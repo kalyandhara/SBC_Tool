@@ -328,6 +328,52 @@ function srRadar(data) {
   ]);
 }
 
+const SR_COMBO_SECTOR = {
+  CNXBANK: "Bank", CNXFIN: "Fin Service", CNXIT: "IT", CNXPHARMA: "Pharma", CNXAUTO: "Auto",
+  CNXFMCG: "FMCG", CNXMETAL: "Metal", CNXENERGY: "Energy", CNXREALTY: "Realty",
+  CNXPSUBANK: "PSU Bank", CNXINFRA: "Infrastructure", CNXCONSUM: "Consumer Durables",
+};
+let SR_COMBO = null;
+
+function srComboPicker(pairs, onChange) {
+  const select = srEl("select", { id: "sr-combo", "aria-label": "Event combination" });
+  for (const p of pairs) {
+    const label = p.split("+").map(srEventName).join(" + ");
+    const opt = srEl("option", { value: p, text: label });
+    if (p === SR_COMBO) opt.setAttribute("selected", "selected");
+    select.appendChild(opt);
+  }
+  select.addEventListener("change", () => { SR_COMBO = select.value; onChange(); });
+  return srEl("label", {}, [srEl("span", { text: "Combination " }), select]);
+}
+
+// Event combinations (Addendum 4): clusters that hold two event kinds. Descriptive, not graded.
+function srCombinations(data) {
+  const pairs = Object.keys(data.combinations || {});
+  if (!pairs.length) return srEl("section", { class: "panel" }, [srEl("p", { text: "No event combinations in this report." })]);
+  if (!SR_COMBO || !data.combinations[SR_COMBO]) SR_COMBO = pairs[0];
+  const block = data.combinations[SR_COMBO][SR_H];
+  const rows = block.sectors.map((r) => srEl("tr", {
+    class: r.thin ? "sr-thin" : "",
+  }, [
+    srEl("th", { scope: "row", text: SR_COMBO_SECTOR[r.sector] || r.sector }),
+    srEl("td", { class: "num", text: srPct(r.mean_relative) }),
+    srEl("td", { class: "num", text: String(r.n_clusters) }),
+    srEl("td", { text: r.thin ? "thin" : "adequate" }),
+  ]));
+  return srEl("section", { class: "panel" }, [
+    srEl("div", { class: "panel-head" }, [
+      srEl("h2", { text: `Event combinations, T+${SR_H}` }),
+      srEl("span", { class: "panel-sub", text: `Sectors relative to NIFTY when two event kinds share a cluster (${block.clusters} clusters). Descriptive, not graded. Combinations overlap, so they are not independent evidence.` }),
+    ]),
+    srEl("div", { class: "sr-controls" }, [srComboPicker(pairs, srRender)]),
+    srEl("div", { class: "sr-scroll" }, [srEl("table", { class: "sr-table" }, [
+      srEl("thead", {}, [srEl("tr", {}, ["Sector", "Mean relative", "Clusters", "Sample"].map((t) => srEl("th", { scope: "col", text: t })))]),
+      srEl("tbody", {}, rows),
+    ])]),
+  ]);
+}
+
 function srNotes(data) {
   const short = Object.entries(data.coverage).filter(([, c]) => c.short_history).map(([k]) => k);
   const coverage = Object.entries(data.coverage).map(([k, c]) => `${k} ${c.first || "–"} to ${c.last || "–"} (${c.sessions})`);
@@ -352,6 +398,7 @@ function srRender() {
     srWheel(data),
     srSankey(data),
     srRadar(data),
+    srCombinations(data),
     srNotes(data),
   );
 }

@@ -58,7 +58,8 @@ def test_read_auth_parity_with_siblings(client, reports_dir):
 
 def test_no_extra_routes_added(app):
     rules = {r.rule for r in app.url_map.iter_rules() if "sector_rotation" in r.rule}
-    assert rules == {"/api/sector_rotation", "/api/sector_rotation/upcoming"}
+    assert rules == {"/api/sector_rotation", "/api/sector_rotation/upcoming",
+                     "/api/sector_rotation/combinations"}
 
 
 DESCRIPTIVE = {"SOLAR_ECLIPSE": {"5": [
@@ -106,6 +107,52 @@ def test_upcoming_carries_scorecard_forecast_and_sample_floor(client, upcoming_e
     assert ev["forecast"] == {}  # fixture report carries no forecast block for this event
     card = ev["outlook"]["5"]["strongest"][0]["scorecard"]
     assert card["validity"] == "Descriptive" and card["forecast"] == "No call"
+
+
+COMBO = {"JUPITER_INGRESS+SOLAR_ECLIPSE": {
+    "5": {"clusters": 15, "sectors": [
+        {"sector": "CNXPSUBANK", "n_clusters": 12, "mean_relative": 0.013, "thin": False},
+        {"sector": "CNXIT", "n_clusters": 12, "mean_relative": -0.004, "thin": False}]},
+    "10": {"clusters": 15, "sectors": []},
+    "20": {"clusters": 15, "sectors": []}}}
+
+
+@pytest.fixture
+def combo_env(client, tmp_path, monkeypatch):
+    monkeypatch.setattr(srb, "REPORTS", str(tmp_path))
+    payload = {"confirmatory": [], "combinations": COMBO,
+               "input": {"last_session": {"NIFTY": "2026-10-29"}}}
+    (tmp_path / "sector_rotation_2026-10-29.json").write_text(json.dumps(payload), encoding="utf-8")
+    return tmp_path
+
+
+def test_combinations_lists_pairs_when_no_pair_given(client, combo_env):
+    body = client.get("/api/sector_rotation/combinations").get_json()
+    assert body["pairs"] == ["JUPITER_INGRESS+SOLAR_ECLIPSE"]
+    assert "not graded" in body["caveat"]
+
+
+def test_combinations_returns_one_pair_at_horizon(client, combo_env):
+    body = client.get("/api/sector_rotation/combinations?pair=JUPITER_INGRESS%2BSOLAR_ECLIPSE&h=5").get_json()
+    assert body["pair"] == "JUPITER_INGRESS+SOLAR_ECLIPSE" and body["h"] == 5
+    assert body["clusters"] == 15
+    assert body["sectors"][0]["sector"] == "CNXPSUBANK"
+    assert body["sector_floor"] == srb.sr.MIN_CLUSTERS
+
+
+def test_combinations_rejects_pair_not_in_report(client, combo_env):
+    # Allow-list comes from the report, so a pair the study never produced is refused.
+    assert client.get("/api/sector_rotation/combinations?pair=SOLAR_ECLIPSE%2BLUNAR_ECLIPSE").status_code == 400
+    assert client.get("/api/sector_rotation/combinations?pair=../../etc").status_code == 400
+
+
+def test_combinations_rejects_unknown_horizon(client, combo_env):
+    assert client.get("/api/sector_rotation/combinations?pair=JUPITER_INGRESS%2BSOLAR_ECLIPSE&h=7").status_code == 400
+
+
+def test_combinations_404_without_report(client, tmp_path, monkeypatch):
+    monkeypatch.setattr(srb, "REPORTS", str(tmp_path))
+    assert client.get("/api/sector_rotation/combinations").status_code == 404
 
 
 def test_upcoming_404_without_report(client, tmp_path, monkeypatch, upcoming_env):
