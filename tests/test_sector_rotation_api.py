@@ -155,6 +155,12 @@ def test_combinations_404_without_report(client, tmp_path, monkeypatch):
     assert client.get("/api/sector_rotation/combinations").status_code == 404
 
 
+def test_upcoming_event_carries_plain_summary(client, upcoming_env):
+    ev = client.get("/api/sector_rotation/upcoming?days=60").get_json()["events"][0]
+    assert ev["summary"][0].startswith("Solar eclipse: 9 past occurrences in 6 independent clusters.")
+    assert ev["summary"][-1].startswith("Descriptive only: no pre-registered edge")
+
+
 def test_upcoming_404_without_report(client, tmp_path, monkeypatch, upcoming_env):
     monkeypatch.setattr(srb, "REPORTS", str(tmp_path / "empty"))
     assert client.get("/api/sector_rotation/upcoming?days=60").status_code == 404

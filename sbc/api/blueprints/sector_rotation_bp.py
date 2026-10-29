@@ -98,12 +98,14 @@ def sector_rotation_upcoming():
     out = []
     for e in events:
         outlook = sr.event_outlook(data["descriptive"], e["event"])
-        out.append({"date": e["date"], "event": e["event"], "label": EVENT_LABEL.get(e["event"], e["event"]),
-                    "window_end": e.get("window_end"),
-                    "raw": data["events"].get(e["event"], {}).get("raw"),
-                    "clusters": data["events"].get(e["event"], {}).get("clusters"),
-                    "forecast": data.get("forecast", {}).get(e["event"], {}),
-                    "outlook": outlook})
+        card = {"date": e["date"], "event": e["event"], "label": EVENT_LABEL.get(e["event"], e["event"]),
+                "window_end": e.get("window_end"),
+                "raw": data["events"].get(e["event"], {}).get("raw"),
+                "clusters": data["events"].get(e["event"], {}).get("clusters"),
+                "forecast": data.get("forecast", {}).get(e["event"], {}),
+                "outlook": outlook}
+        card["summary"] = sr.plain_summary(card, 5)
+        out.append(card)
     return jsonify({"as_of": today.isoformat(), "days": days,
                     "last_session": data["input"]["last_session"]["NIFTY"],
                     "sample_floor": sr.MIN_CLUSTERS,

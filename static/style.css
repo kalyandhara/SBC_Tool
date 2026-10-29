@@ -3454,6 +3454,7 @@ a:focus-visible,
 .sr-chip { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 0.85rem; white-space: nowrap; }
 .usp-card { display: grid; gap: 8px; padding: 12px 0; border-top: 1px solid var(--border, #334155); min-width: 0; }
 .usp-card h3 { margin: 0; font-size: 1rem; }
+.usp-summary p { margin: 0 0 4px; font-size: 0.9rem; line-height: 1.45; }
 .sr-radar-wrap { display: grid; gap: 12px; grid-template-columns: minmax(0, 260px) minmax(0, 1fr); align-items: center; }
 .sr-radar { width: 100%; max-width: 260px; height: auto; }
 .sr-grid { fill: none; stroke: var(--border, #475569); stroke-width: 1; }

@@ -304,6 +304,44 @@ def edge_scorecard(row: dict, confirmed: bool = False) -> dict:
     }
 
 
+SECTOR_NAMES = {
+    "CNXBANK": "Bank", "CNXFIN": "Fin Service", "CNXIT": "IT", "CNXPHARMA": "Pharma", "CNXAUTO": "Auto",
+    "CNXFMCG": "FMCG", "CNXMETAL": "Metal", "CNXENERGY": "Energy", "CNXREALTY": "Realty",
+    "CNXPSUBANK": "PSU Bank", "CNXINFRA": "Infrastructure", "CNXCONSUM": "Consumer Durables",
+}
+
+
+def plain_summary(event: dict, h: int | str = 5) -> list[str]:
+    """Plain-English lines for one upcoming event at horizon `h`, built only from the report's numbers.
+
+    States counts, the strongest and weakest sector relative to NIFTY, the thin-sample sectors, and the
+    limit on what the numbers mean. It never predicts a direction or gives advice; the forecast wording
+    is taken from the report's own forecast block.
+    """
+    h = str(h)
+    head = (f"{event['label']}: {event['raw']} past occurrences in {event['clusters']} independent clusters. "
+            "The pattern covers all past dates for this event.")
+    if event.get("window_end"):
+        head += f" Window ends {event['window_end']}."
+    lines = [head]
+    block = event.get("outlook", {}).get(h)
+    if not block or not block["strongest"]:
+        lines.append(f"No sector data at T+{h}.")
+    else:
+        s, w = block["strongest"][0], block["weakest"][0]
+        lines.append(f"At T+{h}, the strongest sector relative to NIFTY was {SECTOR_NAMES.get(s['sector'], s['sector'])} "
+                     f"({s['mean_relative'] * 100:+.2f}% over {s['n_clusters']} clusters); the weakest was "
+                     f"{SECTOR_NAMES.get(w['sector'], w['sector'])} ({w['mean_relative'] * 100:+.2f}%).")
+        thin = sorted({SECTOR_NAMES.get(r["sector"], r["sector"]) for r in block["strongest"] + block["weakest"]
+                       if r["n_clusters"] < MIN_CLUSTERS})
+        if thin:
+            lines.append(f"Thin samples (under {MIN_CLUSTERS} clusters): {', '.join(thin)}.")
+    calls = set(event.get("forecast", {}).values())
+    forecast = "forecast No call" if calls <= {"No call"} else "forecast set by the report"
+    lines.append(f"Descriptive only: no pre-registered edge, {forecast}. Not trading advice.")
+    return lines
+
+
 def event_outlook(descriptive: dict, event: str, n: int = 3) -> dict:
     """Strongest and weakest `n` sectors per horizon for one event, from the report's descriptive rows.
 

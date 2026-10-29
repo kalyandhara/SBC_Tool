@@ -247,6 +247,63 @@ def test_co_clusters_pair_key_is_sorted_and_stable():
     assert list(sr.co_clusters(anchored, [[5, 9]])) == [("JUPITER_INGRESS", "SOLAR_ECLIPSE")]
 
 
+def _event(**over):
+    base = {"label": "Solar eclipse", "raw": 9, "clusters": 6, "window_end": None, "forecast": {"5": "No call"},
+            "outlook": {"5": {
+                "strongest": [{"sector": "CNXPHARMA", "mean_relative": 0.02, "n_clusters": 8}],
+                "weakest": [{"sector": "CNXIT", "mean_relative": -0.01, "n_clusters": 7}]}}}
+    return {**base, **over}
+
+
+def test_plain_summary_names_strongest_and_weakest_with_signed_returns():
+    lines = sr.plain_summary(_event(), 5)
+    body = " ".join(lines)
+    assert "strongest sector relative to NIFTY was Pharma (+2.00%" in body
+    assert "weakest was IT (-1.00%" in body
+
+
+def test_plain_summary_opens_with_counts_and_names_the_event():
+    assert sr.plain_summary(_event(), 5)[0] == ("Solar eclipse: 9 past occurrences in 6 independent clusters. "
+                                                "The pattern covers all past dates for this event.")
+
+
+def test_plain_summary_flags_sectors_under_the_cluster_floor():
+    lines = sr.plain_summary(_event(), 5)
+    assert any(l.startswith("Thin samples") and "IT" in l for l in lines)
+    assert not any("Pharma" in l for l in lines if l.startswith("Thin samples"))
+
+
+def test_plain_summary_says_pattern_is_pooled_not_date_specific():
+    # Two upcoming dates for one event share the same pooled statistics; the text must not imply otherwise.
+    assert "pattern covers all past dates for this event" in sr.plain_summary(_event(), 5)[0]
+
+
+def test_plain_summary_states_descriptive_limit_last():
+    last = sr.plain_summary(_event(), 5)[-1]
+    assert "Descriptive only" in last and "no pre-registered edge" in last and "Not trading advice" in last
+
+
+def test_plain_summary_avoids_directional_or_advice_language():
+    text = " ".join(sr.plain_summary(_event(), 5)).lower()
+    for word in ("will ", "expect", "likely", "should", "buy", "sell", "outperform next", "recommend"):
+        assert word not in text
+
+
+def test_plain_summary_reports_forecast_from_report_not_hardcoded():
+    lines = sr.plain_summary(_event(forecast={"5": "High"}), 5)
+    assert "forecast set by the report" in lines[-1]
+
+
+def test_plain_summary_mentions_mercury_window_end():
+    lines = sr.plain_summary(_event(label="Mercury retrograde start", window_end="2027-03-03"), 5)
+    assert "Window ends 2027-03-03." in lines[0]
+
+
+def test_plain_summary_without_sector_data_says_so():
+    lines = sr.plain_summary(_event(outlook={}), 5)
+    assert lines[1] == "No sector data at T+5."
+
+
 def test_event_outlook_empty_for_unknown_event():
     assert sr.event_outlook({}, "MISSING") == {}
 

@@ -64,30 +64,23 @@
     ])]);
   }
 
-  // Scorecard line: validity and forecast come from the report (High only on a confirmatory pass).
-  // The thin-sample floor is the API's sample_floor, which is the pre-registration's cluster minimum.
-  function scorecardLine(ev, floor) {
-    const calls = [...new Set(Object.values(ev.forecast || {}))].join(" / ") || "–";
-    const cells = Object.values(ev.outlook).flatMap((o) => [...o.strongest, ...o.weakest]);
-    const thin = new Set(cells.filter((c) => c.scorecard.sample === "thin").map((c) => c.sector)).size;
-    const flag = thin ? ` · ${thin} sector(s) under the ${floor}-cluster floor` : "";
-    return node("p", { class: "usp-score", text:
-      `Confidence: Descriptive · Forecast: ${calls} · ${ev.clusters} past clusters${flag}` });
+  // Plain-English summary, written by the API from the report's numbers (sbc.sector_rotation.plain_summary).
+  // The browser only displays it; it never builds directional wording of its own.
+  function summaryBlock(ev) {
+    return node("div", { class: "usp-summary" }, ev.summary.map((line) => node("p", { text: line })));
   }
 
-  function eventCard(ev, floor) {
-    const until = ev.window_end ? ` · Mercury retrograde window to ${ev.window_end}` : "";
+  function eventCard(ev) {
     return node("article", { class: "usp-card" }, [
       node("h3", { text: `${ev.date} · ${ev.label}` }),
-      node("p", { class: "analog-note", text: `Past occurrences: ${ev.raw} in ${ev.clusters} independent clusters${until}.` }),
-      scorecardLine(ev, floor),
+      summaryBlock(ev),
       outlookTable(ev.outlook),
     ]);
   }
 
   function render(d) {
     el("usp-results").replaceChildren(...(d.events.length
-      ? d.events.map((ev) => eventCard(ev, d.sample_floor))
+      ? d.events.map(eventCard)
       : [node("p", { class: "analog-note", text: `No core planetary event in the next ${d.days} days.` })]));
     el("usp-status").textContent = `As of ${d.as_of}; NIFTY data to ${d.last_session}. ${d.caveat}`;
   }
