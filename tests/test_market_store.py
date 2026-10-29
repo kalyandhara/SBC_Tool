@@ -22,13 +22,17 @@ def _bar(day, close=100.0):
 
 SECTOR_KEYS = {
     "CNXBANK", "CNXFIN", "CNXIT", "CNXPHARMA", "CNXAUTO", "CNXFMCG", "CNXMETAL",
-    "CNXENERGY", "CNXREALTY", "CNXMEDIA", "CNXPSUBANK", "CNXINFRA", "CNXCONSUM",
-    "CNXHEALTH", "CNXOILGAS",
+    "CNXENERGY", "CNXREALTY", "CNXPSUBANK", "CNXINFRA", "CNXCONSUM",
 }
 
 
-def test_sector_symbols_cover_the_fifteen_nse_indices(store):
+def test_sector_symbols_cover_the_registered_nse_indices(store):
+    """SECTOR_SYMBOLS holds the 12 available indices per Addendum 2 of the pre-registration.
+
+    CNXMEDIA, CNXHEALTH and CNXOILGAS are excluded (zero rows on yfinance).
+    """
     assert set(store.SECTOR_SYMBOLS) == SECTOR_KEYS
+    assert not set(store.SECTOR_SYMBOLS) & {"CNXMEDIA", "CNXHEALTH", "CNXOILGAS"}
     assert all(isinstance(t, str) and t for t in store.SECTOR_SYMBOLS.values())
     assert SECTOR_KEYS <= set(store.RESEARCH_SYMBOLS)
 

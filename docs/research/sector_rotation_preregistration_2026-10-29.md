@@ -117,6 +117,20 @@ Alternates tried for the three zero-row sectors (counts and dates only), all ret
 
 Finding: `^CNXFIN` returned no rows. `NIFTY_FIN_SERVICE.NS` is used instead. (`^NIFTYFIN` and `^CNXFINANCE` also returned no rows.)
 
-Consequence for the registration: **the sector set is 12 available indices, not 15.** MEDIA, HEALTHCARE and OIL & GAS have no usable history from yfinance. The Fixed inputs above list 15 sectors and are not changed by this addendum. Choosing how to handle the three (drop them and register a 12-sector set, or find another source) is a change to the registration. It must be decided and recorded in a further addendum before any report run. No report run is made until then.
+Consequence for the registration: **the sector set is 12 available indices, not 15.** MEDIA, HEALTHCARE and OIL & GAS have no usable history from yfinance. The Fixed inputs above list 15 sectors and are not changed by this addendum. The approved sector-set decision is recorded in Addendum 2 below; no report run is made before that decision is recorded.
 
 Also recorded: sector series start between 2007 and 2011. Several sectors have roughly 3,700 to 3,900 sessions, so the out-of-sample era holds fewer sessions per sector than the full history.
+
+## Addendum 2: registered sector set (2026-10-29)
+
+**Sector set decision: 12 available indices.** Per the approved decision, MEDIA (`CNXMEDIA`), HEALTHCARE (`CNXHEALTH`) and OIL & GAS (`CNXOILGAS`) are excluded because the ticker check and alternates in Addendum 1 returned zero rows. No replacement data source is used.
+
+Sector set decision: 12 available indices — CNXBANK, CNXFIN, CNXIT, CNXPHARMA, CNXAUTO, CNXFMCG, CNXMETAL, CNXENERGY, CNXREALTY, CNXPSUBANK, CNXINFRA, CNXCONSUM.
+
+The fixed-input sector set is therefore amended from 15 to these 12 indices: NIFTY BANK (`CNXBANK`), FIN SERVICE (`CNXFIN`), IT (`CNXIT`), PHARMA (`CNXPHARMA`), AUTO (`CNXAUTO`), FMCG (`CNXFMCG`), METAL (`CNXMETAL`), ENERGY (`CNXENERGY`), REALTY (`CNXREALTY`), PSU BANK (`CNXPSUBANK`), INFRASTRUCTURE (`CNXINFRA`) and CONSUMER DURABLES (`CNXCONSUM`). The confirmatory list remains empty; this data-availability decision does not introduce hypotheses or change the analysis methods.
+
+Rotation-pattern groups apply only to the registered sectors: Defensive = FMCG, PHARMA, CONSUMER DURABLES; Growth = IT, AUTO; Risk-On = BANK, FIN SERVICE, REALTY, METAL, INFRASTRUCTURE, PSU BANK; Neutral = ENERGY. Wheel groups likewise omit the three unavailable sectors. The original ticker-check results and 15-sector proposal above are retained as the historical registration record; this addendum is the controlling sector-set decision.
+
+## Addendum 3: sector history pull (2026-10-29)
+
+Logged before any analysis uses the data. The first full history pull for the 12 registered sector indices, via `scripts/refresh_market_data.py --research --full` (yfinance, `end` = 2026-10-29 settled session). This stores daily bars for `CNXBANK`, `CNXFIN`, `CNXIT`, `CNXPHARMA`, `CNXAUTO`, `CNXFMCG`, `CNXMETAL`, `CNXENERGY`, `CNXREALTY`, `CNXPSUBANK`, `CNXINFRA`, `CNXCONSUM` into `data/market.db` under the symbol key. Per stress-test branch 8, this pull stores prices required for the report; prior pulls (Addendum 1) read counts and dates only. The pull date and the per-series last session are recorded in the generated report's `input.last_session` block and its `price_sha256` hash.

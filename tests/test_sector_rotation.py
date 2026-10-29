@@ -139,8 +139,8 @@ def test_insufficient_below_minimum_signal_days():
 
 
 def test_rotation_pattern_majority():
-    label, top5 = sr.rotation_pattern(["CNXFMCG", "CNXPHARMA", "CNXHEALTH", "CNXIT", "CNXAUTO"])
-    assert label == "Defensive" and top5 == ["CNXFMCG", "CNXPHARMA", "CNXHEALTH", "CNXIT", "CNXAUTO"]
+    label, top5 = sr.rotation_pattern(["CNXFMCG", "CNXPHARMA", "CNXCONSUM", "CNXIT", "CNXAUTO"])
+    assert label == "Defensive" and top5 == ["CNXFMCG", "CNXPHARMA", "CNXCONSUM", "CNXIT", "CNXAUTO"]
 
 
 def test_rotation_pattern_tie_is_mixed():
@@ -148,10 +148,16 @@ def test_rotation_pattern_tie_is_mixed():
     assert label == "Mixed"
 
 
-def test_rotation_pattern_uses_sector_keys_from_preregistration():
-    # Pre-registration section "Rotation pattern labels" names the sectors; every one must map.
+def test_rotation_pattern_uses_registered_sector_keys():
+    # Every registered sector must have a rotation group; unavailable indices are excluded.
     from sbc import market_store as ms
+    expected = {
+        "CNXBANK", "CNXFIN", "CNXIT", "CNXPHARMA", "CNXAUTO", "CNXFMCG",
+        "CNXMETAL", "CNXENERGY", "CNXREALTY", "CNXPSUBANK", "CNXINFRA", "CNXCONSUM",
+    }
+    assert set(ms.SECTOR_SYMBOLS) == expected
     assert set(ms.SECTOR_SYMBOLS) == set(sr.GROUPS)
+    assert not set(ms.SECTOR_SYMBOLS) & {"CNXMEDIA", "CNXHEALTH", "CNXOILGAS"}
 
 
 def test_confidence_no_call_by_default():

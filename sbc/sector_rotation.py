@@ -159,11 +159,11 @@ def descriptive_summary(rows: list[dict]) -> dict:
 # Rotation groups, fixed in the pre-registration ("Rotation pattern labels"). Keys are the
 # sector keys from sbc.market_store.SECTOR_SYMBOLS.
 GROUPS = {
-    "CNXPHARMA": "Defensive", "CNXFMCG": "Defensive", "CNXHEALTH": "Defensive", "CNXCONSUM": "Defensive",
-    "CNXIT": "Growth", "CNXMEDIA": "Growth", "CNXAUTO": "Growth",
+    "CNXPHARMA": "Defensive", "CNXFMCG": "Defensive", "CNXCONSUM": "Defensive",
+    "CNXIT": "Growth", "CNXAUTO": "Growth",
     "CNXBANK": "Risk-On", "CNXFIN": "Risk-On", "CNXREALTY": "Risk-On", "CNXMETAL": "Risk-On",
     "CNXINFRA": "Risk-On", "CNXPSUBANK": "Risk-On",
-    "CNXENERGY": "Neutral", "CNXOILGAS": "Neutral",
+    "CNXENERGY": "Neutral",
 }
 
 
@@ -242,9 +242,9 @@ def heat_bucket(z: float) -> str | None:
 # this mapping is a proposal, stated here, and is descriptive only.
 WHEEL_GROUPS = {
     "Financials": ["CNXBANK", "CNXFIN", "CNXPSUBANK"],
-    "Technology": ["CNXIT", "CNXMEDIA"],
-    "Pharma": ["CNXPHARMA", "CNXHEALTH"],
+    "Technology": ["CNXIT"],
+    "Pharma": ["CNXPHARMA"],
     "Consumption": ["CNXFMCG", "CNXAUTO", "CNXCONSUM", "CNXREALTY"],
     "Industrials": ["CNXINFRA"],
-    "Commodities": ["CNXMETAL", "CNXENERGY", "CNXOILGAS"],
+    "Commodities": ["CNXMETAL", "CNXENERGY"],
 }

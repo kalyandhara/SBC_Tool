@@ -61,6 +61,16 @@ def test_cli_refuses_until_sector_set_is_decided():
     assert rep.sector_set_decided("Sector set decision: 12 sectors, see Addendum 2") is True
 
 
+def test_registered_sector_set_excludes_unavailable_indices():
+    from sbc import market_store as ms
+    assert len(rep.SECTOR_KEYS) == 12
+    assert not set(rep.SECTOR_KEYS) & {"CNXMEDIA", "CNXHEALTH", "CNXOILGAS"}
+    assert set(sr.GROUPS) == set(rep.SECTOR_KEYS)
+    members = [key for group in sr.WHEEL_GROUPS.values() for key in group]
+    assert sorted(members) == sorted(rep.SECTOR_KEYS)
+    assert set(ms.SECTOR_SYMBOLS) == set(rep.SECTOR_KEYS)
+
+
 def test_event_summary_has_the_five_radar_dimensions_and_no_breadth():
     out = rep.build(series=_series())
     for ev in out["event_summary"].values():
