@@ -29,13 +29,17 @@
     return n;
   };
 
+  const DIRECTION_MARK = { outperform: "▲", underperform: "▼", neutral: "·" };
+
   function chip(row) {
     const name = SECTOR_NAME[row.sector] || row.sector;
+    const card = row.scorecard;
     const label = row.heat ? HEAT_LABEL[row.heat] : "No colour";
+    const thin = card.sample === "thin" ? " · thin sample" : "";
     return node("span", {
       class: `sr-chip sr-heat sr-heat-${row.heat || "none"}`,
-      title: `${label}. ${row.n_raw} occurrences in ${row.n_clusters} independent clusters.`,
-      text: `${name} ${pct(row.mean_relative)} (${row.n_raw})`,
+      title: `${label}. ${row.n_raw} occurrences in ${row.n_clusters} independent clusters.${thin}`,
+      text: `${DIRECTION_MARK[card.direction]} ${name} ${pct(row.mean_relative)} (${row.n_raw})${thin}`,
     });
   }
 
@@ -60,18 +64,30 @@
     ])]);
   }
 
-  function eventCard(ev) {
+  // Scorecard line: validity and forecast come from the report (High only on a confirmatory pass).
+  // The thin-sample floor is the API's sample_floor, which is the pre-registration's cluster minimum.
+  function scorecardLine(ev, floor) {
+    const calls = [...new Set(Object.values(ev.forecast || {}))].join(" / ") || "–";
+    const cells = Object.values(ev.outlook).flatMap((o) => [...o.strongest, ...o.weakest]);
+    const thin = new Set(cells.filter((c) => c.scorecard.sample === "thin").map((c) => c.sector)).size;
+    const flag = thin ? ` · ${thin} sector(s) under the ${floor}-cluster floor` : "";
+    return node("p", { class: "usp-score", text:
+      `Confidence: Descriptive · Forecast: ${calls} · ${ev.clusters} past clusters${flag}` });
+  }
+
+  function eventCard(ev, floor) {
     const until = ev.window_end ? ` · Mercury retrograde window to ${ev.window_end}` : "";
     return node("article", { class: "usp-card" }, [
       node("h3", { text: `${ev.date} · ${ev.label}` }),
       node("p", { class: "analog-note", text: `Past occurrences: ${ev.raw} in ${ev.clusters} independent clusters${until}.` }),
+      scorecardLine(ev, floor),
       outlookTable(ev.outlook),
     ]);
   }
 
   function render(d) {
     el("usp-results").replaceChildren(...(d.events.length
-      ? d.events.map(eventCard)
+      ? d.events.map((ev) => eventCard(ev, d.sample_floor))
       : [node("p", { class: "analog-note", text: `No core planetary event in the next ${d.days} days.` })]));
     el("usp-status").textContent = `As of ${d.as_of}; NIFTY data to ${d.last_session}. ${d.caveat}`;
   }

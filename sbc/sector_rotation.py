@@ -266,14 +266,40 @@ def upcoming_events(events: list[dict], today: str, days: int) -> list[dict]:
     return sorted((e for e in events if today <= e["date"] <= end), key=lambda e: (e["date"], e["event"]))
 
 
+HEAT_DIRECTION = {"dark_green": "outperform", "light_green": "outperform", "yellow": "neutral",
+                  "orange": "underperform", "dark_red": "underperform"}
+
+
+def edge_scorecard(row: dict, confirmed: bool = False) -> dict:
+    """Plain-language confidence for one event x sector x horizon cell.
+
+    Direction comes from the heatmap bucket (no new threshold). Sample is "thin" below MIN_CLUSTERS,
+    the cluster floor the pre-registration uses for grading. Validity is "Descriptive" unless the cell
+    passed the confirmatory rule, and the forecast follows forecast_confidence: High or No call only.
+    """
+    return {
+        "direction": HEAT_DIRECTION.get(row.get("heat"), "neutral"),
+        "clusters": row["n_clusters"],
+        "beat_rate": row.get("beat_rate"),
+        "sample": "thin" if row["n_clusters"] < MIN_CLUSTERS else "adequate",
+        "validity": "Confirmed" if confirmed else "Descriptive",
+        "forecast": forecast_confidence({"passed": confirmed}),
+    }
+
+
 def event_outlook(descriptive: dict, event: str, n: int = 3) -> dict:
     """Strongest and weakest `n` sectors per horizon for one event, from the report's descriptive rows.
 
     The report sorts each horizon's rows by mean relative return, highest first. Descriptive only.
+    Each row carries its edge_scorecard.
     """
     keep = ("sector", "n_raw", "n_clusters", "mean_relative", "beat_rate", "heat")
+
+    def card(r: dict) -> dict:
+        return {**{k: r[k] for k in keep}, "scorecard": edge_scorecard(r)}
+
     out = {}
     for h, rows in descriptive.get(event, {}).items():
-        out[h] = {"strongest": [{k: r[k] for k in keep} for r in rows[:n]],
-                  "weakest": [{k: r[k] for k in keep} for r in rows[::-1][:n]]}
+        out[h] = {"strongest": [card(r) for r in rows[:n]],
+                  "weakest": [card(r) for r in rows[::-1][:n]]}
     return out

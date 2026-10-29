@@ -99,6 +99,15 @@ def test_upcoming_returns_only_events_inside_window_with_outlook(client, upcomin
     assert "not graded" in body["caveat"]
 
 
+def test_upcoming_carries_scorecard_forecast_and_sample_floor(client, upcoming_env):
+    body = client.get("/api/sector_rotation/upcoming?days=60").get_json()
+    assert body["sample_floor"] == srb.sr.MIN_CLUSTERS
+    ev = body["events"][0]
+    assert ev["forecast"] == {}  # fixture report carries no forecast block for this event
+    card = ev["outlook"]["5"]["strongest"][0]["scorecard"]
+    assert card["validity"] == "Descriptive" and card["forecast"] == "No call"
+
+
 def test_upcoming_404_without_report(client, tmp_path, monkeypatch, upcoming_env):
     monkeypatch.setattr(srb, "REPORTS", str(tmp_path / "empty"))
     assert client.get("/api/sector_rotation/upcoming?days=60").status_code == 404

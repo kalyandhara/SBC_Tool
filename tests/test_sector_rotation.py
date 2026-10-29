@@ -224,11 +224,56 @@ def test_event_outlook_orders_strongest_then_weakest_and_trims():
     out = sr.event_outlook({"EV": {"5": rows}}, "EV", n=2)["5"]
     assert [r["sector"] for r in out["strongest"]] == ["A", "B"]
     assert [r["sector"] for r in out["weakest"]] == ["D", "C"]
-    assert set(out["strongest"][0]) == {"sector", "n_raw", "n_clusters", "mean_relative", "beat_rate", "heat"}
+    assert set(out["strongest"][0]) == {"sector", "n_raw", "n_clusters", "mean_relative", "beat_rate", "heat",
+                                        "scorecard"}
 
 
 def test_event_outlook_empty_for_unknown_event():
     assert sr.event_outlook({}, "MISSING") == {}
+
+
+def _row(heat, n_clusters=12, beat=0.6):
+    return {"sector": "CNXIT", "n_raw": 30, "n_clusters": n_clusters, "mean_relative": 0.01,
+            "beat_rate": beat, "heat": heat}
+
+
+def test_scorecard_direction_follows_heat_bucket():
+    got = {h: sr.edge_scorecard(_row(h))["direction"] for h in
+           ("dark_green", "light_green", "yellow", "orange", "dark_red", None)}
+    assert got == {"dark_green": "outperform", "light_green": "outperform", "yellow": "neutral",
+                   "orange": "underperform", "dark_red": "underperform", None: "neutral"}
+
+
+def test_scorecard_sample_is_thin_below_the_registered_cluster_floor():
+    assert sr.edge_scorecard(_row("yellow", n_clusters=sr.MIN_CLUSTERS - 1))["sample"] == "thin"
+    assert sr.edge_scorecard(_row("yellow", n_clusters=sr.MIN_CLUSTERS))["sample"] == "adequate"
+
+
+def test_scorecard_validity_is_descriptive_unless_confirmed():
+    card = sr.edge_scorecard(_row("dark_green"))
+    assert card["validity"] == "Descriptive" and card["forecast"] == "No call"
+
+
+def test_scorecard_high_only_when_confirmed():
+    card = sr.edge_scorecard(_row("dark_green"), confirmed=True)
+    assert card["validity"] == "Confirmed" and card["forecast"] == "High"
+
+
+def test_scorecard_carries_counts_and_beat_rate_for_display():
+    card = sr.edge_scorecard(_row("light_green", n_clusters=9, beat=0.58))
+    assert card["clusters"] == 9 and card["beat_rate"] == pytest.approx(0.58)
+
+
+def test_scorecard_has_no_medium_level():
+    outputs = {sr.edge_scorecard(_row(h), confirmed=c)["forecast"]
+               for h in ("dark_green", "yellow", None) for c in (True, False)}
+    assert outputs == {"High", "No call"}
+
+
+def test_event_outlook_rows_carry_a_scorecard():
+    rows = [dict(_row("dark_green"), sector="CNXIT")]
+    out = sr.event_outlook({"EV": {"5": rows}}, "EV", n=1)["5"]
+    assert out["strongest"][0]["scorecard"]["validity"] == "Descriptive"
 
 
 def test_heat_bucket_five_levels_from_z():

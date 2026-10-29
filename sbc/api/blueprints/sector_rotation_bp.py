@@ -78,8 +78,10 @@ def sector_rotation_upcoming():
                     "window_end": e.get("window_end"),
                     "raw": data["events"].get(e["event"], {}).get("raw"),
                     "clusters": data["events"].get(e["event"], {}).get("clusters"),
+                    "forecast": data.get("forecast", {}).get(e["event"], {}),
                     "outlook": outlook})
     return jsonify({"as_of": today.isoformat(), "days": days,
                     "last_session": data["input"]["last_session"]["NIFTY"],
+                    "sample_floor": sr.MIN_CLUSTERS,
                     "events": out,
                     "caveat": "Descriptive, not graded. No pre-registered edge; forecast is No call. Not trading advice."})
