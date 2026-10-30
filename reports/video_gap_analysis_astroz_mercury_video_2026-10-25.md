@@ -120,12 +120,18 @@ independent null studies against it.
    single day — the tool's own moon studies found no nakshatra edge
    (`reports/moon_mercury_nakshatra_nifty_2026-10-18.md`).
 
-## 5. Tool gaps this video exposes (added to the TODO)
+## 5. Tool gaps this video exposes (added to the TODO; A8 and A9 closed
+## 2026-10-26 — see the TODO for the study results)
 
-1. **Brent (BZ=F) series** — crude claims are graded on a WTI proxy
-   with an unquantified spread.
-2. **Asian equity indices (KOSPI/N225/HSI)** — the "neighbours fell
-   first, we crash later" contagion story (this video and the
-   2026-10-22 crash video) is ungradeable without them.
+1. ~~**Brent (BZ=F) series**~~ — CLOSED: brent in repo (2007-07+); the
+   "$116" claim was exact (2026-10-23 high $117.41).
+2. ~~**Asian equity indices (KOSPI/N225/HSI)**~~ — CLOSED:
+   `reports/asia_contagion_study_2026-10-25.md` — co-movement real,
+   lead-lag zero.
 3. **FII flow history** — NSE's API only exposes the latest session;
-   cumulative-year claims ("4 lakh crore") cannot be audited.
+   cumulative-year claims ("4 lakh crore") cannot be audited (A10,
+   open).
+
+The video's falsifiable dated calls are on record with frozen grading
+rules in `reports/astroz_calls_ledger.md` (TODO D3); the intraday ones
+("2:30 PM flip") are recorded as untestable.

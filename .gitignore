@@ -218,3 +218,12 @@ data/geonames/
 
 # Dukascopy month cache (B-57); rebuilt by scripts/fetch_dukascopy.py
 data/intraday/cache/
+
+# Beads / Dolt files (added by bd init)
+.dolt/
+*.db
+.beads-credential-key
+.beads/proxieddb/
+*.gate.lock*
+# bd worktree
+.worktrees/sector-rotation-task-10/

@@ -34,6 +34,23 @@ def test_serves_precomputed_json(client, reports_dir):
     assert body["data"]["confirmatory"] == [] and body["h"] == 5
 
 
+def test_briefing_summary_endpoint(client, reports_dir):
+    r = client.get("/api/briefing_summary")
+    assert r.status_code == 200
+    body = r.get_json()
+    assert "current_events" in body
+    assert "sectoral_impacts" in body
+    assert "upcoming_events" in body
+    assert "past_outcomes" in body
+    assert "horizon_guidance" in body
+    assert "validation_status" in body
+
+
+def test_briefing_summary_404(client, tmp_path, monkeypatch):
+    monkeypatch.setattr(srb, "REPORTS", str(tmp_path))
+    assert client.get("/api/briefing_summary").status_code == 404
+
+
 def test_never_calls_build(client, reports_dir, monkeypatch):
     import scripts.sector_rotation_report as rep
     def boom(*a, **k):
@@ -56,5 +73,5 @@ def test_read_auth_parity_with_siblings(client, reports_dir):
 
 
 def test_no_extra_routes_added(app):
-    rules = {r.rule for r in app.url_map.iter_rules() if "sector_rotation" in r.rule}
-    assert rules == {"/api/sector_rotation"}
+    rules = {r.rule for r in app.url_map.iter_rules() if "sector_rotation" in r.endpoint}
+    assert rules == {"/api/sector_rotation", "/api/briefing_summary"}

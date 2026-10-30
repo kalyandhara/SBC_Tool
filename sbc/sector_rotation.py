@@ -62,7 +62,11 @@ def core_events(first_year: int, last_year: int) -> list[dict]:
     Mercury windows that start in range are kept even when they end after last_year,
     because the station lookup runs one extra year ahead to find each window's end.
     """
-    stat_rows = stations.by_date(dt.date(first_year, 1, 1), dt.date(last_year + 1, 12, 31), ("Mercury",))
+    stat_rows = {}
+    # sbc.stations caps a lookup at ten years, so the range is walked in chunks.
+    for year in range(first_year, last_year + 2):
+        chunk = stations.by_date(dt.date(year, 1, 1), dt.date(year, 12, 31), ("Mercury",))
+        stat_rows.update(chunk)
     rows = [r for day in stat_rows.values() for r in day]
     out = [e for e in mercury_events(rows) if int(e["date"][:4]) <= last_year]
     for year in range(first_year, last_year + 1):

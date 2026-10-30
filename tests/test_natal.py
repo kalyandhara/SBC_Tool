@@ -15,7 +15,8 @@ NIFTY = natal.chart("nifty")
 
 def test_chart_has_every_graha_in_range():
     assert set(NIFTY) == {"Sun", "Moon", "Mars", "Mercury", "Jupiter", "Venus",
-                          "Saturn", "Rahu", "Ketu"}
+                          "Saturn", "Rahu", "Ketu",
+                          "Uranus", "Neptune", "Pluto"}
     assert all(0.0 <= lon < 360.0 for lon in NIFTY.values())
 
 
@@ -136,7 +137,7 @@ def test_validation_groups_cover_the_registered_set():
     assert {f"aspect_{a}" for a in ha.ASPECTS} <= set(g)
     assert {f"planet_{p}" for p in tn.TRANSIT_PLANETS} <= set(g)
     assert {f"natal_{p}" for p in NIFTY} <= set(g)
-    assert len(g) == 1 + len(ha.ASPECTS) + 1 + len(tn.TRANSIT_PLANETS) + len(NIFTY) == 26
+    assert len(g) == 1 + len(ha.ASPECTS) + 1 + len(tn.TRANSIT_PLANETS) + len(NIFTY) == 32
 
 
 def test_lecture5_is_the_five_aspects_the_lecture_names():

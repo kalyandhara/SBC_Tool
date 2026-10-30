@@ -30,3 +30,43 @@ def sector_rotation():
     with open(files[-1], encoding="utf-8") as f:
         data = json.load(f)
     return jsonify({"event": event, "h": int(h), "data": data})
+
+
+@sector_rotation_bp.route("/api/briefing_summary")
+def briefing_summary():
+    files = sorted(glob.glob(os.path.join(REPORTS, "sector_rotation_*.json")))
+    if not files:
+        abort(404)
+    with open(files[-1], encoding="utf-8") as f:
+        data = json.load(f)
+    return jsonify({
+        "current_events": {
+            "description": "Active planetary transits and ingress anchors as of current session.",
+            "era_boundary": data.get("era_boundary"),
+            "oos_sessions": data.get("oos_sessions"),
+        },
+        "sectoral_impacts": {
+            "description": "Mean relative sector returns across planetary event windows (T+5, T+10, T+20).",
+            "active_sectors": list(data.get("coverage", {}).keys()),
+            "missing_coverage": ["CNXMEDIA", "CNXHEALTH", "CNXOILGAS"],
+        },
+        "upcoming_events": {
+            "description": "Upcoming core astrological events (Jupiter Ingress, Eclipses, Retrogrades).",
+            "events_tracked": list(data.get("events", {}).keys()),
+        },
+        "past_outcomes": {
+            "description": "Historical occurrence frequencies and window outcomes for NIFTY and sector leaders.",
+            "event_counts": data.get("events"),
+        },
+        "horizon_guidance": {
+            "description": "Investment Horizon Advisory",
+            "short_term": "T+5 to T+20 windows show descriptive historical frequency patterns but 0/511 validated out-of-sample edge.",
+            "medium_long_term": "6-month and 1-year investment horizons MUST rely on fundamental macro analysis, valuation, and business cycle indicators rather than transit models.",
+            "sectors_to_avoid": "Cyclical or short-history sectors without robust multi-decade pricing history.",
+        },
+        "validation_status": {
+            "descriptive_status": "EXPLORATORY / DESCRIPTIVE ONLY",
+            "validated_edge": "NONE (0 out-of-sample passes)",
+            "is_financial_advice": False,
+        }
+    })

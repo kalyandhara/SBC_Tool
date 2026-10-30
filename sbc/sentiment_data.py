@@ -16,6 +16,8 @@ from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
+import pandas as pd
+
 TWITTER_BEARER_TOKEN = os.environ.get("TWITTER_BEARER_TOKEN")
 NEWS_API_KEY = os.environ.get("NEWS_API_KEY")
 
@@ -50,13 +52,13 @@ def _bootstrap_db():
     conn.executescript("""
         CREATE TABLE IF NOT EXISTS sentiment (
             source TEXT NOT NULL,
-            ticker TEXT,
+            ticker TEXT NOT NULL DEFAULT '',
             date TEXT NOT NULL,
             sentiment_score REAL NOT NULL,
             article_count INTEGER DEFAULT 0,
             tweet_count INTEGER DEFAULT 0,
             fetched_at TEXT NOT NULL,
-            PRIMARY KEY (source, COALESCE(ticker, ''), date)
+            PRIMARY KEY (source, ticker, date)
         );
         CREATE INDEX IF NOT EXISTS idx_sentiment_source ON sentiment(source);
         CREATE INDEX IF NOT EXISTS idx_sentiment_date ON sentiment(date);
@@ -177,11 +179,18 @@ def fetch_vix_sentiment(start_date: str, end_date: str) -> List[Dict[str, Any]]:
         import yfinance as yf
     except ImportError:
         raise ImportError("yfinance not installed. Run: pip install yfinance")
-    
-    vix = yf.download("^VIX", start=start_date, end=end_date, progress=False)
-    
-    if vix.empty:
+
+    vix = yf.download("^VIX", start=start_date, end=end_date,
+                      progress=False, auto_adjust=False)
+
+    if vix is None or vix.empty:
         return []
+
+    # Newer yfinance returns MultiIndex columns; row["Close"] must be a
+    # scalar, not a Series (same handling as sbc.market_store).
+    if isinstance(vix.columns, pd.MultiIndex):
+        vix.columns = vix.columns.get_level_values(0)
+    vix = vix.dropna(subset=["Close"])
     
     # Normalize VIX to sentiment score (-1 to +1)
     # VIX range historically: ~10 (low fear) to ~80 (high fear)
@@ -226,7 +235,7 @@ def cache_sentiment_data(observations: List[Dict[str, Any]]) -> int:
                 """,
                 (
                     obs["source"],
-                    obs.get("ticker"),
+                    obs.get("ticker") or "",
                     obs["date"],
                     obs["value"],
                     datetime.now().isoformat(),

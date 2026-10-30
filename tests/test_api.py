@@ -438,8 +438,9 @@ class TestIntradayPathExperimentalLabel:
         assert "experimental-badge" in path_panel and "no validated edge" in path_panel
         assert "Intraday Path (experimental)" in html
         assert "Predictive intraday path (cumulative KP composite score)" not in html
-        btn = html[html.index('id="trading-predicted-actual-load"'):]
-        assert "experimental-badge" in btn[:300]
+        # The unvalidated predicted-vs-actual loader was retired in the
+        # trading-tab rework; it must not return without an experimental label.
+        assert 'id="trading-predicted-actual-load"' not in html
 
 
 class TestKPReportExperimentalLabel:

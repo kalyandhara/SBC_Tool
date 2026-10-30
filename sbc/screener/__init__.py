@@ -1,1 +1,1 @@
-﻿"""NSE momentum screener: indicators, universes, data, engine, report."""
+"""NSE momentum screener: indicators, universes, data, engine, report."""

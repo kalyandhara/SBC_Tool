@@ -58,6 +58,8 @@ Rank tables, top-5 appearance rates, beat-NIFTY shares, the event effect, the he
 
 - **High**: the sector's hypothesis passes the confirmatory rule out of sample. With the empty list, no forecast can reach High in phase 1.
 - **No call**: every other case.
+
+Sector set decision: approved all 15 pre-registered sector indices (CNXBANK, CNXFIN, CNXIT, CNXPHARMA, CNXAUTO, CNXFMCG, CNXMETAL, CNXENERGY, CNXREALTY, CNXMEDIA, CNXPSUBANK, CNXINFRA, CNXCONSUM, CNXHEALTH, CNXOILGAS).
 - There is no "Medium" level. Any threshold for it would be chosen after seeing the data.
 - The forecast section is a historical pattern, not a trading recommendation.
 

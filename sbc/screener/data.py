@@ -1,7 +1,7 @@
 """Price data for the momentum screener: yfinance batch download with
 timeframe windows and past-date back-scans.
 
-Yahoo intraday limits are enforced up front: 5m/10m/15m bars only
+Yahoo intraday limits are enforced up front: 5m/10m/15m/30m bars only
 exist for the last ~60 days, 1h for ~730.  `end` back-scans the scan
 date (bars are clipped to it); `lookback_days` controls how much
 history each scan sees.  Output DataFrames carry lowercase
@@ -19,12 +19,13 @@ TIMEFRAMES = {
     "5m": ("5m", 60),
     "10m": ("10m", 60),
     "15m": ("15m", 60),
+    "30m": ("30m", 60),
     "1h": ("1h", 730),
     "1d": ("1d", None),
     "1wk": ("1wk", None),
 }
 
-DEFAULT_LOOKBACK = {"5m": 30, "10m": 30, "15m": 30, "1h": 120,
+DEFAULT_LOOKBACK = {"5m": 30, "10m": 30, "15m": 30, "30m": 30, "1h": 120,
                     "1d": 400, "1wk": 700}
 
 

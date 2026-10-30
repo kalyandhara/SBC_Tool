@@ -3466,6 +3466,15 @@ a:focus-visible,
 .sr-sankey { width: 100%; min-width: 420px; height: auto; }
 .sr-flow { fill: none; stroke: #42a5f5; stroke-opacity: 0.35; }
 .sr-node { fill: var(--text, #e2e8f0); }
+.sr-enhanced-banner { line-height: 1.5; padding: 14px 16px; }
+.sr-banner-title strong { font-size: 14px; color: var(--accent); }
+.sr-banner-list { margin: 8px 0 0 18px; padding: 0; font-size: 13px; color: var(--text); }
+.sr-banner-list li { margin-bottom: 5px; }
+.sr-banner-list b { color: var(--accent); }
+.sr-briefing-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 14px; margin-top: 12px; }
+.sr-briefing-card { background: var(--bg-card, #1e293b); border: 1px solid var(--border, #475569); border-radius: 6px; padding: 12px; font-size: 13px; color: var(--text, #e2e8f0); }
+.sr-briefing-card strong { display: block; margin-bottom: 6px; color: var(--accent, #38bdf8); font-size: 14px; }
+.sr-validation-card { border-color: #f59e0b; background: rgba(245, 158, 11, 0.08); }
 @media (max-width: 640px) {
   .sr-radar-wrap, .sr-wheel-wrap { grid-template-columns: 1fr; }
 }

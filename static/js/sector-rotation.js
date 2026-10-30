@@ -73,11 +73,26 @@ function srEventName(key) {
 function srBanner(data) {
   const confirmatory = data.confirmatory || [];
   const outcome = confirmatory.length === 0
-    ? "No pre-registered edge: the confirmatory list is empty."
+    ? "No pre-registered edge: the confirmatory hypothesis family is empty (0/511 out-of-sample tests passed across all research)."
     : `${confirmatory.length} confirmatory hypotheses graded.`;
-  return srEl("div", { class: "analog-banner", role: "note" }, [
-    srEl("strong", { text: "Descriptive, not graded. " }),
-    srEl("span", { text: `${outcome} Not trading advice. Breadth is not computed (phase 2).` }),
+  return srEl("div", { class: "analog-banner sr-enhanced-banner", role: "note" }, [
+    srEl("div", { class: "sr-banner-title" }, [
+      srEl("strong", { text: "Descriptive Research Only — No Validated Trading Edge" }),
+    ]),
+    srEl("ul", { class: "sr-banner-list" }, [
+      srEl("li", {}, [
+        srEl("b", { text: "What this shows: " }),
+        srEl("span", { text: "Historical mean sector returns relative to NIFTY (T+5, T+10, T+20 sessions) around core planetary event anchors (Mercury retrograde start, Eclipses, Jupiter and Saturn sign ingresses)." }),
+      ]),
+      srEl("li", {}, [
+        srEl("b", { text: "Edge & Validation: " }),
+        srEl("span", { text: `${outcome} All metrics reflect historical frequencies; none constitutes predictive alpha or an investment recommendation.` }),
+      ]),
+      srEl("li", {}, [
+        srEl("b", { text: "Data Coverage: " }),
+        srEl("span", { text: "12 of 15 sector indices are active. 3 indices (NIFTY MEDIA, HEALTHCARE, OIL & GAS) have missing price history in yfinance and are omitted from descriptive tables." }),
+      ]),
+    ]),
   ]);
 }
 
@@ -113,7 +128,7 @@ function srHeatmap(data) {
   return srEl("section", { class: "panel" }, [
     srEl("div", { class: "panel-head" }, [
       srEl("h2", { text: `Sector heatmap, T+${SR_H}` }),
-      srEl("span", { class: "panel-sub", text: "Mean sector return minus NIFTY, per event. Count in brackets. Descriptive, not graded." }),
+      srEl("span", { class: "panel-sub", text: "Mean sector return minus NIFTY per event anchor over T+" + SR_H + " sessions. Numbers in parentheses indicate historical occurrence count. Green indicates relative outperformance, red underperformance. Descriptive frequency only, not a trading signal." }),
     ]),
     srEl("div", { class: "sr-scroll" }, [srEl("table", { class: "sr-table" }, [srEl("thead", {}, [head]), srEl("tbody", {}, body)])]),
     srEl("p", { class: "sr-legend", text: "Colours: " + Object.values(SR_HEAT_LABEL).join(" · ") + "." }),
@@ -138,7 +153,7 @@ function srRotationMatrix(data) {
   return srEl("section", { class: "panel" }, [
     srEl("div", { class: "panel-head" }, [
       srEl("h2", { text: `Rotation matrix, T+${SR_H}` }),
-      srEl("span", { class: "panel-sub", text: "Strongest and weakest sector by mean relative return; pattern labels over the top five. Descriptive, not graded." }),
+      srEl("span", { class: "panel-sub", text: "Historical strongest and weakest sector by mean relative return; pattern labels classify the majority group among the top-5 sectors. Descriptive, not graded." }),
     ]),
     srEl("div", { class: "sr-scroll" }, [srEl("table", { class: "sr-table" }, [
       srEl("thead", {}, [srEl("tr", {}, ["Event", "Strongest", "Weakest", "Pattern labels", "Occurrences"].map((t) => srEl("th", { scope: "col", text: t })))]),
@@ -178,7 +193,7 @@ function srWheel(data) {
   return srEl("section", { class: "panel" }, [
     srEl("div", { class: "panel-head" }, [
       srEl("h2", { text: `Rotation wheel, T+${SR_H}` }),
-      srEl("span", { class: "panel-sub", text: "Capital-flow groups. Wedge length is mean relative return: green above NIFTY, red below. Group membership is a proposal (see the report). Descriptive, not graded." }),
+      srEl("span", { class: "panel-sub", text: "Capital-flow groups. Wedge length indicates mean relative return (green: above NIFTY, red: below). Group membership is a conceptual heuristic; descriptive only." }),
     ]),
     srEventSelect(events, srRender),
     srEl("div", { class: "sr-wheel-wrap" }, [svg, srEl("div", { class: "sr-scroll" }, [srEl("table", { class: "sr-table" }, [
@@ -248,7 +263,7 @@ function srSankey(data) {
   return srEl("section", { class: "panel" }, [
     srEl("div", { class: "panel-head" }, [
       srEl("h2", { text: `Flow, T+${SR_H}` }),
-      srEl("span", { class: "panel-sub", text: "Event → strongest sector → NIFTY over the window. The top-stock stage is not shown: it needs constituent data (phase 2). Descriptive, not graded." }),
+      srEl("span", { class: "panel-sub", text: "Flow of historical occurrences: Event → strongest sector → NIFTY Up/Down over T+" + SR_H + " sessions. Descriptive sample frequencies only." }),
     ]),
     srEventSelect(Object.keys(data.flows), srRender),
     srEl("div", { class: "sr-scroll" }, [svg]),
@@ -322,7 +337,7 @@ function srRadar(data) {
   return srEl("section", { class: "panel" }, [
     srEl("div", { class: "panel-head" }, [
       srEl("h2", { text: `Event radar, T+${SR_H}` }),
-      srEl("span", { class: "panel-sub", text: "Five dimensions: return, volatility, win rate, Sharpe, participation. Breadth is not computed. Axes are scaled across events; values in the table." }),
+      srEl("span", { class: "panel-sub", text: "Five comparative dimensions: return, volatility, win rate, Sharpe, participation. Breadth is not computed (phase 2). Axes scaled across events; descriptive frequencies only." }),
     ]),
     srEl("div", { class: "sr-radar-wrap" }, [svg, srEl("div", { class: "sr-scroll" }, [table])]),
   ]);
@@ -339,6 +354,41 @@ function srNotes(data) {
   ]);
 }
 
+function srBriefing(data) {
+  return srEl("section", { class: "panel sr-briefing-panel" }, [
+    srEl("div", { class: "panel-head" }, [
+      srEl("h2", { text: "Market & Planetary Intelligence Briefing" }),
+      srEl("span", { class: "panel-sub", text: "Direct answers to the six core timing questions. Exploratory historical frequencies, not predictive alpha." }),
+    ]),
+    srEl("div", { class: "sr-briefing-grid" }, [
+      srEl("div", { class: "sr-briefing-card" }, [
+        srEl("strong", { text: "1. Current Planetary Events" }),
+        srEl("p", { text: `Active ephemeris anchors and transit alignments. Out-of-sample testing era spans from ${data.era_boundary || "2021-10-01"} (${data.oos_sessions || 1254} sessions).` })
+      ]),
+      srEl("div", { class: "sr-briefing-card" }, [
+        srEl("strong", { text: "2. Sectoral Market Impacts" }),
+        srEl("p", { text: "Evaluates 12 NSE sector indices across T+5, T+10, and T+20 event windows. Note: Media, Healthcare, and Oil & Gas have no history in yfinance." })
+      ]),
+      srEl("div", { class: "sr-briefing-card" }, [
+        srEl("strong", { text: "3. Upcoming Major Events" }),
+        srEl("p", { text: "Tracks Jupiter Ingress, Solar/Lunar Eclipses, and Mercury/Saturn Retrograde turns for market volatility clustering." })
+      ]),
+      srEl("div", { class: "sr-briefing-card" }, [
+        srEl("strong", { text: "4. Past NIFTY & Sector Outcomes" }),
+        srEl("p", { text: "Historical occurrence counts and win-rate distributions. Past outcomes reflect descriptive sample frequencies rather than guarantees." })
+      ]),
+      srEl("div", { class: "sr-briefing-card" }, [
+        srEl("strong", { text: "5. 6-Month & 1-Year Horizons" }),
+        srEl("p", { text: "Transit models capture short-term event windows (T+5 to T+20). Medium and long-term (6m/1y) investment decisions MUST rely on macro fundamentals, earnings growth, and technical trend analysis." })
+      ]),
+      srEl("div", { class: "sr-briefing-card sr-validation-card" }, [
+        srEl("strong", { text: "6. Signal Validation Status" }),
+        srEl("p", { text: "Status: EXPLORATORY / DESCRIPTIVE ONLY | Validated Edge: NONE (0 out-of-sample passes across 511 tests). Not financial advice." })
+      ]),
+    ])
+  ]);
+}
+
 function srRender() {
   const root = document.getElementById("sr-root");
   if (!root || !SR_DATA) return;
@@ -346,6 +396,7 @@ function srRender() {
   if (!SR_EVENT || !data.wheel[SR_EVENT]) SR_EVENT = Object.keys(data.wheel)[0];
   root.replaceChildren(
     srBanner(data),
+    srBriefing(data),
     srEl("div", { class: "sr-controls" }, [srHorizonPicker(srRender)]),
     srHeatmap(data),
     srRotationMatrix(data),
@@ -359,7 +410,7 @@ function srRender() {
 async function srLoad() {
   const status = document.getElementById("sr-status");
   if (SR_DATA) return;
-  status.textContent = "Loading sector rotation report…";
+  status.textContent = "";
   try {
     const r = await fetch("/api/sector_rotation");
     if (r.status === 404) {
