@@ -14,6 +14,13 @@ Scoring uses NIFTY 5-minute bars (yfinance ^NSEI, which serves ~60 days).
 Per bucket: direction hit = sign(score) == sign(close - open of that bar).
 The baseline is the majority-class rate over the same bars (the best
 constant guess in hindsight), so a hit rate must beat it to mean anything.
+
+External series (B-40): daily scores published by someone else (e.g. a
+third-party monthly projection) are frozen per (source, date) in their own
+table, never mixed with ours. A day is `live` only if it was frozen before
+its 09:15 open and after the source published; anything else is `post_hoc`
+and stays out of the score. score_external() grades the live days against
+daily closes of whichever index the caller passes.
 """
 
 from __future__ import annotations
@@ -48,6 +55,10 @@ def _conn():
         CREATE TABLE IF NOT EXISTS scores (
             date TEXT PRIMARY KEY, model_version TEXT NOT NULL,
             scored_at TEXT NOT NULL, metrics TEXT NOT NULL);
+        CREATE TABLE IF NOT EXISTS external_forecasts (
+            source TEXT NOT NULL, date TEXT NOT NULL, score REAL NOT NULL,
+            kind TEXT NOT NULL, published TEXT NOT NULL, frozen_at TEXT NOT NULL,
+            PRIMARY KEY (source, date));
     """)
     return conn
 
@@ -276,3 +287,129 @@ def summary(days: int = 60, now: dt.datetime | None = None) -> dict:
             "mean_corr": round(sum(g["corrs"]) / len(g["corrs"]), 4) if g["corrs"] else None,
         }
     return {"window_days": days, "groups": out, "per_day": per_day}
+
+
+# --------------------------------------------------------------------------
+# external series (B-40)
+# --------------------------------------------------------------------------
+
+def freeze_external(source: str, rows: list[dict], published: dt.date,
+                    now: dt.datetime | None = None) -> dict:
+    """Store {date, score} rows for `source` once each (existing rows win).
+
+    A row is `live` when its date is after `published` and its 09:15 IST open
+    is still ahead at freeze time; otherwise `post_hoc`.
+    """
+    if not source or not source.replace("_", "").isalnum():
+        raise ValueError("source must be letters, digits and underscores")
+    now = _now_ist(now)
+    added = {"live": 0, "post_hoc": 0, "kept": 0}
+    with _lock, _conn() as c:
+        have = {d for (d,) in c.execute(
+            "SELECT date FROM external_forecasts WHERE source=?", (source,))}
+        for r in rows:
+            day = dt.date.fromisoformat(str(r["date"]))
+            if day.isoformat() in have:
+                added["kept"] += 1
+                continue
+            score = float(r["score"])
+            if not math.isfinite(score):
+                raise ValueError(f"{day}: score is not a number")
+            kind = ("live" if day > published and _kind_for(day, now) == "live" else "post_hoc")
+            c.execute("INSERT INTO external_forecasts VALUES (?,?,?,?,?,?)",
+                      (source, day.isoformat(), score, kind, published.isoformat(),
+                       now.isoformat(timespec="seconds")))
+            added[kind] += 1
+    return added
+
+
+def get_external(source: str, start: str | None = None, end: str | None = None) -> list[dict]:
+    with _lock, _conn() as c:
+        rows = c.execute(
+            "SELECT date, score, kind, published, frozen_at FROM external_forecasts "
+            "WHERE source=? AND date>=? AND date<=? ORDER BY date",
+            (source, start or "0000", end or "9999")).fetchall()
+    return [{"date": d, "score": sc, "kind": k, "published": p, "frozen_at": f}
+            for d, sc, k, p, f in rows]
+
+
+def _ranks(xs: list[float]) -> list[float]:
+    order = sorted(range(len(xs)), key=xs.__getitem__)
+    ranks = [0.0] * len(xs)
+    i = 0
+    while i < len(order):
+        j = i
+        while j + 1 < len(order) and xs[order[j + 1]] == xs[order[i]]:
+            j += 1
+        for k in range(i, j + 1):
+            ranks[order[k]] = (i + j) / 2 + 1
+        i = j + 1
+    return ranks
+
+
+def _spearman(a: list[float], b: list[float]) -> dict:
+    return {"rho": _corr(_ranks(a), _ranks(b)), "n": len(a)}
+
+
+def _binom_p(hits: int, n: int) -> float | None:
+    """One-sided P(X >= hits) for X ~ Binomial(n, 0.5)."""
+    if not n:
+        return None
+    return round(float(sum(math.comb(n, k) for k in range(hits, n + 1)) / 2 ** n), 4)
+
+
+def _round(x: float | None, digits: int = 5) -> float | None:
+    return None if x is None else round(x, digits)
+
+
+def score_external(rows: list[dict], closes: dict[str, float]) -> dict:
+    """Grade an external daily score series against daily closes (pure).
+
+    rows: get_external() rows; only `live` ones are graded, though a post_hoc
+    score may serve as the previous value for the first live day's change.
+    closes: {date: close} for trading sessions, including at least the session
+    before the first live day so its return is defined.
+    """
+    days = sorted(closes)
+    pos = {d: i for i, d in enumerate(days)}
+    by_date = {r["date"]: r for r in rows}
+
+    def ret(i: int) -> float | None:
+        return closes[days[i]] / closes[days[i - 1]] - 1 if 0 < i < len(days) else None
+
+    live = [r for r in rows if r["kind"] == "live" and r["date"] in pos]
+    direction = []
+    for r in live:
+        i = pos[r["date"]]
+        prev = by_date.get(days[i - 1]) if i > 0 else None
+        rt, r_prev = ret(i), ret(i - 1)
+        if prev is None or rt is None:
+            continue
+        delta = r["score"] - prev["score"]
+        direction.append({"date": r["date"], "score_change": delta, "return": round(rt, 5),
+                          "hit": (_sign(delta) == _sign(rt)) if delta and rt else None,
+                          "persistence_hit": (_sign(r_prev) == _sign(rt)) if r_prev and rt else None})
+    called = [d for d in direction if d["hit"] is not None]
+    hits = sum(d["hit"] for d in called)
+    pers = [d for d in called if d["persistence_hit"] is not None]  # same days as the score
+
+    nxt = [(r["score"], ret(pos[r["date"]] + 1)) for r in live]
+    pairs = [(sc, rt) for sc, rt in nxt if rt is not None]
+    lowest = sorted(live, key=lambda r: (r["score"], r["date"]))[:2]
+    return {
+        "live_sessions": len(live),
+        "direction": {
+            "called": len(called), "hits": hits,
+            "hit_rate": round(hits / len(called), 4) if called else None,
+            "p_vs_coin": _binom_p(hits, len(called)),
+            "persistence_hit_rate": (round(sum(d["persistence_hit"] for d in pers) / len(pers), 4)
+                                     if pers else None),
+            "days": direction,
+        },
+        "spearman_next_return": _spearman([a for a, _ in pairs], [b for _, b in pairs]),
+        "spearman_close": _spearman([r["score"] for r in live], [closes[r["date"]] for r in live]),
+        "lowest_score_days": [{"date": r["date"], "score": r["score"], "return": _round(ret(pos[r["date"]]))}
+                              for r in lowest],
+        "caveat": f"{len(live)} sessions is far too few for significance; the series stays in the "
+                  "ledger so later months can extend it.",
+    }

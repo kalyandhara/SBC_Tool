@@ -232,6 +232,132 @@ def forward_calendar():
     return jsonify({**cal, "freshness": data_freshness.stamp(cal.get("data_as_of"))}), 200
 
 
+def _date_range_args(default_days: int) -> tuple[datetime.date, datetime.date]:
+    """?start (default: the 1st of this month) and ?end (default: start + default_days - 1)."""
+    today = datetime.date.today()
+    start = datetime.date.fromisoformat(request.args.get("start") or today.replace(day=1).isoformat())
+    raw_end = request.args.get("end")
+    end = (datetime.date.fromisoformat(raw_end) if raw_end
+           else start + datetime.timedelta(days=default_days - 1))
+    return start, end
+
+
+@engine_bp.route("/planet_series")
+def planet_series():
+    """Daily declination, ecliptic latitude or speed per planet at 09:15 IST (B-45).
+
+    ?metric=declination|latitude|speed (default declination) &start=&end= (max 400 days;
+    default the 35 days from the 1st of this month).
+    """
+    from sbc import planet_series as ps
+
+    try:
+        start, end = _date_range_args(35)
+        result = ps.series(request.args.get("metric", "declination"), start, end)
+    except ValueError as exc:
+        msg = str(exc) if "metric" in str(exc) or "days" in str(exc) else "start and end must be YYYY-MM-DD"
+        return jsonify({"error": msg}), 400
+    return jsonify(result), 200
+
+
+@engine_bp.route("/stations")
+def stations():
+    """Planetary stations to the minute, IST, true-node Rahu included (B-42).
+
+    ?start=&end= (inclusive, max 10 years; default the 35 days from the 1st of this month).
+    """
+    from sbc import stations as st
+
+    try:
+        start, end = _date_range_args(35)
+        rows = st.between(start, end + datetime.timedelta(days=1))
+    except ValueError:
+        return jsonify({"error": "start and end must be YYYY-MM-DD, end on or after start, "
+                                 "at most ten years"}), 400
+    return jsonify({"start": start.isoformat(), "end": end.isoformat(), "zodiac": "sidereal (Lahiri)",
+                    "count": len(rows), "stations": rows}), 200
+
+
+@engine_bp.route("/monthly_projection")
+def monthly_projection():
+    """Monthly projection score line from own composite.
+
+    ?month=YYYY-MM required. Returns one value per calendar day from sbc composite,
+    trading flag, and NIFTY closes so far. Hypothetical, unvalidated.
+    """
+    import calendar
+    from sbc import fingerprint_store, market_store
+    from sbc.market_holidays import is_trading_day
+    from sbc import data_freshness
+
+    month_str = request.args.get("month")
+    if not month_str:
+        return jsonify({"error": "month is required, format YYYY-MM"}), 400
+    try:
+        year, mon = map(int, month_str.split("-"))
+        start = datetime.date(year, mon, 1)
+        last_day = calendar.monthrange(year, mon)[1]
+        end = datetime.date(year, mon, last_day)
+    except Exception:
+        return jsonify({"error": "month must be YYYY-MM"}), 400
+
+    # Load NIFTY closes for the month
+    closes = {}
+    try:
+        rows = market_store.get_daily("NIFTY", start.isoformat(), end.isoformat())
+        closes = {r["date"]: r["close"] for r in rows}
+    except Exception:
+        closes = {}
+
+    days = []
+    for i in range((end - start).days + 1):
+        d = start + datetime.timedelta(days=i)
+        trading = is_trading_day(d)
+        # Composite score: SBC classical net from fingerprint, scaled to ~-10..+10 range
+        try:
+            fp = fingerprint_store.get(d.isoformat())
+            score_raw = fp.get("sbc", {}).get("classical", {}).get("net", 0.0)
+            # Keep raw net; it's already a small integer-ish value
+            score = float(score_raw)
+        except Exception:
+            score = None
+        nifty_close = closes.get(d.isoformat())
+        # Do not expose future closes
+        today = datetime.date.today()
+        if d > today:
+            nifty_close = None
+        days.append({
+            "date": d.isoformat(),
+            "trading": bool(trading),
+            "score": score,
+            "nifty_close": nifty_close,
+        })
+
+    # Freshness badge
+    latest_price_date = max(closes.keys()) if closes else None
+    freshness = data_freshness.stamp(latest_price_date)
+
+    # Ledger live hit rate for disclaimer
+    from sbc import daily_ledger
+    try:
+        tr = daily_ledger.summary(5)
+        forward = tr.get("groups", {}).get("forward", {})
+        live_hit_rate = forward.get("hit_rate")
+    except Exception:
+        live_hit_rate = None
+
+    return jsonify({
+        "month": month_str,
+        "start": start.isoformat(),
+        "end": end.isoformat(),
+        "days": days,
+        "freshness": freshness,
+        "disclaimer": "hypothetical, unvalidated",
+        "live_hit_rate_5h": live_hit_rate,
+        "source": "sbc composite: fingerprint sbc classical net",
+    }), 200
+
+
 @engine_bp.route("/calendar/reports")
 def calendar_reports():
     """Weekly calendars written by the scheduler, newest first."""
@@ -703,3 +829,107 @@ def kota_monthly():
     return jsonify(result), 200
 
 
+@engine_bp.route("/aspect_table")
+def aspect_table():
+    """Exact-time geocentric sidereal aspect table B-43.
+
+    ?start=YYYY-MM-DD&end=YYYY-MM-DD (inclusive).  Returns start, end, count, aspects.
+    """
+    from sbc.aspect_table import get_aspects
+    start_str = request.args.get("start")
+    end_str = request.args.get("end")
+    if not start_str or not end_str:
+        return jsonify({"error": "start and end query params required (YYYY-MM-DD)"}), 400
+    try:
+        start_dt = datetime.date.fromisoformat(start_str)
+        end_dt = datetime.date.fromisoformat(end_str)
+    except ValueError:
+        return jsonify({"error": "dates must be YYYY-MM-DD"}), 400
+    if end_dt < start_dt:
+        return jsonify({"error": "end must be on or after start"}), 400
+    try:
+        aspects = get_aspects(start_dt, end_dt)
+    except Exception as exc:
+        return jsonify({"error": f"aspect generation failed: {exc}"}), 500
+    return jsonify({
+        "start": start_str,
+        "end": end_str,
+        "count": len(aspects),
+        "aspects": aspects,
+    }), 200
+
+
+@engine_bp.route("/trade_journal", methods=["GET","POST"])
+def trade_journal():
+    """Trade journal CRUD for B-48.
+
+    GET ?id=... or ?symbol=...&limit=...
+    POST JSON {symbol, entry_date, entry_price, qty, direction, stop_price, risk_per_share, notes}
+    """
+    from sbc import trade_journal as tj
+    if request.method == "GET":
+        tid = request.args.get("id")
+        if tid:
+            try:
+                trade = tj.get_trade(int(tid))
+                return jsonify(trade), 200 if trade else 404
+            except Exception as e:
+                return jsonify({"error": str(e)}), 400
+        symbol = request.args.get("symbol")
+        limit = int(request.args.get("limit", "100"))
+        trades = tj.list_trades(symbol, limit)
+        return jsonify({"trades": trades, "count": len(trades)}), 200
+    # POST create trade
+    data = request.get_json(silent=True) or {}
+    required = ["symbol","entry_date","entry_price","qty","direction"]
+    if not all(k in data for k in required):
+        return jsonify({"error": f"missing fields, need {required}"}), 400
+    try:
+        tid = tj.create_trade(
+            symbol=data["symbol"],
+            entry_date=data["entry_date"],
+            entry_price=float(data["entry_price"]),
+            qty=float(data["qty"]),
+            direction=data["direction"],
+            stop_price=float(data["stop_price"]) if data.get("stop_price") else None,
+            risk_per_share=float(data["risk_per_share"]) if data.get("risk_per_share") else None,
+            notes=data.get("notes","")
+        )
+        return jsonify({"id": tid, "status": "created"}), 201
+    except Exception as e:
+        return jsonify({"error": str(e)}), 400
+
+
+
+
+@engine_bp.route("/transit-almanac")
+def transit_almanac():
+    """Yearly transit almanac (B-55): ?year=YYYY (default this year), &zodiac=sidereal|tropical."""
+    from sbc import transit_almanac as ta
+
+    try:
+        year = int(request.args.get("year") or datetime.date.today().year)
+        zodiac = request.args.get("zodiac", "sidereal")
+        data = ta.build(year, zodiac)
+    except ValueError:
+        return jsonify({"error": f"year must be {ta.MIN_YEAR}-{ta.MAX_YEAR}, zodiac sidereal or tropical"}), 400
+    return jsonify(data), 200
+
+
+@engine_bp.route("/bullion-week")
+def bullion_week():
+    """Weekly bullion brief (B-56) for the Mon-Fri week containing ?start (default: next Monday
+    on weekends, else this week's Monday)."""
+    from sbc import bullion_week as bw
+
+    raw = request.args.get("start")
+    try:
+        if raw:
+            day = datetime.date.fromisoformat(raw)
+        else:
+            today = datetime.date.today()
+            day = today + datetime.timedelta(days=(7 - today.weekday()) % 7) if today.weekday() >= 5 else today
+        data = bw.build(day)
+    except ValueError:
+        return jsonify({"error": "start must be YYYY-MM-DD"}), 400
+    return jsonify(data), 200

@@ -22,6 +22,8 @@ ANCHORS = {
     "nifty": {"date": "1995-11-03", "time": "00:00", "tz": "Asia/Kolkata"},
     "sensex": {"date": "1979-04-01", "time": "00:00", "tz": "Asia/Kolkata"},
     "india": {"date": "1947-08-15", "time": "00:00", "tz": "Asia/Kolkata"},
+    "bitcoin": {"date": "2009-01-03", "time": "18:15:05", "tz": "UTC"},
+    "nyse": {"date": "1792-05-17", "time": "09:00", "tz": "America/New_York"},
 }
 
 _anchor_cache: dict[str, str] = {}
@@ -201,6 +203,25 @@ TRANSIT_RULES = {
         "Pisces": ("BULLISH", "Ketu in Pisces — dissolution of fear, spiritual/market cleansing", ["Pharma", "Shipping", "Healthcare", "Spiritual"]),
         "Virgo": ("BEARISH", "Ketu in Virgo — over-analysis, perfectionism paralysis", ["IT", "Healthcare", "Banking", "Consulting"]),
         "Gemini": ("BEARISH", "Ketu in Gemini — communication breakdown, scattered focus", ["IT", "Telecom", "Media", "Trading"]),
+    },
+    # Outer planets (Western astrology macro-cycle analysis)
+    "Uranus": {
+        "Aries": ("VOLATILE BULLISH", "Uranus in Aries — innovation, disruption, new themes emerge", ["Tech", "Startups", "Defense", "Engineering"]),
+        "Aquarius": ("VOLATILE BULLISH", "Uranus in own sign Aquarius — technological revolution", ["IT", "Communication", "AI", "Renewables"]),
+        "Taurus": ("VOLATILE BEARISH", "Uranus in Taurus — financial disruption, value crash risk", ["Banking", "Real Estate", "Consumer"]),
+        "Scorpio": ("VOLATILE BULLISH", "Uranus in Scorpio — deep transformation, hidden wealth", ["Insurance", "Research", "Mining", "Oil & Gas"]),
+    },
+    "Neptune": {
+        "Aquarius": ("SPECULATIVE BUBBLE", "Neptune in Aquarius — technology hype, bubble risk", ["Tech", "Internet", "Crypto", "Media"]),
+        "Pisces": ("SPIRITUAL RESET", "Neptune in own sign Pisces — dissolution of fear", ["Pharma", "Healthcare", "Spiritual", "Shipping"]),
+        "Virgo": ("DEFLATIONARY", "Neptune in Virgo — analysis paralysis, data concerns", ["IT", "Consulting", "Research"]),
+        "Leo": ("SPECULATIVE", "Neptune in Leo — entertainment hype, creative bubbles", ["Entertainment", "Gaming", "Media", "Luxury"]),
+    },
+    "Pluto": {
+        "Capricorn": ("STRUCTURAL TRANSFORMATION", "Pluto in Capricorn — deep institutional change", ["Banks", "Government", "Infrastructure", "PSU"]),
+        "Scorpio": ("TRANSFORMATIONAL BULLISH", "Pluto in own sign Scorpio — deep transformation", ["Insurance", "Research", "Mining", "Oil & Gas"]),
+        "Taurus": ("WEALTH TRANSFORMATION", "Pluto in Taurus — monetary system change", ["Banking", "Real Estate", "Gold", "Currency"]),
+        "Cancer": ("EMOTIONAL TRANSFORMATION", "Pluto in Cancer — domestic/housing transformation", ["Real Estate", "Construction", "Home Goods"]),
     },
 }
 

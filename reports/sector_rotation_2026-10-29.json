@@ -1,0 +1,4537 @@
+{
+  "breadth": "not computed",
+  "confirmatory": [],
+  "coverage": {
+    "CNXAUTO": {
+      "first": "2011-07-12",
+      "last": "2026-10-29",
+      "sessions": 3751,
+      "short_history": false
+    },
+    "CNXBANK": {
+      "first": "2007-09-17",
+      "last": "2026-10-29",
+      "sessions": 4705,
+      "short_history": false
+    },
+    "CNXCONSUM": {
+      "first": "2011-07-12",
+      "last": "2026-10-29",
+      "sessions": 3749,
+      "short_history": false
+    },
+    "CNXENERGY": {
+      "first": "2011-01-31",
+      "last": "2026-10-29",
+      "sessions": 3863,
+      "short_history": false
+    },
+    "CNXFIN": {
+      "first": "2011-09-07",
+      "last": "2026-10-29",
+      "sessions": 3712,
+      "short_history": false
+    },
+    "CNXFMCG": {
+      "first": "2011-01-31",
+      "last": "2026-10-29",
+      "sessions": 3862,
+      "short_history": false
+    },
+    "CNXHEALTH": {
+      "first": null,
+      "last": null,
+      "sessions": 0,
+      "short_history": true
+    },
+    "CNXINFRA": {
+      "first": "2010-07-19",
+      "last": "2026-10-29",
+      "sessions": 3998,
+      "short_history": false
+    },
+    "CNXIT": {
+      "first": "2007-09-17",
+      "last": "2026-10-29",
+      "sessions": 4705,
+      "short_history": false
+    },
+    "CNXMEDIA": {
+      "first": null,
+      "last": null,
+      "sessions": 0,
+      "short_history": true
+    },
+    "CNXMETAL": {
+      "first": "2011-07-12",
+      "last": "2026-10-29",
+      "sessions": 3751,
+      "short_history": false
+    },
+    "CNXOILGAS": {
+      "first": null,
+      "last": null,
+      "sessions": 0,
+      "short_history": true
+    },
+    "CNXPHARMA": {
+      "first": "2011-01-31",
+      "last": "2026-10-29",
+      "sessions": 3877,
+      "short_history": false
+    },
+    "CNXPSUBANK": {
+      "first": "2011-01-31",
+      "last": "2026-10-29",
+      "sessions": 3863,
+      "short_history": false
+    },
+    "CNXREALTY": {
+      "first": "2010-07-19",
+      "last": "2026-10-29",
+      "sessions": 3998,
+      "short_history": false
+    }
+  },
+  "descriptive": {
+    "JUPITER_INGRESS": {
+      "10": [
+        {
+          "beat_rate": 0.5,
+          "heat": "dark_green",
+          "mean_relative": 0.015875570844426767,
+          "n_clusters": 22,
+          "n_raw": 24,
+          "sector": "CNXPHARMA",
+          "sharpe": 0.11377750453712693,
+          "top5_rate": 0.375,
+          "volatility": 0.014285749883438328
+        },
+        {
+          "beat_rate": 0.6086956521739131,
+          "heat": "dark_green",
+          "mean_relative": 0.009061509092101986,
+          "n_clusters": 21,
+          "n_raw": 23,
+          "sector": "CNXAUTO",
+          "sharpe": 0.08372789194310404,
+          "top5_rate": 0.5217391304347826,
+          "volatility": 0.016330436678610376
+        },
+        {
+          "beat_rate": 0.625,
+          "heat": "light_green",
+          "mean_relative": 0.005948075589094696,
+          "n_clusters": 22,
+          "n_raw": 24,
+          "sector": "CNXENERGY",
+          "sharpe": 0.0674538023870011,
+          "top5_rate": 0.5833333333333334,
+          "volatility": 0.014140038403251844
+        },
+        {
+          "beat_rate": 0.5652173913043478,
+          "heat": "light_green",
+          "mean_relative": 0.005172809292181948,
+          "n_clusters": 21,
+          "n_raw": 23,
+          "sector": "CNXMETAL",
+          "sharpe": 0.04060074764368726,
+          "top5_rate": 0.5217391304347826,
+          "volatility": 0.017061079365433322
+        },
+        {
+          "beat_rate": 0.6153846153846154,
+          "heat": "light_green",
+          "mean_relative": 0.003447319127292352,
+          "n_clusters": 24,
+          "n_raw": 26,
+          "sector": "CNXINFRA",
+          "sharpe": 0.05420605880082118,
+          "top5_rate": 0.5,
+          "volatility": 0.012251632274127249
+        },
+        {
+          "beat_rate": 0.5,
+          "heat": "light_green",
+          "mean_relative": 0.0023905428173631206,
+          "n_clusters": 30,
+          "n_raw": 32,
+          "sector": "CNXBANK",
+          "sharpe": 0.031125239582348727,
+          "top5_rate": 0.46875,
+          "volatility": 0.019728001940467175
+        },
+        {
+          "beat_rate": 0.5,
+          "heat": "light_green",
+          "mean_relative": 0.0022024128870142953,
+          "n_clusters": 24,
+          "n_raw": 26,
+          "sector": "CNXREALTY",
+          "sharpe": 0.011734556330959735,
+          "top5_rate": 0.5769230769230769,
+          "volatility": 0.020141005551073385
+        },
+        {
+          "beat_rate": 0.5,
+          "heat": "yellow",
+          "mean_relative": 0.0013807139453578532,
+          "n_clusters": 22,
+          "n_raw": 24,
+          "sector": "CNXFMCG",
+          "sharpe": 0.013203578808219426,
+          "top5_rate": 0.25,
+          "volatility": 0.011488178991064106
+        },
+        {
+          "beat_rate": 0.5217391304347826,
+          "heat": "yellow",
+          "mean_relative": 0.000632180619001914,
+          "n_clusters": 21,
+          "n_raw": 23,
+          "sector": "CNXCONSUM",
+          "sharpe": 0.005670716887447996,
+          "top5_rate": 0.30434782608695654,
+          "volatility": 0.011042517101687615
+        },
+        {
+          "beat_rate": 0.4782608695652174,
+          "heat": "yellow",
+          "mean_relative": -0.00036705293360257023,
+          "n_clusters": 21,
+          "n_raw": 23,
+          "sector": "CNXFIN",
+          "sharpe": -0.0004088957826450007,
+          "top5_rate": 0.34782608695652173,
+          "volatility": 0.01450856044627892
+        },
+        {
+          "beat_rate": 0.4583333333333333,
+          "heat": "yellow",
+          "mean_relative": -0.0017124678663436772,
+          "n_clusters": 22,
+          "n_raw": 24,
+          "sector": "CNXPSUBANK",
+          "sharpe": -0.012459595380403707,
+          "top5_rate": 0.375,
+          "volatility": 0.018677152968549715
+        },
+        {
+          "beat_rate": 0.5625,
+          "heat": "dark_red",
+          "mean_relative": -0.008784687088667711,
+          "n_clusters": 30,
+          "n_raw": 32,
+          "sector": "CNXIT",
+          "sharpe": -0.07584729766311964,
+          "top5_rate": 0.625,
+          "volatility": 0.01650791136640471
+        }
+      ],
+      "20": [
+        {
+          "beat_rate": 0.5833333333333334,
+          "heat": "dark_green",
+          "mean_relative": 0.013227874339067885,
+          "n_clusters": 22,
+          "n_raw": 24,
+          "sector": "CNXPHARMA",
+          "sharpe": 0.04724729869814921,
+          "top5_rate": 0.5,
+          "volatility": 0.01274043775168066
+        },
+        {
+          "beat_rate": 0.6521739130434783,
+          "heat": "dark_green",
+          "mean_relative": 0.009544301053156425,
+          "n_clusters": 21,
+          "n_raw": 23,
+          "sector": "CNXAUTO",
+          "sharpe": 0.0484905699553603,
+          "top5_rate": 0.5652173913043478,
+          "volatility": 0.015675254417430808
+        },
+        {
+          "beat_rate": 0.5416666666666666,
+          "heat": "light_green",
+          "mean_relative": 0.006681734518347503,
+          "n_clusters": 22,
+          "n_raw": 24,
+          "sector": "CNXENERGY",
+          "sharpe": 0.0325707175757323,
+          "top5_rate": 0.375,
+          "volatility": 0.013563226090545204
+        },
+        {
+          "beat_rate": 0.46153846153846156,
+          "heat": "light_green",
+          "mean_relative": 0.0012875972570205495,
+          "n_clusters": 24,
+          "n_raw": 26,
+          "sector": "CNXREALTY",
+          "sharpe": 0.0014131397983974806,
+          "top5_rate": 0.5384615384615384,
+          "volatility": 0.02036606328525827
+        },
+        {
+          "beat_rate": 0.5,
+          "heat": "light_green",
+          "mean_relative": 0.001090818982639085,
+          "n_clusters": 30,
+          "n_raw": 32,
+          "sector": "CNXBANK",
+          "sharpe": 0.008996181233761868,
+          "top5_rate": 0.5,
+          "volatility": 0.018365421190559988
+        },
+        {
+          "beat_rate": 0.5384615384615384,
+          "heat": "yellow",
+          "mean_relative": 0.00019281844726830845,
+          "n_clusters": 24,
+          "n_raw": 26,
+          "sector": "CNXINFRA",
+          "sharpe": -0.0005995532292861747,
+          "top5_rate": 0.5,
+          "volatility": 0.012402387435873194
+        },
+        {
+          "beat_rate": 0.43478260869565216,
+          "heat": "yellow",
+          "mean_relative": -0.0001021754630015178,
+          "n_clusters": 21,
+          "n_raw": 23,
+          "sector": "CNXFIN",
+          "sharpe": 0.0025840143358551717,
+          "top5_rate": 0.34782608695652173,
+          "volatility": 0.014305634167001265
+        },
+        {
+          "beat_rate": 0.5,
+          "heat": "yellow",
+          "mean_relative": -0.0010374434535000837,
+          "n_clusters": 22,
+          "n_raw": 24,
+          "sector": "CNXPSUBANK",
+          "sharpe": -0.0017569253998125473,
+          "top5_rate": 0.5,
+          "volatility": 0.019893291781060633
+        },
+        {
+          "beat_rate": 0.43478260869565216,
+          "heat": "yellow",
+          "mean_relative": -0.0015753852646171727,
+          "n_clusters": 21,
+          "n_raw": 23,
+          "sector": "CNXMETAL",
+          "sharpe": -0.014238148510068506,
+          "top5_rate": 0.5217391304347826,
+          "volatility": 0.01793761919679476
+        },
+        {
+          "beat_rate": 0.5,
+          "heat": "yellow",
+          "mean_relative": -0.0024139597992605365,
+          "n_clusters": 30,
+          "n_raw": 32,
+          "sector": "CNXIT",
+          "sharpe": -0.013063489980948735,
+          "top5_rate": 0.5625,
+          "volatility": 0.016315913239646092
+        },
+        {
+          "beat_rate": 0.43478260869565216,
+          "heat": "orange",
+          "mean_relative": -0.005389916872319339,
+          "n_clusters": 21,
+          "n_raw": 23,
+          "sector": "CNXCONSUM",
+          "sharpe": -0.0444578720631908,
+          "top5_rate": 0.30434782608695654,
+          "volatility": 0.010377052220975586
+        },
+        {
+          "beat_rate": 0.3333333333333333,
+          "heat": "orange",
+          "mean_relative": -0.01118331928462126,
+          "n_clusters": 22,
+          "n_raw": 24,
+          "sector": "CNXFMCG",
+          "sharpe": -0.0472082860591622,
+          "top5_rate": 0.25,
+          "volatility": 0.01048724495973615
+        }
+      ],
+      "5": [
+        {
+          "beat_rate": 0.5416666666666666,
+          "heat": "dark_green",
+          "mean_relative": 0.0078681210429779,
+          "n_clusters": 22,
+          "n_raw": 24,
+          "sector": "CNXPHARMA",
+          "sharpe": 0.10306239260786063,
+          "top5_rate": 0.4166666666666667,
+          "volatility": 0.016440593648406488
+        },
+        {
+          "beat_rate": 0.6086956521739131,
+          "heat": "light_green",
+          "mean_relative": 0.003296387730255993,
+          "n_clusters": 21,
+          "n_raw": 23,
+          "sector": "CNXAUTO",
+          "sharpe": 0.0686538051391871,
+          "top5_rate": 0.5217391304347826,
+          "volatility": 0.01616174481773733
+        },
+        {
+          "beat_rate": 0.5,
+          "heat": "light_green",
+          "mean_relative": 0.0028297594001563766,
+          "n_clusters": 22,
+          "n_raw": 24,
+          "sector": "CNXENERGY",
+          "sharpe": 0.058235445998713296,
+          "top5_rate": 0.4583333333333333,
+          "volatility": 0.015728373754090107
+        },
+        {
+          "beat_rate": 0.5652173913043478,
+          "heat": "light_green",
+          "mean_relative": 0.0012006135631876511,
+          "n_clusters": 21,
+          "n_raw": 23,
+          "sector": "CNXMETAL",
+          "sharpe": 0.020967936242072577,
+          "top5_rate": 0.4782608695652174,
+          "volatility": 0.018969923046166078
+        },
+        {
+          "beat_rate": 0.4166666666666667,
+          "heat": "yellow",
+          "mean_relative": 0.0009599258896200169,
+          "n_clusters": 22,
+          "n_raw": 24,
+          "sector": "CNXFMCG",
+          "sharpe": 0.017066055737506976,
+          "top5_rate": 0.2916666666666667,
+          "volatility": 0.013572608668467871
+        },
+        {
+          "beat_rate": 0.5,
+          "heat": "yellow",
+          "mean_relative": 0.0007662097007733715,
+          "n_clusters": 24,
+          "n_raw": 26,
+          "sector": "CNXINFRA",
+          "sharpe": 0.02320870337537972,
+          "top5_rate": 0.5384615384615384,
+          "volatility": 0.013129038237499429
+        },
+        {
+          "beat_rate": 0.4230769230769231,
+          "heat": "yellow",
+          "mean_relative": 0.0007633472141124156,
+          "n_clusters": 24,
+          "n_raw": 26,
+          "sector": "CNXREALTY",
+          "sharpe": 0.01468800836895034,
+          "top5_rate": 0.5,
+          "volatility": 0.018914784584573553
+        },
+        {
+          "beat_rate": 0.4375,
+          "heat": "yellow",
+          "mean_relative": 0.0005431416621398018,
+          "n_clusters": 30,
+          "n_raw": 32,
+          "sector": "CNXBANK",
+          "sharpe": 0.016445610170080494,
+          "top5_rate": 0.5,
+          "volatility": 0.017148027148573792
+        },
+        {
+          "beat_rate": 0.4782608695652174,
+          "heat": "yellow",
+          "mean_relative": 0.0002981163168556653,
+          "n_clusters": 21,
+          "n_raw": 23,
+          "sector": "CNXCONSUM",
+          "sharpe": 0.006735000954110761,
+          "top5_rate": 0.391304347826087,
+          "volatility": 0.012600082418752078
+        },
+        {
+          "beat_rate": 0.4782608695652174,
+          "heat": "yellow",
+          "mean_relative": -0.00017459484155073383,
+          "n_clusters": 21,
+          "n_raw": 23,
+          "sector": "CNXFIN",
+          "sharpe": -0.0031390008520544156,
+          "top5_rate": 0.30434782608695654,
+          "volatility": 0.015311542476366687
+        },
+        {
+          "beat_rate": 0.4166666666666667,
+          "heat": "yellow",
+          "mean_relative": -0.0003304457067554491,
+          "n_clusters": 22,
+          "n_raw": 24,
+          "sector": "CNXPSUBANK",
+          "sharpe": -0.0037987354092037682,
+          "top5_rate": 0.4583333333333333,
+          "volatility": 0.020776568956223266
+        },
+        {
+          "beat_rate": 0.5,
+          "heat": "dark_red",
+          "mean_relative": -0.006780912137406014,
+          "n_clusters": 30,
+          "n_raw": 32,
+          "sector": "CNXIT",
+          "sharpe": -0.11377123691136452,
+          "top5_rate": 0.59375,
+          "volatility": 0.01654420445987089
+        }
+      ]
+    },
+    "LUNAR_ECLIPSE": {
+      "10": [
+        {
+          "beat_rate": 0.6,
+          "heat": "dark_green",
+          "mean_relative": 0.00844726047119548,
+          "n_clusters": 33,
+          "n_raw": 35,
+          "sector": "CNXENERGY",
+          "sharpe": 0.10310455134365291,
+          "top5_rate": 0.5142857142857142,
+          "volatility": 0.011563640016817306
+        },
+        {
+          "beat_rate": 0.5294117647058824,
+          "heat": "light_green",
+          "mean_relative": 0.007055378383375564,
+          "n_clusters": 32,
+          "n_raw": 34,
+          "sector": "CNXMETAL",
+          "sharpe": 0.05752843823905174,
+          "top5_rate": 0.5294117647058824,
+          "volatility": 0.016416802546618446
+        },
+        {
+          "beat_rate": 0.5142857142857142,
+          "heat": "light_green",
+          "mean_relative": 0.002550128408128265,
+          "n_clusters": 33,
+          "n_raw": 35,
+          "sector": "CNXPSUBANK",
+          "sharpe": 0.016566451479988493,
+          "top5_rate": 0.45714285714285713,
+          "volatility": 0.018572237421662804
+        },
+        {
+          "beat_rate": 0.5882352941176471,
+          "heat": "light_green",
+          "mean_relative": 0.0024627425483786706,
+          "n_clusters": 32,
+          "n_raw": 34,
+          "sector": "CNXCONSUM",
+          "sharpe": 0.0512241131564368,
+          "top5_rate": 0.4117647058823529,
+          "volatility": 0.009103197362963918
+        },
+        {
+          "beat_rate": 0.5142857142857142,
+          "heat": "yellow",
+          "mean_relative": 0.0013638215469357444,
+          "n_clusters": 33,
+          "n_raw": 35,
+          "sector": "CNXFMCG",
+          "sharpe": 0.015141320927536785,
+          "top5_rate": 0.42857142857142855,
+          "volatility": 0.009689817753640296
+        },
+        {
+          "beat_rate": 0.5,
+          "heat": "yellow",
+          "mean_relative": 0.0006235169510464609,
+          "n_clusters": 32,
+          "n_raw": 34,
+          "sector": "CNXFIN",
+          "sharpe": 0.010889834491657075,
+          "top5_rate": 0.35294117647058826,
+          "volatility": 0.01191507176055495
+        },
+        {
+          "beat_rate": 0.5555555555555556,
+          "heat": "yellow",
+          "mean_relative": 0.00028185536005711126,
+          "n_clusters": 34,
+          "n_raw": 36,
+          "sector": "CNXINFRA",
+          "sharpe": 0.0028001055881434586,
+          "top5_rate": 0.3055555555555556,
+          "volatility": 0.011488944498732943
+        },
+        {
+          "beat_rate": 0.5111111111111111,
+          "heat": "yellow",
+          "mean_relative": -0.0001593396440483853,
+          "n_clusters": 41,
+          "n_raw": 45,
+          "sector": "CNXIT",
+          "sharpe": -0.00019548716092681985,
+          "top5_rate": 0.5777777777777777,
+          "volatility": 0.013854325994757355
+        },
+        {
+          "beat_rate": 0.5111111111111111,
+          "heat": "yellow",
+          "mean_relative": -0.0010404858863132102,
+          "n_clusters": 41,
+          "n_raw": 45,
+          "sector": "CNXBANK",
+          "sharpe": -0.019871658061818016,
+          "top5_rate": 0.5111111111111111,
+          "volatility": 0.015483612748504785
+        },
+        {
+          "beat_rate": 0.5714285714285714,
+          "heat": "orange",
+          "mean_relative": -0.002437275322450556,
+          "n_clusters": 33,
+          "n_raw": 35,
+          "sector": "CNXPHARMA",
+          "sharpe": -0.022366499156570636,
+          "top5_rate": 0.45714285714285713,
+          "volatility": 0.01114106973698073
+        },
+        {
+          "beat_rate": 0.5,
+          "heat": "orange",
+          "mean_relative": -0.004561809617598523,
+          "n_clusters": 32,
+          "n_raw": 34,
+          "sector": "CNXAUTO",
+          "sharpe": -0.05098938317877479,
+          "top5_rate": 0.38235294117647056,
+          "volatility": 0.013221953770424039
+        },
+        {
+          "beat_rate": 0.4722222222222222,
+          "heat": "dark_red",
+          "mean_relative": -0.008204311350995431,
+          "n_clusters": 34,
+          "n_raw": 36,
+          "sector": "CNXREALTY",
+          "sharpe": -0.052418893905059785,
+          "top5_rate": 0.4166666666666667,
+          "volatility": 0.019200490537069567
+        }
+      ],
+      "20": [
+        {
+          "beat_rate": 0.6470588235294118,
+          "heat": "dark_green",
+          "mean_relative": 0.011183406770373846,
+          "n_clusters": 32,
+          "n_raw": 34,
+          "sector": "CNXMETAL",
+          "sharpe": 0.04846013653747257,
+          "top5_rate": 0.6470588235294118,
+          "volatility": 0.01658886595490833
+        },
+        {
+          "beat_rate": 0.5714285714285714,
+          "heat": "dark_green",
+          "mean_relative": 0.007825404638712815,
+          "n_clusters": 33,
+          "n_raw": 35,
+          "sector": "CNXENERGY",
+          "sharpe": 0.05040870219667096,
+          "top5_rate": 0.5142857142857142,
+          "volatility": 0.012118955238363559
+        },
+        {
+          "beat_rate": 0.5882352941176471,
+          "heat": "light_green",
+          "mean_relative": 0.002580185585631334,
+          "n_clusters": 32,
+          "n_raw": 34,
+          "sector": "CNXCONSUM",
+          "sharpe": 0.025992534304419203,
+          "top5_rate": 0.38235294117647056,
+          "volatility": 0.009228105483237886
+        },
+        {
+          "beat_rate": 0.5333333333333333,
+          "heat": "yellow",
+          "mean_relative": 9.180824183741739e-05,
+          "n_clusters": 41,
+          "n_raw": 45,
+          "sector": "CNXIT",
+          "sharpe": 0.004979995090331276,
+          "top5_rate": 0.5777777777777777,
+          "volatility": 0.014212368685422833
+        },
+        {
+          "beat_rate": 0.42857142857142855,
+          "heat": "yellow",
+          "mean_relative": -0.00022084293878918654,
+          "n_clusters": 33,
+          "n_raw": 35,
+          "sector": "CNXPHARMA",
+          "sharpe": -0.0008901243666523879,
+          "top5_rate": 0.37142857142857144,
+          "volatility": 0.011224671135378318
+        },
+        {
+          "beat_rate": 0.47058823529411764,
+          "heat": "yellow",
+          "mean_relative": -0.0006975883103672848,
+          "n_clusters": 32,
+          "n_raw": 34,
+          "sector": "CNXFIN",
+          "sharpe": -0.009333124833160756,
+          "top5_rate": 0.2647058823529412,
+          "volatility": 0.01251297828171736
+        },
+        {
+          "beat_rate": 0.45714285714285713,
+          "heat": "yellow",
+          "mean_relative": -0.0007606286332830273,
+          "n_clusters": 33,
+          "n_raw": 35,
+          "sector": "CNXFMCG",
+          "sharpe": -0.005861242744097267,
+          "top5_rate": 0.45714285714285713,
+          "volatility": 0.00948217015274072
+        },
+        {
+          "beat_rate": 0.5277777777777778,
+          "heat": "yellow",
+          "mean_relative": -0.0008253378721627187,
+          "n_clusters": 34,
+          "n_raw": 36,
+          "sector": "CNXINFRA",
+          "sharpe": -0.006533807734038469,
+          "top5_rate": 0.3611111111111111,
+          "volatility": 0.01186347605607569
+        },
+        {
+          "beat_rate": 0.4444444444444444,
+          "heat": "yellow",
+          "mean_relative": -0.0017409634279834014,
+          "n_clusters": 34,
+          "n_raw": 36,
+          "sector": "CNXREALTY",
+          "sharpe": -0.0043930448352104655,
+          "top5_rate": 0.4444444444444444,
+          "volatility": 0.019683981057027292
+        },
+        {
+          "beat_rate": 0.45714285714285713,
+          "heat": "yellow",
+          "mean_relative": -0.002045151365698837,
+          "n_clusters": 33,
+          "n_raw": 35,
+          "sector": "CNXPSUBANK",
+          "sharpe": -0.009646372297650627,
+          "top5_rate": 0.45714285714285713,
+          "volatility": 0.018253906224451538
+        },
+        {
+          "beat_rate": 0.38235294117647056,
+          "heat": "yellow",
+          "mean_relative": -0.0041288656828606645,
+          "n_clusters": 32,
+          "n_raw": 34,
+          "sector": "CNXAUTO",
+          "sharpe": -0.02139566466884999,
+          "top5_rate": 0.35294117647058826,
+          "volatility": 0.01290722273189518
+        },
+        {
+          "beat_rate": 0.4444444444444444,
+          "heat": "orange",
+          "mean_relative": -0.00466217559532795,
+          "n_clusters": 41,
+          "n_raw": 45,
+          "sector": "CNXBANK",
+          "sharpe": -0.03392244009002815,
+          "top5_rate": 0.5111111111111111,
+          "volatility": 0.016026742032312198
+        }
+      ],
+      "5": [
+        {
+          "beat_rate": 0.6,
+          "heat": "dark_green",
+          "mean_relative": 0.008690399260270024,
+          "n_clusters": 33,
+          "n_raw": 35,
+          "sector": "CNXENERGY",
+          "sharpe": 0.23722116175410488,
+          "top5_rate": 0.5714285714285714,
+          "volatility": 0.011645144691007964
+        },
+        {
+          "beat_rate": 0.5882352941176471,
+          "heat": "light_green",
+          "mean_relative": 0.004676396800902323,
+          "n_clusters": 32,
+          "n_raw": 34,
+          "sector": "CNXMETAL",
+          "sharpe": 0.07164358154518435,
+          "top5_rate": 0.5,
+          "volatility": 0.01852864146571465
+        },
+        {
+          "beat_rate": 0.5142857142857142,
+          "heat": "light_green",
+          "mean_relative": 0.0035355691402280437,
+          "n_clusters": 33,
+          "n_raw": 35,
+          "sector": "CNXFMCG",
+          "sharpe": 0.08358639842417928,
+          "top5_rate": 0.42857142857142855,
+          "volatility": 0.010268430826773211
+        },
+        {
+          "beat_rate": 0.6388888888888888,
+          "heat": "light_green",
+          "mean_relative": 0.0034398665774881144,
+          "n_clusters": 34,
+          "n_raw": 36,
+          "sector": "CNXINFRA",
+          "sharpe": 0.11535455084973452,
+          "top5_rate": 0.5,
+          "volatility": 0.011697435985765206
+        },
+        {
+          "beat_rate": 0.5,
+          "heat": "light_green",
+          "mean_relative": 0.0014921959752545928,
+          "n_clusters": 32,
+          "n_raw": 34,
+          "sector": "CNXCONSUM",
+          "sharpe": 0.05811481074693124,
+          "top5_rate": 0.38235294117647056,
+          "volatility": 0.009550002410470671
+        },
+        {
+          "beat_rate": 0.4857142857142857,
+          "heat": "light_green",
+          "mean_relative": 0.0014456824456892177,
+          "n_clusters": 33,
+          "n_raw": 35,
+          "sector": "CNXPHARMA",
+          "sharpe": 0.028723154303305392,
+          "top5_rate": 0.4,
+          "volatility": 0.011565850423284538
+        },
+        {
+          "beat_rate": 0.4857142857142857,
+          "heat": "yellow",
+          "mean_relative": 0.00032105963057909345,
+          "n_clusters": 33,
+          "n_raw": 35,
+          "sector": "CNXPSUBANK",
+          "sharpe": 0.006035646292743413,
+          "top5_rate": 0.45714285714285713,
+          "volatility": 0.01892921138201622
+        },
+        {
+          "beat_rate": 0.4666666666666667,
+          "heat": "orange",
+          "mean_relative": -0.003043031508895175,
+          "n_clusters": 41,
+          "n_raw": 45,
+          "sector": "CNXBANK",
+          "sharpe": -0.09109239912854604,
+          "top5_rate": 0.4888888888888889,
+          "volatility": 0.014922114455149274
+        },
+        {
+          "beat_rate": 0.47058823529411764,
+          "heat": "orange",
+          "mean_relative": -0.0035657810009213217,
+          "n_clusters": 32,
+          "n_raw": 34,
+          "sector": "CNXFIN",
+          "sharpe": -0.12490864911204193,
+          "top5_rate": 0.29411764705882354,
+          "volatility": 0.012421920816186129
+        },
+        {
+          "beat_rate": 0.4888888888888889,
+          "heat": "orange",
+          "mean_relative": -0.0036672006892731262,
+          "n_clusters": 41,
+          "n_raw": 45,
+          "sector": "CNXIT",
+          "sharpe": -0.06281204822803751,
+          "top5_rate": 0.5333333333333333,
+          "volatility": 0.011987739239833912
+        },
+        {
+          "beat_rate": 0.5,
+          "heat": "orange",
+          "mean_relative": -0.005081053180036925,
+          "n_clusters": 32,
+          "n_raw": 34,
+          "sector": "CNXAUTO",
+          "sharpe": -0.110652039601522,
+          "top5_rate": 0.35294117647058826,
+          "volatility": 0.013962921991772211
+        },
+        {
+          "beat_rate": 0.4444444444444444,
+          "heat": "orange",
+          "mean_relative": -0.0051126368863902705,
+          "n_clusters": 34,
+          "n_raw": 36,
+          "sector": "CNXREALTY",
+          "sharpe": -0.06524870243777406,
+          "top5_rate": 0.4444444444444444,
+          "volatility": 0.020791001948558704
+        }
+      ]
+    },
+    "MERCURY_RETROGRADE_START": {
+      "10": [
+        {
+          "beat_rate": 0.5957446808510638,
+          "heat": "light_green",
+          "mean_relative": 0.005766246333263819,
+          "n_clusters": 47,
+          "n_raw": 47,
+          "sector": "CNXFMCG",
+          "sharpe": 0.0557795599158341,
+          "top5_rate": 0.48936170212765956,
+          "volatility": 0.009638263055367533
+        },
+        {
+          "beat_rate": 0.532258064516129,
+          "heat": "light_green",
+          "mean_relative": 0.00416455093721277,
+          "n_clusters": 60,
+          "n_raw": 62,
+          "sector": "CNXBANK",
+          "sharpe": 0.04468670429457287,
+          "top5_rate": 0.5806451612903226,
+          "volatility": 0.01787631822466804
+        },
+        {
+          "beat_rate": 0.5111111111111111,
+          "heat": "light_green",
+          "mean_relative": 0.00285643189971642,
+          "n_clusters": 45,
+          "n_raw": 45,
+          "sector": "CNXFIN",
+          "sharpe": 0.050905793129348315,
+          "top5_rate": 0.4888888888888889,
+          "volatility": 0.0123514567801939
+        },
+        {
+          "beat_rate": 0.6304347826086957,
+          "heat": "light_green",
+          "mean_relative": 0.0026825964278316887,
+          "n_clusters": 46,
+          "n_raw": 46,
+          "sector": "CNXCONSUM",
+          "sharpe": 0.03890905067521069,
+          "top5_rate": 0.45652173913043476,
+          "volatility": 0.009029089149332103
+        },
+        {
+          "beat_rate": 0.46808510638297873,
+          "heat": "light_green",
+          "mean_relative": 0.0026446598401777084,
+          "n_clusters": 47,
+          "n_raw": 47,
+          "sector": "CNXENERGY",
+          "sharpe": 0.04349284108144917,
+          "top5_rate": 0.3617021276595745,
+          "volatility": 0.01205186468147301
+        },
+        {
+          "beat_rate": 0.5306122448979592,
+          "heat": "light_green",
+          "mean_relative": 0.001770009391270262,
+          "n_clusters": 49,
+          "n_raw": 49,
+          "sector": "CNXPHARMA",
+          "sharpe": 0.026313985477538094,
+          "top5_rate": 0.5102040816326531,
+          "volatility": 0.01117921902647403
+        },
+        {
+          "beat_rate": 0.5,
+          "heat": "yellow",
+          "mean_relative": 0.0003612267050640284,
+          "n_clusters": 46,
+          "n_raw": 46,
+          "sector": "CNXAUTO",
+          "sharpe": 0.012814671239734855,
+          "top5_rate": 0.4782608695652174,
+          "volatility": 0.01271743545480546
+        },
+        {
+          "beat_rate": 0.5306122448979592,
+          "heat": "yellow",
+          "mean_relative": -0.00022631039001782017,
+          "n_clusters": 49,
+          "n_raw": 49,
+          "sector": "CNXREALTY",
+          "sharpe": 0.00757532657552982,
+          "top5_rate": 0.4897959183673469,
+          "volatility": 0.019994683818943752
+        },
+        {
+          "beat_rate": 0.4489795918367347,
+          "heat": "orange",
+          "mean_relative": -0.0024173730977039318,
+          "n_clusters": 49,
+          "n_raw": 49,
+          "sector": "CNXINFRA",
+          "sharpe": -0.028053224868570814,
+          "top5_rate": 0.30612244897959184,
+          "volatility": 0.012000125228540905
+        },
+        {
+          "beat_rate": 0.5,
+          "heat": "orange",
+          "mean_relative": -0.0046956161529436895,
+          "n_clusters": 60,
+          "n_raw": 62,
+          "sector": "CNXIT",
+          "sharpe": -0.036148750392065374,
+          "top5_rate": 0.5806451612903226,
+          "volatility": 0.017118701051715663
+        },
+        {
+          "beat_rate": 0.3404255319148936,
+          "heat": "orange",
+          "mean_relative": -0.006755597573864472,
+          "n_clusters": 47,
+          "n_raw": 47,
+          "sector": "CNXPSUBANK",
+          "sharpe": -0.03442636488397845,
+          "top5_rate": 0.2978723404255319,
+          "volatility": 0.019082957329495102
+        },
+        {
+          "beat_rate": 0.3695652173913043,
+          "heat": "dark_red",
+          "mean_relative": -0.012225582574587071,
+          "n_clusters": 46,
+          "n_raw": 46,
+          "sector": "CNXMETAL",
+          "sharpe": -0.08589751958177293,
+          "top5_rate": 0.34782608695652173,
+          "volatility": 0.01750224534873031
+        }
+      ],
+      "20": [
+        {
+          "beat_rate": 0.625,
+          "heat": "dark_green",
+          "mean_relative": 0.009726380604794402,
+          "n_clusters": 48,
+          "n_raw": 48,
+          "sector": "CNXFMCG",
+          "sharpe": 0.06142568749510422,
+          "top5_rate": 0.5,
+          "volatility": 0.00986230163658447
+        },
+        {
+          "beat_rate": 0.5714285714285714,
+          "heat": "light_green",
+          "mean_relative": 0.0060717223573664774,
+          "n_clusters": 49,
+          "n_raw": 49,
+          "sector": "CNXPHARMA",
+          "sharpe": 0.03756277018190402,
+          "top5_rate": 0.5306122448979592,
+          "volatility": 0.011600578369784344
+        },
+        {
+          "beat_rate": 0.5957446808510638,
+          "heat": "light_green",
+          "mean_relative": 0.004155606736881035,
+          "n_clusters": 47,
+          "n_raw": 47,
+          "sector": "CNXAUTO",
+          "sharpe": 0.030825054195252357,
+          "top5_rate": 0.48936170212765956,
+          "volatility": 0.013038985543215259
+        },
+        {
+          "beat_rate": 0.5957446808510638,
+          "heat": "light_green",
+          "mean_relative": 0.002903522003105784,
+          "n_clusters": 47,
+          "n_raw": 47,
+          "sector": "CNXCONSUM",
+          "sharpe": 0.03317815943724699,
+          "top5_rate": 0.46808510638297873,
+          "volatility": 0.009496906088712224
+        },
+        {
+          "beat_rate": 0.45652173913043476,
+          "heat": "light_green",
+          "mean_relative": 0.002725504119831755,
+          "n_clusters": 46,
+          "n_raw": 46,
+          "sector": "CNXFIN",
+          "sharpe": 0.016291212527396595,
+          "top5_rate": 0.43478260869565216,
+          "volatility": 0.013549805076803234
+        },
+        {
+          "beat_rate": 0.45161290322580644,
+          "heat": "light_green",
+          "mean_relative": 0.0013686161316995723,
+          "n_clusters": 60,
+          "n_raw": 62,
+          "sector": "CNXBANK",
+          "sharpe": 0.008362054991646137,
+          "top5_rate": 0.5161290322580645,
+          "volatility": 0.01817771521558495
+        },
+        {
+          "beat_rate": 0.52,
+          "heat": "yellow",
+          "mean_relative": -0.0022812449117362286,
+          "n_clusters": 50,
+          "n_raw": 50,
+          "sector": "CNXREALTY",
+          "sharpe": -0.008522905161694043,
+          "top5_rate": 0.5,
+          "volatility": 0.019810503855769226
+        },
+        {
+          "beat_rate": 0.3958333333333333,
+          "heat": "yellow",
+          "mean_relative": -0.002372182027241062,
+          "n_clusters": 48,
+          "n_raw": 48,
+          "sector": "CNXENERGY",
+          "sharpe": -0.027291103927780894,
+          "top5_rate": 0.3541666666666667,
+          "volatility": 0.012760433873647455
+        },
+        {
+          "beat_rate": 0.5161290322580645,
+          "heat": "yellow",
+          "mean_relative": -0.0034864349956706003,
+          "n_clusters": 60,
+          "n_raw": 62,
+          "sector": "CNXIT",
+          "sharpe": -0.008500268326710147,
+          "top5_rate": 0.5806451612903226,
+          "volatility": 0.016785474846304306
+        },
+        {
+          "beat_rate": 0.46,
+          "heat": "yellow",
+          "mean_relative": -0.004422219285191644,
+          "n_clusters": 50,
+          "n_raw": 50,
+          "sector": "CNXINFRA",
+          "sharpe": -0.03924315003144693,
+          "top5_rate": 0.32,
+          "volatility": 0.012476844602776843
+        },
+        {
+          "beat_rate": 0.40425531914893614,
+          "heat": "orange",
+          "mean_relative": -0.011556136425430975,
+          "n_clusters": 47,
+          "n_raw": 47,
+          "sector": "CNXMETAL",
+          "sharpe": -0.048650091595646136,
+          "top5_rate": 0.3617021276595745,
+          "volatility": 0.017952998024926798
+        },
+        {
+          "beat_rate": 0.3541666666666667,
+          "heat": "dark_red",
+          "mean_relative": -0.012322853458129801,
+          "n_clusters": 48,
+          "n_raw": 48,
+          "sector": "CNXPSUBANK",
+          "sharpe": -0.05174811121843005,
+          "top5_rate": 0.3125,
+          "volatility": 0.019875603254997716
+        }
+      ],
+      "5": [
+        {
+          "beat_rate": 0.5918367346938775,
+          "heat": "light_green",
+          "mean_relative": 0.003426086142574583,
+          "n_clusters": 49,
+          "n_raw": 49,
+          "sector": "CNXPHARMA",
+          "sharpe": 0.08135339181465541,
+          "top5_rate": 0.46938775510204084,
+          "volatility": 0.010824719465494986
+        },
+        {
+          "beat_rate": 0.5217391304347826,
+          "heat": "light_green",
+          "mean_relative": 0.002537064595245005,
+          "n_clusters": 46,
+          "n_raw": 46,
+          "sector": "CNXFIN",
+          "sharpe": 0.08844645873347534,
+          "top5_rate": 0.41304347826086957,
+          "volatility": 0.01182830530109518
+        },
+        {
+          "beat_rate": 0.52,
+          "heat": "light_green",
+          "mean_relative": 0.0020419285863150917,
+          "n_clusters": 50,
+          "n_raw": 50,
+          "sector": "CNXREALTY",
+          "sharpe": 0.038365317710616895,
+          "top5_rate": 0.48,
+          "volatility": 0.020847256206565006
+        },
+        {
+          "beat_rate": 0.4166666666666667,
+          "heat": "light_green",
+          "mean_relative": 0.0016273626475004448,
+          "n_clusters": 48,
+          "n_raw": 48,
+          "sector": "CNXENERGY",
+          "sharpe": 0.05581116679258755,
+          "top5_rate": 0.3541666666666667,
+          "volatility": 0.012170519123795525
+        },
+        {
+          "beat_rate": 0.5208333333333334,
+          "heat": "light_green",
+          "mean_relative": 0.0013971599291516142,
+          "n_clusters": 48,
+          "n_raw": 48,
+          "sector": "CNXFMCG",
+          "sharpe": 0.03753102658760468,
+          "top5_rate": 0.4791666666666667,
+          "volatility": 0.009110914080785225
+        },
+        {
+          "beat_rate": 0.5161290322580645,
+          "heat": "light_green",
+          "mean_relative": 0.001211741521936006,
+          "n_clusters": 60,
+          "n_raw": 62,
+          "sector": "CNXBANK",
+          "sharpe": 0.03266709252122861,
+          "top5_rate": 0.5806451612903226,
+          "volatility": 0.01571613167450859
+        },
+        {
+          "beat_rate": 0.5531914893617021,
+          "heat": "yellow",
+          "mean_relative": 0.000970268043545915,
+          "n_clusters": 47,
+          "n_raw": 47,
+          "sector": "CNXAUTO",
+          "sharpe": 0.044867873802738,
+          "top5_rate": 0.46808510638297873,
+          "volatility": 0.011911653592368664
+        },
+        {
+          "beat_rate": 0.5319148936170213,
+          "heat": "yellow",
+          "mean_relative": 0.00031119242747792335,
+          "n_clusters": 47,
+          "n_raw": 47,
+          "sector": "CNXCONSUM",
+          "sharpe": 0.023897329584621315,
+          "top5_rate": 0.3617021276595745,
+          "volatility": 0.008714165935848457
+        },
+        {
+          "beat_rate": 0.4791666666666667,
+          "heat": "yellow",
+          "mean_relative": -5.1350379320224314e-05,
+          "n_clusters": 48,
+          "n_raw": 48,
+          "sector": "CNXPSUBANK",
+          "sharpe": 0.00859714240166941,
+          "top5_rate": 0.4375,
+          "volatility": 0.018551805155482208
+        },
+        {
+          "beat_rate": 0.46,
+          "heat": "orange",
+          "mean_relative": -0.001713504707541831,
+          "n_clusters": 50,
+          "n_raw": 50,
+          "sector": "CNXINFRA",
+          "sharpe": -0.03074611703193135,
+          "top5_rate": 0.34,
+          "volatility": 0.012157679961398202
+        },
+        {
+          "beat_rate": 0.45161290322580644,
+          "heat": "orange",
+          "mean_relative": -0.003999783165994362,
+          "n_clusters": 60,
+          "n_raw": 62,
+          "sector": "CNXIT",
+          "sharpe": -0.06706445429248037,
+          "top5_rate": 0.5483870967741935,
+          "volatility": 0.014998411983398317
+        },
+        {
+          "beat_rate": 0.46808510638297873,
+          "heat": "orange",
+          "mean_relative": -0.004040194545676745,
+          "n_clusters": 47,
+          "n_raw": 47,
+          "sector": "CNXMETAL",
+          "sharpe": -0.057960627653020964,
+          "top5_rate": 0.425531914893617,
+          "volatility": 0.017497297519124273
+        }
+      ]
+    },
+    "SATURN_INGRESS": {
+      "10": [
+        {
+          "beat_rate": 0.8333333333333334,
+          "heat": "dark_green",
+          "mean_relative": 0.01857231486141092,
+          "n_clusters": 12,
+          "n_raw": 12,
+          "sector": "CNXFMCG",
+          "sharpe": 0.1858550307045681,
+          "top5_rate": 0.6666666666666666,
+          "volatility": 0.01040751791302693
+        },
+        {
+          "beat_rate": 0.7333333333333333,
+          "heat": "dark_green",
+          "mean_relative": 0.011233627688214409,
+          "n_clusters": 14,
+          "n_raw": 15,
+          "sector": "CNXBANK",
+          "sharpe": 0.15262763287149564,
+          "top5_rate": 0.6666666666666666,
+          "volatility": 0.014030739949111288
+        },
+        {
+          "beat_rate": 0.8333333333333334,
+          "heat": "dark_green",
+          "mean_relative": 0.009797720159421033,
+          "n_clusters": 12,
+          "n_raw": 12,
+          "sector": "CNXCONSUM",
+          "sharpe": 0.1710050939225193,
+          "top5_rate": 0.75,
+          "volatility": 0.008652154965312547
+        },
+        {
+          "beat_rate": 0.6666666666666666,
+          "heat": "dark_green",
+          "mean_relative": 0.00793426816232897,
+          "n_clusters": 12,
+          "n_raw": 12,
+          "sector": "CNXFIN",
+          "sharpe": 0.1572890858299605,
+          "top5_rate": 0.5,
+          "volatility": 0.012680785237398429
+        },
+        {
+          "beat_rate": 0.5,
+          "heat": "light_green",
+          "mean_relative": 0.002007589559999042,
+          "n_clusters": 12,
+          "n_raw": 12,
+          "sector": "CNXREALTY",
+          "sharpe": 0.01835867605413369,
+          "top5_rate": 0.4166666666666667,
+          "volatility": 0.018410032527719996
+        },
+        {
+          "beat_rate": 0.5833333333333334,
+          "heat": "yellow",
+          "mean_relative": 0.0014637296840009084,
+          "n_clusters": 12,
+          "n_raw": 12,
+          "sector": "CNXPHARMA",
+          "sharpe": 0.017848135383716,
+          "top5_rate": 0.4166666666666667,
+          "volatility": 0.012094895997375456
+        },
+        {
+          "beat_rate": 0.5,
+          "heat": "yellow",
+          "mean_relative": -8.6904476995923e-05,
+          "n_clusters": 12,
+          "n_raw": 12,
+          "sector": "CNXAUTO",
+          "sharpe": 0.0018481436037539058,
+          "top5_rate": 0.3333333333333333,
+          "volatility": 0.01250089297306134
+        },
+        {
+          "beat_rate": 0.16666666666666666,
+          "heat": "dark_red",
+          "mean_relative": -0.008133912394455822,
+          "n_clusters": 12,
+          "n_raw": 12,
+          "sector": "CNXINFRA",
+          "sharpe": -0.13477592513273415,
+          "top5_rate": 0.08333333333333333,
+          "volatility": 0.01149420980129784
+        },
+        {
+          "beat_rate": 0.5,
+          "heat": "dark_red",
+          "mean_relative": -0.00814056206782778,
+          "n_clusters": 12,
+          "n_raw": 12,
+          "sector": "CNXPSUBANK",
+          "sharpe": -0.05024760050409441,
+          "top5_rate": 0.5,
+          "volatility": 0.02076430315047387
+        },
+        {
+          "beat_rate": 0.6666666666666666,
+          "heat": "dark_red",
+          "mean_relative": -0.008797970764654266,
+          "n_clusters": 14,
+          "n_raw": 15,
+          "sector": "CNXIT",
+          "sharpe": -0.06687686959440646,
+          "top5_rate": 0.5333333333333333,
+          "volatility": 0.013090155473728412
+        },
+        {
+          "beat_rate": 0.08333333333333333,
+          "heat": "dark_red",
+          "mean_relative": -0.0232973121894256,
+          "n_clusters": 12,
+          "n_raw": 12,
+          "sector": "CNXENERGY",
+          "sharpe": -0.27812241917086367,
+          "top5_rate": 0.16666666666666666,
+          "volatility": 0.013505139218475303
+        },
+        {
+          "beat_rate": 0.16666666666666666,
+          "heat": "dark_red",
+          "mean_relative": -0.02582001716909324,
+          "n_clusters": 12,
+          "n_raw": 12,
+          "sector": "CNXMETAL",
+          "sharpe": -0.20587811558157354,
+          "top5_rate": 0.16666666666666666,
+          "volatility": 0.01868547135461241
+        }
+      ],
+      "20": [
+        {
+          "beat_rate": 0.8333333333333334,
+          "heat": "dark_green",
+          "mean_relative": 0.011855223170298745,
+          "n_clusters": 12,
+          "n_raw": 12,
+          "sector": "CNXFIN",
+          "sharpe": 0.12198740950949416,
+          "top5_rate": 0.75,
+          "volatility": 0.011848722415333612
+        },
+        {
+          "beat_rate": 0.5333333333333333,
+          "heat": "dark_green",
+          "mean_relative": 0.010611594948102281,
+          "n_clusters": 14,
+          "n_raw": 15,
+          "sector": "CNXBANK",
+          "sharpe": 0.07693597460399451,
+          "top5_rate": 0.8,
+          "volatility": 0.014406444368947512
+        },
+        {
+          "beat_rate": 0.6666666666666666,
+          "heat": "dark_green",
+          "mean_relative": 0.009133694011930935,
+          "n_clusters": 12,
+          "n_raw": 12,
+          "sector": "CNXFMCG",
+          "sharpe": 0.045883613899362054,
+          "top5_rate": 0.5,
+          "volatility": 0.010823959292528607
+        },
+        {
+          "beat_rate": 0.5,
+          "heat": "light_green",
+          "mean_relative": 0.004140531962606303,
+          "n_clusters": 12,
+          "n_raw": 12,
+          "sector": "CNXCONSUM",
+          "sharpe": 0.03672475418493988,
+          "top5_rate": 0.5833333333333334,
+          "volatility": 0.00858694864060212
+        },
+        {
+          "beat_rate": 0.4166666666666667,
+          "heat": "orange",
+          "mean_relative": -0.005466873089305417,
+          "n_clusters": 12,
+          "n_raw": 12,
+          "sector": "CNXPHARMA",
+          "sharpe": -0.02386073516407226,
+          "top5_rate": 0.3333333333333333,
+          "volatility": 0.0113938897773067
+        },
+        {
+          "beat_rate": 0.5,
+          "heat": "orange",
+          "mean_relative": -0.00809381579742107,
+          "n_clusters": 12,
+          "n_raw": 12,
+          "sector": "CNXAUTO",
+          "sharpe": -0.05020496667960152,
+          "top5_rate": 0.3333333333333333,
+          "volatility": 0.012563941670485523
+        },
+        {
+          "beat_rate": 0.6,
+          "heat": "dark_red",
+          "mean_relative": -0.01299081366113127,
+          "n_clusters": 14,
+          "n_raw": 15,
+          "sector": "CNXIT",
+          "sharpe": -0.034841062653139666,
+          "top5_rate": 0.6666666666666666,
+          "volatility": 0.014197920308973752
+        },
+        {
+          "beat_rate": 0.5,
+          "heat": "dark_red",
+          "mean_relative": -0.013156427712002863,
+          "n_clusters": 12,
+          "n_raw": 12,
+          "sector": "CNXREALTY",
+          "sharpe": -0.05223657342820824,
+          "top5_rate": 0.4166666666666667,
+          "volatility": 0.017757800969063344
+        },
+        {
+          "beat_rate": 0.3333333333333333,
+          "heat": "dark_red",
+          "mean_relative": -0.013568580709973391,
+          "n_clusters": 12,
+          "n_raw": 12,
+          "sector": "CNXPSUBANK",
+          "sharpe": -0.04721239888305774,
+          "top5_rate": 0.25,
+          "volatility": 0.01893426059728315
+        },
+        {
+          "beat_rate": 0.25,
+          "heat": "dark_red",
+          "mean_relative": -0.021922678408869422,
+          "n_clusters": 12,
+          "n_raw": 12,
+          "sector": "CNXINFRA",
+          "sharpe": -0.19178397695530996,
+          "top5_rate": 0.08333333333333333,
+          "volatility": 0.011572036571978772
+        },
+        {
+          "beat_rate": 0.25,
+          "heat": "dark_red",
+          "mean_relative": -0.029709042282297232,
+          "n_clusters": 12,
+          "n_raw": 12,
+          "sector": "CNXENERGY",
+          "sharpe": -0.18257472411468442,
+          "top5_rate": 0.25,
+          "volatility": 0.013008484168933191
+        },
+        {
+          "beat_rate": 0.16666666666666666,
+          "heat": "dark_red",
+          "mean_relative": -0.04743787328258245,
+          "n_clusters": 12,
+          "n_raw": 12,
+          "sector": "CNXMETAL",
+          "sharpe": -0.18697968269203052,
+          "top5_rate": 0.16666666666666666,
+          "volatility": 0.0191559066487935
+        }
+      ],
+      "5": [
+        {
+          "beat_rate": 0.75,
+          "heat": "dark_green",
+          "mean_relative": 0.01207086730156349,
+          "n_clusters": 12,
+          "n_raw": 12,
+          "sector": "CNXFMCG",
+          "sharpe": 0.24720766742504874,
+          "top5_rate": 0.5,
+          "volatility": 0.010990583928616359
+        },
+        {
+          "beat_rate": 0.6666666666666666,
+          "heat": "dark_green",
+          "mean_relative": 0.00914780306139616,
+          "n_clusters": 14,
+          "n_raw": 15,
+          "sector": "CNXBANK",
+          "sharpe": 0.30158089695806956,
+          "top5_rate": 0.6666666666666666,
+          "volatility": 0.014565476800906882
+        },
+        {
+          "beat_rate": 0.6666666666666666,
+          "heat": "dark_green",
+          "mean_relative": 0.00907797051589159,
+          "n_clusters": 12,
+          "n_raw": 12,
+          "sector": "CNXFIN",
+          "sharpe": 0.37791992961369375,
+          "top5_rate": 0.5833333333333334,
+          "volatility": 0.011845130337677147
+        },
+        {
+          "beat_rate": 0.6666666666666666,
+          "heat": "dark_green",
+          "mean_relative": 0.008913244562345213,
+          "n_clusters": 12,
+          "n_raw": 12,
+          "sector": "CNXPHARMA",
+          "sharpe": 0.15493778710672151,
+          "top5_rate": 0.5,
+          "volatility": 0.012800573105442248
+        },
+        {
+          "beat_rate": 0.5,
+          "heat": "dark_green",
+          "mean_relative": 0.005851227387187778,
+          "n_clusters": 12,
+          "n_raw": 12,
+          "sector": "CNXREALTY",
+          "sharpe": 0.08818690704166704,
+          "top5_rate": 0.5833333333333334,
+          "volatility": 0.018704509419990595
+        },
+        {
+          "beat_rate": 0.6666666666666666,
+          "heat": "light_green",
+          "mean_relative": 0.0036197514608498535,
+          "n_clusters": 12,
+          "n_raw": 12,
+          "sector": "CNXCONSUM",
+          "sharpe": 0.13459435132420414,
+          "top5_rate": 0.4166666666666667,
+          "volatility": 0.009369879929185764
+        },
+        {
+          "beat_rate": 0.5,
+          "heat": "orange",
+          "mean_relative": -0.003955423636052012,
+          "n_clusters": 12,
+          "n_raw": 12,
+          "sector": "CNXAUTO",
+          "sharpe": -0.10048560789010022,
+          "top5_rate": 0.3333333333333333,
+          "volatility": 0.012663895182247505
+        },
+        {
+          "beat_rate": 0.5,
+          "heat": "orange",
+          "mean_relative": -0.0047249666216160795,
+          "n_clusters": 12,
+          "n_raw": 12,
+          "sector": "CNXPSUBANK",
+          "sharpe": -0.06727664618185601,
+          "top5_rate": 0.4166666666666667,
+          "volatility": 0.018269996841287897
+        },
+        {
+          "beat_rate": 0.3333333333333333,
+          "heat": "dark_red",
+          "mean_relative": -0.00863987938617363,
+          "n_clusters": 12,
+          "n_raw": 12,
+          "sector": "CNXINFRA",
+          "sharpe": -0.30419425048131987,
+          "top5_rate": 0.16666666666666666,
+          "volatility": 0.010440195292698292
+        },
+        {
+          "beat_rate": 0.16666666666666666,
+          "heat": "dark_red",
+          "mean_relative": -0.011294129880671569,
+          "n_clusters": 12,
+          "n_raw": 12,
+          "sector": "CNXENERGY",
+          "sharpe": -0.3037799468120091,
+          "top5_rate": 0.16666666666666666,
+          "volatility": 0.011313858353096739
+        },
+        {
+          "beat_rate": 0.4666666666666667,
+          "heat": "dark_red",
+          "mean_relative": -0.012889666611513022,
+          "n_clusters": 14,
+          "n_raw": 15,
+          "sector": "CNXIT",
+          "sharpe": -0.2050289031321212,
+          "top5_rate": 0.6,
+          "volatility": 0.013445692216090216
+        },
+        {
+          "beat_rate": 0.25,
+          "heat": "dark_red",
+          "mean_relative": -0.018322982761977764,
+          "n_clusters": 12,
+          "n_raw": 12,
+          "sector": "CNXMETAL",
+          "sharpe": -0.3121896155476349,
+          "top5_rate": 0.25,
+          "volatility": 0.018114530543432726
+        }
+      ]
+    },
+    "SOLAR_ECLIPSE": {
+      "10": [
+        {
+          "beat_rate": 0.5681818181818182,
+          "heat": "light_green",
+          "mean_relative": 0.0033153086597759907,
+          "n_clusters": 41,
+          "n_raw": 44,
+          "sector": "CNXBANK",
+          "sharpe": 0.04712706280908908,
+          "top5_rate": 0.5454545454545454,
+          "volatility": 0.014973415994089615
+        },
+        {
+          "beat_rate": 0.5454545454545454,
+          "heat": "light_green",
+          "mean_relative": 0.002374981782845699,
+          "n_clusters": 32,
+          "n_raw": 33,
+          "sector": "CNXFIN",
+          "sharpe": 0.04779183289794156,
+          "top5_rate": 0.5757575757575758,
+          "volatility": 0.012317190698928641
+        },
+        {
+          "beat_rate": 0.5428571428571428,
+          "heat": "light_green",
+          "mean_relative": 0.0023440494508089812,
+          "n_clusters": 33,
+          "n_raw": 35,
+          "sector": "CNXFMCG",
+          "sharpe": 0.03000484899244925,
+          "top5_rate": 0.5428571428571428,
+          "volatility": 0.009381819346475752
+        },
+        {
+          "beat_rate": 0.4857142857142857,
+          "heat": "yellow",
+          "mean_relative": 0.0012839694090561642,
+          "n_clusters": 33,
+          "n_raw": 35,
+          "sector": "CNXPSUBANK",
+          "sharpe": 0.012699992154827804,
+          "top5_rate": 0.4,
+          "volatility": 0.017958475794549258
+        },
+        {
+          "beat_rate": 0.5454545454545454,
+          "heat": "yellow",
+          "mean_relative": 0.0008652402181377119,
+          "n_clusters": 41,
+          "n_raw": 44,
+          "sector": "CNXIT",
+          "sharpe": 0.007356257283364867,
+          "top5_rate": 0.6363636363636364,
+          "volatility": 0.012479283908493424
+        },
+        {
+          "beat_rate": 0.4857142857142857,
+          "heat": "yellow",
+          "mean_relative": 0.0004732747867725928,
+          "n_clusters": 33,
+          "n_raw": 35,
+          "sector": "CNXPHARMA",
+          "sharpe": 0.004233983407720362,
+          "top5_rate": 0.45714285714285713,
+          "volatility": 0.0112862154642694
+        },
+        {
+          "beat_rate": 0.5,
+          "heat": "yellow",
+          "mean_relative": 0.0004271730819531601,
+          "n_clusters": 34,
+          "n_raw": 36,
+          "sector": "CNXREALTY",
+          "sharpe": 0.003186077951885318,
+          "top5_rate": 0.4722222222222222,
+          "volatility": 0.019402702787790715
+        },
+        {
+          "beat_rate": 0.3939393939393939,
+          "heat": "orange",
+          "mean_relative": -0.003404145923018103,
+          "n_clusters": 32,
+          "n_raw": 33,
+          "sector": "CNXCONSUM",
+          "sharpe": -0.07434667947510139,
+          "top5_rate": 0.3939393939393939,
+          "volatility": 0.008824055306643042
+        },
+        {
+          "beat_rate": 0.42857142857142855,
+          "heat": "orange",
+          "mean_relative": -0.004134755206607849,
+          "n_clusters": 33,
+          "n_raw": 35,
+          "sector": "CNXENERGY",
+          "sharpe": -0.05951048602930299,
+          "top5_rate": 0.37142857142857144,
+          "volatility": 0.011960319658183134
+        },
+        {
+          "beat_rate": 0.3333333333333333,
+          "heat": "orange",
+          "mean_relative": -0.006631728334343021,
+          "n_clusters": 32,
+          "n_raw": 33,
+          "sector": "CNXAUTO",
+          "sharpe": -0.09085956117119551,
+          "top5_rate": 0.21212121212121213,
+          "volatility": 0.012035297727535622
+        },
+        {
+          "beat_rate": 0.3611111111111111,
+          "heat": "orange",
+          "mean_relative": -0.007030308633436304,
+          "n_clusters": 34,
+          "n_raw": 36,
+          "sector": "CNXINFRA",
+          "sharpe": -0.1113854647638444,
+          "top5_rate": 0.3055555555555556,
+          "volatility": 0.012029909252915255
+        },
+        {
+          "beat_rate": 0.45454545454545453,
+          "heat": "dark_red",
+          "mean_relative": -0.008804582822366876,
+          "n_clusters": 32,
+          "n_raw": 33,
+          "sector": "CNXMETAL",
+          "sharpe": -0.06885921537978378,
+          "top5_rate": 0.42424242424242425,
+          "volatility": 0.017142304288060732
+        }
+      ],
+      "20": [
+        {
+          "beat_rate": 0.5454545454545454,
+          "heat": "light_green",
+          "mean_relative": 0.0023358121576342082,
+          "n_clusters": 32,
+          "n_raw": 33,
+          "sector": "CNXFIN",
+          "sharpe": 0.023180267966600304,
+          "top5_rate": 0.48484848484848486,
+          "volatility": 0.011701687412389195
+        },
+        {
+          "beat_rate": 0.4444444444444444,
+          "heat": "light_green",
+          "mean_relative": 0.00221599027904015,
+          "n_clusters": 34,
+          "n_raw": 36,
+          "sector": "CNXREALTY",
+          "sharpe": 0.0070069173995817805,
+          "top5_rate": 0.4444444444444444,
+          "volatility": 0.01884918229472178
+        },
+        {
+          "beat_rate": 0.5227272727272727,
+          "heat": "light_green",
+          "mean_relative": 0.001790558427233105,
+          "n_clusters": 41,
+          "n_raw": 44,
+          "sector": "CNXIT",
+          "sharpe": 0.010921940988062326,
+          "top5_rate": 0.5909090909090909,
+          "volatility": 0.013172929061175042
+        },
+        {
+          "beat_rate": 0.6285714285714286,
+          "heat": "light_green",
+          "mean_relative": 0.0015461223918646714,
+          "n_clusters": 33,
+          "n_raw": 35,
+          "sector": "CNXFMCG",
+          "sharpe": 0.010624950459468412,
+          "top5_rate": 0.5428571428571428,
+          "volatility": 0.009630846035795289
+        },
+        {
+          "beat_rate": 0.4,
+          "heat": "yellow",
+          "mean_relative": -0.0011040092433436367,
+          "n_clusters": 33,
+          "n_raw": 35,
+          "sector": "CNXPSUBANK",
+          "sharpe": -0.007142592261332824,
+          "top5_rate": 0.37142857142857144,
+          "volatility": 0.018235613122239678
+        },
+        {
+          "beat_rate": 0.5681818181818182,
+          "heat": "yellow",
+          "mean_relative": -0.0020796392974395143,
+          "n_clusters": 41,
+          "n_raw": 44,
+          "sector": "CNXBANK",
+          "sharpe": -0.010886391617288412,
+          "top5_rate": 0.5227272727272727,
+          "volatility": 0.015011317771359592
+        },
+        {
+          "beat_rate": 0.4,
+          "heat": "yellow",
+          "mean_relative": -0.002360257479563553,
+          "n_clusters": 33,
+          "n_raw": 35,
+          "sector": "CNXPHARMA",
+          "sharpe": -0.01021877431675497,
+          "top5_rate": 0.42857142857142855,
+          "volatility": 0.011132767938918002
+        },
+        {
+          "beat_rate": 0.5151515151515151,
+          "heat": "yellow",
+          "mean_relative": -0.002950269641317568,
+          "n_clusters": 32,
+          "n_raw": 33,
+          "sector": "CNXMETAL",
+          "sharpe": -0.018970664675072257,
+          "top5_rate": 0.45454545454545453,
+          "volatility": 0.01641811093575712
+        },
+        {
+          "beat_rate": 0.45454545454545453,
+          "heat": "yellow",
+          "mean_relative": -0.004089111721516986,
+          "n_clusters": 32,
+          "n_raw": 33,
+          "sector": "CNXCONSUM",
+          "sharpe": -0.03188625134604548,
+          "top5_rate": 0.3333333333333333,
+          "volatility": 0.008623706814352629
+        },
+        {
+          "beat_rate": 0.37142857142857144,
+          "heat": "yellow",
+          "mean_relative": -0.004441726602598793,
+          "n_clusters": 33,
+          "n_raw": 35,
+          "sector": "CNXENERGY",
+          "sharpe": -0.027936234851029848,
+          "top5_rate": 0.37142857142857144,
+          "volatility": 0.011795565138455926
+        },
+        {
+          "beat_rate": 0.45454545454545453,
+          "heat": "yellow",
+          "mean_relative": -0.004557823775360592,
+          "n_clusters": 32,
+          "n_raw": 33,
+          "sector": "CNXAUTO",
+          "sharpe": -0.03193176002846549,
+          "top5_rate": 0.45454545454545453,
+          "volatility": 0.012178475139661865
+        },
+        {
+          "beat_rate": 0.4722222222222222,
+          "heat": "orange",
+          "mean_relative": -0.005691505490995424,
+          "n_clusters": 34,
+          "n_raw": 36,
+          "sector": "CNXINFRA",
+          "sharpe": -0.04922328720542584,
+          "top5_rate": 0.3611111111111111,
+          "volatility": 0.011883645341067738
+        }
+      ],
+      "5": [
+        {
+          "beat_rate": 0.5142857142857142,
+          "heat": "light_green",
+          "mean_relative": 0.004492853024788343,
+          "n_clusters": 33,
+          "n_raw": 35,
+          "sector": "CNXPHARMA",
+          "sharpe": 0.0914082537569138,
+          "top5_rate": 0.45714285714285713,
+          "volatility": 0.012290456310857198
+        },
+        {
+          "beat_rate": 0.6818181818181818,
+          "heat": "light_green",
+          "mean_relative": 0.003116981712767808,
+          "n_clusters": 41,
+          "n_raw": 44,
+          "sector": "CNXBANK",
+          "sharpe": 0.08731124887316415,
+          "top5_rate": 0.6136363636363636,
+          "volatility": 0.015308263031621397
+        },
+        {
+          "beat_rate": 0.5428571428571428,
+          "heat": "light_green",
+          "mean_relative": 0.0012750961524475761,
+          "n_clusters": 33,
+          "n_raw": 35,
+          "sector": "CNXFMCG",
+          "sharpe": 0.03668732857834586,
+          "top5_rate": 0.5428571428571428,
+          "volatility": 0.009252187569857202
+        },
+        {
+          "beat_rate": 0.6060606060606061,
+          "heat": "light_green",
+          "mean_relative": 0.0012409116951217593,
+          "n_clusters": 32,
+          "n_raw": 33,
+          "sector": "CNXFIN",
+          "sharpe": 0.04998157676236661,
+          "top5_rate": 0.45454545454545453,
+          "volatility": 0.012312631211294077
+        },
+        {
+          "beat_rate": 0.5142857142857142,
+          "heat": "yellow",
+          "mean_relative": 0.00015787572649965346,
+          "n_clusters": 33,
+          "n_raw": 35,
+          "sector": "CNXPSUBANK",
+          "sharpe": -0.0011475144273526076,
+          "top5_rate": 0.5714285714285714,
+          "volatility": 0.01759540952351409
+        },
+        {
+          "beat_rate": 0.2857142857142857,
+          "heat": "orange",
+          "mean_relative": -0.0018634226589338918,
+          "n_clusters": 33,
+          "n_raw": 35,
+          "sector": "CNXENERGY",
+          "sharpe": -0.053021912890436486,
+          "top5_rate": 0.2857142857142857,
+          "volatility": 0.011973500693355262
+        },
+        {
+          "beat_rate": 0.42424242424242425,
+          "heat": "orange",
+          "mean_relative": -0.002394775208559002,
+          "n_clusters": 32,
+          "n_raw": 33,
+          "sector": "CNXCONSUM",
+          "sharpe": -0.09539955075919511,
+          "top5_rate": 0.36363636363636365,
+          "volatility": 0.008524457032601055
+        },
+        {
+          "beat_rate": 0.4444444444444444,
+          "heat": "orange",
+          "mean_relative": -0.003542222124927327,
+          "n_clusters": 34,
+          "n_raw": 36,
+          "sector": "CNXINFRA",
+          "sharpe": -0.1173513693052081,
+          "top5_rate": 0.3333333333333333,
+          "volatility": 0.011653342272622642
+        },
+        {
+          "beat_rate": 0.48484848484848486,
+          "heat": "orange",
+          "mean_relative": -0.0036212516716282333,
+          "n_clusters": 32,
+          "n_raw": 33,
+          "sector": "CNXAUTO",
+          "sharpe": -0.12060306007062421,
+          "top5_rate": 0.3333333333333333,
+          "volatility": 0.011225638862303553
+        },
+        {
+          "beat_rate": 0.5,
+          "heat": "orange",
+          "mean_relative": -0.004562790846075509,
+          "n_clusters": 41,
+          "n_raw": 44,
+          "sector": "CNXIT",
+          "sharpe": -0.07809551135590843,
+          "top5_rate": 0.5454545454545454,
+          "volatility": 0.012696747618721263
+        },
+        {
+          "beat_rate": 0.4444444444444444,
+          "heat": "orange",
+          "mean_relative": -0.004667761893739557,
+          "n_clusters": 34,
+          "n_raw": 36,
+          "sector": "CNXREALTY",
+          "sharpe": -0.07001049768811812,
+          "top5_rate": 0.4444444444444444,
+          "volatility": 0.019682708953943865
+        },
+        {
+          "beat_rate": 0.45454545454545453,
+          "heat": "dark_red",
+          "mean_relative": -0.00820037561134121,
+          "n_clusters": 32,
+          "n_raw": 33,
+          "sector": "CNXMETAL",
+          "sharpe": -0.14203948403111272,
+          "top5_rate": 0.3939393939393939,
+          "volatility": 0.017530695591736117
+        }
+      ]
+    }
+  },
+  "era_boundary": "2021-10-01",
+  "event_summary": {
+    "JUPITER_INGRESS": {
+      "10": {
+        "participation": 0.5104166666666667,
+        "return": 0.0029372438604350812,
+        "sharpe": 0.027732025674545673,
+        "volatility": 0.015513522080865559,
+        "win_rate": 0.5362609160163508
+      },
+      "20": {
+        "participation": 0.60546875,
+        "return": 0.000860245371681654,
+        "sharpe": 0.001664803862898948,
+        "volatility": 0.015202462144713554,
+        "win_rate": 0.4929045893719806
+      },
+      "5": {
+        "participation": 0.5611979166666666,
+        "return": 0.000936639152863916,
+        "sharpe": 0.0173628321184366,
+        "volatility": 0.01627479101806063,
+        "win_rate": 0.48883430880713497
+      }
+    },
+    "LUNAR_ECLIPSE": {
+      "10": {
+        "participation": 0.5629629629629629,
+        "return": 0.0005317901539759326,
+        "sharpe": 0.009284407813609768,
+        "volatility": 0.01347093034572726,
+        "win_rate": 0.5306372549019608
+      },
+      "20": {
+        "participation": 0.5601851851851851,
+        "return": 0.0005499376175068619,
+        "sharpe": 0.0031554622132671586,
+        "volatility": 0.013675286919460907,
+        "win_rate": 0.49604341736694685
+      },
+      "5": {
+        "participation": 0.49259259259259264,
+        "return": 0.00026095554707454907,
+        "sharpe": 0.0121637887840218,
+        "volatility": 0.013855867969711055,
+        "win_rate": 0.5152855586679116
+      }
+    },
+    "MERCURY_RETROGRADE_START": {
+      "10": {
+        "participation": 0.559811827956989,
+        "return": -0.0005062298545483573,
+        "sharpe": 0.007996006055235863,
+        "volatility": 0.01421186326247832,
+        "win_rate": 0.49648571470073577
+      },
+      "20": {
+        "participation": 0.5604838709677419,
+        "return": -0.0007908099291434405,
+        "sharpe": 0.0003074423805701776,
+        "volatility": 0.014615679199092235,
+        "win_rate": 0.495536410574495
+      },
+      "5": {
+        "participation": 0.4979838709677419,
+        "return": 0.00030983092460111847,
+        "sharpe": 0.021313800080980373,
+        "volatility": 0.013694071666655388,
+        "win_rate": 0.5025979963867417
+      }
+    },
+    "SATURN_INGRESS": {
+      "10": {
+        "participation": 0.6277777777777779,
+        "return": -0.001938952412256446,
+        "sharpe": -0.0025890943011270956,
+        "volatility": 0.013859691546799483,
+        "win_rate": 0.5194444444444445
+      },
+      "20": {
+        "participation": 0.6611111111111112,
+        "return": -0.009717088404220404,
+        "sharpe": -0.04068019736435948,
+        "volatility": 0.01368752628585248,
+        "win_rate": 0.46249999999999997
+      },
+      "5": {
+        "participation": 0.4777777777777777,
+        "return": -0.0009288487173974994,
+        "sharpe": 0.0009560474520302712,
+        "volatility": 0.013543693495889365,
+        "win_rate": 0.5111111111111111
+      }
+    },
+    "SOLAR_ECLIPSE": {
+      "10": {
+        "participation": 0.5549242424242423,
+        "return": -0.0015767936275351546,
+        "sharpe": -0.021046779276829155,
+        "volatility": 0.013315915852327881,
+        "win_rate": 0.47040644540644533
+      },
+      "20": {
+        "participation": 0.5511363636363635,
+        "return": -0.0016154883330303275,
+        "sharpe": -0.01137182329064186,
+        "volatility": 0.013219487250491152,
+        "win_rate": 0.4814393939393938
+      },
+      "5": {
+        "participation": 0.48863636363636354,
+        "return": -0.0015474068086316324,
+        "sharpe": -0.03435670771309711,
+        "volatility": 0.013337169889368977,
+        "win_rate": 0.4914622414622414
+      }
+    }
+  },
+  "events": {
+    "JUPITER_INGRESS": {
+      "clusters": 30,
+      "raw": 32
+    },
+    "LUNAR_ECLIPSE": {
+      "clusters": 41,
+      "raw": 45
+    },
+    "MERCURY_RETROGRADE_START": {
+      "clusters": 61,
+      "raw": 63
+    },
+    "SATURN_INGRESS": {
+      "clusters": 14,
+      "raw": 15
+    },
+    "SOLAR_ECLIPSE": {
+      "clusters": 41,
+      "raw": 44
+    }
+  },
+  "flows": {
+    "JUPITER_INGRESS": {
+      "10": {
+        "links": [
+          {
+            "source": "CNXAUTO",
+            "target": "NIFTY down",
+            "value": 1
+          },
+          {
+            "source": "CNXAUTO",
+            "target": "NIFTY up",
+            "value": 2
+          },
+          {
+            "source": "CNXBANK",
+            "target": "NIFTY down",
+            "value": 2
+          },
+          {
+            "source": "CNXBANK",
+            "target": "NIFTY up",
+            "value": 4
+          },
+          {
+            "source": "CNXFMCG",
+            "target": "NIFTY down",
+            "value": 2
+          },
+          {
+            "source": "CNXIT",
+            "target": "NIFTY down",
+            "value": 4
+          },
+          {
+            "source": "CNXIT",
+            "target": "NIFTY up",
+            "value": 4
+          },
+          {
+            "source": "CNXMETAL",
+            "target": "NIFTY down",
+            "value": 1
+          },
+          {
+            "source": "CNXPHARMA",
+            "target": "NIFTY down",
+            "value": 4
+          },
+          {
+            "source": "CNXPHARMA",
+            "target": "NIFTY up",
+            "value": 2
+          },
+          {
+            "source": "CNXPSUBANK",
+            "target": "NIFTY down",
+            "value": 2
+          },
+          {
+            "source": "CNXPSUBANK",
+            "target": "NIFTY up",
+            "value": 2
+          },
+          {
+            "source": "CNXREALTY",
+            "target": "NIFTY up",
+            "value": 2
+          },
+          {
+            "source": "JUPITER_INGRESS",
+            "target": "CNXAUTO",
+            "value": 3
+          },
+          {
+            "source": "JUPITER_INGRESS",
+            "target": "CNXBANK",
+            "value": 6
+          },
+          {
+            "source": "JUPITER_INGRESS",
+            "target": "CNXFMCG",
+            "value": 2
+          },
+          {
+            "source": "JUPITER_INGRESS",
+            "target": "CNXIT",
+            "value": 8
+          },
+          {
+            "source": "JUPITER_INGRESS",
+            "target": "CNXMETAL",
+            "value": 1
+          },
+          {
+            "source": "JUPITER_INGRESS",
+            "target": "CNXPHARMA",
+            "value": 6
+          },
+          {
+            "source": "JUPITER_INGRESS",
+            "target": "CNXPSUBANK",
+            "value": 4
+          },
+          {
+            "source": "JUPITER_INGRESS",
+            "target": "CNXREALTY",
+            "value": 2
+          }
+        ],
+        "nifty_missing": 0,
+        "unranked": 0
+      },
+      "20": {
+        "links": [
+          {
+            "source": "CNXAUTO",
+            "target": "NIFTY down",
+            "value": 1
+          },
+          {
+            "source": "CNXAUTO",
+            "target": "NIFTY up",
+            "value": 1
+          },
+          {
+            "source": "CNXBANK",
+            "target": "NIFTY down",
+            "value": 1
+          },
+          {
+            "source": "CNXBANK",
+            "target": "NIFTY up",
+            "value": 1
+          },
+          {
+            "source": "CNXFIN",
+            "target": "NIFTY up",
+            "value": 1
+          },
+          {
+            "source": "CNXIT",
+            "target": "NIFTY down",
+            "value": 4
+          },
+          {
+            "source": "CNXIT",
+            "target": "NIFTY up",
+            "value": 7
+          },
+          {
+            "source": "CNXMETAL",
+            "target": "NIFTY up",
+            "value": 2
+          },
+          {
+            "source": "CNXPHARMA",
+            "target": "NIFTY down",
+            "value": 1
+          },
+          {
+            "source": "CNXPHARMA",
+            "target": "NIFTY up",
+            "value": 3
+          },
+          {
+            "source": "CNXPSUBANK",
+            "target": "NIFTY up",
+            "value": 3
+          },
+          {
+            "source": "CNXREALTY",
+            "target": "NIFTY down",
+            "value": 1
+          },
+          {
+            "source": "CNXREALTY",
+            "target": "NIFTY up",
+            "value": 6
+          },
+          {
+            "source": "JUPITER_INGRESS",
+            "target": "CNXAUTO",
+            "value": 2
+          },
+          {
+            "source": "JUPITER_INGRESS",
+            "target": "CNXBANK",
+            "value": 2
+          },
+          {
+            "source": "JUPITER_INGRESS",
+            "target": "CNXFIN",
+            "value": 1
+          },
+          {
+            "source": "JUPITER_INGRESS",
+            "target": "CNXIT",
+            "value": 11
+          },
+          {
+            "source": "JUPITER_INGRESS",
+            "target": "CNXMETAL",
+            "value": 2
+          },
+          {
+            "source": "JUPITER_INGRESS",
+            "target": "CNXPHARMA",
+            "value": 4
+          },
+          {
+            "source": "JUPITER_INGRESS",
+            "target": "CNXPSUBANK",
+            "value": 3
+          },
+          {
+            "source": "JUPITER_INGRESS",
+            "target": "CNXREALTY",
+            "value": 7
+          }
+        ],
+        "nifty_missing": 0,
+        "unranked": 0
+      },
+      "5": {
+        "links": [
+          {
+            "source": "CNXAUTO",
+            "target": "NIFTY down",
+            "value": 2
+          },
+          {
+            "source": "CNXAUTO",
+            "target": "NIFTY up",
+            "value": 1
+          },
+          {
+            "source": "CNXBANK",
+            "target": "NIFTY down",
+            "value": 1
+          },
+          {
+            "source": "CNXBANK",
+            "target": "NIFTY up",
+            "value": 4
+          },
+          {
+            "source": "CNXENERGY",
+            "target": "NIFTY up",
+            "value": 1
+          },
+          {
+            "source": "CNXFMCG",
+            "target": "NIFTY down",
+            "value": 1
+          },
+          {
+            "source": "CNXFMCG",
+            "target": "NIFTY up",
+            "value": 2
+          },
+          {
+            "source": "CNXIT",
+            "target": "NIFTY down",
+            "value": 3
+          },
+          {
+            "source": "CNXIT",
+            "target": "NIFTY up",
+            "value": 2
+          },
+          {
+            "source": "CNXMETAL",
+            "target": "NIFTY down",
+            "value": 1
+          },
+          {
+            "source": "CNXMETAL",
+            "target": "NIFTY up",
+            "value": 1
+          },
+          {
+            "source": "CNXPHARMA",
+            "target": "NIFTY down",
+            "value": 2
+          },
+          {
+            "source": "CNXPHARMA",
+            "target": "NIFTY up",
+            "value": 2
+          },
+          {
+            "source": "CNXPSUBANK",
+            "target": "NIFTY down",
+            "value": 1
+          },
+          {
+            "source": "CNXPSUBANK",
+            "target": "NIFTY up",
+            "value": 4
+          },
+          {
+            "source": "CNXREALTY",
+            "target": "NIFTY down",
+            "value": 3
+          },
+          {
+            "source": "CNXREALTY",
+            "target": "NIFTY up",
+            "value": 1
+          },
+          {
+            "source": "JUPITER_INGRESS",
+            "target": "CNXAUTO",
+            "value": 3
+          },
+          {
+            "source": "JUPITER_INGRESS",
+            "target": "CNXBANK",
+            "value": 5
+          },
+          {
+            "source": "JUPITER_INGRESS",
+            "target": "CNXENERGY",
+            "value": 1
+          },
+          {
+            "source": "JUPITER_INGRESS",
+            "target": "CNXFMCG",
+            "value": 3
+          },
+          {
+            "source": "JUPITER_INGRESS",
+            "target": "CNXIT",
+            "value": 5
+          },
+          {
+            "source": "JUPITER_INGRESS",
+            "target": "CNXMETAL",
+            "value": 2
+          },
+          {
+            "source": "JUPITER_INGRESS",
+            "target": "CNXPHARMA",
+            "value": 4
+          },
+          {
+            "source": "JUPITER_INGRESS",
+            "target": "CNXPSUBANK",
+            "value": 5
+          },
+          {
+            "source": "JUPITER_INGRESS",
+            "target": "CNXREALTY",
+            "value": 4
+          }
+        ],
+        "nifty_missing": 0,
+        "unranked": 0
+      }
+    },
+    "LUNAR_ECLIPSE": {
+      "10": {
+        "links": [
+          {
+            "source": "CNXAUTO",
+            "target": "NIFTY up",
+            "value": 2
+          },
+          {
+            "source": "CNXBANK",
+            "target": "NIFTY down",
+            "value": 1
+          },
+          {
+            "source": "CNXBANK",
+            "target": "NIFTY up",
+            "value": 3
+          },
+          {
+            "source": "CNXENERGY",
+            "target": "NIFTY down",
+            "value": 2
+          },
+          {
+            "source": "CNXENERGY",
+            "target": "NIFTY up",
+            "value": 2
+          },
+          {
+            "source": "CNXFMCG",
+            "target": "NIFTY down",
+            "value": 2
+          },
+          {
+            "source": "CNXFMCG",
+            "target": "NIFTY up",
+            "value": 1
+          },
+          {
+            "source": "CNXINFRA",
+            "target": "NIFTY up",
+            "value": 2
+          },
+          {
+            "source": "CNXIT",
+            "target": "NIFTY down",
+            "value": 6
+          },
+          {
+            "source": "CNXIT",
+            "target": "NIFTY up",
+            "value": 5
+          },
+          {
+            "source": "CNXMETAL",
+            "target": "NIFTY down",
+            "value": 4
+          },
+          {
+            "source": "CNXMETAL",
+            "target": "NIFTY up",
+            "value": 2
+          },
+          {
+            "source": "CNXPHARMA",
+            "target": "NIFTY down",
+            "value": 2
+          },
+          {
+            "source": "CNXPSUBANK",
+            "target": "NIFTY down",
+            "value": 1
+          },
+          {
+            "source": "CNXPSUBANK",
+            "target": "NIFTY up",
+            "value": 8
+          },
+          {
+            "source": "CNXREALTY",
+            "target": "NIFTY down",
+            "value": 1
+          },
+          {
+            "source": "CNXREALTY",
+            "target": "NIFTY up",
+            "value": 1
+          },
+          {
+            "source": "LUNAR_ECLIPSE",
+            "target": "CNXAUTO",
+            "value": 2
+          },
+          {
+            "source": "LUNAR_ECLIPSE",
+            "target": "CNXBANK",
+            "value": 4
+          },
+          {
+            "source": "LUNAR_ECLIPSE",
+            "target": "CNXENERGY",
+            "value": 4
+          },
+          {
+            "source": "LUNAR_ECLIPSE",
+            "target": "CNXFMCG",
+            "value": 3
+          },
+          {
+            "source": "LUNAR_ECLIPSE",
+            "target": "CNXINFRA",
+            "value": 2
+          },
+          {
+            "source": "LUNAR_ECLIPSE",
+            "target": "CNXIT",
+            "value": 11
+          },
+          {
+            "source": "LUNAR_ECLIPSE",
+            "target": "CNXMETAL",
+            "value": 6
+          },
+          {
+            "source": "LUNAR_ECLIPSE",
+            "target": "CNXPHARMA",
+            "value": 2
+          },
+          {
+            "source": "LUNAR_ECLIPSE",
+            "target": "CNXPSUBANK",
+            "value": 9
+          },
+          {
+            "source": "LUNAR_ECLIPSE",
+            "target": "CNXREALTY",
+            "value": 2
+          }
+        ],
+        "nifty_missing": 0,
+        "unranked": 0
+      },
+      "20": {
+        "links": [
+          {
+            "source": "CNXAUTO",
+            "target": "NIFTY down",
+            "value": 1
+          },
+          {
+            "source": "CNXAUTO",
+            "target": "NIFTY up",
+            "value": 1
+          },
+          {
+            "source": "CNXBANK",
+            "target": "NIFTY down",
+            "value": 1
+          },
+          {
+            "source": "CNXBANK",
+            "target": "NIFTY up",
+            "value": 3
+          },
+          {
+            "source": "CNXCONSUM",
+            "target": "NIFTY down",
+            "value": 1
+          },
+          {
+            "source": "CNXENERGY",
+            "target": "NIFTY up",
+            "value": 2
+          },
+          {
+            "source": "CNXFMCG",
+            "target": "NIFTY up",
+            "value": 1
+          },
+          {
+            "source": "CNXINFRA",
+            "target": "NIFTY up",
+            "value": 1
+          },
+          {
+            "source": "CNXIT",
+            "target": "NIFTY down",
+            "value": 9
+          },
+          {
+            "source": "CNXIT",
+            "target": "NIFTY up",
+            "value": 3
+          },
+          {
+            "source": "CNXMETAL",
+            "target": "NIFTY down",
+            "value": 4
+          },
+          {
+            "source": "CNXMETAL",
+            "target": "NIFTY up",
+            "value": 2
+          },
+          {
+            "source": "CNXPHARMA",
+            "target": "NIFTY down",
+            "value": 2
+          },
+          {
+            "source": "CNXPHARMA",
+            "target": "NIFTY up",
+            "value": 2
+          },
+          {
+            "source": "CNXPSUBANK",
+            "target": "NIFTY down",
+            "value": 1
+          },
+          {
+            "source": "CNXPSUBANK",
+            "target": "NIFTY up",
+            "value": 7
+          },
+          {
+            "source": "CNXREALTY",
+            "target": "NIFTY up",
+            "value": 4
+          },
+          {
+            "source": "LUNAR_ECLIPSE",
+            "target": "CNXAUTO",
+            "value": 2
+          },
+          {
+            "source": "LUNAR_ECLIPSE",
+            "target": "CNXBANK",
+            "value": 4
+          },
+          {
+            "source": "LUNAR_ECLIPSE",
+            "target": "CNXCONSUM",
+            "value": 1
+          },
+          {
+            "source": "LUNAR_ECLIPSE",
+            "target": "CNXENERGY",
+            "value": 2
+          },
+          {
+            "source": "LUNAR_ECLIPSE",
+            "target": "CNXFMCG",
+            "value": 1
+          },
+          {
+            "source": "LUNAR_ECLIPSE",
+            "target": "CNXINFRA",
+            "value": 1
+          },
+          {
+            "source": "LUNAR_ECLIPSE",
+            "target": "CNXIT",
+            "value": 12
+          },
+          {
+            "source": "LUNAR_ECLIPSE",
+            "target": "CNXMETAL",
+            "value": 6
+          },
+          {
+            "source": "LUNAR_ECLIPSE",
+            "target": "CNXPHARMA",
+            "value": 4
+          },
+          {
+            "source": "LUNAR_ECLIPSE",
+            "target": "CNXPSUBANK",
+            "value": 8
+          },
+          {
+            "source": "LUNAR_ECLIPSE",
+            "target": "CNXREALTY",
+            "value": 4
+          }
+        ],
+        "nifty_missing": 0,
+        "unranked": 0
+      },
+      "5": {
+        "links": [
+          {
+            "source": "CNXAUTO",
+            "target": "NIFTY up",
+            "value": 1
+          },
+          {
+            "source": "CNXBANK",
+            "target": "NIFTY down",
+            "value": 3
+          },
+          {
+            "source": "CNXBANK",
+            "target": "NIFTY up",
+            "value": 3
+          },
+          {
+            "source": "CNXCONSUM",
+            "target": "NIFTY down",
+            "value": 1
+          },
+          {
+            "source": "CNXENERGY",
+            "target": "NIFTY down",
+            "value": 2
+          },
+          {
+            "source": "CNXFIN",
+            "target": "NIFTY down",
+            "value": 1
+          },
+          {
+            "source": "CNXFMCG",
+            "target": "NIFTY down",
+            "value": 2
+          },
+          {
+            "source": "CNXFMCG",
+            "target": "NIFTY up",
+            "value": 2
+          },
+          {
+            "source": "CNXINFRA",
+            "target": "NIFTY up",
+            "value": 2
+          },
+          {
+            "source": "CNXIT",
+            "target": "NIFTY down",
+            "value": 5
+          },
+          {
+            "source": "CNXIT",
+            "target": "NIFTY up",
+            "value": 5
+          },
+          {
+            "source": "CNXMETAL",
+            "target": "NIFTY down",
+            "value": 2
+          },
+          {
+            "source": "CNXMETAL",
+            "target": "NIFTY up",
+            "value": 2
+          },
+          {
+            "source": "CNXPHARMA",
+            "target": "NIFTY down",
+            "value": 3
+          },
+          {
+            "source": "CNXPHARMA",
+            "target": "NIFTY up",
+            "value": 2
+          },
+          {
+            "source": "CNXPSUBANK",
+            "target": "NIFTY down",
+            "value": 1
+          },
+          {
+            "source": "CNXPSUBANK",
+            "target": "NIFTY up",
+            "value": 4
+          },
+          {
+            "source": "CNXREALTY",
+            "target": "NIFTY down",
+            "value": 1
+          },
+          {
+            "source": "CNXREALTY",
+            "target": "NIFTY up",
+            "value": 3
+          },
+          {
+            "source": "LUNAR_ECLIPSE",
+            "target": "CNXAUTO",
+            "value": 1
+          },
+          {
+            "source": "LUNAR_ECLIPSE",
+            "target": "CNXBANK",
+            "value": 6
+          },
+          {
+            "source": "LUNAR_ECLIPSE",
+            "target": "CNXCONSUM",
+            "value": 1
+          },
+          {
+            "source": "LUNAR_ECLIPSE",
+            "target": "CNXENERGY",
+            "value": 2
+          },
+          {
+            "source": "LUNAR_ECLIPSE",
+            "target": "CNXFIN",
+            "value": 1
+          },
+          {
+            "source": "LUNAR_ECLIPSE",
+            "target": "CNXFMCG",
+            "value": 4
+          },
+          {
+            "source": "LUNAR_ECLIPSE",
+            "target": "CNXINFRA",
+            "value": 2
+          },
+          {
+            "source": "LUNAR_ECLIPSE",
+            "target": "CNXIT",
+            "value": 10
+          },
+          {
+            "source": "LUNAR_ECLIPSE",
+            "target": "CNXMETAL",
+            "value": 4
+          },
+          {
+            "source": "LUNAR_ECLIPSE",
+            "target": "CNXPHARMA",
+            "value": 5
+          },
+          {
+            "source": "LUNAR_ECLIPSE",
+            "target": "CNXPSUBANK",
+            "value": 5
+          },
+          {
+            "source": "LUNAR_ECLIPSE",
+            "target": "CNXREALTY",
+            "value": 4
+          }
+        ],
+        "nifty_missing": 0,
+        "unranked": 0
+      }
+    },
+    "MERCURY_RETROGRADE_START": {
+      "10": {
+        "links": [
+          {
+            "source": "CNXAUTO",
+            "target": "NIFTY down",
+            "value": 1
+          },
+          {
+            "source": "CNXAUTO",
+            "target": "NIFTY up",
+            "value": 1
+          },
+          {
+            "source": "CNXBANK",
+            "target": "NIFTY down",
+            "value": 1
+          },
+          {
+            "source": "CNXBANK",
+            "target": "NIFTY up",
+            "value": 8
+          },
+          {
+            "source": "CNXCONSUM",
+            "target": "NIFTY down",
+            "value": 2
+          },
+          {
+            "source": "CNXCONSUM",
+            "target": "NIFTY up",
+            "value": 1
+          },
+          {
+            "source": "CNXENERGY",
+            "target": "NIFTY up",
+            "value": 1
+          },
+          {
+            "source": "CNXFIN",
+            "target": "NIFTY up",
+            "value": 2
+          },
+          {
+            "source": "CNXFMCG",
+            "target": "NIFTY down",
+            "value": 4
+          },
+          {
+            "source": "CNXFMCG",
+            "target": "NIFTY up",
+            "value": 2
+          },
+          {
+            "source": "CNXINFRA",
+            "target": "NIFTY down",
+            "value": 1
+          },
+          {
+            "source": "CNXIT",
+            "target": "NIFTY down",
+            "value": 5
+          },
+          {
+            "source": "CNXIT",
+            "target": "NIFTY up",
+            "value": 8
+          },
+          {
+            "source": "CNXMETAL",
+            "target": "NIFTY down",
+            "value": 2
+          },
+          {
+            "source": "CNXMETAL",
+            "target": "NIFTY up",
+            "value": 2
+          },
+          {
+            "source": "CNXPHARMA",
+            "target": "NIFTY down",
+            "value": 3
+          },
+          {
+            "source": "CNXPHARMA",
+            "target": "NIFTY up",
+            "value": 1
+          },
+          {
+            "source": "CNXPSUBANK",
+            "target": "NIFTY down",
+            "value": 2
+          },
+          {
+            "source": "CNXPSUBANK",
+            "target": "NIFTY up",
+            "value": 6
+          },
+          {
+            "source": "CNXREALTY",
+            "target": "NIFTY down",
+            "value": 2
+          },
+          {
+            "source": "CNXREALTY",
+            "target": "NIFTY up",
+            "value": 7
+          },
+          {
+            "source": "MERCURY_RETROGRADE_START",
+            "target": "CNXAUTO",
+            "value": 2
+          },
+          {
+            "source": "MERCURY_RETROGRADE_START",
+            "target": "CNXBANK",
+            "value": 9
+          },
+          {
+            "source": "MERCURY_RETROGRADE_START",
+            "target": "CNXCONSUM",
+            "value": 3
+          },
+          {
+            "source": "MERCURY_RETROGRADE_START",
+            "target": "CNXENERGY",
+            "value": 1
+          },
+          {
+            "source": "MERCURY_RETROGRADE_START",
+            "target": "CNXFIN",
+            "value": 2
+          },
+          {
+            "source": "MERCURY_RETROGRADE_START",
+            "target": "CNXFMCG",
+            "value": 6
+          },
+          {
+            "source": "MERCURY_RETROGRADE_START",
+            "target": "CNXINFRA",
+            "value": 1
+          },
+          {
+            "source": "MERCURY_RETROGRADE_START",
+            "target": "CNXIT",
+            "value": 13
+          },
+          {
+            "source": "MERCURY_RETROGRADE_START",
+            "target": "CNXMETAL",
+            "value": 4
+          },
+          {
+            "source": "MERCURY_RETROGRADE_START",
+            "target": "CNXPHARMA",
+            "value": 4
+          },
+          {
+            "source": "MERCURY_RETROGRADE_START",
+            "target": "CNXPSUBANK",
+            "value": 8
+          },
+          {
+            "source": "MERCURY_RETROGRADE_START",
+            "target": "CNXREALTY",
+            "value": 9
+          }
+        ],
+        "nifty_missing": 0,
+        "unranked": 1
+      },
+      "20": {
+        "links": [
+          {
+            "source": "CNXAUTO",
+            "target": "NIFTY down",
+            "value": 3
+          },
+          {
+            "source": "CNXAUTO",
+            "target": "NIFTY up",
+            "value": 1
+          },
+          {
+            "source": "CNXBANK",
+            "target": "NIFTY down",
+            "value": 1
+          },
+          {
+            "source": "CNXBANK",
+            "target": "NIFTY up",
+            "value": 7
+          },
+          {
+            "source": "CNXFMCG",
+            "target": "NIFTY down",
+            "value": 2
+          },
+          {
+            "source": "CNXFMCG",
+            "target": "NIFTY up",
+            "value": 2
+          },
+          {
+            "source": "CNXINFRA",
+            "target": "NIFTY down",
+            "value": 1
+          },
+          {
+            "source": "CNXIT",
+            "target": "NIFTY down",
+            "value": 8
+          },
+          {
+            "source": "CNXIT",
+            "target": "NIFTY up",
+            "value": 7
+          },
+          {
+            "source": "CNXMETAL",
+            "target": "NIFTY up",
+            "value": 5
+          },
+          {
+            "source": "CNXPHARMA",
+            "target": "NIFTY down",
+            "value": 4
+          },
+          {
+            "source": "CNXPHARMA",
+            "target": "NIFTY up",
+            "value": 2
+          },
+          {
+            "source": "CNXPSUBANK",
+            "target": "NIFTY down",
+            "value": 2
+          },
+          {
+            "source": "CNXPSUBANK",
+            "target": "NIFTY up",
+            "value": 6
+          },
+          {
+            "source": "CNXREALTY",
+            "target": "NIFTY down",
+            "value": 1
+          },
+          {
+            "source": "CNXREALTY",
+            "target": "NIFTY up",
+            "value": 10
+          },
+          {
+            "source": "MERCURY_RETROGRADE_START",
+            "target": "CNXAUTO",
+            "value": 4
+          },
+          {
+            "source": "MERCURY_RETROGRADE_START",
+            "target": "CNXBANK",
+            "value": 8
+          },
+          {
+            "source": "MERCURY_RETROGRADE_START",
+            "target": "CNXFMCG",
+            "value": 4
+          },
+          {
+            "source": "MERCURY_RETROGRADE_START",
+            "target": "CNXINFRA",
+            "value": 1
+          },
+          {
+            "source": "MERCURY_RETROGRADE_START",
+            "target": "CNXIT",
+            "value": 15
+          },
+          {
+            "source": "MERCURY_RETROGRADE_START",
+            "target": "CNXMETAL",
+            "value": 5
+          },
+          {
+            "source": "MERCURY_RETROGRADE_START",
+            "target": "CNXPHARMA",
+            "value": 6
+          },
+          {
+            "source": "MERCURY_RETROGRADE_START",
+            "target": "CNXPSUBANK",
+            "value": 8
+          },
+          {
+            "source": "MERCURY_RETROGRADE_START",
+            "target": "CNXREALTY",
+            "value": 11
+          }
+        ],
+        "nifty_missing": 0,
+        "unranked": 1
+      },
+      "5": {
+        "links": [
+          {
+            "source": "CNXAUTO",
+            "target": "NIFTY up",
+            "value": 1
+          },
+          {
+            "source": "CNXBANK",
+            "target": "NIFTY down",
+            "value": 1
+          },
+          {
+            "source": "CNXBANK",
+            "target": "NIFTY up",
+            "value": 5
+          },
+          {
+            "source": "CNXCONSUM",
+            "target": "NIFTY down",
+            "value": 1
+          },
+          {
+            "source": "CNXENERGY",
+            "target": "NIFTY down",
+            "value": 2
+          },
+          {
+            "source": "CNXFIN",
+            "target": "NIFTY down",
+            "value": 2
+          },
+          {
+            "source": "CNXFIN",
+            "target": "NIFTY up",
+            "value": 1
+          },
+          {
+            "source": "CNXFMCG",
+            "target": "NIFTY down",
+            "value": 4
+          },
+          {
+            "source": "CNXFMCG",
+            "target": "NIFTY up",
+            "value": 1
+          },
+          {
+            "source": "CNXINFRA",
+            "target": "NIFTY down",
+            "value": 1
+          },
+          {
+            "source": "CNXINFRA",
+            "target": "NIFTY up",
+            "value": 2
+          },
+          {
+            "source": "CNXIT",
+            "target": "NIFTY down",
+            "value": 11
+          },
+          {
+            "source": "CNXIT",
+            "target": "NIFTY up",
+            "value": 5
+          },
+          {
+            "source": "CNXMETAL",
+            "target": "NIFTY up",
+            "value": 3
+          },
+          {
+            "source": "CNXPHARMA",
+            "target": "NIFTY down",
+            "value": 1
+          },
+          {
+            "source": "CNXPHARMA",
+            "target": "NIFTY up",
+            "value": 3
+          },
+          {
+            "source": "CNXPSUBANK",
+            "target": "NIFTY down",
+            "value": 4
+          },
+          {
+            "source": "CNXPSUBANK",
+            "target": "NIFTY up",
+            "value": 6
+          },
+          {
+            "source": "CNXREALTY",
+            "target": "NIFTY down",
+            "value": 3
+          },
+          {
+            "source": "CNXREALTY",
+            "target": "NIFTY up",
+            "value": 5
+          },
+          {
+            "source": "MERCURY_RETROGRADE_START",
+            "target": "CNXAUTO",
+            "value": 1
+          },
+          {
+            "source": "MERCURY_RETROGRADE_START",
+            "target": "CNXBANK",
+            "value": 6
+          },
+          {
+            "source": "MERCURY_RETROGRADE_START",
+            "target": "CNXCONSUM",
+            "value": 1
+          },
+          {
+            "source": "MERCURY_RETROGRADE_START",
+            "target": "CNXENERGY",
+            "value": 2
+          },
+          {
+            "source": "MERCURY_RETROGRADE_START",
+            "target": "CNXFIN",
+            "value": 3
+          },
+          {
+            "source": "MERCURY_RETROGRADE_START",
+            "target": "CNXFMCG",
+            "value": 5
+          },
+          {
+            "source": "MERCURY_RETROGRADE_START",
+            "target": "CNXINFRA",
+            "value": 3
+          },
+          {
+            "source": "MERCURY_RETROGRADE_START",
+            "target": "CNXIT",
+            "value": 16
+          },
+          {
+            "source": "MERCURY_RETROGRADE_START",
+            "target": "CNXMETAL",
+            "value": 3
+          },
+          {
+            "source": "MERCURY_RETROGRADE_START",
+            "target": "CNXPHARMA",
+            "value": 4
+          },
+          {
+            "source": "MERCURY_RETROGRADE_START",
+            "target": "CNXPSUBANK",
+            "value": 10
+          },
+          {
+            "source": "MERCURY_RETROGRADE_START",
+            "target": "CNXREALTY",
+            "value": 8
+          }
+        ],
+        "nifty_missing": 0,
+        "unranked": 1
+      }
+    },
+    "SATURN_INGRESS": {
+      "10": {
+        "links": [
+          {
+            "source": "CNXAUTO",
+            "target": "NIFTY down",
+            "value": 1
+          },
+          {
+            "source": "CNXBANK",
+            "target": "NIFTY up",
+            "value": 4
+          },
+          {
+            "source": "CNXFMCG",
+            "target": "NIFTY down",
+            "value": 1
+          },
+          {
+            "source": "CNXFMCG",
+            "target": "NIFTY up",
+            "value": 1
+          },
+          {
+            "source": "CNXIT",
+            "target": "NIFTY up",
+            "value": 1
+          },
+          {
+            "source": "CNXMETAL",
+            "target": "NIFTY up",
+            "value": 1
+          },
+          {
+            "source": "CNXPHARMA",
+            "target": "NIFTY down",
+            "value": 2
+          },
+          {
+            "source": "CNXPSUBANK",
+            "target": "NIFTY up",
+            "value": 2
+          },
+          {
+            "source": "CNXREALTY",
+            "target": "NIFTY down",
+            "value": 1
+          },
+          {
+            "source": "CNXREALTY",
+            "target": "NIFTY up",
+            "value": 1
+          },
+          {
+            "source": "SATURN_INGRESS",
+            "target": "CNXAUTO",
+            "value": 1
+          },
+          {
+            "source": "SATURN_INGRESS",
+            "target": "CNXBANK",
+            "value": 4
+          },
+          {
+            "source": "SATURN_INGRESS",
+            "target": "CNXFMCG",
+            "value": 2
+          },
+          {
+            "source": "SATURN_INGRESS",
+            "target": "CNXIT",
+            "value": 1
+          },
+          {
+            "source": "SATURN_INGRESS",
+            "target": "CNXMETAL",
+            "value": 1
+          },
+          {
+            "source": "SATURN_INGRESS",
+            "target": "CNXPHARMA",
+            "value": 2
+          },
+          {
+            "source": "SATURN_INGRESS",
+            "target": "CNXPSUBANK",
+            "value": 2
+          },
+          {
+            "source": "SATURN_INGRESS",
+            "target": "CNXREALTY",
+            "value": 2
+          }
+        ],
+        "nifty_missing": 0,
+        "unranked": 0
+      },
+      "20": {
+        "links": [
+          {
+            "source": "CNXAUTO",
+            "target": "NIFTY down",
+            "value": 1
+          },
+          {
+            "source": "CNXBANK",
+            "target": "NIFTY up",
+            "value": 4
+          },
+          {
+            "source": "CNXIT",
+            "target": "NIFTY down",
+            "value": 4
+          },
+          {
+            "source": "CNXMETAL",
+            "target": "NIFTY up",
+            "value": 2
+          },
+          {
+            "source": "CNXPSUBANK",
+            "target": "NIFTY up",
+            "value": 2
+          },
+          {
+            "source": "CNXREALTY",
+            "target": "NIFTY up",
+            "value": 2
+          },
+          {
+            "source": "SATURN_INGRESS",
+            "target": "CNXAUTO",
+            "value": 1
+          },
+          {
+            "source": "SATURN_INGRESS",
+            "target": "CNXBANK",
+            "value": 4
+          },
+          {
+            "source": "SATURN_INGRESS",
+            "target": "CNXIT",
+            "value": 4
+          },
+          {
+            "source": "SATURN_INGRESS",
+            "target": "CNXMETAL",
+            "value": 2
+          },
+          {
+            "source": "SATURN_INGRESS",
+            "target": "CNXPSUBANK",
+            "value": 2
+          },
+          {
+            "source": "SATURN_INGRESS",
+            "target": "CNXREALTY",
+            "value": 2
+          }
+        ],
+        "nifty_missing": 0,
+        "unranked": 0
+      },
+      "5": {
+        "links": [
+          {
+            "source": "CNXBANK",
+            "target": "NIFTY up",
+            "value": 3
+          },
+          {
+            "source": "CNXFMCG",
+            "target": "NIFTY down",
+            "value": 1
+          },
+          {
+            "source": "CNXIT",
+            "target": "NIFTY down",
+            "value": 1
+          },
+          {
+            "source": "CNXIT",
+            "target": "NIFTY up",
+            "value": 2
+          },
+          {
+            "source": "CNXMETAL",
+            "target": "NIFTY down",
+            "value": 1
+          },
+          {
+            "source": "CNXPHARMA",
+            "target": "NIFTY down",
+            "value": 1
+          },
+          {
+            "source": "CNXPHARMA",
+            "target": "NIFTY up",
+            "value": 1
+          },
+          {
+            "source": "CNXPSUBANK",
+            "target": "NIFTY up",
+            "value": 2
+          },
+          {
+            "source": "CNXREALTY",
+            "target": "NIFTY down",
+            "value": 1
+          },
+          {
+            "source": "CNXREALTY",
+            "target": "NIFTY up",
+            "value": 2
+          },
+          {
+            "source": "SATURN_INGRESS",
+            "target": "CNXBANK",
+            "value": 3
+          },
+          {
+            "source": "SATURN_INGRESS",
+            "target": "CNXFMCG",
+            "value": 1
+          },
+          {
+            "source": "SATURN_INGRESS",
+            "target": "CNXIT",
+            "value": 3
+          },
+          {
+            "source": "SATURN_INGRESS",
+            "target": "CNXMETAL",
+            "value": 1
+          },
+          {
+            "source": "SATURN_INGRESS",
+            "target": "CNXPHARMA",
+            "value": 2
+          },
+          {
+            "source": "SATURN_INGRESS",
+            "target": "CNXPSUBANK",
+            "value": 2
+          },
+          {
+            "source": "SATURN_INGRESS",
+            "target": "CNXREALTY",
+            "value": 3
+          }
+        ],
+        "nifty_missing": 0,
+        "unranked": 0
+      }
+    },
+    "SOLAR_ECLIPSE": {
+      "10": {
+        "links": [
+          {
+            "source": "CNXAUTO",
+            "target": "NIFTY down",
+            "value": 1
+          },
+          {
+            "source": "CNXBANK",
+            "target": "NIFTY down",
+            "value": 1
+          },
+          {
+            "source": "CNXBANK",
+            "target": "NIFTY up",
+            "value": 5
+          },
+          {
+            "source": "CNXENERGY",
+            "target": "NIFTY up",
+            "value": 1
+          },
+          {
+            "source": "CNXFIN",
+            "target": "NIFTY down",
+            "value": 1
+          },
+          {
+            "source": "CNXFMCG",
+            "target": "NIFTY up",
+            "value": 1
+          },
+          {
+            "source": "CNXIT",
+            "target": "NIFTY down",
+            "value": 6
+          },
+          {
+            "source": "CNXIT",
+            "target": "NIFTY up",
+            "value": 6
+          },
+          {
+            "source": "CNXMETAL",
+            "target": "NIFTY down",
+            "value": 2
+          },
+          {
+            "source": "CNXMETAL",
+            "target": "NIFTY up",
+            "value": 1
+          },
+          {
+            "source": "CNXPHARMA",
+            "target": "NIFTY down",
+            "value": 3
+          },
+          {
+            "source": "CNXPHARMA",
+            "target": "NIFTY up",
+            "value": 2
+          },
+          {
+            "source": "CNXPSUBANK",
+            "target": "NIFTY down",
+            "value": 1
+          },
+          {
+            "source": "CNXPSUBANK",
+            "target": "NIFTY up",
+            "value": 6
+          },
+          {
+            "source": "CNXREALTY",
+            "target": "NIFTY down",
+            "value": 2
+          },
+          {
+            "source": "CNXREALTY",
+            "target": "NIFTY up",
+            "value": 5
+          },
+          {
+            "source": "SOLAR_ECLIPSE",
+            "target": "CNXAUTO",
+            "value": 1
+          },
+          {
+            "source": "SOLAR_ECLIPSE",
+            "target": "CNXBANK",
+            "value": 6
+          },
+          {
+            "source": "SOLAR_ECLIPSE",
+            "target": "CNXENERGY",
+            "value": 1
+          },
+          {
+            "source": "SOLAR_ECLIPSE",
+            "target": "CNXFIN",
+            "value": 1
+          },
+          {
+            "source": "SOLAR_ECLIPSE",
+            "target": "CNXFMCG",
+            "value": 1
+          },
+          {
+            "source": "SOLAR_ECLIPSE",
+            "target": "CNXIT",
+            "value": 12
+          },
+          {
+            "source": "SOLAR_ECLIPSE",
+            "target": "CNXMETAL",
+            "value": 3
+          },
+          {
+            "source": "SOLAR_ECLIPSE",
+            "target": "CNXPHARMA",
+            "value": 5
+          },
+          {
+            "source": "SOLAR_ECLIPSE",
+            "target": "CNXPSUBANK",
+            "value": 7
+          },
+          {
+            "source": "SOLAR_ECLIPSE",
+            "target": "CNXREALTY",
+            "value": 7
+          }
+        ],
+        "nifty_missing": 0,
+        "unranked": 0
+      },
+      "20": {
+        "links": [
+          {
+            "source": "CNXAUTO",
+            "target": "NIFTY down",
+            "value": 2
+          },
+          {
+            "source": "CNXAUTO",
+            "target": "NIFTY up",
+            "value": 1
+          },
+          {
+            "source": "CNXBANK",
+            "target": "NIFTY down",
+            "value": 2
+          },
+          {
+            "source": "CNXBANK",
+            "target": "NIFTY up",
+            "value": 4
+          },
+          {
+            "source": "CNXENERGY",
+            "target": "NIFTY down",
+            "value": 1
+          },
+          {
+            "source": "CNXFMCG",
+            "target": "NIFTY up",
+            "value": 1
+          },
+          {
+            "source": "CNXINFRA",
+            "target": "NIFTY up",
+            "value": 1
+          },
+          {
+            "source": "CNXIT",
+            "target": "NIFTY down",
+            "value": 6
+          },
+          {
+            "source": "CNXIT",
+            "target": "NIFTY up",
+            "value": 5
+          },
+          {
+            "source": "CNXMETAL",
+            "target": "NIFTY down",
+            "value": 3
+          },
+          {
+            "source": "CNXMETAL",
+            "target": "NIFTY up",
+            "value": 1
+          },
+          {
+            "source": "CNXPHARMA",
+            "target": "NIFTY down",
+            "value": 4
+          },
+          {
+            "source": "CNXPHARMA",
+            "target": "NIFTY up",
+            "value": 1
+          },
+          {
+            "source": "CNXPSUBANK",
+            "target": "NIFTY down",
+            "value": 1
+          },
+          {
+            "source": "CNXPSUBANK",
+            "target": "NIFTY up",
+            "value": 4
+          },
+          {
+            "source": "CNXREALTY",
+            "target": "NIFTY down",
+            "value": 1
+          },
+          {
+            "source": "CNXREALTY",
+            "target": "NIFTY up",
+            "value": 6
+          },
+          {
+            "source": "SOLAR_ECLIPSE",
+            "target": "CNXAUTO",
+            "value": 3
+          },
+          {
+            "source": "SOLAR_ECLIPSE",
+            "target": "CNXBANK",
+            "value": 6
+          },
+          {
+            "source": "SOLAR_ECLIPSE",
+            "target": "CNXENERGY",
+            "value": 1
+          },
+          {
+            "source": "SOLAR_ECLIPSE",
+            "target": "CNXFMCG",
+            "value": 1
+          },
+          {
+            "source": "SOLAR_ECLIPSE",
+            "target": "CNXINFRA",
+            "value": 1
+          },
+          {
+            "source": "SOLAR_ECLIPSE",
+            "target": "CNXIT",
+            "value": 11
+          },
+          {
+            "source": "SOLAR_ECLIPSE",
+            "target": "CNXMETAL",
+            "value": 4
+          },
+          {
+            "source": "SOLAR_ECLIPSE",
+            "target": "CNXPHARMA",
+            "value": 5
+          },
+          {
+            "source": "SOLAR_ECLIPSE",
+            "target": "CNXPSUBANK",
+            "value": 5
+          },
+          {
+            "source": "SOLAR_ECLIPSE",
+            "target": "CNXREALTY",
+            "value": 7
+          }
+        ],
+        "nifty_missing": 0,
+        "unranked": 0
+      },
+      "5": {
+        "links": [
+          {
+            "source": "CNXAUTO",
+            "target": "NIFTY down",
+            "value": 2
+          },
+          {
+            "source": "CNXBANK",
+            "target": "NIFTY down",
+            "value": 2
+          },
+          {
+            "source": "CNXBANK",
+            "target": "NIFTY up",
+            "value": 4
+          },
+          {
+            "source": "CNXENERGY",
+            "target": "NIFTY down",
+            "value": 2
+          },
+          {
+            "source": "CNXFMCG",
+            "target": "NIFTY down",
+            "value": 1
+          },
+          {
+            "source": "CNXFMCG",
+            "target": "NIFTY up",
+            "value": 1
+          },
+          {
+            "source": "CNXIT",
+            "target": "NIFTY down",
+            "value": 8
+          },
+          {
+            "source": "CNXIT",
+            "target": "NIFTY up",
+            "value": 4
+          },
+          {
+            "source": "CNXMETAL",
+            "target": "NIFTY down",
+            "value": 1
+          },
+          {
+            "source": "CNXMETAL",
+            "target": "NIFTY up",
+            "value": 3
+          },
+          {
+            "source": "CNXPHARMA",
+            "target": "NIFTY down",
+            "value": 3
+          },
+          {
+            "source": "CNXPHARMA",
+            "target": "NIFTY up",
+            "value": 2
+          },
+          {
+            "source": "CNXPSUBANK",
+            "target": "NIFTY down",
+            "value": 2
+          },
+          {
+            "source": "CNXPSUBANK",
+            "target": "NIFTY up",
+            "value": 3
+          },
+          {
+            "source": "CNXREALTY",
+            "target": "NIFTY down",
+            "value": 1
+          },
+          {
+            "source": "CNXREALTY",
+            "target": "NIFTY up",
+            "value": 5
+          },
+          {
+            "source": "SOLAR_ECLIPSE",
+            "target": "CNXAUTO",
+            "value": 2
+          },
+          {
+            "source": "SOLAR_ECLIPSE",
+            "target": "CNXBANK",
+            "value": 6
+          },
+          {
+            "source": "SOLAR_ECLIPSE",
+            "target": "CNXENERGY",
+            "value": 2
+          },
+          {
+            "source": "SOLAR_ECLIPSE",
+            "target": "CNXFMCG",
+            "value": 2
+          },
+          {
+            "source": "SOLAR_ECLIPSE",
+            "target": "CNXIT",
+            "value": 12
+          },
+          {
+            "source": "SOLAR_ECLIPSE",
+            "target": "CNXMETAL",
+            "value": 4
+          },
+          {
+            "source": "SOLAR_ECLIPSE",
+            "target": "CNXPHARMA",
+            "value": 5
+          },
+          {
+            "source": "SOLAR_ECLIPSE",
+            "target": "CNXPSUBANK",
+            "value": 5
+          },
+          {
+            "source": "SOLAR_ECLIPSE",
+            "target": "CNXREALTY",
+            "value": 6
+          }
+        ],
+        "nifty_missing": 0,
+        "unranked": 0
+      }
+    }
+  },
+  "forecast": {
+    "JUPITER_INGRESS": {
+      "10": "No call",
+      "20": "No call",
+      "5": "No call"
+    },
+    "LUNAR_ECLIPSE": {
+      "10": "No call",
+      "20": "No call",
+      "5": "No call"
+    },
+    "MERCURY_RETROGRADE_START": {
+      "10": "No call",
+      "20": "No call",
+      "5": "No call"
+    },
+    "SATURN_INGRESS": {
+      "10": "No call",
+      "20": "No call",
+      "5": "No call"
+    },
+    "SOLAR_ECLIPSE": {
+      "10": "No call",
+      "20": "No call",
+      "5": "No call"
+    }
+  },
+  "input": {
+    "last_session": {
+      "CNXAUTO": "2026-10-29",
+      "CNXBANK": "2026-10-29",
+      "CNXCONSUM": "2026-10-29",
+      "CNXENERGY": "2026-10-29",
+      "CNXFIN": "2026-10-29",
+      "CNXFMCG": "2026-10-29",
+      "CNXHEALTH": null,
+      "CNXINFRA": "2026-10-29",
+      "CNXIT": "2026-10-29",
+      "CNXMEDIA": null,
+      "CNXMETAL": "2026-10-29",
+      "CNXOILGAS": null,
+      "CNXPHARMA": "2026-10-29",
+      "CNXPSUBANK": "2026-10-29",
+      "CNXREALTY": "2026-10-29",
+      "NIFTY": "2026-10-29"
+    },
+    "price_sha256": "7961eb343b9cb8b9cdb26f815204ea4f2221135d57e94732dce80d9bea1f1ed1",
+    "sessions": 4690
+  },
+  "n_permutations": 1000,
+  "oos_sessions": 1254,
+  "preregistration": "docs/research/sector_rotation_preregistration_2026-10-29.md",
+  "preregistration_commit": "1f1911c",
+  "rotation": {
+    "JUPITER_INGRESS": {
+      "10": {
+        "labels": {
+          "Mixed": 12,
+          "Risk-On": 12,
+          "insufficient": 8
+        },
+        "occurrences": 32
+      },
+      "20": {
+        "labels": {
+          "Defensive": 2,
+          "Mixed": 9,
+          "Risk-On": 13,
+          "insufficient": 8
+        },
+        "occurrences": 32
+      },
+      "5": {
+        "labels": {
+          "Defensive": 3,
+          "Mixed": 7,
+          "Risk-On": 14,
+          "insufficient": 8
+        },
+        "occurrences": 32
+      }
+    },
+    "LUNAR_ECLIPSE": {
+      "10": {
+        "labels": {
+          "Defensive": 6,
+          "Mixed": 9,
+          "Risk-On": 20,
+          "insufficient": 10
+        },
+        "occurrences": 45
+      },
+      "20": {
+        "labels": {
+          "Defensive": 3,
+          "Mixed": 16,
+          "Risk-On": 16,
+          "insufficient": 10
+        },
+        "occurrences": 45
+      },
+      "5": {
+        "labels": {
+          "Defensive": 5,
+          "Mixed": 13,
+          "Risk-On": 17,
+          "insufficient": 10
+        },
+        "occurrences": 45
+      }
+    },
+    "MERCURY_RETROGRADE_START": {
+      "10": {
+        "labels": {
+          "Defensive": 9,
+          "Mixed": 20,
+          "Risk-On": 18,
+          "insufficient": 16
+        },
+        "occurrences": 63
+      },
+      "20": {
+        "labels": {
+          "Defensive": 11,
+          "Mixed": 17,
+          "Risk-On": 20,
+          "insufficient": 15
+        },
+        "occurrences": 63
+      },
+      "5": {
+        "labels": {
+          "Defensive": 5,
+          "Mixed": 19,
+          "Risk-On": 24,
+          "insufficient": 15
+        },
+        "occurrences": 63
+      }
+    },
+    "SATURN_INGRESS": {
+      "10": {
+        "labels": {
+          "Defensive": 3,
+          "Mixed": 3,
+          "Risk-On": 6,
+          "insufficient": 3
+        },
+        "occurrences": 15
+      },
+      "20": {
+        "labels": {
+          "Defensive": 1,
+          "Mixed": 5,
+          "Risk-On": 6,
+          "insufficient": 3
+        },
+        "occurrences": 15
+      },
+      "5": {
+        "labels": {
+          "Mixed": 5,
+          "Risk-On": 7,
+          "insufficient": 3
+        },
+        "occurrences": 15
+      }
+    },
+    "SOLAR_ECLIPSE": {
+      "10": {
+        "labels": {
+          "Defensive": 2,
+          "Mixed": 17,
+          "Risk-On": 16,
+          "insufficient": 9
+        },
+        "occurrences": 44
+      },
+      "20": {
+        "labels": {
+          "Defensive": 2,
+          "Mixed": 18,
+          "Risk-On": 15,
+          "insufficient": 9
+        },
+        "occurrences": 44
+      },
+      "5": {
+        "labels": {
+          "Defensive": 5,
+          "Mixed": 9,
+          "Risk-On": 21,
+          "insufficient": 9
+        },
+        "occurrences": 44
+      }
+    }
+  },
+  "sector_set_decided": true,
+  "seed": 0,
+  "wheel": {
+    "JUPITER_INGRESS": {
+      "10": {
+        "Commodities": 0.005560442440638322,
+        "Consumption": 0.0033192041358690123,
+        "Financials": 0.00010367400580562436,
+        "Industrials": 0.003447319127292352,
+        "Pharma": 0.015875570844426767,
+        "Technology": -0.008784687088667711
+      },
+      "20": {
+        "Commodities": 0.002553174626865165,
+        "Consumption": -0.001435334461690906,
+        "Financials": -1.626664462083879e-05,
+        "Industrials": 0.00019281844726830845,
+        "Pharma": 0.013227874339067885,
+        "Technology": -0.0024139597992605365
+      },
+      "5": {
+        "Commodities": 0.002015186481672014,
+        "Consumption": 0.0013294442877110225,
+        "Financials": 1.270037127787294e-05,
+        "Industrials": 0.0007662097007733715,
+        "Pharma": 0.0078681210429779,
+        "Technology": -0.006780912137406014
+      }
+    },
+    "LUNAR_ECLIPSE": {
+      "10": {
+        "Commodities": 0.0077513194272855225,
+        "Consumption": -0.0022348892183198846,
+        "Financials": 0.0007110531576205053,
+        "Industrials": 0.00028185536005711126,
+        "Pharma": -0.002437275322450556,
+        "Technology": -0.0001593396440483853
+      },
+      "20": {
+        "Commodities": 0.00950440570454333,
+        "Consumption": -0.00101256803962394,
+        "Financials": -0.0024683050904646905,
+        "Industrials": -0.0008253378721627187,
+        "Pharma": -0.00022084293878918654,
+        "Technology": 9.180824183741739e-05
+      },
+      "5": {
+        "Commodities": 0.0066833980305861735,
+        "Consumption": -0.0012914812377361397,
+        "Financials": -0.0020959176264124676,
+        "Industrials": 0.0034398665774881144,
+        "Pharma": 0.0014456824456892177,
+        "Technology": -0.0036672006892731262
+      }
+    },
+    "MERCURY_RETROGRADE_START": {
+      "10": {
+        "Commodities": -0.004790461367204681,
+        "Consumption": 0.002145939769035429,
+        "Financials": 8.846175435490583e-05,
+        "Industrials": -0.0024173730977039318,
+        "Pharma": 0.001770009391270262,
+        "Technology": -0.0046956161529436895
+      },
+      "20": {
+        "Commodities": -0.006964159226336019,
+        "Consumption": 0.0036260661082612483,
+        "Financials": -0.0027429110688661582,
+        "Industrials": -0.004422219285191644,
+        "Pharma": 0.0060717223573664774,
+        "Technology": -0.0034864349956706003
+      },
+      "5": {
+        "Commodities": -0.0012064159490881498,
+        "Consumption": 0.001180137246622636,
+        "Financials": 0.0012324852459535956,
+        "Industrials": -0.001713504707541831,
+        "Pharma": 0.003426086142574583,
+        "Technology": -0.003999783165994362
+      }
+    },
+    "SATURN_INGRESS": {
+      "10": {
+        "Commodities": -0.02455866467925942,
+        "Consumption": 0.007572680025958767,
+        "Financials": 0.003675777927571865,
+        "Industrials": -0.008133912394455822,
+        "Pharma": 0.0014637296840009084,
+        "Technology": -0.008797970764654266
+      },
+      "20": {
+        "Commodities": -0.03857345778243984,
+        "Consumption": -0.0019940043837216735,
+        "Financials": 0.0029660791361425447,
+        "Industrials": -0.021922678408869422,
+        "Pharma": -0.005466873089305417,
+        "Technology": -0.01299081366113127
+      },
+      "5": {
+        "Commodities": -0.014808556321324665,
+        "Consumption": 0.004396605628387278,
+        "Financials": 0.00450026898522389,
+        "Industrials": -0.00863987938617363,
+        "Pharma": 0.008913244562345213,
+        "Technology": -0.012889666611513022
+      }
+    },
+    "SOLAR_ECLIPSE": {
+      "10": {
+        "Commodities": -0.006469669014487363,
+        "Consumption": -0.0018161629311497457,
+        "Financials": 0.002324753283892618,
+        "Industrials": -0.007030308633436304,
+        "Pharma": 0.0004732747867725928,
+        "Technology": 0.0008652402181377119
+      },
+      "20": {
+        "Commodities": -0.0036959981219581804,
+        "Consumption": -0.001221205706493189,
+        "Financials": -0.00028261212771631426,
+        "Industrials": -0.005691505490995424,
+        "Pharma": -0.002360257479563553,
+        "Technology": 0.001790558427233105
+      },
+      "5": {
+        "Commodities": -0.005031899135137551,
+        "Consumption": -0.0023521731553698038,
+        "Financials": 0.0015052563781297404,
+        "Industrials": -0.003542222124927327,
+        "Pharma": 0.004492853024788343,
+        "Technology": -0.004562790846075509
+      }
+    }
+  }
+}

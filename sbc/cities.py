@@ -14,11 +14,13 @@ breaks ties by population, so "Delhi" finds Delhi before Delhi Cantonment.
 from __future__ import annotations
 
 import csv
+import datetime
 import io
 import os
 import sqlite3
 import zipfile
 from pathlib import Path
+from zoneinfo import ZoneInfo
 
 ROOT = Path(__file__).resolve().parent.parent
 DB_PATH = Path(os.environ.get("SBC_CITIES_DB") or ROOT / "data" / "cities.db")
@@ -131,3 +133,24 @@ def search(q: str, country: str | None = None, limit: int = 20, db_path: Path | 
     return [{"name": r["name"], "country": r["country"], "country_code": r["country_code"],
              "admin": r["admin_name"], "lat": r["lat"], "lon": r["lon"],
              "population": r["population"], "timezone": r["timezone"]} for r in rows]
+
+
+def resolve(q: str, country: str | None = None) -> dict | None:
+    """Best city match for a query, or None (for autocomplete defaults)."""
+    rows = search(q, country=country, limit=1)
+    return rows[0] if rows else None
+
+
+def local_time(utc_dt, tz_name):
+    """Convert a naive-UTC or aware datetime into a city's local time.
+
+    tz_name comes from cities.db (GeoNames IANA ids, e.g.
+    'Asia/Kolkata', 'Asia/Dubai', 'Europe/London').  Falls back to UTC
+    for unknown tz names rather than raising.
+    """
+    if utc_dt.tzinfo is None:
+        utc_dt = utc_dt.replace(tzinfo=datetime.UTC)
+    try:
+        return utc_dt.astimezone(ZoneInfo(tz_name))
+    except Exception:
+        return utc_dt.astimezone(ZoneInfo("UTC"))

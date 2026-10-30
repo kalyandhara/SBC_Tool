@@ -110,11 +110,17 @@ class Bars:
         self.vol_avg20[:20] = np.nan
 
     @classmethod
-    def nifty(cls, start: str | None = None, end: str | None = None) -> Bars:
-        rows = market_store.get_daily("NIFTY", start, end)
+    def for_symbol(cls, symbol: str, start: str | None = None, end: str | None = None) -> Bars:
+        """Daily bars for any series market_store holds (NIFTY, sector stocks, commodities)."""
+        rows = market_store.get_daily(symbol, start, end)
         if not rows:
-            raise market_store.MarketDataMissing("no NIFTY bars; run scripts/refresh_market_data.py --full")
+            raise market_store.MarketDataMissing(
+                f"no {symbol} bars; run scripts/refresh_market_data.py --full (or --research)")
         return cls(rows)
+
+    @classmethod
+    def nifty(cls, start: str | None = None, end: str | None = None) -> Bars:
+        return cls.for_symbol("NIFTY", start, end)
 
     def session_on_or_after(self, day: str) -> int | None:
         i = int(np.searchsorted(self.dates, day))

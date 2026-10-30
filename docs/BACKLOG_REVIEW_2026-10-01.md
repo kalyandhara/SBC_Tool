@@ -57,6 +57,8 @@ code and tech debt · **P3** = hygiene.
 | B-31 Stale docs | ✅ README feature table rebuilt from the actual tabs with a research-only note and API-only section; dated notes moved to `docs/archive/` (2026-10-04) |
 | B-32 Line endings | ✅ `.gitattributes` (`* text=auto eol=lf`, CRLF for `.bat`, binaries marked); the index was already LF, so renormalising changed nothing (2026-10-04) |
 | B-18 Routes with no UI caller | ✅ "cut the noise" (2026-10-04, `b18-prune-routes`): 18 routes deleted — astrogann/signal, bearish_futurecast, cgsp_backtest, cgsp_framework, contra_signals, crash_analysis, crash_backtest, engine/confluence/daily, engine/summary, engine/trace, gann/indicators, gann/turbo_zones, habits/summary, kp_intraday_config, saturn_macro, sector/planet_read, sector/vedha_read, trade_setups — with the code only they used (`crash_analyzer`, `astrogann`, `gann_indicators`, `sector_bp`, `blend_forecast_scores`, `run_saturn_macro_analysis`, `generate_cgsp_report`, `backtest_cgsp`, `get_setup`). 11 kept as API-only (healthz, TradingView webhook + latest, aspect_windows for Pine, engine ops). `tests/test_route_pruning.py` fails on any new route that has neither a UI caller nor an API-only entry |
+| B-16 `app.py` monolith | ✅ `app.py` is 30 lines: `app = create_app()` plus the engine re-exports. `sbc/app_factory.py` registers 13 blueprints and holds the rate limit, write gate, JSON error handler, cache/CSP headers and `/healthz`. The 50 routes left in `app.py` moved to five new blueprints (research, signals, timing, profile, integrations); the route table is identical (86 rules) and leftover imports are gone (2026-10-04, `b16-split-app`) |
+| B-17 Inline JS | ✅ the three inline `<script>` blocks (1,495 lines) moved to `static/js/birth-city.js`, `profiles-habits.js`, `trading-signals.js` and `rahu-ketu-trap.js`, loaded at the same spot so execution order is unchanged; the three `onclick=` attributes became data-attribute listeners. `index.html` is markup only (2,799 → 1,305 lines); `tests/test_no_inline_js.py` guards it and `node --check`s the files. Raw `fetch` calls inside them were left as they were (2026-10-04, `b17-inline-js`) |
 | **B-39** Astro-quant swing windows: heliocentric aspect ENTRY + Gann/Fib/indicator EXIT (new) | ✅ built and validated 2026-10-03 (`b39-swing-windows`): no edge (see below) |
 
 ### B-39 · Astro-quant swing-window model (P2, new feature request 2026-10-03) — ✅ done 2026-10-03
@@ -356,7 +358,7 @@ Resolved: `sbc/engine.py` holds `build_response`, `ANCHORS` and the time helpers
 
 ## P2 — Design debt and stale code
 
-### B-16 · `app.py` is still a 2,631-line monolith; the blueprint migration stalled halfway
+### B-16 · `app.py` is still a 2,631-line monolith; the blueprint migration stalled halfway — ✅ done 2026-10-04
 About 75 routes are still in `app.py`, while 7 blueprints + `engine_bp` + `sector_bp` hold the
 rest. `app.py` also still carries leftover imports from the moved routes (ruff F401:
 `NAKSHATRAS_27`, `generate_weekly_commentary`, `format_commentary_text`, `moon_rashi`,
@@ -365,7 +367,7 @@ rest. `app.py` also still carries leftover imports from the moved routes (ruff F
 backtests → `research_bp`, gann/astrogann/expiry → `chart_bp` or `gann_bp`), then switch to
 an app factory.
 
-### B-17 · About 1,400 lines of inline JS in `index.html`
+### B-17 · About 1,400 lines of inline JS in `index.html` — ✅ done 2026-10-04
 `templates/index.html:1158-2584` holds profiles, habits, the trading-signals demo,
 backtests, price/vedha charts and nakshatra. It duplicates helpers (`localTodayISO`, fetch
 logic), bypasses `fetchWithTimeout` and error handling, and can't be linted or cached.
@@ -490,6 +492,11 @@ Git warns "LF will be replaced by CRLF" on 14 files. Add a `.gitattributes`
 
 ---
 
+## Follow-on backlog
+
+B-40…B-48 (monthly NIFTY projection, ingested 2026-10-05) live in
+`docs/BACKLOG_MONTHLY_PROJECTION_2026-10-05.md`.
+
 ## Suggested order of work
 
 | Sprint | Items | Outcome |
@@ -501,6 +508,19 @@ Git warns "LF will be replaced by CRLF" on 14 files. Add a `.gitattributes`
 | 5 | B-18, B-19, B-21, B-24…B-32 | Dead routes pruned, honest labels, clean repo and docs |
 
 ## Tests to add along the way
+
+Status 2026-10-04 (`backlog-followups`): all five exist. B-02's payload contract is in
+`tests/test_api.py`, B-04's isolation in `tests/test_db_isolation.py`, and B-08's install
+from `requirements.lock` runs in every CI job. New: `tests/test_content_guards.py` (no
+placeholder text in route modules, no hard-coded dates in `index.html`) and
+`tests/ui/test_ui_smoke.py` (Playwright: every tab, every visible button, fails on
+uncaught JS errors; CI job "UI smoke"). Running the same click-through by hand found and
+fixed two bugs: the birth-data form's OK button reloaded the whole page, and Share left
+an unhandled clipboard rejection. The large-cap "Adhik Masa" configuration was removed
+(it never checked Adhik Masa), the KP report moves to the next session on closed days,
+the unattached "Run Moon Backtest" button is wired in, and the scripts moved out of
+`index.html` use `fetchWithTimeout`.
+
 - Payload-shape contract test for `/api/prediction_series` across both warm and cold paths (B-02).
 - `profiles` row count unchanged across the test session (B-04).
 - Clean-venv install + route smoke in CI (B-08).

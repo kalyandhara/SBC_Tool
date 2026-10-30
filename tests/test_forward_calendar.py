@@ -2,6 +2,7 @@
 
 import copy
 import datetime as dt
+import html
 
 import numpy as np
 import pytest
@@ -91,6 +92,23 @@ def test_renderers_escape_and_mark_closed_days(history):
     assert "class='closed'" in page and "not investment advice" in page
     md = fcal.render_markdown(cal)
     assert md.startswith("# NIFTY forward calendar") and "| Day |" in md
+
+
+def test_node_ingress_note_flags_node_sign_changes(history):
+    """Dec 6 2026: the window that carries the Rahu -> Capricorn ingress."""
+    cal = fcal.build("2026-11-30", weeks=2, history=history)
+    events = [e for d in cal["days"] for e in d["events"]]
+    assert "Rahu enters Capricorn" in events
+    assert cal["node_note"] and "Node sign change" in cal["node_note"]
+    assert cal["node_note"] in fcal.render_markdown(cal)
+    assert html.escape(cal["node_note"]) in fcal.render_html(cal)
+
+
+def test_no_node_ingress_note_without_a_node_change(history):
+    cal = fcal.build("2026-10-26", weeks=2, history=history)
+    assert not any(e.startswith("Rahu enters ")
+                   for d in cal["days"] for e in d["events"])
+    assert cal["node_note"] is None
 
 
 def test_generate_if_due_writes_once_per_week(tmp_path, monkeypatch, history):

@@ -18,6 +18,7 @@ family, so adding them doesn't dilute or flatter the Phase 2 rule results.
   retrograde_cluster 3+ of Mercury..Saturn retrograde                      -> bearish
   moon_with_node     Moon within 12 deg of Rahu or Ketu                    -> bearish
   jupiter_dignity    Jupiter exalted/own +1, debilitated -1                -> as signed
+  mercury_retrograde_risk Mercury retrograde -> higher risk (wider stops, smaller positions) -> directional
 """
 
 from __future__ import annotations
@@ -85,6 +86,15 @@ def _jupiter_dignity(fp: dict) -> int:
     return {"exalted": 1, "own": 1, "debilitated": -1}.get(fp["planets"]["Jupiter"]["dignity"], 0)
 
 
+def _mercury_retrograde_risk(fp: dict) -> int:
+    """Mercury retrograde -> higher risk (wider stops, smaller positions)."""
+    planets = fp["planets"]
+    mercury = planets["Mercury"]
+    if mercury["retrograde"]:
+        return -1  # Negative signal = increase risk
+    return 0
+
+
 FACTORS: list[Factor] = [
     Factor("station", "event", "A planet (Mercury..Saturn) stationary at the open -> bigger moves",
            lambda fp, prev, nxt, dec: any(fp["planets"][n]["stationary"] for n in STATION_PLANETS)),
@@ -111,6 +121,9 @@ FACTORS: list[Factor] = [
            lambda fp, prev, nxt, dec: _moon_with_node(fp)),
     Factor("jupiter_dignity", "directional", "Jupiter exalted/own -> bullish, debilitated -> bearish",
            lambda fp, prev, nxt, dec: _jupiter_dignity(fp)),
+    Factor("mercury_retrograde_risk", "directional", 
+           "Mercury retrograde -> higher risk (wider stops, smaller positions)",
+           lambda fp, prev, nxt, dec: _mercury_retrograde_risk(fp)),
 ]
 
 

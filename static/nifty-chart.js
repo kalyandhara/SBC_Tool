@@ -335,9 +335,19 @@ function bizDay(iso) { return iso; } // lightweight-charts accepts YYYY-MM-DD
       bandSeriesList.push(futLine);
     }
 
-    // Auto-fit chart to container window on load
+    // B-63: show the loaded candles plus ~30 forecast sessions. fitContent() also
+    // fitted every overlay series (six months of future bands, crash bands), which
+    // squeezed the candles into a narrow strip. Zoom out to see the whole forecast.
     setTimeout(function () {
-      try { chart.timeScale().fitContent(); } catch(e){}
+      try {
+        var first = tradingDays[0];
+        var last = tradingDays[tradingDays.length - 1];
+        var to = futureDays.length ? futureDays[Math.min(futureDays.length - 1, 29)] : last;
+        if (first && to) chart.timeScale().setVisibleRange({ from: first, to: to });
+        else chart.timeScale().fitContent();
+      } catch (e) {
+        try { chart.timeScale().fitContent(); } catch (e2) {}
+      }
     }, 50);
   }
 
@@ -672,6 +682,25 @@ function bizDay(iso) { return iso; } // lightweight-charts accepts YYYY-MM-DD
       loadGannZones().catch(function (e) { setStatus("Error: " + e.message, true); });
     });
 
-    loadChart().catch(function (e) { setStatus("Error: " + e.message, true); });
+    // B-67: build the chart the first time its tab is shown, not on page load.
+    var started = false;
+    function firstLoad() {
+      if (started) return;
+      started = true;
+      loadChart().catch(function (e) { setStatus("Error: " + e.message, true); });
+    }
+    var pane = document.getElementById("tab-chart");
+    if (!pane || pane.classList.contains("active")) {
+      firstLoad();
+    } else {
+      document.querySelectorAll('[data-tab="tab-chart"]').forEach(function (btn) {
+        btn.addEventListener("click", function () { setTimeout(firstLoad, 0); });
+      });
+      if (window.MutationObserver) {
+        new MutationObserver(function (_, obs) {
+          if (pane.classList.contains("active")) { obs.disconnect(); firstLoad(); }
+        }).observe(pane, { attributes: true, attributeFilter: ["class"] });
+      }
+    }
   });
 })();

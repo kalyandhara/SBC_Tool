@@ -1,0 +1,175 @@
+{
+ "generated": "2026-10-12T02:12:48",
+ "preregistration": "docs/research/venus_station_preregistration_2026-10-12.md",
+ "sample": {
+  "first": "2007-09-17",
+  "last": "2026-10-09",
+  "sessions": 4677
+ },
+ "n_permutations": 1000,
+ "seed": 20261012,
+ "event_counts": {
+  "venus_stations": 23,
+  "inferior_conjunctions": 12
+ },
+ "results": [
+  {
+   "name": "h1_venus_station",
+   "events": 23,
+   "n": 23,
+   "hits": 12,
+   "rate": 0.5217391304347826,
+   "null_mean": 0.40104347826086956,
+   "lift": 0.12069565217391304,
+   "p": 0.23076923076923078,
+   "eras": {
+    "2007-2020": {
+     "n": 16,
+     "hits": 8,
+     "rate": 0.5,
+     "null_mean": 0.4149375,
+     "lift": 0.08506249999999999,
+     "p": 0.36163836163836166
+    },
+    "2021-2026": {
+     "n": 7,
+     "hits": 4,
+     "rate": 0.5714285714285714,
+     "null_mean": 0.4139999999999999,
+     "lift": 0.15742857142857147,
+     "p": 0.3176823176823177
+    }
+   },
+   "q": 0.46153846153846156,
+   "verdict": "no edge"
+  },
+  {
+   "name": "h2_venus_inferior_conjunction",
+   "events": 12,
+   "n": 12,
+   "hits": 5,
+   "rate": 0.4166666666666667,
+   "null_mean": 0.42258333333333337,
+   "lift": -0.005916666666666681,
+   "p": 0.5814185814185814,
+   "eras": {
+    "2007-2020": {
+     "n": 8,
+     "hits": 3,
+     "rate": 0.375,
+     "null_mean": 0.438,
+     "lift": -0.063,
+     "p": 0.7332667332667333
+    },
+    "2021-2026": {
+     "n": 4,
+     "hits": 2,
+     "rate": 0.5,
+     "null_mean": 0.4075,
+     "lift": 0.09250000000000003,
+     "p": 0.5384615384615384
+    }
+   },
+   "q": 0.5814185814185814,
+   "verdict": "underpowered"
+  }
+ ],
+ "deck_claims": {
+  "windows": [
+   {
+    "start": "2009-03-06",
+    "end": "2009-04-20",
+    "sessions": 26,
+    "pivot_inside": true,
+    "range_pct": 35.404078058966434
+   },
+   {
+    "start": "2010-10-08",
+    "end": "2010-11-19",
+    "sessions": 29,
+    "pivot_inside": true,
+    "range_pct": 6.981817795975798
+   },
+   {
+    "start": "2012-05-15",
+    "end": "2012-06-27",
+    "sessions": 31,
+    "pivot_inside": true,
+    "range_pct": 6.810875566004482
+   },
+   {
+    "start": "2013-12-22",
+    "end": "2014-02-03",
+    "sessions": 29,
+    "pivot_inside": true,
+    "range_pct": 5.729116412508417
+   },
+   {
+    "start": "2015-07-25",
+    "end": "2015-09-07",
+    "sessions": 31,
+    "pivot_inside": true,
+    "range_pct": 13.624525222891215
+   },
+   {
+    "start": "2017-03-04",
+    "end": "2017-04-17",
+    "sessions": 28,
+    "pivot_inside": true,
+    "range_pct": 3.8193538249182035
+   },
+   {
+    "start": "2018-10-06",
+    "end": "2018-11-16",
+    "sessions": 28,
+    "pivot_inside": true,
+    "range_pct": 6.502494469715847
+   },
+   {
+    "start": "2020-05-13",
+    "end": "2020-06-25",
+    "sessions": 31,
+    "pivot_inside": true,
+    "range_pct": 18.675091377893626
+   },
+   {
+    "start": "2021-12-19",
+    "end": "2022-01-31",
+    "sessions": 30,
+    "pivot_inside": true,
+    "range_pct": 10.195498250155467
+   },
+   {
+    "start": "2023-07-23",
+    "end": "2023-09-04",
+    "sessions": 30,
+    "pivot_inside": true,
+    "range_pct": 2.7241374623070636
+   },
+   {
+    "start": "2025-03-02",
+    "end": "2025-04-15",
+    "sessions": 28,
+    "pivot_inside": true,
+    "range_pct": 7.182108904252371
+   }
+  ],
+  "with_pivot": 11,
+  "total": 11,
+  "median_sessions": 29,
+  "median_range_pct": 6.981817795975798,
+  "normal_median_range_pct": 7.24084766893569
+ },
+ "forward_returns_pct": {
+  "h1_venus_station": {
+   "1": 0.08544500625004582,
+   "5": 1.2126812377024636,
+   "20": 5.079088348465215
+  },
+  "h2_venus_inferior_conjunction": {
+   "1": 0.4505986252035206,
+   "5": 0.46730357958548835,
+   "20": 0.5767176868838524
+  }
+ }
+}

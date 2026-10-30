@@ -29,9 +29,11 @@ def _trade_row(label: str, s: dict) -> str:
             f"{_bps(s['mean_excess'])} | {s['mean_bars']:.1f} | {_pct(s['mean_mae'])} |")
 
 
-def render_report(report: dict) -> str:
-    text = render(report, title="Swing-window model (B-39) — entry timing",
-                  generator="scripts/validate_swing.py", intro=INTRO)
+def render_report(report: dict, title: str = "Swing-window model (B-39) — entry timing",
+                  generator: str = "scripts/validate_swing.py",
+                  intro: list[str] | None = None) -> str:
+    """Render part A + part B. scripts/validate_natal.py reuses this with its own heading."""
+    text = render(report, title=title, generator=generator, intro=intro or INTRO)
     lines = [f"Sessions inside at least one window: {_pct(report['window_share'], 0)}.", "",
              "### Control: the same reversal rule on every session (no astro)", "",
              "| h | n | excess bps | hit | base | p | verdict |", "|---|---|---|---|---|---|---|"]

@@ -20,6 +20,29 @@ def _bar(day, close=100.0):
             "close": close, "volume": 10}
 
 
+SECTOR_KEYS = {
+    "CNXBANK", "CNXFIN", "CNXIT", "CNXPHARMA", "CNXAUTO", "CNXFMCG", "CNXMETAL",
+    "CNXENERGY", "CNXREALTY", "CNXMEDIA", "CNXPSUBANK", "CNXINFRA", "CNXCONSUM",
+    "CNXHEALTH", "CNXOILGAS",
+}
+
+
+def test_sector_symbols_cover_the_fifteen_nse_indices(store):
+    assert set(store.SECTOR_SYMBOLS) == SECTOR_KEYS
+    assert all(isinstance(t, str) and t for t in store.SECTOR_SYMBOLS.values())
+    assert SECTOR_KEYS <= set(store.RESEARCH_SYMBOLS)
+
+
+def test_refresh_stores_sector_rows_from_injected_fetch(store):
+    def fake(ticker, start, end):
+        return [_bar("2024-01-02", close=100.0), _bar("2024-01-03", close=102.0)]
+
+    now = dt.datetime(2024, 1, 10, 16, 0, tzinfo=IST)
+    out = store.refresh_daily("CNXIT", full=True, now=now, fetch=fake)
+    assert out == {"symbol": "CNXIT", "stored": 2}
+    assert [b["close"] for b in store.get_daily("CNXIT")] == [100.0, 102.0]
+
+
 def test_upsert_skips_nan_and_replaces(store):
     nan = float("nan")
     assert store.upsert_daily("NIFTY", [_bar("2026-09-29"),
@@ -86,4 +109,6 @@ def test_refresh_all_reports_errors_without_raising(store, monkeypatch):
 def test_freshness_endpoint(client):
     resp = client.get("/api/engine/market/freshness")
     assert resp.status_code == 200
-    assert set(resp.get_json()["series"]) == {"NIFTY", "SENSEX", "INDIAVIX", "FII_DII"}
+    assert set(resp.get_json()["series"]) == {"NIFTY", "SENSEX", "INDIAVIX",
+                                              "BTC-USD", "^GSPC", "^DJI",
+                                              "FII_DII"}

@@ -1,5 +1,10 @@
 """Sarvatobhadra Chakra market prediction engine."""
 
+# Must run before any module computes positions (B-68: per-thread sidereal mode).
+from .ephem_guard import install as _install_ephem_guard
+
+_install_ephem_guard()
+
 from .alcohol_signals import (
     check_alcohol_syntax,
     get_alcohol_price_levels,

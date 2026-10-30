@@ -104,6 +104,29 @@ jobs:
         run: |
           pytest tests/test_api.py tests/test_integration.py -v
 
+  ui-smoke:
+    name: UI smoke (Playwright)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: "pip"
+
+      - name: Install dependencies and Chromium
+        run: |
+          pip install -r requirements.lock
+          pip install -e ".[dev,ui]"
+          playwright install --with-deps chromium
+
+      - name: Click every tab and button
+        run: |
+          pytest tests/ui -v
+
   docker:
     name: Docker Build
     runs-on: ubuntu-latest

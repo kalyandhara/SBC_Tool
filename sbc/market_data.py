@@ -1,8 +1,11 @@
 """OHLC data via yfinance with local CSV cache.
 
-Covers the study assets NIFTY (^NSEI), Gold (GC=F) and Silver (SI=F).
-Falls back to the cached file when the network/yfinance is unavailable,
-so the chart still works offline.
+Covers the study assets NIFTY (^NSEI), Gold (GC=F), Silver (SI=F),
+Crude (CL=F), Brent (BZ=F), Dow Jones (^DJI, from 1992),
+USDINR (USDINR=X), BankNIFTY (^NSEBANK), US VIX (^VIX) and the Asian
+neighbours the contagion claims rest on: KOSPI (^KS11), Nikkei (^N225)
+and Hang Seng (^HSI).  Falls back to the cached file when the
+network/yfinance is unavailable, so the chart still works offline.
 """
 
 import datetime
@@ -28,6 +31,15 @@ _ASSETS = {
     "nifty": ("^NSEI", "nifty_ohlc.csv"),
     "gold": ("GC=F", "gold_ohlc.csv"),
     "silver": ("SI=F", "silver_ohlc.csv"),
+    "crude": ("CL=F", "crude_ohlc.csv"),
+    "brent": ("BZ=F", "brent_ohlc.csv"),
+    "djia": ("^DJI", "djia_ohlc.csv"),
+    "kospi": ("^KS11", "kospi_ohlc.csv"),
+    "nikkei": ("^N225", "nikkei_ohlc.csv"),
+    "hsi": ("^HSI", "hsi_ohlc.csv"),
+    "usdinr": ("USDINR=X", "usdinr_ohlc.csv"),
+    "banknifty": ("^NSEBANK", "banknifty_ohlc.csv"),
+    "vix": ("^VIX", "vix_ohlc.csv"),
 }
 
 

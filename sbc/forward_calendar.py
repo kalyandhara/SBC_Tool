@@ -9,9 +9,10 @@
       days          per calendar day: sky events; trading days add rule/analog leans and flags
     }
 
-Events come from consecutive daily fingerprints (09:15 IST), so an ingress or
-station is dated to the first 09:15 after it. Exact aspects are the day whose
-orb is the local minimum (< 1 deg); the Moon is left out.
+Events come from consecutive daily fingerprints (09:15 IST), so an ingress is
+dated to the first 09:15 after it. Stations come from sbc.stations, timed to
+the minute on their IST date and including the true-node Rahu. Exact aspects
+are the day whose orb is the local minimum (< 1 deg); the Moon is left out.
 
 render_markdown / render_html turn the result into a report, and write()
 stores both under reports/calendar/. The run_app.py loop calls generate_if_due()
@@ -28,6 +29,7 @@ from pathlib import Path
 from sbc import analogs as an
 from sbc import daily_ledger, fingerprint_store, market_store, research_reports
 from sbc import forecast as fc
+from sbc import stations as st
 from sbc.market_holidays import holiday_name, is_trading_day, next_trading_day
 
 IST = market_store.IST
@@ -38,6 +40,25 @@ NAKSHATRA_CHANGE = ("Jupiter", "Saturn", "Rahu")
 STATIONS = ("Mercury", "Venus", "Mars", "Jupiter", "Saturn", "Uranus", "Neptune", "Pluto")
 EXACT_ORB = 1.0
 WEEKLY_HOUR = 8  # Saturday 08:00 IST
+
+# From reports/node_jupiter_event_study_2026-10-19.md (rerun
+# scripts/study_node_jupiter_events.py to refresh): after the last 17
+# Rahu sign changes (mean node, Lahiri), NIFTY's mean move over the next
+# 21 sessions was +7.0% (71% of events up, p=0.000 vs random windows).
+# Event studies are research prompts, not validated signals; small n.
+NODE_INGRESS_NOTE = (
+    "Node sign change in this window. After the last 17 Rahu sign "
+    "changes, NIFTY's mean move over the next 21 sessions was +7.0% "
+    "(71% of events up, p=0.000 vs random windows) - historically a "
+    "bottoming marker, not a crash trigger. Source: "
+    "reports/node_jupiter_event_study_2026-10-19.md; research prompt, "
+    "not a validated signal; small n.")
+
+
+def node_changes(days: list[dict]) -> list[str]:
+    """Distinct 'Rahu enters <sign>' events in a built calendar's days."""
+    return sorted({e for d in days for e in d.get("events", [])
+                   if e.startswith("Rahu enters ")})
 
 
 # ── sky events ─────────────────────────────────────────────────────────────
@@ -54,8 +75,13 @@ def _aspect_orbs(fp: dict) -> dict[tuple, float]:
             if "Moon" not in (a["a"], a["b"])}
 
 
-def events_between(prev: dict, cur: dict, nxt: dict | None) -> list[str]:
-    """Sky events dated to `cur` (compared with the day before and, for exact aspects, after)."""
+def events_between(prev: dict, cur: dict, nxt: dict | None,
+                   stations: list[dict] | None = None) -> list[str]:
+    """Sky events dated to `cur` (compared with the day before and, for exact aspects, after).
+
+    `stations` (sbc.stations rows for cur's IST date) replaces the fingerprint
+    station check, which can only see a station at the next 09:15.
+    """
     out = []
     pp, cp = prev["planets"], cur["planets"]
     for n in INGRESS:
@@ -64,9 +90,12 @@ def events_between(prev: dict, cur: dict, nxt: dict | None) -> list[str]:
     for n in NAKSHATRA_CHANGE:
         if pp[n]["nakshatra"] != cp[n]["nakshatra"]:
             out.append(f"{n} enters {cp[n]['nakshatra_name']} nakshatra")
-    for n in STATIONS:
-        if pp[n]["retrograde"] != cp[n]["retrograde"]:
-            out.append(f"{n} stations {'retrograde' if cp[n]['retrograde'] else 'direct'}")
+    if stations is not None:
+        out += [f"{s['label']} IST" for s in stations]
+    else:
+        for n in STATIONS:
+            if pp[n]["retrograde"] != cp[n]["retrograde"]:
+                out.append(f"{n} stations {'retrograde' if cp[n]['retrograde'] else 'direct'}")
     if nxt is not None:
         before, after = _aspect_orbs(prev), _aspect_orbs(nxt)
         for key, orb in sorted(_aspect_orbs(cur).items()):
@@ -110,6 +139,7 @@ def build(start: str | None = None, weeks: int = 4, now: dt.datetime | None = No
     history = history or an.load_nifty_history()
 
     fps = _fingerprints(first - dt.timedelta(days=1), end + dt.timedelta(days=1))
+    exact_stations = st.by_date(first, end)
     entry_close = float(history.closes[-1])
     vix_rows = market_store.get_daily("INDIAVIX", end=history.dates[-1])
     vix = vix_rows[-1]["close"] if vix_rows else None
@@ -119,7 +149,8 @@ def build(start: str | None = None, weeks: int = 4, now: dt.datetime | None = No
         day = dt.date.fromisoformat(fps[i]["date"])
         row: dict = {"date": day.isoformat(), "weekday": day.strftime("%a"),
                      "trading": is_trading_day(day), "holiday": holiday_name(day),
-                     "events": events_between(fps[i - 1], fps[i], fps[i + 1])}
+                     "events": events_between(fps[i - 1], fps[i], fps[i + 1],
+                                               exact_stations.get(day.isoformat(), []))}
         if row["trading"]:
             sessions += 1
             f = fc.forecast(day.isoformat(), 1, history=history)
@@ -152,6 +183,7 @@ def build(start: str | None = None, weeks: int = 4, now: dt.datetime | None = No
                             "band_68": f["expected_range"].get("band_68"),
                             "validated": f["validated"]}
 
+    node_events = node_changes(days)
     return {
         "generated_at": now.isoformat(timespec="seconds"),
         "start": first.isoformat(),
@@ -165,6 +197,7 @@ def build(start: str | None = None, weeks: int = 4, now: dt.datetime | None = No
         "track_record": {str(h): daily_ledger.summary(h) for h in fc.HORIZONS},
         "weeks": week_rows,
         "days": days,
+        "node_note": NODE_INGRESS_NOTE if node_events else None,
         "caveat": fc.CAVEAT,
     }
 
@@ -218,6 +251,8 @@ def _intro(cal: dict) -> list[str]:
 def render_markdown(cal: dict) -> str:
     lines = [f"# NIFTY forward calendar · {cal['start']} → {cal['end']}", ""]
     lines += [f"_{t}_  " for t in _intro(cal)] + [""]
+    if cal.get("node_note"):
+        lines += [f"> {cal['node_note']}", ""]
     lines += ["## Next session", "", "| Horizon | P(up) | Base rate | 68% range | Live record |",
               "|---|---|---|---|---|"]
     for h, x in cal["headline"].items():
@@ -260,12 +295,16 @@ def render_html(cal: dict) -> str:
     weeks = [[f"{w['start']} → {w['end']}", w["sessions"], _band_text(w["band_68"]), w["events"]]
              for w in cal["weeks"]]
     days = [_day_cells(d) for d in cal["days"]]
+    intro = [f"<p class='muted'>{html.escape(t)}</p>" for t in _intro(cal)]
+    if cal.get("node_note"):
+        intro.append(f"<p class='muted'><strong>"
+                     f"{html.escape(cal['node_note'])}</strong></p>")
     return "".join([
         "<!doctype html><html lang='en'><head><meta charset='utf-8'>",
         "<meta name='viewport' content='width=device-width,initial-scale=1'>",
         f"<title>{html.escape(title)}</title><style>{_CSS}</style></head><body>",
         f"<h1>{html.escape(title)}</h1>",
-        *(f"<p class='muted'>{html.escape(t)}</p>" for t in _intro(cal)),
+        *intro,
         "<h2>Next session</h2>",
         _table(["Horizon", "P(up)", "Base rate", "68% range", "Live record"], head),
         "<h2>Weekly range (VIX-implied, from the last close)</h2>",

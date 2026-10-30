@@ -93,6 +93,11 @@ TRIGGER_WEIGHTS = {
     # Lunar triggers (short-term sentiment — 0.5–1 point, rounded to 0–1)
     "moon_sentiment_sign": 1,         # Moon in Taurus, Cancer, Pisces
     "nakshatra_bullish": 1,           # Moon in Punarvasu, Pushya, Uttara Phalguni, Revati, Vishakha
+
+    # Outer planet macro-cycle triggers (systemic — 2–4 points)
+    "saturn_pluto_conjunction": 4,    # Saturn-Pluto conjunction (systemic crisis)
+    "neptune_aquarius_ingress": 3,    # Neptune in Aquarius (bubble risk)
+    "uranus_mars_aspect": 3,          # Uranus-Mars aspect (volatility)
 }
 
 
@@ -191,6 +196,27 @@ def _nakshatra_bullish(moon):
     return moon["nakshatra"] in ("Punarvasu", "Pushya", "U.Phalguni", "Revati", "Vishakha")
 
 
+# =============================================================================
+# Outer planet trigger detection functions
+# =============================================================================
+
+def _saturn_pluto_conjunction(saturn, pluto):
+    """Saturn-Pluto conjunction (within 3°) → +4 (systemic crisis trigger)"""
+    sep = abs((saturn["longitude"] - pluto["longitude"] + 180) % 360 - 180)
+    return sep <= 3
+
+
+def _neptune_aquarius_ingress(neptune):
+    """Neptune in Aquarius → +3 (bubble risk trigger)"""
+    return neptune["sign"] == "Aquarius"
+
+
+def _uranus_mars_aspect(uranus, mars):
+    """Uranus-Mars aspect (conjunction/opposition within 5°) → +3 (volatility trigger)"""
+    sep = abs((uranus["longitude"] - mars["longitude"] + 180) % 360 - 180)
+    return sep <= 5 or abs(sep - 180) <= 5
+
+
 # =================================================================================================
 # 3. Scoring Engine with Normalization
 # =================================================================================================
@@ -200,7 +226,7 @@ def _trigger_weight(trigger_name):
     return TRIGGER_WEIGHTS.get(trigger_name, 0)
 
 
-def _detect_triggers(jupiter, saturn, sun, mercury, venus, rahu, ketu, moon):
+def _detect_triggers(jupiter, saturn, sun, mercury, venus, rahu, ketu, moon, mars=None, uranus=None, neptune=None, pluto=None):
     """
     Detect all active bullish triggers and return a list of (trigger_name, weight).
     This is the rulebook — each condition maps to exactly one weighted trigger.
@@ -248,6 +274,20 @@ def _detect_triggers(jupiter, saturn, sun, mercury, venus, rahu, ketu, moon):
     # --- Nakshatra bullish windows ---
     if _nakshatra_bullish(moon):
         triggers.append(("nakshatra_bullish", _trigger_weight("nakshatra_bullish")))
+
+    # --- Outer planet macro-cycle triggers ---
+    if uranus and neptune and pluto:
+        # Saturn-Pluto conjunction (systemic crisis)
+        if _saturn_pluto_conjunction(saturn, pluto):
+            triggers.append(("saturn_pluto_conjunction", _trigger_weight("saturn_pluto_conjunction")))
+        
+        # Neptune in Aquarius (bubble risk)
+        if _neptune_aquarius_ingress(neptune):
+            triggers.append(("neptune_aquarius_ingress", _trigger_weight("neptune_aquarius_ingress")))
+        
+        # Uranus-Mars aspect (volatility)
+        if mars and _uranus_mars_aspect(uranus, mars):
+            triggers.append(("uranus_mars_aspect", _trigger_weight("uranus_mars_aspect")))
 
     return triggers
 
@@ -334,9 +374,13 @@ def _bullish_future_score(julian_day):
     rahu = by_name["Rahu"]
     ketu = by_name["Ketu"]
     moon = by_name["Moon"]
+    mars = by_name["Mars"]
+    uranus = by_name.get("Uranus")
+    neptune = by_name.get("Neptune")
+    pluto = by_name.get("Pluto")
 
     # Detect all active triggers
-    triggers = _detect_triggers(jupiter, saturn, sun, mercury, venus, rahu, ketu, moon)
+    triggers = _detect_triggers(jupiter, saturn, sun, mercury, venus, rahu, ketu, moon, mars=mars, uranus=uranus, neptune=neptune, pluto=pluto)
 
     # Normalize score
     score, active_triggers = _score_normalize(triggers, max_score=16)

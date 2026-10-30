@@ -185,6 +185,7 @@ data/forecast_ledger.db
 data/market.db
 data/fingerprints.db
 data/daily_ledger.db
+data/trade_journal.db
 sbc/navamsa_pipeline/navamsa.db
 .playwright-mcp/
 
@@ -214,3 +215,15 @@ reports/calendar/
 
 # GeoNames source files for data/cities.db (scripts/seed_cities.py)
 data/geonames/
+
+# Dukascopy month cache (B-57); rebuilt by scripts/fetch_dukascopy.py
+data/intraday/cache/
+
+# Beads / Dolt files (added by bd init)
+.dolt/
+*.db
+.beads-credential-key
+.beads/proxieddb/
+*.gate.lock*
+# bd worktree
+.worktrees/sector-rotation-task-10/
