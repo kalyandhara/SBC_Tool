@@ -40,6 +40,7 @@ This hybrid approach enables validation of financial astrology research examples
 | **Analog Lab** | Tiered sky-similarity analogs with forward-return distributions |
 | **Forward Calendar** | Next weeks' planetary events with the frozen forecast for each session (also as weekly HTML/Markdown reports) |
 | **Swing Windows** | Heliocentric Earth–planet aspect windows as entries, Gann + Fibonacci + indicator confluence as exits; TradingView Pine script in `tools/tradingview/` |
+| **Ashtakavarga** (Research · unvalidated) | Classical BAV/SAV bindus on an anchor's natal chart, with the signs the planets transit at 09:15 IST. Descriptive only, labelled *experimental, no validated edge*. The Lagna is used only where the birth time and place are exact (India, New Delhi); otherwise a 7-planet variant, and planets that change sign on the birth day are flagged |
 
 ### API-only
 - Routes with no panel are kept only when something else uses them: `/healthz` (Docker), `/webhook/sbc` and `/api/sbc/latest` (TradingView alerts), `/api/engine/aspect_windows?format=tv` (the Pine script), and the engine's operational endpoints (fingerprint status, forecast ledger, intraday freeze/score, market freshness, version). `tests/test_route_pruning.py` fails if a new route has neither a UI caller nor a place on that list.
@@ -228,6 +229,7 @@ GET  /api/research/event-study?...
 GET  /api/research/walk-forward?...
 GET  /api/research/aspects?...
 GET  /api/research/cycles?start=...&end=...
+GET  /api/ashtakavarga?anchor=nifty&date=YYYY-MM-DD&lagna_mode=auto|classical|seven
 ```
 
 ### Market data (prediction engine)

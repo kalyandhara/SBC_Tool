@@ -61,6 +61,7 @@ Current status: All anchors use approximate times (00:00 for most). This is a kn
 - **Current Time:** 00:00 (midnight, official)
 - **Status:** Correct
 - **Notes:** Independence was officially at midnight. This is the accurate time.
+- **Place for the Lagna:** New Delhi (Ashtakavarga, `sbc/ashtakavarga.py` `LAGNA_RELIABLE`). The place decides the sign: Mumbai, the engine-wide default, gives Lagna 28.54° (Aries), while New Delhi gives 37.74° (Taurus, the conventional Independence chart). India is the only anchor whose Lagna the Ashtakavarga view treats as reliable.
 
 ---
 

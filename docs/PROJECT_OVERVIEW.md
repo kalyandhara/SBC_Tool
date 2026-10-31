@@ -163,7 +163,7 @@ flowchart LR
 
 | Layer | Modules | Role |
 |---|---|---|
-| Astro core | `chakra`, `planets`, `nakshatra`, `bhadra`, `muhurta`, `aspect_table`, `helio_aspects`, `stations`, `transits` | Positions, aspects, nakshatra and tithi, Bhadra |
+| Astro core | `chakra`, `planets`, `nakshatra`, `bhadra`, `muhurta`, `aspect_table`, `helio_aspects`, `stations`, `transits`, `ashtakavarga` | Positions, aspects, nakshatra and tithi, Bhadra, Ashtakavarga bindus |
 | Chakra signals | `prediction`, `sector_signals`, `transit_vedha`, `bullion_vedha`, `fmcg_signals`, `tourism_signals`, `chemical_signals`, `alcohol_signals`, `lunar_forecast`, `monthly_heatmap`, `cgsp_framework` | Vedha and sector scenarios |
 | KP | `kp_ephemeris`, `kp_layers`, `kp_intraday`, `kp_docx`, `kota_chakra`, `navamsa_pipeline/` | Sub-lords, intraday trend changes, Kota workbook |
 | Research | `fingerprint`, `factors`, `stats`, `rule_validation`, `analog_validation`, `factor_validation`, `incremental`, `sector_validation`, `swing_validation`, `research_reports` | Tests against market controls |
