@@ -8,6 +8,8 @@ ayanamsa change is expected: re-measure and understand it, don't loosen the test
 import pytest
 
 from sbc import ashtakavarga as av
+from sbc import natal
+from sbc.engine import ANCHORS
 
 # Hand count, all planets and the Lagna in Aries: for each house 1-12, how many
 # of the Sun's 8 contributor lists contain it (Sun/Mars/Saturn 1,2,4,7,8,9,10,11;
@@ -78,3 +80,55 @@ def test_cell_bounds():
 def test_bav_rejects_bad_input(signs, lagna):
     with pytest.raises(ValueError):
         av.bav(signs, lagna)
+
+
+@pytest.mark.parametrize("anchor,expected", [
+    ("india", ("classical", True, "exact official time, Indian place")),
+    ("nifty", ("seven", False, "birth time approximate")),
+    ("nse", ("seven", False, "birth time approximate")),
+    ("bse", ("seven", False, "birth time approximate")),
+    ("sensex", ("seven", False, "birth time approximate")),
+    ("nyse", ("seven", False, "birth time approximate")),
+    ("bitcoin", ("seven", False, "no birth place")),
+])
+def test_auto_mode_per_anchor(anchor, expected):
+    assert av.resolve_mode(anchor, "auto") == expected
+
+
+def test_every_anchor_resolves():
+    for anchor in ANCHORS:
+        mode, reliable, reason = av.resolve_mode(anchor)
+        assert mode in ("classical", "seven") and isinstance(reliable, bool) and reason
+
+
+def test_forced_modes_are_honoured():
+    assert av.resolve_mode("nifty", "classical")[:2] == ("classical", False)
+    assert av.resolve_mode("india", "seven")[:2] == ("seven", True)
+
+
+@pytest.mark.parametrize("anchor,mode", [("nope", "auto"), ("nifty", "both")])
+def test_resolve_mode_rejects_unknown(anchor, mode):
+    with pytest.raises(ValueError):
+        av.resolve_mode(anchor, mode)
+
+
+@pytest.mark.parametrize("anchor,expected", [
+    ("nifty", {"Moon": ["Aquarius", "Pisces"]}),
+    ("nyse", {"Moon": ["Pisces", "Aries"]}),
+    ("nse", {"Mercury": ["Scorpio", "Libra"]}),
+    ("bse", {}), ("sensex", {}), ("india", {}), ("bitcoin", {}),
+])
+def test_ambiguous_contributors(anchor, expected):
+    assert av.ambiguous_contributors(anchor) == expected
+
+
+def test_ambiguity_check_leaves_natal_cache_alone():
+    av._ambiguous.cache_clear()
+    before = natal._planets.cache_info()
+    av.ambiguous_contributors("nifty")
+    assert natal._planets.cache_info() == before
+
+
+def test_ambiguous_contributors_rejects_unknown_anchor():
+    with pytest.raises(ValueError):
+        av.ambiguous_contributors("nope")
