@@ -185,10 +185,41 @@ def test_transit_is_computed_at_0915_ist(monkeypatch):
         return real(jd)
 
     monkeypatch.setattr(av, "positions", spy)
+    expected = _jd(dt.datetime(2026, 10, 30, 9, 15, tzinfo=IST))
     av.transit_scores("india", dt.date(2026, 10, 30))
-    assert _jd(dt.datetime(2026, 10, 30, 9, 15, tzinfo=IST)) in calls
+    assert calls == [expected]
 
 
 def test_transit_scores_rejects_non_date():
     with pytest.raises(TypeError):
         av.transit_scores("nifty", "2026-10-30")
+
+
+def test_transit_scores_raises_when_a_planet_is_missing(monkeypatch):
+    real = av.positions
+
+    def no_saturn(jd):
+        planets, ayanamsa = real(jd)
+        return [p for p in planets if p["name"] != "Saturn"], ayanamsa
+
+    monkeypatch.setattr(av, "positions", no_saturn)
+    with pytest.raises(RuntimeError, match="Saturn"):
+        av.transit_scores("nifty", dt.date(2026, 10, 30))
+
+
+def test_india_classical_lagna_is_taurus_from_new_delhi():
+    r = av.natal_ashtakavarga("india")
+    assert r["mode"] == "classical"
+    assert r["lagna_sign"] == "Taurus"
+
+
+def test_india_lagna_city_changes_the_bav():
+    """A Mumbai Lagna (Aries) would give a different BAV from the pinned New Delhi one (Taurus)."""
+    r = av.natal_ashtakavarga("india")
+    signs = av._planet_signs(natal.chart_detail("india"))
+    assert r["bav"] == av.bav(signs, RASHIS.index("Taurus"))
+    assert r["bav"] != av.bav(signs, RASHIS.index("Aries"))
+
+
+def test_seven_mode_has_no_lagna_sign():
+    assert av.natal_ashtakavarga("nifty")["lagna_sign"] is None

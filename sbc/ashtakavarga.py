@@ -113,8 +113,9 @@ MODES = ("auto", "classical", "seven")
 
 # A Lagna needs an exact time AND a real birth place: sbc.natal falls back to
 # Mumbai for every anchor. Anything not listed is unreliable, so a new anchor
-# fails safe.
-LAGNA_RELIABLE = {"india": "exact official time, Indian place"}
+# fails safe. The allow-list also fixes the birth city used for the Lagna:
+# {anchor: (reason, city)}.
+LAGNA_RELIABLE = {"india": ("exact official time, Indian place", "New Delhi")}
 
 
 def _check_anchor(anchor: str) -> None:
@@ -132,7 +133,7 @@ def resolve_mode(anchor: str, lagna_mode: str = "auto") -> tuple[str, bool, str]
     if lagna_mode not in MODES:
         raise ValueError(f"lagna_mode must be one of {MODES}, got {lagna_mode!r}")
     if anchor in LAGNA_RELIABLE:
-        reliable, reason = True, LAGNA_RELIABLE[anchor]
+        reliable, reason = True, LAGNA_RELIABLE[anchor][0]
     elif _time_approximate(anchor):
         reliable, reason = False, "birth time approximate"
     else:
@@ -183,8 +184,15 @@ def natal_ashtakavarga(anchor: str, lagna_mode: str = "auto") -> dict:
     """BAV/SAV for an anchor's natal chart, with how far its Lagna can be trusted."""
     mode, reliable, reason = resolve_mode(anchor, lagna_mode)
     signs = _planet_signs(natal.chart_detail(anchor))
-    lagna = int(natal.lagna_longitude(anchor) // 30) if mode == "classical" else None
+    lagna = None
+    if mode == "classical":
+        if anchor in LAGNA_RELIABLE:
+            lon = natal.lagna_longitude(anchor, city=LAGNA_RELIABLE[anchor][1])
+        else:
+            lon = natal.lagna_longitude(anchor)
+        lagna = int(lon // 30)
     return {"mode": mode, "lagna_reliable": reliable, "lagna_reason": reason,
+            "lagna_sign": RASHIS[lagna] if lagna is not None else None,
             "ambiguous_contributors": ambiguous_contributors(anchor),
             **_tables(signs, lagna)}
 
@@ -197,7 +205,9 @@ def chart_ashtakavarga(date: str, time: str, tz: str, city: str,
     if cities.resolve(city) is None:
         raise ValueError(f"unknown city: {city!r}")
     signs = _planet_signs(natal.chart_detail(date, time, tz))
-    lagna = int(natal.lagna_longitude(date, time, tz, city) // 30)         if lagna_mode == "classical" else None
+    lagna = None
+    if lagna_mode == "classical":
+        lagna = int(natal.lagna_longitude(date, time, tz, city) // 30)
     return {"mode": lagna_mode, **_tables(signs, lagna),
             "planet_signs": {p: RASHIS[s] for p, s in signs.items()},
             "lagna_sign": RASHIS[lagna] if lagna is not None else None}
@@ -216,5 +226,8 @@ def transit_scores(anchor: str, date: dt.date, lagna_mode: str = "auto") -> dict
             transit[p["name"]] = {"sign": RASHIS[s], "sign_index": s,
                                   "bav_points": natal_av["bav"][p["name"]][s],
                                   "sav_points": natal_av["sav"][s]}
+    if set(transit) != set(PLANETS):
+        missing = sorted(set(PLANETS) - set(transit))
+        raise RuntimeError(f"positions() did not return every planet: missing {missing}")
     return {"date": date.isoformat(), "transit_time": TRANSIT_TIME_LABEL,
             "natal": natal_av, "transit": transit}
