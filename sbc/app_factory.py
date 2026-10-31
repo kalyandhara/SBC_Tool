@@ -36,6 +36,7 @@ _CSP = ("default-src 'self'; "
 
 
 def _blueprints() -> list:
+    from sbc.api.blueprints.ashtakavarga_bp import ashtakavarga_bp
     from sbc.api.blueprints.balance_bp import balance_bp
     from sbc.api.blueprints.chakra_bp import chakra_bp
     from sbc.api.blueprints.chart_bp import chart_bp
@@ -53,7 +54,7 @@ def _blueprints() -> list:
     from sbc.api.blueprints.timing_bp import timing_bp
     from sbc.api.blueprints.transit_bp import transit_bp
     from sbc.api.engine_bp import engine_bp
-    return [engine_bp, overview_bp, chart_bp, sectors_bp, sector_rotation_bp, kp_bp, balance_bp, chakra_bp,
+    return [engine_bp, overview_bp, chart_bp, sectors_bp, sector_rotation_bp, ashtakavarga_bp, kp_bp, balance_bp, chakra_bp,
             forecast_bp, research_bp, signals_bp, timing_bp, profile_bp, integrations_bp,
             infographic_bp, transit_bp, screener_bp]
 

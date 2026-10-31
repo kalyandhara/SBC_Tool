@@ -14,6 +14,8 @@ DELETED = [
 # Kept on purpose although no page calls them: infrastructure, the TradingView
 # integration, and the prediction engine's operational endpoints.
 API_ONLY = {
+    # Ashtakavarga tab lands in the next task (temporary).
+    "/api/ashtakavarga",
     "/healthz", "/webhook/sbc", "/api/sbc/latest",
     "/api/engine/aspect_windows", "/api/engine/fingerprint", "/api/engine/fingerprint/status",
     "/api/engine/forecast/ledger", "/api/engine/intraday_forecast/freeze",
