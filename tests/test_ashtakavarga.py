@@ -5,11 +5,15 @@ with Lahiri + Moshier via sbc.planets. A failure here after an ephemeris or
 ayanamsa change is expected: re-measure and understand it, don't loosen the test.
 """
 
+import datetime as dt
+
 import pytest
 
 from sbc import ashtakavarga as av
 from sbc import natal
 from sbc.engine import ANCHORS
+from sbc.helio_aspects import IST, _jd
+from sbc.nakshatra import RASHIS
 
 # Hand count, all planets and the Lagna in Aries: for each house 1-12, how many
 # of the Sun's 8 contributor lists contain it (Sun/Mars/Saturn 1,2,4,7,8,9,10,11;
@@ -132,3 +136,59 @@ def test_ambiguity_check_leaves_natal_cache_alone():
 def test_ambiguous_contributors_rejects_unknown_anchor():
     with pytest.raises(ValueError):
         av.ambiguous_contributors("nope")
+
+
+def test_raman_sun_has_six_bindus_in_cancer():
+    """B.V. Raman, Ashtakavarga System of Prediction p. 39 (cited in VedAstro's
+    SunAshtakavargaYoga10Test): Sun in Cancer, 6th from Lagna, 6 bindus."""
+    r = av.chart_ashtakavarga("1912-08-08", "19:35", "Asia/Kolkata", "Bengaluru", "classical")
+    assert r["planet_signs"]["Sun"] == "Cancer"
+    assert r["lagna_sign"] == "Aquarius"  # Cancer is the 6th sign from Aquarius
+    assert r["bav"]["Sun"][RASHIS.index("Cancer")] == 6
+
+
+@pytest.mark.parametrize("city,mode", [("Bengaluru", "auto"), ("Nowhere-ville", "classical")])
+def test_chart_ashtakavarga_rejects_bad_input(city, mode):
+    with pytest.raises(ValueError):
+        av.chart_ashtakavarga("1912-08-08", "19:35", "Asia/Kolkata", city, mode)
+
+
+def test_natal_nifty_is_seven_planet_with_ambiguous_moon():
+    r = av.natal_ashtakavarga("nifty")
+    assert (r["mode"], r["lagna_reliable"], r["max_per_sign"]) == ("seven", False, 7)
+    assert r["lagna_reason"] == "birth time approximate"
+    assert r["ambiguous_contributors"] == {"Moon": ["Aquarius", "Pisces"]}
+    assert sum(r["sav"]) == 292 and set(r["bav"]) == set(av.PLANETS)
+
+
+@pytest.mark.parametrize("anchor", sorted(ANCHORS))
+def test_classical_sav_is_337_for_every_anchor(anchor):
+    assert sum(av.natal_ashtakavarga(anchor, "classical")["sav"]) == 337
+
+
+def test_transit_scores_are_natal_lookups():
+    r = av.transit_scores("nifty", dt.date(2026, 10, 30))
+    assert r["date"] == "2026-10-30" and r["transit_time"] == "09:15 IST"
+    assert set(r["transit"]) == set(av.PLANETS)  # no Rahu, no Ketu
+    for planet, t in r["transit"].items():
+        assert t["sign"] == RASHIS[t["sign_index"]]
+        assert t["bav_points"] == r["natal"]["bav"][planet][t["sign_index"]]
+        assert t["sav_points"] == r["natal"]["sav"][t["sign_index"]]
+
+
+def test_transit_is_computed_at_0915_ist(monkeypatch):
+    calls = []
+    real = av.positions
+
+    def spy(jd):
+        calls.append(jd)
+        return real(jd)
+
+    monkeypatch.setattr(av, "positions", spy)
+    av.transit_scores("india", dt.date(2026, 10, 30))
+    assert _jd(dt.datetime(2026, 10, 30, 9, 15, tzinfo=IST)) in calls
+
+
+def test_transit_scores_rejects_non_date():
+    with pytest.raises(TypeError):
+        av.transit_scores("nifty", "2026-10-30")

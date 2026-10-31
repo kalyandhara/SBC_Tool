@@ -13,9 +13,12 @@ Two variants (spec .internal/specs/2026-10-31-ashtakavarga-design.md):
 
 from __future__ import annotations
 
+import datetime as dt
 from functools import cache
 
+from sbc import cities, natal
 from sbc.engine import ANCHORS, _julday, _utc_from_local
+from sbc.helio_aspects import IST, _jd
 from sbc.nakshatra import RASHIS
 from sbc.planets import positions
 
@@ -161,3 +164,57 @@ def ambiguous_contributors(anchor: str) -> dict[str, list[str]]:
     """{planet: [sign at 00:00, sign at 23:59]} for planets changing sign on an approximate birth day."""
     _check_anchor(anchor)
     return {p: list(pair) for p, pair in _ambiguous(anchor)}
+
+
+TRANSIT_TIME = dt.time(9, 15)  # NSE open, the transit_natal.active_on convention
+TRANSIT_TIME_LABEL = "09:15 IST"
+
+
+def _planet_signs(detail: list[dict]) -> dict[str, int]:
+    return {p["name"]: p["sign_index"] for p in detail if p["name"] in PLANETS}
+
+
+def _tables(signs: dict[str, int], lagna_sign: int | None) -> dict:
+    rows = bav(signs, lagna_sign)
+    return {"max_per_sign": 8 if lagna_sign is not None else 7, "bav": rows, "sav": sav(rows)}
+
+
+def natal_ashtakavarga(anchor: str, lagna_mode: str = "auto") -> dict:
+    """BAV/SAV for an anchor's natal chart, with how far its Lagna can be trusted."""
+    mode, reliable, reason = resolve_mode(anchor, lagna_mode)
+    signs = _planet_signs(natal.chart_detail(anchor))
+    lagna = int(natal.lagna_longitude(anchor) // 30) if mode == "classical" else None
+    return {"mode": mode, "lagna_reliable": reliable, "lagna_reason": reason,
+            "ambiguous_contributors": ambiguous_contributors(anchor),
+            **_tables(signs, lagna)}
+
+
+def chart_ashtakavarga(date: str, time: str, tz: str, city: str,
+                       lagna_mode: str = "classical") -> dict:
+    """BAV/SAV for a hand-given birth moment (book fixtures); `auto` needs an anchor."""
+    if lagna_mode not in ("classical", "seven"):
+        raise ValueError("lagna_mode must be 'classical' or 'seven' for a hand-given chart")
+    if cities.resolve(city) is None:
+        raise ValueError(f"unknown city: {city!r}")
+    signs = _planet_signs(natal.chart_detail(date, time, tz))
+    lagna = int(natal.lagna_longitude(date, time, tz, city) // 30)         if lagna_mode == "classical" else None
+    return {"mode": lagna_mode, **_tables(signs, lagna),
+            "planet_signs": {p: RASHIS[s] for p, s in signs.items()},
+            "lagna_sign": RASHIS[lagna] if lagna is not None else None}
+
+
+def transit_scores(anchor: str, date: dt.date, lagna_mode: str = "auto") -> dict:
+    """Natal BAV/SAV plus, for each of the 7 planets, the bindus of the sign it transits at 09:15 IST."""
+    if not isinstance(date, dt.date):
+        raise TypeError(f"date must be a datetime.date, got {type(date).__name__}")
+    natal_av = natal_ashtakavarga(anchor, lagna_mode)
+    planets, _ayanamsa = positions(_jd(dt.datetime.combine(date, TRANSIT_TIME, IST)))
+    transit = {}
+    for p in planets:
+        if p["name"] in PLANETS:
+            s = p["sign_index"]
+            transit[p["name"]] = {"sign": RASHIS[s], "sign_index": s,
+                                  "bav_points": natal_av["bav"][p["name"]][s],
+                                  "sav_points": natal_av["sav"][s]}
+    return {"date": date.isoformat(), "transit_time": TRANSIT_TIME_LABEL,
+            "natal": natal_av, "transit": transit}
