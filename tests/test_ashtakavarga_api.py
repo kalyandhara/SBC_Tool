@@ -31,7 +31,8 @@ def test_explicit_params(client):
 @pytest.mark.parametrize("qs", [
     "anchor=../../etc", "anchor=NIFTY", "anchor=", "date=2026-13-01", "date=1899-12-31",
     "date=2101-01-01", "date=20261030", "date=2026-10-30T09:15", "lagna_mode=both",
-    "foo=1",
+    "foo=1", "date=2026-W44-1", "date=２０２６-10-30",
+    "anchor=nifty&anchor=x", "date=2026-10-30&date=2026-10-31",
 ])
 def test_rejects_bad_params(client, qs):
     assert client.get(f"/api/ashtakavarga?{qs}").status_code == 400
