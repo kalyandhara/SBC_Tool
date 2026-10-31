@@ -3478,3 +3478,10 @@ a:focus-visible,
 @media (max-width: 640px) {
   .sr-radar-wrap, .sr-wheel-wrap { grid-template-columns: 1fr; }
 }
+
+/* Ashtakavarga tab */
+.av-root { overflow-x: auto; }
+.av-controls { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 10px; font-size: 13px; }
+.av-grid th, .av-grid td { text-align: center; }
+.av-grid td.av-transit { outline: 2px solid var(--accent); outline-offset: -2px; font-weight: 700; }
+.av-sav td { font-weight: 700; background: color-mix(in srgb, var(--green) calc(var(--av-heat, 0) * 45%), transparent); }

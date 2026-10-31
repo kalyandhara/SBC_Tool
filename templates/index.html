@@ -114,6 +114,9 @@
           <button class="nav-tab" data-tab="tab-swing" role="tab" aria-selected="false" aria-controls="tab-swing">
             <span class="tab-icon" aria-hidden="true">🌊</span> Swing Windows
           </button>
+          <button class="nav-tab" data-tab="tab-ashtakavarga" role="tab" aria-selected="false" aria-controls="tab-ashtakavarga">
+            <span class="tab-icon" aria-hidden="true">🔢</span> Ashtakavarga
+          </button>
         </div>
       </details>
     </div>
@@ -1570,6 +1573,17 @@
       <div id="sr-root" class="sr-root"></div>
     </div>
 
+    <div id="tab-ashtakavarga" class="tab-pane" role="tabpanel">
+      <section class="panel">
+        <div class="panel-head">
+          <h2>Ashtakavarga</h2>
+          <span class="panel-sub">Classical bindus (BAV per planet, SAV total) on an anchor's natal chart, with the signs the planets transit at 09:15 IST.</span>
+        </div>
+        <div id="av-status" class="nifty-chart-status" role="status" aria-live="polite"></div>
+        <div id="av-root" class="av-root"></div>
+      </section>
+    </div>
+
     <div id="tab-bullion" class="tab-pane" role="tabpanel">
       <section class="panel analog-lab">
         <div class="panel-head">
@@ -1622,6 +1636,7 @@
   <script src="/static/js/rahu-ketu-trap.js?v=3"></script>
   <script src="/static/js/transit-almanac.js?v=3"></script>
   <script src="/static/js/sector-rotation.js?v=1"></script>
+  <script src="/static/js/ashtakavarga.js?v=1"></script>
   <script src="/static/js/bullion-week.js?v=4"></script>
   <footer class="site-footer">
     <div class="wrap">

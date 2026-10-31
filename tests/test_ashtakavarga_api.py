@@ -49,3 +49,14 @@ def test_calculation_failure_is_a_generic_500(client, monkeypatch):
     r = client.get("/api/ashtakavarga")
     assert r.status_code == 500
     assert "secret" not in r.get_data(as_text=True)
+
+
+def test_ashtakavarga_tab_is_wired():
+    from pathlib import Path
+    root = Path(__file__).resolve().parent.parent
+    html = (root / "templates" / "index.html").read_text(encoding="utf-8")
+    js = (root / "static" / "js" / "ashtakavarga.js").read_text(encoding="utf-8")
+    research = html.split('class="advanced-workspace-tabs"', 1)[1].split("</details>", 1)[0]
+    assert 'data-tab="tab-ashtakavarga"' in research
+    assert 'id="tab-ashtakavarga"' in html and 'src="/static/js/ashtakavarga.js' in html
+    assert "innerHTML" not in js and "/api/ashtakavarga" in js
