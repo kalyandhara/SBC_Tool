@@ -86,8 +86,11 @@ def _utc_from_local(date_str, time_str, tz_name):
     except ZoneInfoNotFoundError:
         tz = ZoneInfo("Asia/Kolkata")
     y, m, d = (int(x) for x in date_str.split("-"))
-    hh, mm = (int(x) for x in time_str.split(":"))
-    local = datetime.datetime(y, m, d, hh, mm, tzinfo=tz)
+    parts = [int(x) for x in time_str.split(":")]
+    if len(parts) not in (2, 3):
+        raise ValueError(f"time must be HH:MM or HH:MM:SS, got {time_str!r}")
+    hh, mm, ss = (parts + [0])[:3]
+    local = datetime.datetime(y, m, d, hh, mm, ss, tzinfo=tz)
     return local.astimezone(datetime.UTC).replace(tzinfo=None)
 
 

@@ -146,3 +146,30 @@ def test_lecture5_is_the_five_aspects_the_lecture_names():
     assert set(nv.LECTURE_ASPECTS) == {"CONJ", "SQ", "SXT", "SS", "TRI"}
     match = nv.groups(NIFTY)["lecture5"]
     assert match({"aspect": "CONJ"}) and not match({"aspect": "OPP"})
+
+
+# ── SBC_Tool-cah: time parser accepts HH:MM:SS ─────────────────────────────
+
+def test_utc_from_local_accepts_seconds():
+    from sbc import engine
+    assert engine._utc_from_local("2009-01-03", "18:15:05", "UTC") == \
+        dt.datetime(2009, 1, 3, 18, 15, 5)
+
+
+def test_utc_from_local_still_accepts_minutes():
+    from sbc import engine
+    assert engine._utc_from_local("2026-10-30", "09:15", "Asia/Kolkata") == \
+        dt.datetime(2026, 10, 30, 3, 45)
+
+
+@pytest.mark.parametrize("bad", ["18", "1:2:3:4"])
+def test_utc_from_local_rejects_malformed(bad):
+    from sbc import engine
+    with pytest.raises(ValueError):
+        engine._utc_from_local("2026-10-30", bad, "Asia/Kolkata")
+
+
+def test_bitcoin_anchor_chart_builds():
+    """The bitcoin anchor's time is 18:15:05; it used to raise 'invalid birth date/time'."""
+    btc = natal.chart("bitcoin")
+    assert {"Sun", "Moon", "Saturn"} <= set(btc)
