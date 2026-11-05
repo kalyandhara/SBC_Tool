@@ -587,13 +587,18 @@ body {
 .cell.hit-bear { box-shadow: inset 0 0 0 2px var(--red), 0 0 14px rgba(248,113,113,.55); }
 .cell.hit-both { box-shadow: inset 0 0 0 2px #fbbf24, 0 0 14px rgba(251,191,36,.55); }
 
+.pmarks {
+  position: absolute; bottom: 4px; right: 4px; max-width: calc(100% - 8px);
+  display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 2px;
+}
 .pmark {
-  position: absolute; bottom: 4px; right: 4px;
   width: 27px; height: 27px; border-radius: 50%;
   display: grid; place-items: center;
   font-size: 12px; font-weight: 800; color: #0b1120;
   border: 1.5px solid #0b1120;
 }
+/* Several planets in one cell: shrink so they sit side by side, each still visible */
+.pmarks.multi .pmark { width: 18px; height: 18px; font-size: 9px; border-width: 1px; }
 .pmark.benefic { background: var(--green); }
 .pmark.malefic { background: var(--red); }
 
@@ -3487,3 +3492,49 @@ a:focus-visible,
 .av-sav td { font-weight: 700; background: color-mix(in srgb, var(--green) calc(var(--av-heat, 0) * 45%), transparent); }
 .av-caption { caption-side: top; text-align: left; font-size: 12px; color: var(--muted, inherit); padding: 4px 0; }
 .av-data { margin-top: 8px; }
+
+/* Ontology Framework tab */
+.ontology-controls { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin-bottom: 12px; font-size: 13px; }
+.ontology-body { display: flex; flex-direction: column; gap: 10px; }
+.ontology-note, .ontology-error { font-size: 13px; color: var(--muted, inherit); padding: 8px 0; }
+.ontology-error { color: var(--red, #b42318); }
+.ontology-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 10px; }
+.ontology-card { border: 1px solid var(--line, #dfe3ea); border-radius: 8px; padding: 10px 12px; background: var(--card-bg, var(--bg, #fff)); }
+.ontology-card.full-width { grid-column: 1 / -1; }
+.ontology-card .card-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+.ontology-card .card-head h3 { margin: 0; font-size: 15px; }
+.fe-badge { font-size: 11px; padding: 2px 8px; border-radius: 10px; background: var(--muted-bg, #eef1f5); color: var(--muted, #5b6474); }
+.chip { display: inline-block; padding: 3px 8px; margin: 2px 4px 2px 0; border-radius: 10px; font-size: 12px; border: 1px solid var(--line, #dfe3ea); background: var(--chip-bg, #f3f5f8); }
+.chip.benefic { border-color: var(--green-border, #b7e4c7); background: color-mix(in srgb, var(--green, #13795b) 12%, transparent); color: var(--green-text, #0e5a46); }
+.chip.malefic { border-color: var(--red-border, #f5c6c7); background: color-mix(in srgb, var(--red, #b42318) 12%, transparent); color: var(--red-text, #8a1f1f); }
+.chip-nak { font-weight: 700; opacity: 0.9; }
+.chip-str { float: right; font-size: 11px; opacity: 0.75; }
+.sens-tag { font-size: 9px; padding: 1px 6px; border-radius: 8px; background: #fef3c7; color: #92400e; margin-left: 6px; }
+.sensitive-row { margin-top: 6px; font-size: 12px; color: var(--muted, inherit); }
+.sens-list { font-weight: 700; }
+.regime-badge { display: inline-block; padding: 6px 14px; border-radius: 10px; font-weight: 700; font-size: 15px; margin-bottom: 6px; }
+.regime-Risk-ON { background: var(--green, #13795b); color: #fff; }
+.regime-Risk-OFF { background: var(--red, #b42318); color: #fff; }
+.regime-Neutral { background: var(--muted-bg, #eef1f5); color: var(--muted, #5b6474); }
+.regime-conf { font-size: 12px; color: var(--muted, inherit); margin-bottom: 6px; }
+.actions { display: flex; gap: 6px; flex-wrap: wrap; }
+.action-chip { font-size: 11px; padding: 2px 8px; border-radius: 10px; border: 1px solid var(--line, #dfe3ea); background: var(--chip-bg, #f3f5f8); }
+.data-table { width: 100%; border-collapse: collapse; margin-top: 6px; font-size: 13px; }
+.data-table th, .data-table td { border: 1px solid var(--line, #dfe3ea); padding: 5px 8px; text-align: left; }
+.data-table th { background: var(--head, #f3f5f8); font-weight: 700; }
+.cell-score { font-weight: 700; }
+.cell-score.dir-pos { color: var(--green, #13795b); }
+.cell-score.dir-neg { color: var(--red, #b42318); }
+.cell-score.dir-neu { color: var(--muted, #5b6474); }
+.cell-group { font-size: 11px; color: var(--muted, #5b6474); text-transform: uppercase; letter-spacing: 0.04em; }
+.flow-row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 6px; }
+.flow-item { padding: 4px 10px; border-radius: 10px; border: 1px solid var(--line, #dfe3ea); font-size: 12px; font-weight: 700; background: var(--chip-bg, #f3f5f8); }
+.flow-item.flow-pos { color: var(--green, #13795b); }
+.flow-item.flow-neg { color: var(--red, #b42318); }
+.flow-item.flow-neu { color: var(--muted, #5b6474); }
+.reasoning-list { display: flex; flex-direction: column; gap: 6px; margin-top: 6px; }
+.reason-path { display: flex; justify-content: space-between; align-items: center; padding: 5px 8px; border: 1px solid var(--line, #dfe3ea); border-radius: 6px; background: var(--bg, #fff); font-size: 12px; }
+.reason-chain { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 70%; }
+.reason-val { font-weight: 700; font-size: 12px; }
+.cert-note { margin-top: 8px; font-size: 11px; color: var(--muted, #5b6474); border-top: 1px solid var(--line, #dfe3ea); padding-top: 6px; }
+.ontology-empty { color: var(--muted, #5b6474); font-style: italic; }

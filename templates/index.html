@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <link rel="icon" type="image/svg+xml" href="/static/favicon.svg">
   <title>Sarvatobhadra Chakra - Market Prediction</title>
-  <link rel="stylesheet" href="/static/style.css?v=32">
+  <link rel="stylesheet" href="/static/style.css?v=33">
   <script src="/static/chart.umd.min.js"></script>
   <script src="/static/js/api-token.js"></script>
 </head>
@@ -116,6 +116,9 @@
           </button>
           <button class="nav-tab" data-tab="tab-ashtakavarga" role="tab" aria-selected="false" aria-controls="tab-ashtakavarga">
             <span class="tab-icon" aria-hidden="true">🔢</span> Ashtakavarga
+          </button>
+          <button class="nav-tab" data-tab="tab-ontology" role="tab" aria-selected="false" aria-controls="tab-ontology">
+            <span class="tab-icon" aria-hidden="true">🕸️</span> Ontology Framework
           </button>
         </div>
       </details>
@@ -1638,6 +1641,33 @@
   <script src="/static/js/sector-rotation.js?v=1"></script>
   <script src="/static/js/ashtakavarga.js?v=1"></script>
   <script src="/static/js/bullion-week.js?v=4"></script>
+  <footer class="site-footer">
+    <div class="wrap">
+      <small>For informational purposes only. Astrological market timing is not financial advice. Trade at your own risk.</small>
+    </div>
+    <!-- Ontology Framework tab (Research · unvalidated) -->
+    <div id="tab-ontology" class="tab-pane" role="tabpanel">
+      <section class="panel ontology-panel" aria-labelledby="ontology-title">
+        <div class="panel-head">
+          <h2 id="ontology-title">SBC Market Ontology Framework</h2>
+          <span class="fe-badge">Research · no validated edge</span>
+        </div>
+        <div id="ontology-controls" class="ontology-controls">
+          <label>Date
+            <input type="date" id="ontology-date">
+          </label>
+          <label>Time
+            <input type="time" id="ontology-time" value="09:15">
+          </label>
+          <button id="ontology-run" class="btn btn-primary" type="button">⚡ Compute Ontology</button>
+          <button id="ontology-clear" class="btn btn-secondary" type="button">Clear</button>
+        </div>
+        <div id="ontology-body" class="ontology-body" role="status" aria-live="polite">
+          <p class="ontology-note">Set a date and run to compute the market ontology.</p>
+        </div>
+      </section>
+    </div>
+  </div>
   <footer class="site-footer">
     <div class="wrap">
       <small>For informational purposes only. Astrological market timing is not financial advice. Trade at your own risk.</small>

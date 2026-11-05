@@ -44,12 +44,13 @@ def _blueprints() -> list:
     from sbc.api.blueprints.infographic_bp import infographic_bp
     from sbc.api.blueprints.integrations_bp import integrations_bp
     from sbc.api.blueprints.kp_bp import kp_bp
+    from sbc.api.blueprints.ontology_bp import ontology_bp
     from sbc.api.blueprints.overview_bp import overview_bp
     from sbc.api.blueprints.profile_bp import profile_bp
     from sbc.api.blueprints.research_bp import research_bp
     from sbc.api.blueprints.screener_bp import screener_bp
-    from sbc.api.blueprints.sectors_bp import sectors_bp
     from sbc.api.blueprints.sector_rotation_bp import sector_rotation_bp
+    from sbc.api.blueprints.sectors_bp import sectors_bp
     from sbc.api.blueprints.signals_bp import signals_bp
     from sbc.api.blueprints.timing_bp import timing_bp
     from sbc.api.blueprints.transit_bp import transit_bp
@@ -57,7 +58,7 @@ def _blueprints() -> list:
     return [engine_bp, overview_bp, chart_bp, sectors_bp, sector_rotation_bp,
             ashtakavarga_bp, kp_bp, balance_bp, chakra_bp, forecast_bp, research_bp,
             signals_bp, timing_bp, profile_bp, integrations_bp, infographic_bp, transit_bp,
-            screener_bp]
+            screener_bp, ontology_bp]
 
 
 def _rate_limit():
@@ -135,7 +136,10 @@ def create_app() -> Flask:
     app.before_request(_require_write_token)
     app.register_error_handler(Exception, _unhandled)
     app.after_request(_headers)
+    # Back-compat: some frontend code calls /health (not /healthz).
     app.add_url_rule("/healthz", "healthz", healthz)
+    app.add_url_rule("/health", "health", healthz)
+
     app.add_url_rule("/", "index", index)
     boot(app)  # DB schema, city-DB check
     return app

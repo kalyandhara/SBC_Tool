@@ -16,6 +16,8 @@ const HEAVY_ENDPOINTS = [
   "/api/astro/personal", "/api/backtest", "/api/signal/moon", "/api/price",
   "/api/vedha_daily", "/api/daily_confluence", "/api/nakshatra_chart",
   "/api/intraday_projection", "/api/rahu_ketu_trap_calendar",
+  "/api/ontology/planetary", "/api/ontology/sectors",
+  "/api/ontology/report", "/api/ontology/certificate",
 ];
 
 const INFLIGHT = new Map();
@@ -297,6 +299,13 @@ function setExecutiveLoading() {
 function showPredictionError() {
   const errorBox = $("prediction-error");
   if (errorBox) errorBox.classList.remove("hidden");
+  // Clear any chart loading state so a failed prediction doesn't leave a
+  // stale "Computing SBC chakra…" message in the grid area.
+  const chartGrid = $("grid");
+  const chartRays = $("rays");
+  if (chartGrid) chartGrid.innerHTML = "";
+  if (chartRays) chartRays.innerHTML = "";
+  if ($("grid-sub")) $("grid-sub").textContent = "";
   // Reset any badges still stuck on "Loading..." (no successful result yet);
   // previously loaded results are left untouched.
   const resetBadge = (badgeId, placeholder) => {
@@ -1817,14 +1826,20 @@ function renderGrid(d) {
       }
 
       if (cell.planets && cell.planets.length) {
+        // Wrap all planets in one stack so several in the same nakshatra sit side
+        // by side instead of stacking on top of each other (Jupiter hidden by Ketu).
+        const stack = document.createElement("div");
+        stack.className = "pmarks" + (cell.planets.length > 1 ? " multi" : "");
         for (const p of cell.planets) {
           const pm = document.createElement("div");
           pm.className = "pmark " + NATURE[p.nature].cls;
           pm.textContent = p.symbol;
+          pm.title = p.name + " (" + p.nature + ")";
           el.title = (el.title ? el.title + " .  " : "") +
             p.name + " (" + p.nature + ")";
-          el.appendChild(pm);
+          stack.appendChild(pm);
         }
+        el.appendChild(stack);
       }
       grid.appendChild(el);
     }
@@ -3200,6 +3215,13 @@ async function run() {
   const btn = $("run");
   btn.disabled = true;
   setExecutiveLoading();
+  // Chart-area loading state so the SBC chakra doesn't look blank while
+  // /api/prediction computes (can take up to 2 min on a cold cache).
+  const chartGrid = $("grid");
+  const chartRays = $("rays");
+  if (chartGrid) chartGrid.innerHTML = '<div class="chart-loading" style="text-align:center;padding:48px 16px;color:var(--muted);">Computing SBC chakra…</div>';
+  if (chartRays) chartRays.innerHTML = "";
+  if ($("grid-sub")) $("grid-sub").textContent = "";
   // Normalize date from DD/MM/YYYY to YYYY-MM-DD if needed
   let dateVal = $("date").value || "";
   if (/^\d{2}\/\d{2}\/\d{4}$/.test(dateVal)) {
@@ -4247,6 +4269,106 @@ document.addEventListener("DOMContentLoaded", () => {
     };
     $("scr-run").addEventListener("click", () => run("json"));
     $("scr-download").addEventListener("click", () => run("xlsx"));
+
+    // ========================================================================
+    // Ontology Framework tab (SBC Market Ontology Framework)
+    // ========================================================================
+    const ONTO_DATE = $("ontology-date");
+    const ONTO_TIME = $("ontology-time");
+    const ONTO_TZ = $("tz");
+    const ONTO_BODY = $("ontology-body");
+
+    async function loadOntologyReport() {
+      if (!ONTO_DATE || !ONTO_BODY) return;
+      const date = ONTO_DATE.value || localTodayISO(ONTO_TZ ? ONTO_TZ.value : "Asia/Kolkata");
+      if (!ONTO_DATE.value) ONTO_DATE.value = date;
+      const time = ONTO_TIME ? ONTO_TIME.value : "09:15";
+      const tz = ONTO_TZ ? ONTO_TZ.value : "Asia/Kolkata";
+      ONTO_BODY.innerHTML =
+        '<p class="ontology-note">Computing ontology… this may take a moment.</p>';
+      try {
+        const res = await fetchWithTimeout(
+          `/api/ontology/report?date=${encodeURIComponent(date)}&time=${encodeURIComponent(time)}&tz=${encodeURIComponent(tz)}`,
+          120000);
+        const body = await res.json();
+        if (!res.ok || body.error) throw new Error(body.error || res.status);
+        renderOntologyReport(body);
+      } catch (e) {
+        ONTO_BODY.innerHTML =
+          '<p class="ontology-error">Ontology computation failed: ' +
+          esc(e.message) + "</p>";
+      }
+    }
+
+    function renderOntologyReport(d) {
+      const escHtml = (s) => esc(s ?? "");
+      const pct = (v) => (v * 100).toFixed(0) + "%";
+
+      const planetsHtml = (d.planetary_summary || []).map((p) =>
+        `<span class="chip chip-${p.nature}">${escHtml(p.planet)} <span class="chip-nak">${escHtml(p.nakshatra)}</span>${p.sensitive ? ' <span class="sens-tag">sensitive</span>' : ''} <span class="chip-str">(${(p.strength > 0 ? "+" : "") + p.strength})</span></span>`).join("") ||
+        "<span class=" + "'ontology-empty'" + ">No planetary data</span>";
+
+      const secHtml = (d.sector_scorecard || []).map((s) => {
+        const dir = s.score > 0 ? "pos" : s.score < 0 ? "neg" : "neu";
+        return `<tr><td>${escHtml(s.sector)}</td><td class="cell-group">${escHtml(s.group)}</td><td class="cell-score dir-${dir}">${s.score >= 0 ? "+" : ""}${s.score.toFixed(2)}</td><td>${(s.planets || []).join(", ")}</td></tr>`;
+      }).join("") || "<tr><td colspan=" + "'4'" + " class=" + "'ontology-empty'" + ">No sector data</td></tr>";
+
+      const pathHtml = (d.reasoning_paths || []).slice(0, 12).map((p) =>
+        `<div class="reason-path"><span class="reason-chain">${escHtml(p.chain)}</span> <span class="reason-val">${p.contribution >= 0 ? "+" : ""}${p.contribution}</span></div>`).join("") ||
+        "<p class=" + "'ontology-empty'" + ">No reasoning paths</p>";
+
+      const lf = d.liquidity_flow || {};
+      const lfHtml = Object.entries(lf).map(([g, arr]) => {
+        const sym = arr === "↑" ? "pos" : arr === "↓" ? "neg" : "neu";
+        return `<span class="flow-item flow-${sym}">${escHtml(g)} ${arr}</span>`;
+      }).join("") || "<span class=" + "'ontology-empty'" + ">—</span>";
+
+      ONTO_BODY.innerHTML = `
+        <div class="ontology-grid">
+          <div class="ontology-card ontology-regime">
+            <div class="card-head"><h3>Market Regime</h3></div>
+            <div class="regime-badge regime-${(d.regime || "Neutral").replace(" ", "-")}">${escHtml(d.regime)}</div>
+            <div class="regime-conf">Confidence: ${pct(d.confidence)}</div>
+            <div class="actions">${(d.trading_actions || []).map((a) => `<span class="action-chip">${escHtml(a)}</span>`).join("")}</div>
+          </div>
+
+          <div class="ontology-card ontology-planets">
+            <div class="card-head"><h3>Planetary Summary (Level 1)</h3></div>
+            <div class="planet-chips">${planetsHtml}</div>
+            <div class="sensitive-row">Sensitive stars: <span class="sens-list">${(d.sensitive_stars || []).join(", ") || "—"}</span></div>
+          </div>
+
+          <div class="ontology-card ontology-flow">
+            <div class="card-head"><h3>Liquidity Flow Map</h3></div>
+            <div class="flow-row">${lfHtml}</div>
+          </div>
+
+          <div class="ontology-card ontology-sectors full-width">
+            <div class="card-head"><h3>Sectoral Scorecard</h3></div>
+            <table class="data-table"><thead><tr><th>Sector</th><th>Group</th><th>Score</th><th>Planets</th></tr></thead><tbody>${secHtml}</tbody></table>
+          </div>
+
+          <div class="ontology-card ontology-reasoning full-width">
+            <div class="card-head"><h3>Explainable Reasoning Paths</h3></div>
+            <div class="reasoning-list">${pathHtml}</div>
+            <div class="cert-note">Certificate: ${(d.certificate && d.certificate.asserted) ? d.certificate.asserted + " asserted, " + d.certificate.derivations + " derived" : "n/a"}</div>
+          </div>
+        </div>
+      `;
+    }
+
+    if ($("ontology-run")) {
+      $("ontology-run").addEventListener("click", loadOntologyReport);
+    }
+    if ($("ontology-clear") && ONTO_BODY) {
+      $("ontology-clear").addEventListener("click", () => {
+        ONTO_BODY.innerHTML = '<p class="ontology-note">Set a date and run to compute the market ontology.</p>';
+        if (ONTO_DATE) ONTO_DATE.value = "";
+      });
+    }
+    if (ONTO_DATE && !ONTO_DATE.value) {
+      ONTO_DATE.value = localTodayISO(ONTO_TZ ? ONTO_TZ.value : "Asia/Kolkata");
+    }
   }
 
 });
