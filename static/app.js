@@ -18,6 +18,7 @@ const HEAVY_ENDPOINTS = [
   "/api/intraday_projection", "/api/rahu_ketu_trap_calendar",
   "/api/ontology/planetary", "/api/ontology/sectors",
   "/api/ontology/report", "/api/ontology/certificate",
+  "/api/ontology/catalogue", "/api/ontology/import",
 ];
 
 const INFLIGHT = new Map();
@@ -4420,12 +4421,199 @@ document.addEventListener("DOMContentLoaded", () => {
       `;
     }
 
+    // ---------- Ontology Catalogue (Microsoft Ontology-Playground style) ----------
+    async function loadCatalogue() {
+      if (!ONTO_BODY) return;
+      ONTO_BODY.innerHTML =
+        '<p class="ontology-note">Loading ontology catalogue…</p>';
+      try {
+        const res = await fetchWithTimeout("/api/ontology/catalogue", 15000);
+        const cat = await res.json();
+        renderCatalogue(cat.ontologies || []);
+      } catch (e) {
+        ONTO_BODY.innerHTML =
+          '<p class="ontology-error">Catalogue failed to load: ' +
+          esc(e.message) + "</p>";
+      }
+    }
+
+    function renderCatalogue(ontologies) {
+      ONTO_BODY.innerHTML = `
+        <div class="onto-catalogue">
+          <div class="onto-cat-header">
+            <h3>Ontology Catalogue</h3>
+            <p class="onto-cat-sub">Starter domain ontologies — click Load to open one in the viewer.</p>
+          </div>
+          <div class="onto-cat-grid">
+            ${ontologies.map((o) => `
+              <article class="onto-cat-card" data-id="${escHtml(o.id)}">
+                <div class="onto-cat-head">
+                  <span class="onto-cat-icon">${escHtml(o.icon || "📦")}</span>
+                  <div class="onto-cat-title">${escHtml(o.name)}</div>
+                </div>
+                <div class="onto-cat-desc">${escHtml(o.description)}</div>
+                <div class="onto-cat-meta">
+                  <span class="onto-cat-tag">${escHtml(o.category)}</span>
+                  ${(o.tags || []).map((t) => `<span class="onto-cat-tag">${escHtml(t)}</span>`).join("")}
+                </div>
+                <div class="onto-cat-stats">
+                  <span><b>${o.entityCount}</b> entities</span>
+                  <span><b>${o.relationshipCount}</b> relationships</span>
+                </div>
+                <button class="btn btn-secondary onto-cat-load" data-id="${escHtml(o.id)}">Load</button>
+              </article>
+            `).join("")}
+          </div>
+        </div>
+      `;
+      ONTO_BODY.querySelectorAll(".onto-cat-load").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          const id = btn.getAttribute("data-id");
+          loadCatalogueOntology(id);
+        });
+      });
+    }
+
+    async function loadCatalogueOntology(id) {
+      if (!ONTO_BODY) return;
+      ONTO_BODY.innerHTML =
+        '<p class="ontology-note">Loading ontology "' + escHtml(id) + '"…</p>';
+      try {
+        const res = await fetchWithTimeout(
+          "/api/ontology/catalogue/" + encodeURIComponent(id), 15000);
+        const d = await res.json();
+        if (d.error) throw new Error(d.error);
+        renderCatalogueOntology(d);
+      } catch (e) {
+        ONTO_BODY.innerHTML =
+          '<p class="ontology-error">Failed to load ontology: ' +
+          esc(e.message) + "</p>";
+      }
+    }
+
+    // Very small TTL parse (enough for the starter ontologies): classes,
+    // labels, comments, subclass edges, properties, and instance triples.
+    function parseSimpleTurtle(ttl) {
+      const entities = [];
+      const relationships = [];
+      const props = [];
+      const instances = [];
+      const lines = ttl.split("\n");
+      let curEnt = null;
+      for (const raw of lines) {
+        const line = raw.trim();
+        if (!line || line.startsWith("#")) continue;
+        // class with label/comment
+        const cls = line.match(/^(\S+)\s+rdf:type\s+rdfs:Class\s*\./);
+        if (cls) {
+          curEnt = { id: cls[1], label: cls[1], comment: "", type: "class" };
+          entities.push(curEnt);
+          continue;
+        }
+        const lbl = line.match(/^(\S+)\s+rdfs:label\s+"([^"]*)"\s*\./);
+        if (lbl && curEnt && lbl[1] === curEnt.id) {
+          curEnt.label = lbl[2];
+          continue;
+        }
+        const cmt = line.match(/^(\S+)\s+rdfs:comment\s+"([^"]*)"\s*\./);
+        if (cmt && curEnt && cmt[1] === curEnt.id) {
+          curEnt.comment = cmt[2];
+          continue;
+        }
+        const sub = line.match(/^(\S+)\s+rdfs:subClassOf\s+(\S+)\s*\./);
+        if (sub) {
+          relationships.push({ from: sub[1], to: sub[2], type: "subClassOf", label: "subClassOf" });
+          continue;
+        }
+        const prp = line.match(/^(\S+)\s+rdf:type\s+rdf:Property\s*\./);
+        if (prp) {
+          props.push({ id: prp[1], label: prp[1] });
+          continue;
+        }
+        const plbl = line.match(/^(\S+)\s+rdfs:label\s+"([^"]*)"\s*\./);
+        if (plbl) {
+          const p = props.find((x) => x.id === plbl[1]);
+          if (p) p.label = plbl[2];
+          continue;
+        }
+        const dom = line.match(/^(\S+)\s+rdfs:domain\s+(\S+)\s*\./);
+        if (dom) {
+          const p = props.find((x) => x.id === dom[1]);
+          if (p) p.domain = dom[2];
+          continue;
+        }
+        const rng = line.match(/^(\S+)\s+rdfs:range\s+(\S+)\s*\./);
+        if (rng) {
+          const p = props.find((x) => x.id === rng[1]);
+          if (rng) p.range = rng[2];
+          continue;
+        }
+        // instance triple: subject predicate object .
+        const inst = line.match(/^(\S+)\s+(\S+)\s+(\S+)\s*\./);
+        if (inst && inst[2] !== "rdf:type" && inst[2] !== "rdfs:label" && inst[2] !== "rdfs:comment" && inst[2] !== "rdfs:subClassOf" && inst[2] !== "rdf:Property" && inst[2] !== "rdfs:Class") {
+          instances.push({ subject: inst[1], predicate: inst[2], object: inst[3] });
+          relationships.push({ from: inst[1], to: inst[3], type: "instance", label: inst[2] });
+        }
+      }
+      return { entities, relationships, props, instances };
+    }
+
+    function renderCatalogueOntology(d) {
+      const parsed = parseSimpleTurtle(d.ttl || "");
+      ONTO_BODY.innerHTML = `
+        <div class="onto-view">
+          <div class="onto-view-head">
+            <div>
+              <div class="onto-view-title">${escHtml(d.name)}</div>
+              <div class="onto-view-meta">${escHtml(d.description)} · ${d.category} · ${d.entityCount} entities · ${d.relationshipCount} relationships</div>
+            </div>
+            <div class="onto-view-actions">
+              <button class="btn btn-secondary" id="onto-back-to-cat">← Catalogue</button>
+            </div>
+          </div>
+          <div class="onto-view-body">
+            <div class="onto-view-section">
+              <h4>Entities (${parsed.entities.length})</h4>
+              <table class="data-table"><thead><tr><th>Entity</th><th>Label</th><th>Comment</th></tr></thead><tbody>
+                ${parsed.entities.map((e) => `<tr><td class="sep-planet">${escHtml(e.id)}</td><td class="sep-nak">${escHtml(e.label)}</td><td>${escHtml(e.comment)}</td></tr>`).join("") || "<tr><td colspan='3' class='ontology-empty'>None</td></tr>"}
+              </tbody></table>
+            </div>
+            <div class="onto-view-section">
+              <h4>Relationships (${parsed.relationships.length})</h4>
+              <table class="data-table"><thead><tr><th>From</th><th>Predicate</th><th>To</th></tr></thead><tbody>
+                ${parsed.relationships.map((r) => `<tr><td class="sep-planet">${escHtml(r.from)}</td><td class="sep-group">${escHtml(r.label)}</td><td class="sep-planet">${escHtml(r.to)}</td></tr>`).join("") || "<tr><td colspan='3' class='ontology-empty'>None</td></tr>"}
+              </tbody></table>
+            </div>
+            <div class="onto-view-section onto-view-section-full">
+              <h4>Properties (${parsed.props.length})</h4>
+              <table class="data-table"><thead><tr><th>Property</th><th>Label</th><th>Domain</th><th>Range</th></tr></thead><tbody>
+                ${parsed.props.map((p) => `<tr><td class="sep-planet">${escHtml(p.id)}</td><td class="sep-nak">${escHtml(p.label)}</td><td>${escHtml(p.domain || "")}</td><td>${escHtml(p.range || "")}</td></tr>`).join("") || "<tr><td colspan='4' class='ontology-empty'>None</td></tr>"}
+              </tbody></table>
+            </div>
+            <div class="onto-view-section onto-view-section-full">
+              <h4>Instance Triples</h4>
+              <table class="data-table"><thead><tr><th>Subject</th><th>Predicate</th><th>Object</th></tr></thead><tbody>
+                ${parsed.instances.map((i) => `<tr><td class="sep-planet">${escHtml(i.subject)}</td><td class="sep-group">${escHtml(i.predicate)}</td><td class="sep-planet">${escHtml(i.object)}</td></tr>`).join("") || "<tr><td colspan='3' class='ontology-empty'>None</td></tr>"}
+              </tbody></table>
+            </div>
+          </div>
+        </div>
+      `;
+      if ($("onto-back-to-cat")) {
+        $("onto-back-to-cat").addEventListener("click", loadCatalogue);
+      }
+    }
+
+    if ($("ontology-catalogue")) {
+      $("ontology-catalogue").addEventListener("click", loadCatalogue);
+    }
+
     if ($("ontology-run")) {
       $("ontology-run").addEventListener("click", loadOntologyReport);
     }
     if ($("ontology-clear") && ONTO_BODY) {
       $("ontology-clear").addEventListener("click", () => {
-        ONTO_BODY.innerHTML = '<p class="ontology-note">Set a date and run to compute the market ontology.</p>';
+        ONTO_BODY.innerHTML = '<p class="ontology-note">Set a date and run to compute the market ontology, or open the catalogue to load a starter ontology.</p>';
         if (ONTO_DATE) ONTO_DATE.value = "";
       });
     }

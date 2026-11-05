@@ -1,0 +1,86 @@
+# manufacturing.ttl - SBC starter ontology: Manufacturing domain.
+#
+# Model: factories, production lines, products, and supply chains.
+# Pattern: Microsoft Ontology-Playground Manufacturing ontology style.
+#
+@prefix rdf:  <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix sbc:  <http://sbc.tool/ont#> .
+@prefix mf:   <http://sbc.tool/ont/manufacturing#> .
+
+# ---- classes ----------------------------------------------------------
+
+mf:Factory rdf:type rdfs:Class .
+mf:Factory rdfs:label "Factory" .
+mf:Factory rdfs:comment "A manufacturing facility." .
+
+mf:ProductionLine rdf:type rdfs:Class .
+mf:ProductionLine rdfs:label "Production Line" .
+mf:ProductionLine rdfs:comment "An assembly line within a factory." .
+
+mf:Product rdf:type rdfs:Class .
+mf:Product rdfs:label "Manufactured Product" .
+mf:Product rdfs:comment "A product produced on a line." .
+
+mf:RawMaterial rdf:type rdfs:Class .
+mf:RawMaterial rdfs:label "Raw Material" .
+mf:RawMaterial rdfs:comment "An input material to production." .
+
+mf:Shift rdf:type rdfs:Class .
+mf:Shift rdfs:label "Shift" .
+mf:Shift rdfs:comment "A work shift on a production line." .
+
+# ---- properties -------------------------------------------------------
+
+mf:operates rdf:type rdf:Property .
+mf:operates rdfs:label "operates" .
+mf:operates rdfs:comment "A factory operates a production line." .
+mf:operates rdfs:domain mf:Factory .
+mf:operates rdfs:range mf:ProductionLine .
+
+mf:produces rdf:type rdf:Property .
+mf:produces rdfs:label "produces" .
+mf:produces rdfs:comment "A production line produces a product." .
+mf:produces rdfs:domain mf:ProductionLine .
+mf:produces rdfs:range mf:Product .
+
+mf:consumes rdf:type rdf:Property .
+mf:consumes rdfs:label "consumes" .
+mf:consumes rdfs:comment "A production line consumes raw material." .
+mf:consumes rdfs:domain mf:ProductionLine .
+mf:consumes rdfs:range mf:RawMaterial .
+
+mf:runsOn rdf:type rdf:Property .
+mf:runsOn rdfs:label "runs on" .
+mf:runsOn rdfs:comment "A production line runs on a shift." .
+mf:runsOn rdfs:domain mf:ProductionLine .
+mf:runsOn rdfs:range mf:Shift .
+
+mf:sourcesFrom rdf:type rdf:Property .
+mf:sourcesFrom rdfs:label "sources from" .
+mf:sourcesFrom rdfs:comment "A factory sources raw material from a supplier." .
+mf:sourcesFrom rdfs:domain mf:Factory .
+mf:sourcesFrom rdfs:range mf:RawMaterial .
+
+# ---- instances --------------------------------------------------------
+
+mf:FactoryEast rdf:type mf:Factory .
+mf:FactoryEast rdfs:label "East Plant" .
+
+mf:LineA rdf:type mf:ProductionLine .
+mf:LineA rdfs:label "Line A" .
+
+mf:ProductX rdf:type mf:Product .
+mf:ProductX rdfs:label "Product X" .
+
+mf:Steel rdf:type mf:RawMaterial .
+mf:Steel rdfs:label "Steel" .
+
+mf:DayShift rdf:type mf:Shift .
+mf:DayShift rdfs:label "Day Shift" .
+
+mf:FactoryEast mf:operates mf:LineA .
+mf:LineA mf:produces mf:ProductX .
+mf:LineA mf:consumes mf:Steel .
+mf:LineA mf:runsOn mf:DayShift .
+mf:FactoryEast mf:sourcesFrom mf:Steel .

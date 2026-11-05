@@ -1,0 +1,109 @@
+# retail_supply.ttl - SBC starter ontology: Retail & Supply Chain domain.
+#
+# Model: products, suppliers, stores, customers, and orders.
+# Pattern: Microsoft Ontology-Playground Retail/E-Commerce ontology style.
+#
+@prefix rdf:  <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix sbc:  <http://sbc.tool/ont#> .
+@prefix rs:   <http://sbc.tool/ont/retail_supply#> .
+
+# ---- classes ----------------------------------------------------------
+
+rs:Product rdf:type rdfs:Class .
+rs:Product rdfs:label "Product" .
+rs:Product rdfs:comment "A sellable item stocked by a store." .
+
+rs:Supplier rdf:type rdfs:Class .
+rs:Supplier rdfs:label "Supplier" .
+rs:Supplier rdfs:comment "A business that supplies products to stores." .
+
+rs:Store rdf:type rdfs:Class .
+rs:Store rdfs:label "Store" .
+rs:Store rdfs:comment "A physical retail location." .
+
+rs:Customer rdf:type rdfs:Class .
+rs:Customer rdfs:label "Customer" .
+rs:Customer rdfs:comment "A person who purchases products." .
+
+rs:Order rdf:type rdfs:Class .
+rs:Order rdfs:label "Order" .
+rs:Order rdfs:comment "A purchase transaction placed by a customer." .
+
+rs:Category rdf:type rdfs:Class .
+rs:Category rdfs:label "Product Category" .
+rs:Category rdfs:comment "A grouping of similar products." .
+
+# ---- properties -------------------------------------------------------
+
+rs:stocks rdf:type rdf:Property .
+rs:stocks rdfs:label "stocks" .
+rs:stocks rdfs:comment "A store stocks a product." .
+rs:stocks rdfs:domain rs:Store .
+rs:stocks rdfs:range rs:Product .
+
+rs:supplies rdf:type rdf:Property .
+rs:supplies rdfs:label "supplies" .
+rs:supplies rdfs:comment "A supplier supplies a product." .
+rs:supplies rdfs:domain rs:Supplier .
+rs:supplies rdfs:range rs:Product .
+
+rs:places rdf:type rdf:Property .
+rs:places rdfs:label "places" .
+rs:places rdfs:comment "A customer places an order." .
+rs:places rdfs:domain rs:Customer .
+rs:places rdfs:range rs:Order .
+
+rs:contains rdf:type rdf:Property .
+rs:contains rdfs:label "contains" .
+rs:contains rdfs:comment "An order contains a product." .
+rs:contains rdfs:domain rs:Order .
+rs:contains rdfs:range rs:Product .
+
+rs:categorizedAs rdf:type rdf:Property .
+rs:categorizedAs rdfs:label "categorized as" .
+rs:categorizedAs rdfs:comment "A product belongs to a category." .
+rs:categorizedAs rdfs:domain rs:Product .
+rs:categorizedAs rdfs:range rs:Category .
+
+rs:fulfilledBy rdf:type rdf:Property .
+rs:fulfilledBy rdfs:label "fulfilled by" .
+rs:fulfilledBy rdfs:comment "An order is fulfilled by a store." .
+rs:fulfilledBy rdfs:domain rs:Order .
+rs:fulfilledBy rdfs:range rs:Store .
+
+# ---- instances --------------------------------------------------------
+
+rs:Electronics rdf:type rs:Category .
+rs:Electronics rdfs:label "Electronics" .
+
+rs:Groceries rdf:type rs:Category .
+rs:Groceries rdfs:label "Groceries" .
+
+rs:SupplierA rdf:type rs:Supplier .
+rs:SupplierA rdfs:label "Supplier A" .
+
+rs:StoreNorth rdf:type rs:Store .
+rs:StoreNorth rdfs:label "North Store" .
+
+rs:CustomerA rdf:type rs:Customer .
+rs:CustomerA rdfs:label "Customer A" .
+
+rs:Laptop rdf:type rs:Product .
+rs:Laptop rdfs:label "Laptop" .
+rs:Laptop rs:categorizedAs rs:Electronics .
+rs:Laptop rs:supplies rs:SupplierA .
+
+rs:Rice rdf:type rs:Product .
+rs:Rice rdfs:label "Rice" .
+rs:Rice rs:categorizedAs rs:Groceries .
+rs:Rice rs:supplies rs:SupplierA .
+
+rs:Order001 rdf:type rs:Order .
+rs:Order001 rdfs:label "Order 001" .
+
+rs:StoreNorth rs:stocks rs:Laptop .
+rs:StoreNorth rs:stocks rs:Rice .
+rs:CustomerA rs:places rs:Order001 .
+rs:Order001 rs:contains rs:Laptop .
+rs:Order001 rs:fulfilledBy rs:StoreNorth .

@@ -1,0 +1,126 @@
+# financial_markets.ttl - SBC starter ontology: Financial Markets domain.
+#
+# Model: market anchors, exchanges, indices, sectors, and listed instruments.
+# Pattern: Microsoft Ontology-Playground official ontology (Finance style).
+#
+@prefix rdf:  <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix sbc:  <http://sbc.tool/ont#> .
+@prefix fm:   <http://sbc.tool/ont/financial_markets#> .
+
+# ---- classes ----------------------------------------------------------
+
+fm:Exchange rdf:type rdfs:Class .
+fm:Exchange rdfs:label "Exchange" .
+fm:Exchange rdfs:comment "A regulated marketplace where securities are traded." .
+
+fm:Index rdf:type rdfs:Class .
+fm:Index rdfs:label "Market Index" .
+fm:Index rdfs:comment "A statistical measure of a section of the stock market." .
+
+fm:Sector rdf:type rdfs:Class .
+fm:Sector rdfs:label "Industry Sector" .
+fm:Sector rdfs:comment "A grouping of listed companies by business activity." .
+
+fm:Instrument rdf:type rdfs:Class .
+fm:Instrument rdfs:label "Listed Instrument" .
+fm:Instrument rdfs:comment "A security (stock, ETF, index future) listed on an exchange." .
+
+fm:MarketSession rdf:type rdfs:Class .
+fm:MarketSession rdfs:label "Trading Session" .
+fm:MarketSession rdfs:comment "A trading window for a market anchor (open/close times)." .
+
+fm:Sector rdfs:subClassOf sbc:ResearchPrompt .
+
+# ---- properties -------------------------------------------------------
+
+fm:lists rdf:type rdf:Property .
+fm:lists rdfs:label "lists" .
+fm:lists rdfs:comment "An exchange lists an instrument." .
+fm:lists rdfs:domain fm:Exchange .
+fm:lists rdfs:range fm:Instrument .
+
+fm:tracks rdf:type rdf:Property .
+fm:tracks rdfs:label "tracks" .
+fm:tracks rdfs:comment "An index tracks a sector or basket of instruments." .
+fm:tracks rdfs:domain fm:Index .
+fm:tracks rdfs:range fm:Sector .
+
+fm:belongsTo rdf:type rdf:Property .
+fm:belongsTo rdfs:label "belongs to" .
+fm:belongsTo rdfs:comment "An instrument belongs to a sector." .
+fm:belongsTo rdfs:domain fm:Instrument .
+fm:belongsTo rdfs:range fm:Sector .
+
+fm:tradesOn rdf:type rdf:Property .
+fm:tradesOn rdfs:label "trades on" .
+fm:tradesOn rdfs:comment "An instrument trades on an exchange." .
+fm:tradesOn rdfs:domain fm:Instrument .
+fm:tradesOn rdfs:range fm:Exchange .
+
+fm:hasSession rdf:type rdf:Property .
+fm:hasSession rdfs:label "has session" .
+fm:hasSession rdfs:comment "An exchange operates a trading session." .
+fm:hasSession rdfs:domain fm:Exchange .
+fm:hasSession rdfs:range fm:MarketSession .
+
+# ---- instances --------------------------------------------------------
+
+fm:NSE rdf:type fm:Exchange .
+fm:NSE rdfs:label "NSE" .
+fm:NSE rdfs:comment "National Stock Exchange of India." .
+
+fm:BSE rdf:type fm:Exchange .
+fm:BSE rdfs:label "BSE" .
+fm:BSE rdfs:comment "Bombay Stock Exchange Ltd." .
+
+fm:NIFTY50 rdf:type fm:Index .
+fm:NIFTY50 rdfs:label "NIFTY 50" .
+fm:NIFTY50 rdfs:comment "NSE benchmark index of 50 large-cap stocks." .
+
+fm:SENSEX rdf:type fm:Index .
+fm:SENSEX rdfs:label "SENSEX" .
+fm:SENSEX rdfs:comment "BSE benchmark index of 30 large-cap stocks." .
+
+fm:Banking rdf:type fm:Sector .
+fm:Banking rdfs:label "Banking" .
+fm:Banking rdfs:comment "Commercial banks and financial services." .
+
+fm:IT rdf:type fm:Sector .
+fm:IT rdfs:label "Information Technology" .
+fm:IT rdfs:comment "Software, IT services, and tech hardware." .
+
+fm:Energy rdf:type fm:Sector .
+fm:Energy rdfs:label "Energy" .
+fm:Energy rdfs:comment "Oil, gas, power, and renewables." .
+
+fm:RELIANCE rdf:type fm:Instrument .
+fm:RELIANCE rdfs:label "RELIANCE" .
+fm:RELIANCE rdfs:comment "Reliance Industries Ltd." .
+fm:RELIANCE fm:belongsTo fm:Energy .
+fm:RELIANCE fm:tradesOn fm:NSE .
+
+fm:TCS rdf:type fm:Instrument .
+fm:TCS rdfs:label "TCS" .
+fm:TCS rdfs:comment "Tata Consultancy Services Ltd." .
+fm:TCS fm:belongsTo fm:IT .
+fm:TCS fm:tradesOn fm:NSE .
+
+fm:HDFCBANK rdf:type fm:Instrument .
+fm:HDFCBANK rdfs:label "HDFC Bank" .
+fm:HDFCBANK rdfs:comment "HDFC Bank Ltd." .
+fm:HDFCBANK fm:belongsTo fm:Banking .
+fm:HDFCBANK fm:tradesOn fm:NSE .
+
+fm:NSE fm:lists fm:RELIANCE .
+fm:NSE fm:lists fm:TCS .
+fm:NSE fm:lists fm:HDFCBANK .
+fm:NSE fm:hasSession fm:RegularSession .
+
+fm:RegularSession rdf:type fm:MarketSession .
+fm:RegularSession rdfs:label "Regular Session" .
+fm:RegularSession rdfs:comment "09:15 to 15:30 IST." .
+
+fm:NIFTY50 fm:tracks fm:Banking .
+fm:NIFTY50 fm:tracks fm:IT .
+fm:NIFTY50 fm:tracks fm:Energy .

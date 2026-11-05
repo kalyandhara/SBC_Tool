@@ -3625,3 +3625,29 @@ a:focus-visible,
 .sep-cert-note { font-size: 11px; color: var(--muted); margin-top: 8px; padding-top: 6px; border-top: 1px solid var(--line); }
 
 .onto-reasoning { margin: 10px 0; }
+
+/* ---------- Ontology Catalogue UI ---------- */
+.onto-catalogue { margin: 4px 0; }
+.onto-cat-header { margin-bottom: 10px; }
+.onto-cat-header h3 { margin: 0 0 3px; font-size: 16px; font-weight: 800; color: var(--text); }
+.onto-cat-sub { font-size: 12px; color: var(--muted); }
+.onto-cat-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 12px; }
+.onto-cat-card { border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; background: var(--card-bg, var(--bg)); display: flex; flex-direction: column; gap: 8px; overflow: hidden; }
+.onto-cat-head { display: flex; align-items: center; gap: 8px; }
+.onto-cat-icon { font-size: 18px; }
+.onto-cat-title { font-weight: 800; font-size: 14px; color: var(--text); }
+.onto-cat-desc { font-size: 12px; color: var(--muted); line-height: 1.4; }
+.onto-cat-meta { display: flex; gap: 6px; flex-wrap: wrap; margin: 4px 0; }
+.onto-cat-tag { font-size: 9.5px; font-weight: 700; padding: 2px 7px; border-radius: 10px; border: 1px solid var(--line); color: var(--accent); background: color-mix(in srgb, var(--accent, #fbbf24) 12%, transparent); }
+.onto-cat-stats { display: flex; gap: 12px; margin-top: 6px; font-size: 11px; color: var(--muted); font-weight: 600; margin-top: auto; }
+
+/* ---------- Loaded ontology viewer ---------- */
+.onto-view { margin: 4px 0; }
+.onto-view-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 8px; padding-bottom: 6px; border-bottom: 1px solid var(--line); flex-wrap: wrap; }
+.onto-view-title { font-size: 16px; font-weight: 800; color: var(--text); }
+.onto-view-meta { font-size: 11.5px; color: var(--muted); }
+.onto-view-actions { display: flex; gap: 6px; flex-shrink: 0; }
+.onto-view-body { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 10px; }
+.onto-view-section { border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; background: var(--card-bg, var(--bg)); }
+.onto-view-section-full { grid-column: 1 / -1; }
+.onto-view-section h4 { margin: 0 0 6px; font-size: 12.5px; font-weight: 800; color: var(--text); text-transform: uppercase; letter-spacing: .04em; }

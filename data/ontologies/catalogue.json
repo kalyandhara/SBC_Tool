@@ -1,0 +1,76 @@
+{
+  "ontologies": [
+    {
+      "id": "sbc_core",
+      "name": "SBC Core",
+      "description": "The timeless Sarvatobhadra Chakra vocabulary - grahas, rashis, nakshatras, transits, and research prompts.",
+      "category": "sbc",
+      "icon": "\u264a",
+      "tags": ["sbc", "vedic", "nakshatra", "graha", "transit"],
+      "author": "SBC_Tool",
+      "source": "data/ontologies/sbc_core.ttl",
+      "entityCount": 54,
+      "relationshipCount": 62
+    },
+    {
+      "id": "financial_markets",
+      "name": "Financial Markets",
+      "description": "Market anchors, exchanges, indices, sectors, and listed instruments (NSE/BSE, NIFTY/SENSEX, Banking/IT/Energy).",
+      "category": "finance",
+      "icon": "\ud83d\udcb0",
+      "tags": ["finance", "nse", "bse", "index", "sector", "instrument"],
+      "author": "SBC_Tool",
+      "source": "data/ontologies/financial_markets.ttl",
+      "entityCount": 15,
+      "relationshipCount": 15
+    },
+    {
+      "id": "healthcare",
+      "name": "Healthcare",
+      "description": "Hospitals, patients, providers, treatments, medications, and appointments.",
+      "category": "healthcare",
+      "icon": "\ud83d\udc89",
+      "tags": ["healthcare", "hospital", "patient", "provider", "treatment"],
+      "author": "SBC_Tool",
+      "source": "data/ontologies/healthcare.ttl",
+      "entityCount": 9,
+      "relationshipCount": 8
+    },
+    {
+      "id": "retail_supply",
+      "name": "Retail & Supply Chain",
+      "description": "Products, suppliers, stores, customers, orders, and categories.",
+      "category": "retail",
+      "icon": "\ud83c\udf6d",
+      "tags": ["retail", "supply-chain", "store", "customer", "order"],
+      "author": "SBC_Tool",
+      "source": "data/ontologies/retail_supply.ttl",
+      "entityCount": 10,
+      "relationshipCount": 8
+    },
+    {
+      "id": "technology_iot",
+      "name": "Technology & IoT",
+      "description": "Devices, sensors, gateways, networks, telemetry readings, and metrics.",
+      "category": "technology",
+      "icon": "\ud83e\uddb0",
+      "tags": ["iot", "device", "sensor", "network", "telemetry"],
+      "author": "SBC_Tool",
+      "source": "data/ontologies/technology_iot.ttl",
+      "entityCount": 9,
+      "relationshipCount": 7
+    },
+    {
+      "id": "manufacturing",
+      "name": "Manufacturing",
+      "description": "Factories, production lines, products, raw materials, and shifts.",
+      "category": "manufacturing",
+      "icon": "\ud83c\udf95",
+      "tags": ["manufacturing", "factory", "production", "product", "shift"],
+      "author": "SBC_Tool",
+      "source": "data/ontologies/manufacturing.ttl",
+      "entityCount": 8,
+      "relationshipCount": 6
+    }
+  ]
+}

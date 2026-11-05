@@ -1,0 +1,93 @@
+# technology_iot.ttl - SBC starter ontology: Technology & IoT domain.
+#
+# Model: devices, sensors, networks, and telemetry.
+# Pattern: Microsoft Ontology-Playground IoT/Technology ontology style.
+#
+@prefix rdf:  <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix sbc:  <http://sbc.tool/ont#> .
+@prefix iot:  <http://sbc.tool/ont/technology_iot#> .
+
+# ---- classes ----------------------------------------------------------
+
+iot:Device rdf:type rdfs:Class .
+iot:Device rdfs:label "Device" .
+iot:Device rdfs:comment "A piece of hardware (sensor, gateway, controller)." .
+
+iot:Sensor rdf:type rdfs:Class .
+iot:Sensor rdfs:label "Sensor" .
+iot:Sensor rdfs:comment "A device that measures a physical quantity." .
+iot:Sensor rdfs:subClassOf iot:Device .
+
+iot:Gateway rdf:type rdfs:Class .
+iot:Gateway rdfs:label "Gateway" .
+iot:Gateway rdfs:comment "A device that connects sensors to a network." .
+iot:Gateway rdfs:subClassOf iot:Device .
+
+iot:Network rdf:type rdfs:Class .
+iot:Network rdfs:label "Network" .
+iot:Network rdfs:comment "A communications network (Wi-Fi, LoRaWAN, cellular)." .
+
+iot:Reading rdf:type rdfs:Class .
+iot:Reading rdfs:label "Telemetry Reading" .
+iot:Reading rdfs:comment "A measurement produced by a sensor at a point in time." .
+
+iot:Metric rdf:type rdfs:Class .
+iot:Metric rdfs:label "Measured Metric" .
+iot:Metric rdfs:comment "A kind of measurement (temperature, pressure, voltage)." .
+
+# ---- properties -------------------------------------------------------
+
+iot:deployedAt rdf:type rdf:Property .
+iot:deployedAt rdfs:label "deployed at" .
+iot:deployedAt rdfs:comment "A device is deployed at a location/site." .
+iot:deployedAt rdfs:domain iot:Device .
+iot:deployedAt rdfs:range iot:Network .
+
+iot:connectsTo rdf:type rdf:Property .
+iot:connectsTo rdfs:label "connects to" .
+iot:connectsTo rdfs:comment "A device connects to a network." .
+iot:connectsTo rdfs:domain iot:Device .
+iot:connectsTo rdfs:range iot:Network .
+
+iot:measures rdf:type rdf:Property .
+iot:measures rdfs:label "measures" .
+iot:measures rdfs:comment "A sensor measures a metric." .
+iot:measures rdfs:domain iot:Sensor .
+iot:measures rdfs:range iot:Metric .
+
+iot:produces rdf:type rdf:Property .
+iot:produces rdfs:label "produces" .
+iot:produces rdfs:comment "A sensor produces a reading." .
+iot:produces rdfs:domain iot:Sensor .
+iot:produces rdfs:range iot:Reading .
+
+iot:hasMetric rdf:type rdf:Property .
+iot:hasMetric rdfs:label "has metric" .
+iot:hasMetric rdfs:comment "A reading is of a metric." .
+iot:hasMetric rdfs:domain iot:Reading .
+iot:hasMetric rdfs:range iot:Metric .
+
+# ---- instances --------------------------------------------------------
+
+iot:FactoryNetwork rdf:type iot:Network .
+iot:FactoryNetwork rdfs:label "Factory Wi-Fi" .
+
+iot:TempSensor01 rdf:type iot:Sensor .
+iot:TempSensor01 rdfs:label "Temperature Sensor 01" .
+
+iot:Gateway01 rdf:type iot:Gateway .
+iot:Gateway01 rdfs:label "Gateway 01" .
+
+iot:TempMetric rdf:type iot:Metric .
+iot:TempMetric rdfs:label "Temperature" .
+
+iot:Reading001 rdf:type iot:Reading .
+iot:Reading001 rdfs:label "Reading 001" .
+
+iot:TempSensor01 iot:connectsTo iot:FactoryNetwork .
+iot:TempSensor01 iot:deployedAt iot:FactoryNetwork .
+iot:Gateway01 iot:connectsTo iot:FactoryNetwork .
+iot:TempSensor01 iot:measures iot:TempMetric .
+iot:TempSensor01 iot:produces iot:Reading001 .
+iot:Reading001 iot:hasMetric iot:TempMetric .

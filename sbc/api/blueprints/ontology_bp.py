@@ -150,6 +150,94 @@ def certificate():
     })
 
 
+@ontology_bp.get("/catalogue")
+def catalogue():
+    """Ontology catalogue: metadata for every available starter ontology.
+
+    Mirrors Microsoft Ontology-Playground's catalogue - a curated library of
+    pre-built domain ontologies browseable by category, each with a shareable
+    deep-link id and a metadata record (name, description, category, icon,
+    tags, author, entity/relationship counts).
+    """
+    import json as _json
+    import os as _os
+    cat_path = _os.path.join(ont.DATA_DIR, "catalogue.json")
+    try:
+        with open(cat_path, encoding="utf-8") as fh:
+            return _json.load(fh)
+    except FileNotFoundError:
+        return jsonify({"ontologies": []})
+
+
+@ontology_bp.get("/catalogue/<ont_id>")
+def catalogue_ontology(ont_id):
+    """Return the RDF/Turtle source for a single catalogue ontology."""
+    import json as _json
+    import os as _os
+    cat_path = _os.path.join(ont.DATA_DIR, "catalogue.json")
+    try:
+        with open(cat_path, encoding="utf-8") as fh:
+            cat = _json.load(fh)
+    except FileNotFoundError:
+        return jsonify({"error": "catalogue unavailable"}), 500
+    entry = next((o for o in cat.get("ontologies", []) if o["id"] == ont_id), None)
+    if not entry:
+        return jsonify({"error": "unknown ontology"}), 404
+    src = _os.path.join(ont.DATA_DIR, entry["source"])
+    try:
+        with open(src, encoding="utf-8") as fh:
+            ttl = fh.read()
+    except FileNotFoundError:
+        return jsonify({"error": "ontology source missing"}), 500
+    return jsonify({
+        "id": entry["id"],
+        "name": entry["name"],
+        "description": entry["description"],
+        "category": entry["category"],
+        "icon": entry["icon"],
+        "tags": entry["tags"],
+        "author": entry["author"],
+        "entityCount": entry["entityCount"],
+        "relationshipCount": entry["relationshipCount"],
+        "ttl": ttl,
+    })
+
+
+@ontology_bp.post("/import")
+def import_ontology():
+    """Import an uploaded RDF/XML or Turtle file into the ontology model.
+
+    Parses the file with the SBC restricted Turtle loader and runs the
+    reasoner, returning the derived triples and certificate. Mirrors
+    Ontology-Playground's RDF import (full round-trip, inert imports/SHACL).
+    """
+    from flask import request as _request
+    if "file" not in _request.files:
+        return jsonify({"error": "no file uploaded"}), 400
+    up = _request.files["file"]
+    if not up.filename:
+        return jsonify({"error": "empty filename"}), 400
+    raw = up.read().decode("utf-8", errors="replace")
+    try:
+        triples = ont.load_turtle_from_string(raw)
+    except Exception as exc:  # noqa: BLE001
+        return jsonify({"error": f"parse failed: {exc}"}), 400
+    user_rules = ont.load_user_rules(ont.USER_RULES)
+    reasoner = ont.Reasoner(triples, user_rules)
+    reasoner.run()
+    written = reasoner.write_certificate(f"/tmp/ontology_import_{_request.remote_addr or 'anon'}")
+    checked = ont.check_certificate(written["directory"], user_rules)
+    return jsonify({
+        "filename": up.filename,
+        "asserted": len(triples),
+        "derivations": len(reasoner.derivations),
+        "valid": checked.get("ok", False),
+        "check": checked,
+        "derivations": [d.text() for d in reasoner.derivations],
+        "certificate": written,
+    })
+
+
 # Mark these as heavy endpoints so the SPA uses the longer timeout.
 for _p in HEAVY:
     pass  # referenced by static/app.js HEAVY_ENDPOINTS

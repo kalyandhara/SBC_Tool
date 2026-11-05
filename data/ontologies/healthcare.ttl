@@ -1,0 +1,100 @@
+# healthcare.ttl - SBC starter ontology: Healthcare domain.
+#
+# Model: hospitals, patients, providers, treatments, and medications.
+# Pattern: Microsoft Ontology-Playground Healthcare ontology style.
+#
+@prefix rdf:  <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix sbc:  <http://sbc.tool/ont#> .
+@prefix hc:   <http://sbc.tool/ont/healthcare#> .
+
+# ---- classes ----------------------------------------------------------
+
+hc:Hospital rdf:type rdfs:Class .
+hc:Hospital rdfs:label "Hospital" .
+hc:Hospital rdfs:comment "A healthcare facility providing inpatient and outpatient care." .
+
+hc:Patient rdf:type rdfs:Class .
+hc:Patient rdfs:label "Patient" .
+hc:Patient rdfs:comment "A person receiving medical care." .
+
+hc:Provider rdf:type rdfs:Class .
+hc:Provider rdfs:label "Healthcare Provider" .
+hc:Provider rdfs:comment "A clinician (doctor, nurse, specialist) delivering care." .
+
+hc:Treatment rdf:type rdfs:Class .
+hc:Treatment rdfs:label "Treatment" .
+hc:Treatment rdfs:comment "A medical procedure or course of care." .
+
+hc:Medication rdf:type rdfs:Class .
+hc:Medication rdfs:label "Medication" .
+hc:Medication rdfs:comment "A prescribed drug or pharmaceutical product." .
+
+hc:Appointment rdf:type rdfs:Class .
+hc:Appointment rdfs:label "Appointment" .
+hc:Appointment rdfs:comment "A scheduled encounter between patient and provider." .
+
+# ---- properties -------------------------------------------------------
+
+hc:admits rdf:type rdf:Property .
+hc:admits rdfs:label "admits" .
+hc:admits rdfs:comment "A hospital admits a patient." .
+hc:admits rdfs:domain hc:Hospital .
+hc:admits rdfs:range hc:Patient .
+
+hc:treats rdf:type rdf:Property .
+hc:treats rdfs:label "treats" .
+hc:treats rdfs:comment "A provider treats a patient." .
+hc:treats rdfs:domain hc:Provider .
+hc:treats rdfs:range hc:Patient .
+
+hc:prescribes rdf:type rdf:Property .
+hc:prescribes rdfs:label "prescribes" .
+hc:prescribes rdfs:comment "A provider prescribes a medication." .
+hc:prescribes rdfs:domain hc:Provider .
+hc:prescribes rdfs:range hc:Medication .
+
+hc:hasAppointment rdf:type rdf:Property .
+hc:hasAppointment rdfs:label "has appointment" .
+hc:hasAppointment rdfs:comment "A patient has an appointment." .
+hc:hasAppointment rdfs:domain hc:Patient .
+hc:hasAppointment rdfs:range hc:Appointment .
+
+hc:receivesTreatment rdf:type rdf:Property .
+hc:receivesTreatment rdfs:label "receives treatment" .
+hc:receivesTreatment rdfs:comment "A patient receives a treatment." .
+hc:receivesTreatment rdfs:domain hc:Patient .
+hc:receivesTreatment rdfs:range hc:Treatment .
+
+hc:performedAt rdf:type rdf:Property .
+hc:performedAt rdfs:label "performed at" .
+hc:performedAt rdfs:comment "A treatment is performed at a hospital." .
+hc:performedAt rdfs:domain hc:Treatment .
+hc:performedAt rdfs:range hc:Hospital .
+
+# ---- instances --------------------------------------------------------
+
+hc:CityHospital rdf:type hc:Hospital .
+hc:CityHospital rdfs:label "City General Hospital" .
+
+hc:DrSharma rdf:type hc:Provider .
+hc:DrSharma rdfs:label "Dr. Sharma" .
+
+hc:PatientA rdf:type hc:Patient .
+hc:PatientA rdfs:label "Patient A" .
+
+hc:Physiotherapy rdf:type hc:Treatment .
+hc:Physiotherapy rdfs:label "Physiotherapy" .
+
+hc:Paracetamol rdf:type hc:Medication .
+hc:Paracetamol rdfs:label "Paracetamol" .
+
+hc:Appt001 rdf:type hc:Appointment .
+hc:Appt001 rdfs:label "Appointment 001" .
+
+hc:CityHospital hc:admits hc:PatientA .
+hc:DrSharma hc:treats hc:PatientA .
+hc:DrSharma hc:prescribes hc:Paracetamol .
+hc:PatientA hc:hasAppointment hc:Appt001 .
+hc:PatientA hc:receivesTreatment hc:Physiotherapy .
+hc:Physiotherapy hc:performedAt hc:CityHospital .

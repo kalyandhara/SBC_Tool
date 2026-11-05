@@ -102,33 +102,47 @@ def _expand(term: str, prefixes: dict[str, str]) -> str:
     return iri(prefixes[prefix] + local)
 
 
-def load_turtle(path: str) -> list[Triple]:
-    """Load the restricted Turtle subset used by data/ontologies/*.ttl.
+def _parse_turtle_lines(lines, source_label: str) -> list[Triple]:
+    """Core restricted-Turtle parser over an iterable of raw lines.
 
     One statement per line, ending with a dot.  Inline comments are only
     recognised on lines without a quoted literal.
     """
     triples: list[Triple] = []
     prefixes: dict[str, str] = {}
-    with open(path, encoding="utf-8") as fh:
-        for lineno, raw in enumerate(fh, 1):
-            line = raw.strip()
-            if not line or line.startswith("#"):
-                continue
-            pm = _PREFIX_RE.match(line)
-            if pm:
-                prefixes[pm.group(1)] = pm.group(2)
-                continue
-            body = line if ' "' in line else line.split("#", 1)[0].strip()
-            if not body:
-                continue
-            sm = _STMT_RE.match(body)
-            if not sm:
-                raise ValueError(f"{path}:{lineno}: cannot parse {line!r}")
-            triples.append(Triple(_expand(sm.group("s"), prefixes),
-                                  _expand(sm.group("p"), prefixes),
-                                  _expand(sm.group("o"), prefixes)))
+    for lineno, raw in enumerate(lines, 1):
+        line = raw.strip()
+        if not line or line.startswith("#"):
+            continue
+        pm = _PREFIX_RE.match(line)
+        if pm:
+            prefixes[pm.group(1)] = pm.group(2)
+            continue
+        body = line if ' "' in line else line.split("#", 1)[0].strip()
+        if not body:
+            continue
+        sm = _STMT_RE.match(body)
+        if not sm:
+            raise ValueError(f"{source_label}:{lineno}: cannot parse {line!r}")
+        triples.append(Triple(_expand(sm.group("s"), prefixes),
+                              _expand(sm.group("p"), prefixes),
+                              _expand(sm.group("o"), prefixes)))
     return triples
+
+
+def load_turtle(path: str) -> list[Triple]:
+    """Load the restricted Turtle subset used by data/ontologies/*.ttl.
+
+    One statement per line, ending with a dot.  Inline comments are only
+    recognised on lines without a quoted literal.
+    """
+    with open(path, encoding="utf-8") as fh:
+        return _parse_turtle_lines(fh, path)
+
+
+def load_turtle_from_string(text: str, source_label: str = "<upload>") -> list[Triple]:
+    """Parse restricted Turtle from an in-memory string (e.g. a file upload)."""
+    return _parse_turtle_lines(text.splitlines(), source_label)
 
 
 # ── user Horn rules (TSV) ──────────────────────────────────────────────────
