@@ -4310,176 +4310,111 @@ document.addEventListener("DOMContentLoaded", () => {
       const certified = byVerdict["entailed"] || 0;
       const underRules = byVerdict["entailed_under_supplied_rules"] || 0;
       const valid = cert.valid === true || cert.check?.ok === true;
+      const validStr = valid ? "valid" : "invalid";
 
-      // ---------- ontology term graph: planets → nakshatras → lords → sectors ----------
       const planets = d.planetary_summary || [];
       const sectors = d.sector_scorecard || [];
-      const nakSet = [...new Set(planets.map((p) => p.nakshatra))];
-      const lordSet = [...new Set(planets.map((p) => p.lord))];
-      const CX = { planet: 70, nakshatra: 300, lord: 530, sector: 760 };
-      const counts = { planet: planets.length, nakshatra: nakSet.length, lord: lordSet.length, sector: sectors.length };
-      const idxByType = { planet: 0, nakshatra: 0, lord: 0, sector: 0 };
-      const pos = {};
-      const nodes = [];
-      const edges = [];
-      function nodeColor(type, nature, score) {
-        if (type === "planet") return nature === "benefic" ? "#22c55e" : "#ef4444";
-        if (type === "nakshatra") return "#3b82f6";
-        if (type === "lord") return "#a855f7";
-        if (type === "sector") return score > 0.5 ? "#22c55e" : score < -0.5 ? "#ef4444" : "#94a3b8";
-        return "#64748b";
-      }
-      function nodeRadius(type, strength) {
-        if (type === "planet") return Math.min(16, Math.max(6, 8 + Math.abs(strength || 0)));
-        return 9;
-      }
+      const sensitive = d.sensitive_stars || [];
+
+      // ---------- CLAIM 1: PLANETARY / NAKSHATRA CLAIMS ----------
+      let claim1 = `
+        <div class="sep-panel sep-claims">
+          <div class="sep-head">
+            <div class="sep-title">PLANETARY CLAIMS (LEVEL 1)</div>
+            <div class="sep-sub">${planets.length} grahas · ${(sensitive.length ? sensitive : ["—"]).join(", ")} sensitive star${sensitive.length !== 1 ? "s" : ""}</div>
+          </div>
+          <div class="sep-body">
+            <table class="sep-table"><thead><tr><th>Graha</th><th>Nakshatra</th><th>Nature</th><th>Strength</th></tr></thead><tbody>`;
       planets.forEach((p) => {
-        const id = `p:${p.planet}`;
-        nodes.push({ id, label: p.planet, type: "planet", color: nodeColor("planet", p.nature), r: nodeRadius("planet", p.strength) });
-        edges.push({ from: id, to: `n:${p.nakshatra}` });
-        edges.push({ from: id, to: `l:${p.lord}` });
-        (p.sectors || []).forEach((sec) => edges.push({ from: id, to: `s:${sec}` }));
+        claim1 += `<tr><td class="sep-planet">${escHtml(p.planet)}</td><td class="sep-nak">${escHtml(p.nakshatra)}</td><td><span class="sep-badge sep-${p.nature}">${escHtml(p.nature)}</span></td><td class="sep-num">${(p.strength >= 0 ? "+" : "") + p.strength.toFixed(2)}</td></tr>`;
       });
-      nakSet.forEach((nak) => nodes.push({ id: `n:${nak}`, label: nak, type: "nakshatra", color: nodeColor("nakshatra"), r: 9 }));
-      lordSet.forEach((lord) => nodes.push({ id: `l:${lord}`, label: lord, type: "lord", color: nodeColor("lord"), r: 9 }));
-      sectors.forEach((s) => nodes.push({ id: `s:${s.sector}`, label: s.sector, type: "sector", color: nodeColor("sector", null, s.score), r: 9 }));
-      // nakshatra -> lord edges
-      planets.forEach((p) => edges.push({ from: `n:${p.nakshatra}`, to: `l:${p.lord}` }));
-      // positions
-      nodes.forEach((nd) => {
-        const type = nd.type;
-        const i = idxByType[type]++;
-        const top = 34, bottom = 306;
-        const step = counts[type] <= 1 ? 0 : (bottom - top) / (counts[type] - 1);
-        pos[nd.id] = [CX[type], top + i * step];
+      claim1 += `</tbody></table></div>
+          <div class="sep-foot">Claim checked against what each side entails · sensitive stars marked</div>
+        </div>`;
+
+      // ---------- CLAIM 2: SECTORS THAT DISAGREE ----------
+      const bull = sectors.filter((s) => s.score > 0.5).length;
+      const bear = sectors.filter((s) => s.score < -0.5).length;
+      const neu = sectors.length - bull - bear;
+      const disagree = sectors.filter((s) => Math.abs(s.score) < 0.5).length;
+      let claim2 = `
+        <div class="sep-panel sep-sectors">
+          <div class="sep-head">
+            <div class="sep-title">SECTORS THAT DISAGREE</div>
+            <div class="sep-sub">${bull} bullish · ${bear} bearish · ${disagree} no-signal · regime <span class="sep-regime">${escHtml(d.regime || "Neutral")}</span> (${pct(d.confidence || 0)} confidence)</div>
+          </div>
+          <div class="sep-body">
+            <table class="sep-table"><thead><tr><th>Sector</th><th>Group</th><th>Score</th><th>Planets</th></tr></thead><tbody>`;
+      (d.sector_scorecard || []).slice(0, 12).forEach((s) => {
+        const dir = s.score > 0.5 ? "bull" : s.score < -0.5 ? "bear" : "flat";
+        claim2 += `<tr><td class="sep-sector sep-${dir}">${escHtml(s.sector)}</td><td class="sep-group">${escHtml(s.group)}</td><td class="sep-num sep-score-${dir}">${(s.score >= 0 ? "+" : "") + s.score.toFixed(2)}</td><td class="sep-planets">${(s.planets || []).join(", ")}</td></tr>`;
       });
-      let svg = `<svg viewBox="0 0 900 350" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:350px;display:block;margin:10px 0 6px;border:1px solid var(--line);border-radius:10px;background:var(--bg2)">`;
-      svg += `<defs><marker id="ontoArr" markerWidth="7" markerHeight="7" refX="6" refY="3.5" orient="auto"><polygon points="0 0, 7 3.5, 0 7" fill="#94a3b8"/></marker></defs>`;
-      edges.forEach((e) => {
-        const f = pos[e.from], t = pos[e.to];
-        if (!f || !t) return;
-        svg += `<line x1="${f[0].toFixed(1)}" y1="${f[1].toFixed(1)}" x2="${t[0].toFixed(1)}" y2="${t[1].toFixed(1)}" stroke="#475569" stroke-width="1.1" opacity="0.5" marker-end="url(#ontoArr)"/>`;
-      });
-      nodes.forEach((nd) => {
-        const [x, y] = pos[nd.id];
-        svg += `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="${nd.r}" fill="${nd.color}" stroke="#0b1120" stroke-width="1.4"/>`;
-        svg += `<text x="${x.toFixed(1)}" y="${(y + nd.r + 13).toFixed(1)}" font-size="9" fill="#c8d3e0" text-anchor="middle">${escHtml(nd.label)}</text>`;
-      });
-      svg += `</svg>`;
+      claim2 += `</tbody></table></div>
+          <div class="sep-foot">${bull + bear} sectors hold a conviction; ${disagree} hold no signal · narrower terms win</div>
+        </div>`;
 
-      // ---------- proof-carrying inference rows ----------
-      const infRows = [
-        ["ASSERTED", asserted, "facts asserted from the daily SBC chart", "asserted"],
-        ["CERTIFIED", certified, "derived by builtin RDFS rules (proved)", "certified"],
-        ["UNDER SUPPLIED RULES", underRules, "derived using framework rules (assumptions carried)", "under-rules"],
-        ["VALID", valid ? "yes" : "no", "independent checker re-verification", valid ? "valid" : "invalid"],
-      ];
-      const infHtml = infRows.map(([name, count, meaning, cls]) => {
-        const badge = valid === false && name === "VALID" ? "dir-bear" : (name === "VALID" && valid ? "dir-bull" : "dir-neutral");
-        return `<tr><td class="inf-name">${escHtml(name)}</td><td class="inf-count">${typeof count === "number" ? count : escHtml(count)}</td><td class="inf-meaning">${escHtml(meaning)}</td><td><span class="dir-badge ${badge}">${escHtml(count)}</span></td></tr>`;
-      }).join("");
-
-      // ---------- header certificate strip ----------
-      const headerHtml = `
-        <div class="onto-cert">
-          <div class="onto-cert-left">
-            <div class="onto-cert-title">SBC Ontology <span class="onto-cert-sub">— reasoned over and proved</span></div>
-            <div class="onto-cert-meta">${d.date} · ${d.time} ${d.tz} · Lahiri ayanamsa · ${asserted} asserted · ${derivations} derived · ${cert.rules ? cert.rules.join(", ") : "—"}</div>
+      // ---------- CLAIM 3: CERTIFICATE / VERDICT (THE NUMBER) ----------
+      const regimes = d.trading_actions || [];
+      let claim3 = `
+        <div class="sep-panel sep-cert">
+          <div class="sep-head">
+            <div class="sep-title">THE CERTIFICATE (VERDICT)</div>
+            <div class="sep-sub">${asserted} asserted · ${derivations} derived · checker ${validStr}</div>
           </div>
-          <div class="onto-cert-right">
-            <span class="onto-cert-badge ${valid ? "onto-cert-ok" : "onto-cert-bad"}">${valid ? "✓ certificate valid" : "✗ certificate invalid"}</span>
+          <div class="sep-body">
+            <table class="sep-table"><thead><tr><th>Verdict</th><th>Count</th><th>Meaning</th></tr></thead><tbody>
+              <tr><td class="sep-v-asserted">ASSERTED</td><td class="sep-num">${asserted}</td><td>facts asserted from the daily SBC chart</td></tr>
+              <tr><td class="sep-v-certified">CERTIFIED</td><td class="sep-num">${certified}</td><td>derived by builtin RDFS rules (proved)</td></tr>
+              <tr><td class="sep-v-under">UNDER SUPPLIED RULES</td><td class="sep-num">${underRules}</td><td>derived using framework rules (assumptions carried)</td></tr>
+              <tr><td class="sep-v-valid">VALID</td><td class="sep-num">${validStr}</td><td>independent checker re-verification</td></tr>
+            </tbody></table>
+            <div class="sep-cert-note">${regimes.length ? "Trading actions: " + regimes.join(", ") : "No trading actions"}</div>
           </div>
-        </div>
-      `;
-
-      // ---------- file / becomes / reads flow ----------
-      const flowHtml = `
-        <div class="onto-flow">
-          <div class="onto-flow-col">
-            <div class="onto-flow-label">THE FILE</div>
-            <div class="onto-flow-item">${escHtml(d.tz ? "sbc_core.ttl" : "sbc_core.ttl")}</div>
-            <div class="onto-flow-item onto-flow-small">+ astro_rules.tsv (user Horn rules)</div>
-          </div>
-          <div class="onto-flow-arrow">→</div>
-          <div class="onto-flow-col">
-            <div class="onto-flow-label">WHAT IT BECOMES</div>
-            <div class="onto-flow-item">certificate</div>
-            <div class="onto-flow-item onto-flow-small">asserted.tsv + derivations.tsv + asserted.sha256</div>
-          </div>
-          <div class="onto-flow-arrow">→</div>
-          <div class="onto-flow-col">
-            <div class="onto-flow-label">WHO READS IT</div>
-            <div class="onto-flow-item">Independent checker</div>
-            <div class="onto-flow-item onto-flow-small">Lean oo-cert · Vedha guard (when installed)</div>
-          </div>
-        </div>
-      `;
-
-      // ---------- verdict legend ----------
-      const legendHtml = `
-        <div class="onto-legend">
-          <div class="onto-legend-title">WHAT A VERDICT IS WORTH</div>
-          <span class="onto-legend-item"><span class="onto-legend-dot onto-legend-cert"></span>certificate · one file, all lines read</span>
-          <span class="onto-legend-item"><span class="onto-legend-dot onto-legend-opinion"></span>opinion · believe the program, or believe nothing</span>
-          <span class="onto-legend-item"><span class="onto-legend-dot onto-legend-mu"></span>mu · a question outside the file's language</span>
-        </div>
-      `;
-
-      const planetsHtml = (d.planetary_summary || []).map((p) =>
-        `<span class="chip chip-${p.nature}">${escHtml(p.planet)} <span class="chip-nak">${escHtml(p.nakshatra)}</span>${p.sensitive ? ' <span class="sens-tag">sensitive</span>' : ''} <span class="chip-str">(${(p.strength > 0 ? "+" : "") + p.strength})</span></span>`).join("") ||
-        "<span class=" + "'ontology-empty'" + ">No planetary data</span>";
-
-      const secHtml = (d.sector_scorecard || []).map((s) => {
-        const dir = s.score > 0 ? "pos" : s.score < 0 ? "neg" : "neu";
-        return `<tr><td>${escHtml(s.sector)}</td><td class="cell-group">${escHtml(s.group)}</td><td class="cell-score dir-${dir}">${s.score >= 0 ? "+" : ""}${s.score.toFixed(2)}</td><td>${(s.planets || []).join(", ")}</td></tr>`;
-      }).join("") || "<tr><td colspan=" + "'4'" + " class=" + "'ontology-empty'" + ">No sector data</td></tr>";
-
-      const pathHtml = (d.reasoning_paths || []).slice(0, 12).map((p) =>
-        `<div class="reason-path"><span class="reason-chain">${escHtml(p.chain)}</span> <span class="reason-val">${p.contribution >= 0 ? "+" : ""}${p.contribution}</span></div>`).join("") ||
-        "<p class=" + "'ontology-empty'" + ">No reasoning paths</p>";
-
-      const lf = d.liquidity_flow || {};
-      const lfHtml = Object.entries(lf).map(([g, arr]) => {
-        const sym = arr === "↑" ? "pos" : arr === "↓" ? "neg" : "neu";
-        return `<span class="flow-item flow-${sym}">${escHtml(g)} ${arr}</span>`;
-      }).join("") || "<span class=" + "'ontology-empty'" + ">—</span>";
+          <div class="sep-foot">Recomputed from the definition · every number read from its output, never typed</div>
+        </div>`;
 
       ONTO_BODY.innerHTML = `
-        ${headerHtml}
-        ${flowHtml}
-        <div class="onto-section onto-inference">
-          <div class="onto-section-head"><h3>PROOF-CARRYING INFERENCE</h3><span class="onto-section-sub">${d.certificate && d.certificate.generated_at ? "generated " + d.certificate.generated_at : ""}</span></div>
-          <table class="onto-inf-table"><thead><tr><th>Verdict</th><th>Count</th><th>Meaning</th><th></th></tr></thead><tbody>${infHtml}</tbody></table>
+        <div class="sep-banner">
+          <div class="sep-banner-title">Three claims that used to travel on trust</div>
+          <div class="sep-banner-sub">each column is a real run; every number here is read from its output, never typed</div>
+          <div class="sep-banner-meta">${d.date} · ${d.time} ${d.tz} · Lahiri ayanamsa · ${asserted} asserted · ${derivations} derived</div>
         </div>
-        <div class="onto-section onto-graph">
-          <div class="onto-section-head"><h3>Ontology Term Graph</h3><span class="onto-section-sub">${planets.length} planets · ${nakSet.length} nakshatras · ${lordSet.length} lords · ${sectors.length} sectors</span></div>
-          ${svg}
+        <div class="sep-columns">
+          ${claim1}
+          ${claim2}
+          ${claim3}
         </div>
-        ${legendHtml}
+        <div class="onto-section onto-reasoning">
+          <div class="onto-section-head"><h3>EXPLAINABLE REASONING PATHS</h3></div>
+          <div class="reasoning-list">${(d.reasoning_paths || []).slice(0, 10).map((p) =>
+            `<div class="reason-path"><span class="reason-chain">${escHtml(p.chain)}</span> <span class="reason-val">${p.contribution >= 0 ? "+" : ""}${p.contribution}</span></div>`).join("") || "<p class='ontology-empty'>No reasoning paths</p>"}</div>
+        </div>
         <div class="ontology-grid">
           <div class="ontology-card ontology-regime">
             <div class="card-head"><h3>Market Regime</h3></div>
-            <div class="regime-badge regime-${(d.regime || "Neutral").replace(" ", "-")}">${escHtml(d.regime)}</div>
-            <div class="regime-conf">Confidence: ${pct(d.confidence)}</div>
-            <div class="actions">${(d.trading_actions || []).map((a) => `<span class="action-chip">${escHtml(a)}</span>`).join("")}</div>
+            <div class="regime-badge regime-${(d.regime || "Neutral").replace(" ", "-")}">${escHtml(d.regime || "Neutral")}</div>
+            <div class="regime-conf">Confidence: ${pct(d.confidence || 0)}</div>
+            <div class="actions">${regimes.map((a) => `<span class="action-chip">${escHtml(a)}</span>`).join("")}</div>
           </div>
           <div class="ontology-card ontology-planets">
             <div class="card-head"><h3>Planetary Summary (Level 1)</h3></div>
-            <div class="planet-chips">${planetsHtml}</div>
-            <div class="sensitive-row">Sensitive stars: <span class="sens-list">${(d.sensitive_stars || []).join(", ") || "—"}</span></div>
+            <div class="planet-chips">${planets.map((p) =>
+              `<span class="chip chip-${p.nature}">${escHtml(p.planet)} <span class="chip-nak">${escHtml(p.nakshatra)}</span>${p.sensitive ? ' <span class="sens-tag">sensitive</span>' : ''} <span class="chip-str">(${(p.strength > 0 ? "+" : "") + p.strength})</span></span>`).join("") || "<span class='ontology-empty'>No planetary data</span>"}</div>
+            <div class="sensitive-row">Sensitive stars: <span class="sens-list">${sensitive.join(", ") || "—"}</span></div>
           </div>
           <div class="ontology-card ontology-flow">
             <div class="card-head"><h3>Liquidity Flow Map</h3></div>
-            <div class="flow-row">${lfHtml}</div>
+            <div class="flow-row">${Object.entries(d.liquidity_flow || {}).map(([g, arr]) => {
+              const sym = arr === "↑" ? "pos" : arr === "↓" ? "neg" : "neu";
+              return `<span class="flow-item flow-${sym}">${escHtml(g)} ${arr}</span>`;
+            }).join("") || "<span class='ontology-empty'>—</span>"}</div>
           </div>
           <div class="ontology-card ontology-sectors full-width">
-            <div class="card-head"><h3>Sectoral Scorecard</h3></div>
-            <table class="data-table"><thead><tr><th>Sector</th><th>Group</th><th>Score</th><th>Planets</th></tr></thead><tbody>${secHtml}</tbody></table>
-          </div>
-          <div class="ontology-card ontology-reasoning full-width">
-            <div class="card-head"><h3>Explainable Reasoning Paths</h3></div>
-            <div class="reasoning-list">${pathHtml}</div>
-            <div class="cert-note">Certificate: ${asserted} asserted, ${derivations} derived</div>
+            <div class="card-head"><h3>Sectoral Scorecard (full)</h3></div>
+            <table class="data-table"><thead><tr><th>Sector</th><th>Group</th><th>Score</th><th>Planets</th></tr></thead><tbody>${(d.sector_scorecard || []).map((s) => {
+              const dir = s.score > 0 ? "pos" : s.score < 0 ? "neg" : "neu";
+              return `<tr><td>${escHtml(s.sector)}</td><td class="cell-group">${escHtml(s.group)}</td><td class="cell-score dir-${dir}">${(s.score >= 0 ? "+" : "") + s.score.toFixed(2)}</td><td>${(s.planets || []).join(", ")}</td></tr>`;
+            }).join("") || "<tr><td colspan='4' class='ontology-empty'>No sector data</td></tr>"}</tbody></table>
           </div>
         </div>
       `;

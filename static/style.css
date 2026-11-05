@@ -3579,3 +3579,49 @@ a:focus-visible,
 .dir-bull { background: color-mix(in srgb, var(--green, #13795b) 16%, transparent); color: var(--green-text, #0e5a46); }
 .dir-bear { background: color-mix(in srgb, var(--red, #b42318) 16%, transparent); color: var(--red-text, #8a1f1f); }
 .dir-neutral { background: var(--chip-bg, #f3f5f8); color: var(--muted); }
+
+/* ---------- separated three-claim ontology presentation ---------- */
+.sep-banner { margin: 6px 0 10px; padding: 14px 16px; border: 1px solid var(--line); border-radius: 12px; background: var(--card-bg, var(--bg)); }
+.sep-banner-title { font-size: 18px; font-weight: 800; letter-spacing: .2px; color: var(--text); margin-bottom: 3px; }
+.sep-banner-sub { font-size: 12.5px; color: var(--muted); margin-bottom: 6px; }
+.sep-banner-meta { font-size: 11px; color: var(--muted); }
+
+.sep-columns { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 10px; }
+.sep-panel { flex: 1 1 300px; min-width: 290px; border: 1px solid var(--line); border-radius: 12px; background: var(--card-bg, var(--bg)); display: flex; flex-direction: column; overflow: hidden; }
+.sep-head { padding: 12px 14px; border-bottom: 1px solid var(--line); display: flex; flex-direction: column; gap: 4px; }
+.sep-title { font-size: 14px; font-weight: 800; color: var(--text); }
+.sep-sub { font-size: 11.5px; color: var(--muted); }
+.sep-body { padding: 10px 14px; flex: 1; overflow: auto; }
+.sep-foot { font-size: 10.5px; color: var(--muted); padding: 8px 14px; border-top: 1px solid var(--line); }
+
+.sep-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+.sep-table th, .sep-table td { border: 1px solid var(--line); padding: 5px 8px; text-align: left; }
+.sep-table th { background: var(--head, #f3f5f8); font-weight: 700; font-size: 10.5px; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); }
+.sep-table tbody tr:nth-child(even) { background: color-mix(in srgb, var(--bg2) 35%, transparent); }
+
+.sep-planet { font-weight: 700; }
+.sep-nak { font-weight: 600; color: #94a3b8; }
+.sep-num { font-family: ui-monospace, SFMono-Regular, monospace; font-weight: 700; }
+.sep-badge { font-size: 10px; font-weight: 700; padding: 2px 7px; border-radius: 10px; border: 1px solid var(--line); }
+.sep-badge.benefic { background: color-mix(in srgb, var(--green, #13795b) 12%, transparent); color: var(--green-text, #0e5a46); border-color: var(--green-border, #b7e4c7); }
+.sep-badge.malefic { background: color-mix(in srgb, var(--red, #b42318) 12%, transparent); color: var(--red-text, #8a1f1f); border-color: var(--red-border, #f5c6c7); }
+
+.sep-sector { font-weight: 700; }
+.sep-sector.sep-bull { color: var(--green-text, #0e5a46); }
+.sep-sector.sep-bear { color: var(--red-text, #8a1f1f); }
+.sep-sector.sep-flat { color: var(--muted); }
+.sep-score-bull { color: var(--green-text, #0e5a46); }
+.sep-score-bear { color: var(--red-text, #8a1f1f); }
+.sep-score-flat { color: var(--muted); }
+.sep-regime { font-weight: 700; color: var(--accent); }
+.sep-planets { font-size: 11px; color: var(--muted); }
+
+.sep-v-asserted { color: var(--muted); }
+.sep-v-certified { color: var(--green-text, #0e5a46); font-weight: 700; }
+.sep-v-under { color: #fbbf24; font-weight: 700; }
+.sep-v-valid.valid { color: var(--green-text, #0e5a46); font-weight: 800; }
+.sep-v-valid.invalid { color: var(--red-text, #8a1f1f); font-weight: 800; }
+
+.sep-cert-note { font-size: 11px; color: var(--muted); margin-top: 8px; padding-top: 6px; border-top: 1px solid var(--line); }
+
+.onto-reasoning { margin: 10px 0; }
