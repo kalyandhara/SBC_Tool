@@ -4,6 +4,7 @@
   --panel: #111a2e;
   --panel2: #16223a;
   --line: #1f2c47;
+  --head: #1e293b;
   --text: #e2e8f0;
   --muted: #94a3b8;
   --accent: #fbbf24;
@@ -21,6 +22,7 @@
   --panel: #ffffff;
   --panel2: #f8fafc;
   --line: #e2e8f0;
+  --head: #e2e8f0;
   --text: #1e293b;
   --muted: #64748b;
   --accent: #d97706;
@@ -3521,7 +3523,7 @@ a:focus-visible,
 .action-chip { font-size: 11px; padding: 2px 8px; border-radius: 10px; border: 1px solid var(--line, #dfe3ea); background: var(--chip-bg, #f3f5f8); }
 .data-table { width: 100%; border-collapse: collapse; margin-top: 6px; font-size: 13px; }
 .data-table th, .data-table td { border: 1px solid var(--line, #dfe3ea); padding: 5px 8px; text-align: left; }
-.data-table th { background: var(--head, #f3f5f8); font-weight: 700; }
+.data-table th { background: var(--head); font-weight: 700; color: var(--text); }
 .cell-score { font-weight: 700; }
 .cell-score.dir-pos { color: var(--green, #13795b); }
 .cell-score.dir-neg { color: var(--red, #b42318); }
@@ -3563,7 +3565,7 @@ a:focus-visible,
 .onto-section-sub { font-size: 11px; color: var(--muted); }
 .onto-inf-table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
 .onto-inf-table th, .onto-inf-table td { border: 1px solid var(--line); padding: 6px 8px; text-align: left; }
-.onto-inf-table th { background: var(--head, #f3f5f8); font-weight: 700; font-size: 11px; text-transform: uppercase; letter-spacing: .04em; }
+.onto-inf-table th { background: var(--head); font-weight: 700; font-size: 11px; text-transform: uppercase; letter-spacing: .04em; color: var(--text); }
 .onto-inf-table td.inf-name { font-weight: 700; }
 .onto-inf-table td.inf-count { font-family: ui-monospace, SFMono-Regular, monospace; font-weight: 700; }
 .onto-inf-table td.inf-meaning { color: var(--muted); font-size: 11.5px; }
