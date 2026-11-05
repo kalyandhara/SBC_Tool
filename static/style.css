@@ -3538,3 +3538,44 @@ a:focus-visible,
 .reason-val { font-weight: 700; font-size: 12px; }
 .cert-note { margin-top: 8px; font-size: 11px; color: var(--muted, #5b6474); border-top: 1px solid var(--line, #dfe3ea); padding-top: 6px; }
 .ontology-empty { color: var(--muted, #5b6474); font-style: italic; }
+
+/* ---------- realistic ontology presentation (proof-carrying style) ---------- */
+.onto-cert { display: flex; align-items: center; justify-content: space-between; gap: 14px; margin: 4px 0 10px; padding: 10px 14px; border: 1px solid var(--line); border-radius: 10px; background: var(--card-bg, var(--bg)); }
+.onto-cert-left { display: flex; flex-direction: column; gap: 3px; }
+.onto-cert-title { font-size: 17px; font-weight: 800; letter-spacing: .3px; color: var(--text); }
+.onto-cert-sub { color: var(--accent); font-weight: 700; }
+.onto-cert-meta { font-size: 11.5px; color: var(--muted); }
+.onto-cert-right { display: flex; align-items: center; }
+.onto-cert-badge { font-size: 12px; font-weight: 700; padding: 4px 10px; border-radius: 10px; border: 1px solid var(--line); }
+.onto-cert-badge.onto-cert-ok { background: color-mix(in srgb, var(--green, #13795b) 14%, transparent); color: var(--green-text, #0e5a46); border-color: var(--green-border, #b7e4c7); }
+.onto-cert-badge.onto-cert-bad { background: color-mix(in srgb, var(--red, #b42318) 14%, transparent); color: var(--red-text, #8a1f1f); border-color: var(--red-border, #f5c6c7); }
+
+.onto-flow { display: flex; align-items: center; gap: 12px; margin: 4px 0 10px; padding: 10px 14px; border: 1px solid var(--line); border-radius: 10px; background: var(--card-bg, var(--bg)); flex-wrap: wrap; }
+.onto-flow-col { display: flex; flex-direction: column; gap: 4px; min-width: 170px; }
+.onto-flow-label { font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); }
+.onto-flow-item { font-size: 13px; color: var(--text); font-weight: 600; }
+.onto-flow-item.onto-flow-small { font-size: 11px; color: var(--muted); font-weight: 500; }
+.onto-flow-arrow { font-size: 16px; font-weight: 900; color: var(--accent); user-select: none; }
+
+.onto-section { margin: 10px 0; }
+.onto-section-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 8px; flex-wrap: wrap; }
+.onto-section-head h3 { margin: 0; font-size: 14px; font-weight: 800; color: var(--text); }
+.onto-section-sub { font-size: 11px; color: var(--muted); }
+.onto-inf-table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+.onto-inf-table th, .onto-inf-table td { border: 1px solid var(--line); padding: 6px 8px; text-align: left; }
+.onto-inf-table th { background: var(--head, #f3f5f8); font-weight: 700; font-size: 11px; text-transform: uppercase; letter-spacing: .04em; }
+.onto-inf-table td.inf-name { font-weight: 700; }
+.onto-inf-table td.inf-count { font-family: ui-monospace, SFMono-Regular, monospace; font-weight: 700; }
+.onto-inf-table td.inf-meaning { color: var(--muted); font-size: 11.5px; }
+
+.onto-legend { display: flex; align-items: center; gap: 14px; margin: 8px 0 6px; padding: 8px 12px; border: 1px solid var(--line); border-radius: 10px; background: var(--card-bg, var(--bg)); font-size: 12.5px; color: var(--text); flex-wrap: wrap; }
+.onto-legend-title { font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); margin-right: 10px; }
+.onto-legend-item { display: flex; align-items: center; gap: 6px; }
+.onto-legend-dot { width: 9px; height: 9px; border-radius: 50%; border: 1px solid var(--line); }
+.onto-legend-dot.onto-legend-cert { background: #22c55e; box-shadow: 0 0 8px #22c55e80; }
+.onto-legend-dot.onto-legend-opinion { background: #94a3b8; }
+.onto-legend-dot.onto-legend-mu { background: #fbbf24; }
+
+.dir-bull { background: color-mix(in srgb, var(--green, #13795b) 16%, transparent); color: var(--green-text, #0e5a46); }
+.dir-bear { background: color-mix(in srgb, var(--red, #b42318) 16%, transparent); color: var(--red-text, #8a1f1f); }
+.dir-neutral { background: var(--chip-bg, #f3f5f8); color: var(--muted); }
