@@ -1,0 +1,22 @@
+# astro_rules.tsv - user-supplied Horn rule table for the SBC ontology.
+#
+# These rules are the video claims' rule language, carried as ASSUMPTIONS
+# and not facts: every derivation they produce carries the verdict
+# "entailed_under_supplied_rules", while built-in RDFS derivations carry
+# "entailed" (the Open Ontologies distinction).
+#
+# Format (tab separated): rule_id, then each premise as 3 fields
+# (subject, predicate, object), then the conclusion as 3 fields.
+# "?name" binds variables across premises and the conclusion.
+# Lines starting with # are comments.
+
+# A nakshatra whose lord is Ketu is a Ketu-ruled nakshatra.
+astro_ketu_ruled	?n	sbc:lord	sbc:Ketu	?n	rdf:type	sbc:KetuRuledNakshatra
+
+# A transit event that transits a graha and sits in a Ketu-ruled
+# nakshatra is a Ketu-nakshatra transit.
+astro_ketu_nak_transit	?e	sbc:transitOf	?g	?e	sbc:inNakshatra	?n	?n	rdf:type	sbc:KetuRuledNakshatra	?e	rdf:type	sbc:KetuNakshatraTransit
+
+# The videos' rule: a Ketu-nakshatra transit afflicted by any graha is a
+# crash-risk setup. Supplied by the videos, not established by the tool.
+astro_crash_risk	?e	rdf:type	sbc:KetuNakshatraTransit	?e	sbc:afflictedBy	?m	?e	rdf:type	sbc:CrashRiskSetup

@@ -1,0 +1,156 @@
+# sbc_core.ttl - the SBC_Tool domain ontology (RDFS core).
+#
+# Scope: the timeless vocabulary of the Sarvatobhadra Chakra workstation -
+# grahas and their natures, the 12 rashis, the 27 nakshatras with their
+# lords, class hierarchies for factors/studies/verdicts, and the
+# properties the engine and the studies fill in at run time.
+# No OWL terms: the in-house reasoner implements the RDFS core
+# (rdfs2/3/5/7/9/11), so the file stays inside what it can certify.
+
+@prefix rdf:  <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix sbc:  <http://sbc.tool/ont#> .
+
+# ---- classes ----------------------------------------------------------
+
+sbc:Graha rdf:type rdfs:Class .
+sbc:Benefic rdf:type rdfs:Class .
+sbc:Benefic rdfs:subClassOf sbc:Graha .
+sbc:Malefic rdf:type rdfs:Class .
+sbc:Malefic rdfs:subClassOf sbc:Graha .
+sbc:Node rdf:type rdfs:Class .
+sbc:Node rdfs:subClassOf sbc:Malefic .
+sbc:Luminary rdf:type rdfs:Class .
+sbc:Luminary rdfs:subClassOf sbc:Graha .
+
+sbc:Rashi rdf:type rdfs:Class .
+sbc:Nakshatra rdf:type rdfs:Class .
+sbc:KetuRuledNakshatra rdf:type rdfs:Class .
+sbc:KetuRuledNakshatra rdfs:subClassOf sbc:Nakshatra .
+
+sbc:TransitEvent rdf:type rdfs:Class .
+sbc:KetuNakshatraTransit rdf:type rdfs:Class .
+sbc:KetuNakshatraTransit rdfs:subClassOf sbc:TransitEvent .
+sbc:CrashRiskSetup rdf:type rdfs:Class .
+sbc:CrashRiskSetup rdfs:subClassOf sbc:KetuNakshatraTransit .
+
+sbc:ResearchPrompt rdf:type rdfs:Class .
+sbc:VideoClaim rdf:type rdfs:Class .
+sbc:VideoClaim rdfs:subClassOf sbc:ResearchPrompt .
+sbc:CrashRiskClaim rdf:type rdfs:Class .
+sbc:CrashRiskClaim rdfs:subClassOf sbc:VideoClaim .
+
+# ---- properties -------------------------------------------------------
+
+sbc:lord rdf:type rdf:Property .
+sbc:lord rdfs:domain sbc:Nakshatra .
+sbc:lord rdfs:range sbc:Graha .
+sbc:inSign rdf:type rdf:Property .
+sbc:inSign rdfs:domain sbc:TransitEvent .
+sbc:inSign rdfs:range sbc:Rashi .
+sbc:inNakshatra rdf:type rdf:Property .
+sbc:inNakshatra rdfs:domain sbc:TransitEvent .
+sbc:inNakshatra rdfs:range sbc:Nakshatra .
+sbc:transitOf rdf:type rdf:Property .
+sbc:transitOf rdfs:domain sbc:TransitEvent .
+sbc:transitOf rdfs:range sbc:Graha .
+sbc:afflictedBy rdf:type rdf:Property .
+sbc:afflictedBy rdfs:domain sbc:TransitEvent .
+sbc:afflictedBy rdfs:range sbc:Graha .
+sbc:ruleGrades rdf:type rdf:Property .
+sbc:ruleGrades rdfs:domain sbc:StudyReport .
+sbc:ruleGrades rdfs:range sbc:ResearchPrompt .
+
+# ---- grahas (9 grahas + the two nodes; outer planets are macro layer) --
+
+sbc:Sun rdf:type sbc:Luminary .
+sbc:Moon rdf:type sbc:Luminary .
+sbc:Mercury rdf:type sbc:Benefic .
+sbc:Venus rdf:type sbc:Benefic .
+sbc:Jupiter rdf:type sbc:Benefic .
+sbc:Mars rdf:type sbc:Malefic .
+sbc:Saturn rdf:type sbc:Malefic .
+sbc:Rahu rdf:type sbc:Node .
+sbc:Ketu rdf:type sbc:Node .
+
+# ---- the 27 nakshatras with their lords (KP order) --------------------
+
+sbc:Ashwini rdf:type sbc:Nakshatra .
+sbc:Ashwini sbc:lord sbc:Ketu .
+sbc:Bharani rdf:type sbc:Nakshatra .
+sbc:Bharani sbc:lord sbc:Venus .
+sbc:Krittika rdf:type sbc:Nakshatra .
+sbc:Krittika sbc:lord sbc:Sun .
+sbc:Rohini rdf:type sbc:Nakshatra .
+sbc:Rohini sbc:lord sbc:Moon .
+sbc:Mrigashira rdf:type sbc:Nakshatra .
+sbc:Mrigashira sbc:lord sbc:Mars .
+sbc:Ardra rdf:type sbc:Nakshatra .
+sbc:Ardra sbc:lord sbc:Rahu .
+sbc:Punarvasu rdf:type sbc:Nakshatra .
+sbc:Punarvasu sbc:lord sbc:Jupiter .
+sbc:Pushya rdf:type sbc:Nakshatra .
+sbc:Pushya sbc:lord sbc:Saturn .
+sbc:Ashlesha rdf:type sbc:Nakshatra .
+sbc:Ashlesha sbc:lord sbc:Mercury .
+sbc:Magha rdf:type sbc:Nakshatra .
+sbc:Magha sbc:lord sbc:Ketu .
+sbc:PPhalguni rdf:type sbc:Nakshatra .
+sbc:PPhalguni sbc:lord sbc:Venus .
+sbc:UPhalguni rdf:type sbc:Nakshatra .
+sbc:UPhalguni sbc:lord sbc:Sun .
+sbc:Hasta rdf:type sbc:Nakshatra .
+sbc:Hasta sbc:lord sbc:Moon .
+sbc:Chitra rdf:type sbc:Nakshatra .
+sbc:Chitra sbc:lord sbc:Mars .
+sbc:Swati rdf:type sbc:Nakshatra .
+sbc:Swati sbc:lord sbc:Rahu .
+sbc:Vishakha rdf:type sbc:Nakshatra .
+sbc:Vishakha sbc:lord sbc:Jupiter .
+sbc:Anuradha rdf:type sbc:Nakshatra .
+sbc:Anuradha sbc:lord sbc:Saturn .
+sbc:Jyeshtha rdf:type sbc:Nakshatra .
+sbc:Jyeshtha sbc:lord sbc:Mercury .
+sbc:Mula rdf:type sbc:Nakshatra .
+sbc:Mula sbc:lord sbc:Ketu .
+sbc:PAshadha rdf:type sbc:Nakshatra .
+sbc:PAshadha sbc:lord sbc:Venus .
+sbc:UAshadha rdf:type sbc:Nakshatra .
+sbc:UAshadha sbc:lord sbc:Sun .
+sbc:Shravana rdf:type sbc:Nakshatra .
+sbc:Shravana sbc:lord sbc:Moon .
+sbc:Dhanishta rdf:type sbc:Nakshatra .
+sbc:Dhanishta sbc:lord sbc:Mars .
+sbc:Shatabhisha rdf:type sbc:Nakshatra .
+sbc:Shatabhisha sbc:lord sbc:Rahu .
+sbc:PBhadrapada rdf:type sbc:Nakshatra .
+sbc:PBhadrapada sbc:lord sbc:Jupiter .
+sbc:UBhadrapada rdf:type sbc:Nakshatra .
+sbc:UBhadrapada sbc:lord sbc:Saturn .
+sbc:Revati rdf:type sbc:Nakshatra .
+sbc:Revati sbc:lord sbc:Mercury .
+
+# ---- the 12 rashis ----------------------------------------------------
+
+sbc:Aries rdf:type sbc:Rashi .
+sbc:Taurus rdf:type sbc:Rashi .
+sbc:Gemini rdf:type sbc:Rashi .
+sbc:Cancer rdf:type sbc:Rashi .
+sbc:Leo rdf:type sbc:Rashi .
+sbc:Virgo rdf:type sbc:Rashi .
+sbc:Libra rdf:type sbc:Rashi .
+sbc:Scorpio rdf:type sbc:Rashi .
+sbc:Sagittarius rdf:type sbc:Rashi .
+sbc:Capricorn rdf:type sbc:Rashi .
+sbc:Aquarius rdf:type sbc:Rashi .
+sbc:Pisces rdf:type sbc:Rashi .
+
+# ---- market anchors ---------------------------------------------------
+
+sbc:MarketAnchor rdf:type rdfs:Class .
+sbc:NSE rdf:type sbc:MarketAnchor .
+sbc:NSE sbc:label "National Stock Exchange of India" .
+sbc:BSE rdf:type sbc:MarketAnchor .
+sbc:BSE sbc:label "BSE Ltd" .
+sbc:NIFTY50 rdf:type sbc:MarketAnchor .
+sbc:NIFTY50 sbc:label "NIFTY 50 index" .
