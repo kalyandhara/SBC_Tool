@@ -15,9 +15,27 @@ Endpoints:
 
 from __future__ import annotations
 
+import time
+
 from flask import Blueprint, jsonify, request
 
 from sbc import ontology as ont
+from sbc.ontology_graph import build_graph_data
+
+# 15-minute TTL cache keyed by "date|time|tz"
+_GRAPH_CACHE: dict[str, tuple[float, dict]] = {}
+_GRAPH_TTL = 900  # seconds
+
+
+def _cached_graph(date: str, time_str: str, tz: str) -> dict:
+    key = f"{date}|{time_str}|{tz}"
+    if key in _GRAPH_CACHE:
+        ts, val = _GRAPH_CACHE[key]
+        if time.monotonic() - ts < _GRAPH_TTL:
+            return val
+    val = build_graph_data(date, time_str, tz)
+    _GRAPH_CACHE[key] = (time.monotonic(), val)
+    return val
 from sbc.ontology_scoring import (
     build_report,
     compute_readings,
@@ -236,6 +254,28 @@ def import_ontology():
         "derivations": [d.text() for d in reasoner.derivations],
         "certificate": written,
     })
+
+
+@ontology_bp.get("/graph")
+def graph():
+    """7-layer impact lineage graph: Planet → Rasi → Nak → Aspect → Theme → Sector → Stock.
+
+    Research-grade only. No validated edge. Dasha layer deferred to Phase 2.
+    """
+    date, time_str, tz = _date_params()
+    if not date:
+        return jsonify({"error": "date (YYYY-MM-DD) is required"}), 400
+    # Validate tz
+    try:
+        from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
+        ZoneInfo(tz)
+    except (ZoneInfoNotFoundError, KeyError):
+        return jsonify({"error": f"unknown time zone: {tz}"}), 400
+    try:
+        data = _cached_graph(date, time_str, tz)
+    except ValueError as exc:
+        return jsonify({"error": str(exc)}), 400
+    return jsonify(data)
 
 
 # Mark these as heavy endpoints so the SPA uses the longer timeout.

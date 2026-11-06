@@ -127,3 +127,34 @@ def test_unconfigured_sector_graceful(graph):
 def test_no_duplicate_aspect_nodes(graph):
     aspect_ids = [n["id"] for n in graph["nodes"] if n["type"] == "aspect"]
     assert len(aspect_ids) == len(set(aspect_ids)), "Duplicate aspect node IDs found"
+
+
+# ── Task 2: Flask endpoint tests ──────────────────────────────────────────────
+
+def test_graph_endpoint_requires_date(client):
+    """GET /api/ontology/graph without date returns 400."""
+    resp = client.get("/api/ontology/graph")
+    assert resp.status_code == 400
+    assert "date" in resp.get_json()["error"]
+
+
+def test_graph_endpoint_invalid_tz(client):
+    """GET /api/ontology/graph with unknown tz returns 400."""
+    resp = client.get("/api/ontology/graph?date=2026-11-06&tz=Mars/Olympus")
+    assert resp.status_code == 400
+    assert "time zone" in resp.get_json()["error"]
+
+
+def test_graph_endpoint_valid(client, monkeypatch):
+    """GET /api/ontology/graph with valid params returns 200 with nodes+edges."""
+    from sbc import ontology_graph
+    _sun = next(p for p in MOCK_PLANETS if p["name"] == "Sun")
+    _moon = next(p for p in MOCK_PLANETS if p["name"] == "Moon")
+    monkeypatch.setattr(
+        ontology_graph, "positioned_planets",
+        lambda *a, **kw: (MOCK_PLANETS, 23.1, _sun, _moon, MOCK_TITHI)
+    )
+    resp = client.get("/api/ontology/graph?date=2026-11-06")
+    assert resp.status_code == 200
+    data = resp.get_json()
+    assert "nodes" in data and "edges" in data
