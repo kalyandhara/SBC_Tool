@@ -51,10 +51,12 @@ SIGN_LORDS = {0: "Mars", 1: "Venus", 2: "Mercury", 3: "Moon", 4: "Sun",
 
 def vimshottari(moon_longitude: float, birth_date: str,
                 at_date: str | None = None) -> dict:
-    """Mahadasha/Antardasha timeline from the Moon's nakshatra.
+    """Mahadasha/Antardasha/Pratyantar timeline from the Moon's nakshatra.
 
     Returns {birth_maha, balance_years, mahadashas: [{lord, start, end,
-    antardashas: [{lord, start, end}]}], at: {maha, antar, ends}}.
+    antardashas: [{lord, start, end, pratyantars: [{lord, start,
+    end}]}]}], at: {date, maha, antar, pratyantar}}. Pratyantars (9 per
+    antardasha) begin with the antardasha lord and are proportional.
     """
     birth = dt.date.fromisoformat(birth_date)
     at = dt.date.fromisoformat(at_date) if at_date else dt.date.today()
