@@ -34,3 +34,19 @@ services:
     depends_on:
       - app
     restart: unless-stopped
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: sbc-nav-postgres
+    ports:
+      - "127.0.0.1:5433:5432"
+    environment:
+      - POSTGRES_DB=navigator
+      - POSTGRES_USER=navigator
+      - POSTGRES_PASSWORD=${NAV_PG_PASSWORD:?set NAV_PG_PASSWORD in .env}
+    volumes:
+      - nav_pgdata:/var/lib/postgresql/data
+    restart: unless-stopped
+
+volumes:
+  nav_pgdata: {}
