@@ -1,5 +1,9 @@
 # Navigator Postgres. Start with:
 #   docker compose -f docker-compose.navigator.yml up -d postgres
+# The explicit project name keeps `down --remove-orphans` on the main compose
+# file from removing this service.
+name: sbc-navigator
+
 services:
   postgres:
     image: postgres:16-alpine

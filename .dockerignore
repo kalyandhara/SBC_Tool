@@ -32,4 +32,6 @@ tests
 # Secrets and internal working files must never enter the image
 .env
 **/.env
+.env.*
+**/.env.*
 .internal

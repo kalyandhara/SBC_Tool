@@ -36,25 +36,28 @@ Spec: `.internal/specs/2026-11-06-astrotrade-navigator-phase1-design.md`. Brains
 | `sbc/api/blueprints/navigator_bp.py` | Routes and guard |
 | `static/js/navigator.js` | Tab logic |
 | `sbc/yogas.py` | Pratyantar added |
-| `sbc/app_factory.py`, `templates/index.html`, `static/style.css`, `docker-compose.yml`, `.env.example`, `requirements.txt` | Wiring |
+| `sbc/app_factory.py`, `templates/index.html`, `static/style.css`, `docker-compose.navigator.yml`, `.env.example`, `requirements.txt` | Wiring |
 | `tests/test_navigator_*.py` | Tests |
 
 ---
 
 ### Task 1: Postgres service and store skeleton
 
-**Files:** Modify `docker-compose.yml`, `requirements.txt`. Create `.env.example`, `sbc/navigator/__init__.py`, `sbc/navigator/migrations/001_init.sql`, `sbc/navigator/store.py`, `tests/test_navigator_store.py`.
+**Files:** Modify `requirements.txt`, `.dockerignore`. Create `docker-compose.navigator.yml`, `.env.example`, `sbc/navigator/__init__.py`, `sbc/navigator/migrations/001_init.sql`, `sbc/navigator/store.py`, `tests/test_navigator_store.py`.
 
 **Interfaces:** Produces `store.connect()`, `store.migrate()`, `store.StoreUnavailable`.
 
 **Acceptance Criteria:**
-- `docker compose up -d postgres` binds to `127.0.0.1:5433` and compose refuses to start without `NAV_PG_PASSWORD`.
+- `docker compose -f docker-compose.navigator.yml up -d postgres` binds to `127.0.0.1:5433` and compose refuses to start without `NAV_PG_PASSWORD`.
 - `create_app()` succeeds with Postgres down; import of `store` makes no connection.
 - `migrate()` is idempotent.
 
-- [ ] **Step 1: Add the compose service** under `services:`, and `volumes: {nav_pgdata: {}}` at top level.
+- [ ] **Step 1: Create `docker-compose.navigator.yml`** with this content. `docker-compose.yml` stays unchanged; the explicit project name keeps `down --remove-orphans` on it from removing this service.
 
 ```yaml
+name: sbc-navigator
+
+services:
   postgres:
     image: postgres:16-alpine
     container_name: sbc-nav-postgres
@@ -67,6 +70,9 @@ Spec: `.internal/specs/2026-11-06-astrotrade-navigator-phase1-design.md`. Brains
     volumes:
       - nav_pgdata:/var/lib/postgresql/data
     restart: unless-stopped
+
+volumes:
+  nav_pgdata: {}
 ```
 
 Add `psycopg[binary]>=3.2,<4.0` to `requirements.txt` and install it. Create `.env.example` containing `NAV_PG_PASSWORD=` and `NAV_DATABASE_URL=postgresql://navigator:CHANGE_ME@127.0.0.1:5433/navigator`. Regenerate `requirements.lock` by the repo's existing method.

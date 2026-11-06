@@ -20,10 +20,12 @@ def connect() -> psycopg.Connection:
     try:
         return psycopg.connect(url, connect_timeout=3)
     except psycopg.ProgrammingError:
-        # Never chain: the original message and context can echo the URL/password.
-        raise StoreUnavailable("NAV_DATABASE_URL is invalid") from None
+        message = "NAV_DATABASE_URL is invalid"
     except psycopg.Error:
-        raise StoreUnavailable("Postgres is unreachable") from None
+        message = "Postgres is unreachable"
+    # Raise outside the except block. The psycopg error can echo the URL and
+    # password, and `from None` would still keep it on __context__.
+    raise StoreUnavailable(message)
 
 
 def migrate() -> None:

@@ -2,6 +2,8 @@
 
 Status: DONE_WITH_CONCERNS (Postgres-only test not run; Docker was down)
 
+> Superseded: the Built, Tests and Concerns sections below describe the first pass. The compose service moved to docker-compose.navigator.yml in fix round 1, so the docker-compose.yml entry and the concern about `docker compose up app` no longer apply. See the fix rounds at the end for current state.
+
 ## Built
 - docker-compose.yml: `postgres` service (postgres:16-alpine, 127.0.0.1:5433, `${NAV_PG_PASSWORD:?...}`), `nav_pgdata` volume.
 - requirements.txt: `psycopg[binary]>=3.2,<4.0`. requirements.lock regenerated with the documented uv command, compiled in place so existing pins held; diff is only psycopg 3.3.8, psycopg-binary 3.3.8 and a typing-extensions annotation.
@@ -32,3 +34,15 @@ Suggested close reason: "Postgres service, schema, store skeleton, lock updated;
 5. .env.example: comments on percent-encoding and host-only 127.0.0.1:5433; placeholders only.
 
 Full suite: 1004 passed, 5 skipped, 1 failed. The failure (tests/test_route_pruning.py::test_every_route_has_a_ui_caller_or_is_listed, routes /api/briefing_summary and /health) is pre-existing: it also fails with this round's changes stashed on 469fc9d.
+
+## Fix round 2
+
+1. store.py: connect() records the fixed message in the except blocks and raises StoreUnavailable after them, so __context__ and __cause__ are both None. Comment corrected. RED: the parametrized test failed on __context__ for the unreachable, malformed and bad-percent-encoding URLs. GREEN after the fix. The old suppress-context tests were folded into it.
+2. tests/test_navigator_store.py: added test_importing_store_does_not_touch_postgres, which patches psycopg.connect before importing the store in a fresh interpreter. It passed on first run because the store has no import-time connect; a temporary import-time connect made it fail, then was removed.
+3. docker-compose.navigator.yml: added `name: sbc-navigator`. `docker compose config` parses it; no container was started.
+4. .dockerignore: added `.env.*` and `**/.env.*`, with no `!.env.example` exception. Nothing in the Dockerfile, compose files, sbc or scripts references the example, so it stays out of the image.
+5. Plan Task 1 now puts the compose block in docker-compose.navigator.yml and uses `docker compose -f docker-compose.navigator.yml up -d postgres`. The top of this report carries a superseded note.
+
+Full suite: 1005 passed, 5 skipped, 1 failed. The failure is the confirmed pre-existing test_every_route_has_a_ui_caller_or_is_listed.
+
+Still not verified: live migrate against Postgres, port binding and refusal without NAV_PG_PASSWORD. Docker was not started.
