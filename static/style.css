@@ -3653,3 +3653,18 @@ a:focus-visible,
 .onto-view-section { border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; background: var(--card-bg, var(--bg)); }
 .onto-view-section-full { grid-column: 1 / -1; }
 .onto-view-section h4 { margin: 0 0 6px; font-size: 12.5px; font-weight: 800; color: var(--text); text-transform: uppercase; letter-spacing: .04em; }
+
+/* 3D Impact Lineage Graph */
+.ontology-graph-panel { margin-top: 14px; border-top: 1px solid var(--border, rgba(148,163,184,.3)); padding-top: 10px; }
+.og-toggle { display: flex; align-items: center; gap: 10px; width: 100%; padding: 8px 4px; background: none; border: 0; color: inherit; font: inherit; font-weight: 600; text-align: left; cursor: pointer; }
+.og-badge { font-size: 11px; font-weight: 500; padding: 2px 8px; border: 1px solid currentColor; border-radius: 999px; opacity: .75; }
+.og-chevron { margin-left: auto; }
+.og-controls { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; margin: 8px 0 12px; font-size: 13px; }
+.og-controls label { display: inline-flex; align-items: center; gap: 4px; cursor: pointer; }
+.og-label { font-weight: 600; }
+.og-sep { opacity: .4; }
+.og-sent-btn { padding: 3px 10px; font: inherit; color: inherit; background: none; border: 1px solid var(--border, rgba(148,163,184,.4)); border-radius: 6px; cursor: pointer; }
+.og-sent-btn.active { border-color: currentColor; font-weight: 600; }
+.og-container { width: 100%; }
+.og-note { font-size: 13px; color: var(--muted, inherit); padding: 8px 0; }
+.og-error { color: var(--red, #b42318); }

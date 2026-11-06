@@ -4,7 +4,9 @@
 (function () {
   "use strict";
 
-  const PLOTLY_SRC = "/static/vendor/plotly-basic-4.1.1.min.js";
+  // plotly-basic (used elsewhere in the app) has no scatter3d, so this chart
+  // uses its own gl3d bundle, kept off window.Plotly so other modules are unaffected.
+  const PLOTLY_SRC = "/static/vendor/plotly-gl3d-3.0.1.min.js";
 
   // ── DOM refs ──────────────────────────────────────────────────────────────
   const el = (id) => document.getElementById(id);
@@ -12,15 +14,26 @@
 
   // ── Lazy Plotly loader (same pattern as monthly-score.js) ─────────────────
   let plotlyPromise = null;
+  let Plotly3d = null;
   function loadPlotly() {
-    if (window.Plotly) return Promise.resolve(window.Plotly);
+    if (Plotly3d) return Promise.resolve(Plotly3d);
     if (!plotlyPromise) {
       plotlyPromise = new Promise((resolve, reject) => {
+        const prior = window.Plotly;
+        const restore = () => {
+          if (prior) window.Plotly = prior;
+          else delete window.Plotly;
+        };
         const s = document.createElement("script");
         s.src = PLOTLY_SRC;
-        s.onload = () => resolve(window.Plotly);
+        s.onload = () => {
+          Plotly3d = window.Plotly;
+          restore();
+          resolve(Plotly3d);
+        };
         s.onerror = () => {
           plotlyPromise = null;
+          restore();
           reject(new Error("Could not load Plotly from " + PLOTLY_SRC));
         };
         document.head.appendChild(s);
@@ -38,6 +51,7 @@
   function fetchGraph(date, time, tz) {
     const container = el("og-container");
     if (!container) return Promise.reject(new Error("og-container not found"));
+    if (Plotly3d) Plotly3d.purge(container);
     container.innerHTML = '<p class="og-note og-loading">Loading graph…</p>';
     const params = new URLSearchParams({ date, time: time || "09:15", tz: tz || "Asia/Kolkata" });
     return fetch("/api/ontology/graph?" + params.toString())
@@ -149,8 +163,9 @@
     const container = el("og-container");
     if (!container) return;
     const traces = buildTraces(graphData, _visibleLayers, _activeSentiment);
-    const isDark = document.documentElement.dataset.theme === "dark"
-      || window.matchMedia("(prefers-color-scheme: dark)").matches;
+    const theme = document.documentElement.dataset.theme;
+    const isDark = theme ? theme === "dark"
+      : window.matchMedia("(prefers-color-scheme: dark)").matches;
     const bg = isDark ? "#0f172a" : "#f8fafc";
     const textColor = isDark ? "#e2e8f0" : "#1e293b";
     const layout = {
@@ -164,13 +179,13 @@
       },
       scene: {
         bgcolor: bg,
-        xaxis: { showgrid: false, zeroline: false, showticklabels: false, title: "" },
-        yaxis: { showgrid: false, zeroline: false, showticklabels: false, title: "" },
+        xaxis: { showgrid: false, zeroline: false, showticklabels: false, title: { text: "" } },
+        yaxis: { showgrid: false, zeroline: false, showticklabels: false, title: { text: "" } },
         zaxis: {
           showgrid: true, zeroline: false, showticklabels: true,
           tickvals: [0, 1.5, 3.0, 4.5, 6.0, 7.5, 9.0],
           ticktext: ["Planets", "Rasi", "Nakshatra", "Aspects", "Themes", "Sectors", "Stocks"],
-          title: "",
+          title: { text: "" },
           gridcolor: isDark ? "#334155" : "#e2e8f0",
         },
         camera: { eye: { x: 1.5, y: 1.5, z: 0.8 } },
@@ -179,7 +194,8 @@
       height: 650,
     };
     container.style.minHeight = "650px";
-    window.Plotly.react(container, traces, layout, { responsive: true, displayModeBar: true });
+    if (!container._fullLayout) container.replaceChildren();  // drop the loading note
+    Plotly3d.react(container, traces, layout, { responsive: true, displayModeBar: true });
   }
 
   // ── Load and render ───────────────────────────────────────────────────────
