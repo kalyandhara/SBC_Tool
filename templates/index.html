@@ -1641,6 +1641,7 @@
   <script src="/static/js/sector-rotation.js?v=1"></script>
   <script src="/static/js/ashtakavarga.js?v=1"></script>
   <script src="/static/js/bullion-week.js?v=4"></script>
+  <script src="/static/js/ontology_graph.js?v=1"></script>
   <footer class="site-footer">
     <div class="wrap">
       <small>For informational purposes only. Astrological market timing is not financial advice. Trade at your own risk.</small>
@@ -1666,6 +1667,38 @@
         <div id="ontology-body" class="ontology-body" role="status" aria-live="polite">
           <p class="ontology-note">Set a date and run to compute the market ontology, or open the catalogue to load a starter ontology.</p>
         </div>
+
+        <!-- 3D Impact Lineage Graph (Research · no validated edge) -->
+        <section id="ontology-graph-section" class="ontology-graph-panel" aria-label="3D Impact Lineage Graph">
+          <div class="og-header">
+            <button id="og-toggle" class="og-toggle" aria-expanded="false" aria-controls="og-body" type="button">
+              🌐 3D Impact Lineage Graph
+              <span class="og-badge">Research · no validated edge</span>
+              <span class="og-chevron">▼</span>
+            </button>
+          </div>
+          <div id="og-body" class="og-body" hidden>
+            <div class="og-controls">
+              <span class="og-label">Sentiment:</span>
+              <button class="og-sent-btn active" data-sentiment="all" type="button">All</button>
+              <button class="og-sent-btn" data-sentiment="bullish" type="button">Bullish ✅</button>
+              <button class="og-sent-btn" data-sentiment="bearish" type="button">Bearish ❌</button>
+              <span class="og-sep">|</span>
+              <span class="og-label">Layers:</span>
+              <label><input type="checkbox" class="og-layer-cb" data-layer="planet" checked> Planets</label>
+              <label><input type="checkbox" class="og-layer-cb" data-layer="rasi"> Rasi</label>
+              <label><input type="checkbox" class="og-layer-cb" data-layer="nakshatra"> Nakshatra</label>
+              <label><input type="checkbox" class="og-layer-cb" data-layer="aspect"> Aspects</label>
+              <label><input type="checkbox" class="og-layer-cb" data-layer="theme"> Themes</label>
+              <label><input type="checkbox" class="og-layer-cb" data-layer="sector" checked> Sectors</label>
+              <label><input type="checkbox" class="og-layer-cb" data-layer="stock" checked> Stocks</label>
+            </div>
+            <div id="og-container" class="og-container" aria-live="polite">
+              <p class="og-note">Run the Ontology computation above to load the graph.</p>
+            </div>
+          </div>
+        </section>
+
       </section>
     </div>
   </div>
