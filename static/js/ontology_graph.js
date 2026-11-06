@@ -45,6 +45,8 @@
   // ── State ─────────────────────────────────────────────────────────────────
   let _graphData = null;         // last fetched API response
   let _activeSentiment = "all";  // "all" | "bullish" | "bearish"
+  let _view = "radial";          // "radial" | "layered"
+  let _focusId = null;           // centred node in the cards view
   let _visibleLayers = new Set(["planet", "sector", "stock"]);
 
   // ── Fetch graph data ──────────────────────────────────────────────────────
@@ -158,11 +160,211 @@
     return traces;
   }
 
+  // ── Radial overview: Root → Planet → Sector group → Stock ─────────────────
+  function buildRadialTraces(radial, activeSentiment) {
+    const COLORS = { bullish: "#34d399", bearish: "#f87171", volatile: "#fbbf24", neutral: "#1e293b" };
+    const SIZES = { root: 26, planet: 15, group: 13, stock: 6 };
+    const shown = radial.nodes.filter((n) =>
+      activeSentiment === "all" || n.type === "root" || n.type === "planet" || n.sentiment === activeSentiment);
+    const byId = new Map(shown.map((n) => [n.id, n]));
+    const xs = [], ys = [], zs = [];
+    for (const e of radial.edges) {
+      const a = byId.get(e.from), b = byId.get(e.to);
+      if (!a || !b) continue;
+      xs.push(a.x, b.x, null); ys.push(a.y, b.y, null); zs.push(a.z, b.z, null);
+    }
+    return [
+      { type: "scatter3d", mode: "lines", x: xs, y: ys, z: zs, hoverinfo: "none",
+        line: { color: "#cbd5e1", width: 2 }, showlegend: false },
+      { type: "scatter3d", mode: "markers+text", showlegend: false,
+        x: shown.map((n) => n.x), y: shown.map((n) => n.y), z: shown.map((n) => n.z),
+        text: shown.map((n) => n.label), textposition: "top center", textfont: { size: 11 },
+        hovertemplate: "%{customdata}<extra></extra>",
+        customdata: shown.map((n) => {
+          const lines = ["<b>" + n.label + "</b>"];
+          if (n.detail.unconfigured) lines.push("⚠ Stock list not yet configured for this sector");
+          for (const [k, v] of Object.entries(n.detail)) {
+            if (k !== "unconfigured") lines.push(k + ": " + v);
+          }
+          if (n.score) lines.push("score: " + n.score);
+          return lines.join("<br>");
+        }),
+        marker: { size: shown.map((n) => SIZES[n.type] || 8),
+                  color: shown.map((n) => COLORS[n.sentiment] || COLORS.neutral),
+                  line: { width: 1, color: "#e2e8f0" }, opacity: 1 } },
+    ];
+  }
+
+  // ── Cards view: one focused node, what feeds it left, what it leads to right ─
+  const CARD_HEADINGS = {
+    occupies: ["Planets here", "Occupies"],
+    in: ["Planets here", "In nakshatra"],
+    implies: ["Implied by", "Implies"],
+    drives: ["Driven by theme", "Drives"],
+    contains: ["In sector", "Representative stocks"],
+    influences: ["Influenced by", "Influences sectors"],
+  };
+  const CARD_COLORS = { bullish: "#22c55e", bearish: "#f87171", volatile: "#fbbf24", neutral: "#94a3b8" };
+
+  function cardLinks(graphData) {
+    const byId = new Map(graphData.nodes.map((n) => [n.id, n]));
+    const links = graphData.edges.filter((e) => byId.has(e.from) && byId.has(e.to));
+    // Scoring links are not graph edges, so derive them from each sector's planets.
+    for (const n of graphData.nodes) {
+      if (n.type !== "sector") continue;
+      for (const name of n.detail.planets || []) {
+        const from = "planet_" + name;
+        if (byId.has(from)) links.push({ from, to: n.id, label: "influences", sentiment: n.sentiment });
+      }
+    }
+    return { byId, links };
+  }
+
+  function defaultFocus(graphData) {
+    const sectors = graphData.nodes.filter((n) => n.type === "sector");
+    sectors.sort((a, b) => Math.abs(b.score) - Math.abs(a.score));
+    return (sectors[0] || graphData.nodes[0]).id;
+  }
+
+  function cardSubtitle(n) {
+    const d = n.detail || {};
+    if (d.unconfigured) return "Stock list not yet configured for this sector";
+    if (n.type === "planet") return d.rasi + " · " + d.nakshatra + (d.retrograde ? " · retrograde" : "");
+    if (n.type === "aspect") return d.aspect_name + " · orb " + d.orb_diff + "°";
+    if (n.type === "rasi") return d.element + " · " + d.modality;
+    if (n.type === "nakshatra") return d.is_sensitive ? "Sensitive star" : "Nakshatra";
+    if (n.type === "sector") return "Score " + n.score;
+    if (n.type === "stock") return d.sector;
+    return "";
+  }
+
+  function makeCard(n, side) {
+    const card = document.createElement(side === "focus" ? "div" : "button");
+    card.className = "og-card" + (side === "focus" ? " og-card-focus" : "");
+    if (side !== "focus") {
+      card.type = "button";
+      card.addEventListener("click", () => {
+        _focusId = n.id;
+        renderGraph(_graphData);
+      });
+    }
+    card.dataset.side = side;
+    card.style.setProperty("--og-accent", CARD_COLORS[n.sentiment] || CARD_COLORS.neutral);
+    const kind = document.createElement("span");
+    kind.className = "og-card-kind";
+    kind.textContent = n.type;
+    const title = document.createElement("strong");
+    title.textContent = n.label;
+    card.append(kind, title);
+    const subtitle = cardSubtitle(n);
+    if (subtitle) {
+      const sub = document.createElement("span");
+      sub.className = "og-card-sub";
+      sub.textContent = subtitle;
+      card.append(sub);
+    }
+    return card;
+  }
+
+  function makeColumn(items, side) {
+    const col = document.createElement("div");
+    col.className = "og-card-col";
+    const groups = new Map();
+    for (const it of items) {
+      const pair = CARD_HEADINGS[it.label];
+      const heading = pair ? pair[side === "left" ? 0 : 1] : "Aspect: " + it.label;
+      if (!groups.has(heading)) groups.set(heading, []);
+      groups.get(heading).push(it.node);
+    }
+    for (const [heading, list] of groups) {
+      const h = document.createElement("p");
+      h.className = "og-card-heading";
+      h.textContent = heading;
+      col.append(h, ...list.map((n) => makeCard(n, side)));
+    }
+    return col;
+  }
+
+  function drawConnectors(wrap, focus) {
+    const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+    svg.setAttribute("class", "og-card-lines");
+    svg.setAttribute("width", wrap.scrollWidth);
+    svg.setAttribute("height", wrap.scrollHeight);
+    const box = wrap.getBoundingClientRect();
+    const f = focus.getBoundingClientRect();
+    const fy = f.top - box.top + f.height / 2;
+    wrap.querySelectorAll(".og-card[data-side='left'], .og-card[data-side='right']").forEach((c) => {
+      const r = c.getBoundingClientRect();
+      const y = r.top - box.top + r.height / 2;
+      const left = c.dataset.side === "left";
+      const x1 = left ? r.right - box.left : f.right - box.left;
+      const y1 = left ? y : fy;
+      const x2 = left ? f.left - box.left : r.left - box.left;
+      const y2 = left ? fy : y;
+      const mid = (x1 + x2) / 2;
+      const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+      path.setAttribute("d", "M" + x1 + " " + y1 + " C" + mid + " " + y1 + " " + mid + " " + y2 + " " + x2 + " " + y2);
+      path.setAttribute("stroke", getComputedStyle(c).getPropertyValue("--og-accent"));
+      svg.append(path);
+    });
+    wrap.prepend(svg);
+  }
+
+  function renderCards(graphData, container) {
+    const { byId, links } = cardLinks(graphData);
+    if (!_focusId || !byId.has(_focusId)) _focusId = defaultFocus(graphData);
+    const focusNode = byId.get(_focusId);
+    const keep = (it) => _activeSentiment === "all" || it.node.sentiment === _activeSentiment;
+    const seen = new Set();
+    const once = (it) => {
+      const key = it.label + it.node.id;
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    };
+    const left = links.filter((e) => e.to === _focusId)
+      .map((e) => ({ label: e.label, node: byId.get(e.from) })).filter(keep).filter(once);
+    const right = links.filter((e) => e.from === _focusId)
+      .map((e) => ({ label: e.label, node: byId.get(e.to) })).filter(keep).filter(once);
+
+    const picker = document.createElement("select");
+    picker.className = "og-card-picker";
+    picker.setAttribute("aria-label", "Focus node");
+    for (const n of graphData.nodes) {
+      if (n.type !== "planet" && n.type !== "sector") continue;
+      picker.add(new Option(n.type + ": " + n.label, n.id, false, n.id === _focusId));
+    }
+    picker.addEventListener("change", () => {
+      _focusId = picker.value;
+      renderGraph(_graphData);
+    });
+
+    const wrap = document.createElement("div");
+    wrap.className = "og-card-map";
+    const focusCard = makeCard(focusNode, "focus");
+    const middle = document.createElement("div");
+    middle.className = "og-card-mid";
+    middle.append(focusCard);
+    wrap.append(makeColumn(left, "left"), middle, makeColumn(right, "right"));
+    container.style.minHeight = "";
+    container.append(picker, wrap);
+    drawConnectors(wrap, focusCard);
+  }
+
   // ── Render chart ──────────────────────────────────────────────────────────
   function renderGraph(graphData) {
     const container = el("og-container");
     if (!container) return;
-    const traces = buildTraces(graphData, _visibleLayers, _activeSentiment);
+    if (_view === "cards") {
+      if (Plotly3d && container._fullLayout) Plotly3d.purge(container);
+      container.replaceChildren();
+      renderCards(graphData, container);
+      return;
+    }
+    const radial = _view === "radial";
+    const traces = radial
+      ? buildRadialTraces(graphData.radial, _activeSentiment)
+      : buildTraces(graphData, _visibleLayers, _activeSentiment);
     const theme = document.documentElement.dataset.theme;
     const isDark = theme ? theme === "dark"
       : window.matchMedia("(prefers-color-scheme: dark)").matches;
@@ -193,9 +395,22 @@
       legend: { x: 0, y: 1, bgcolor: "rgba(0,0,0,0.3)" },
       height: 650,
     };
+    if (radial) {
+      const hidden = { visible: false };
+      layout.title.text = "Ontological Vector Graph — Regime: " + graphData.radial.regime;
+      layout.showlegend = false;
+      layout.scene.xaxis = hidden;
+      layout.scene.yaxis = hidden;
+      layout.scene.zaxis = { visible: false, range: [-8, 8] };
+      layout.scene.aspectmode = "data";
+      layout.scene.camera = { eye: { x: 0.35, y: -1.05, z: 1.55 } };
+      layout.height = 760;
+    }
     container.style.minHeight = "650px";
-    if (!container._fullLayout) container.replaceChildren();  // drop the loading note
-    Plotly3d.react(container, traces, layout, { responsive: true, displayModeBar: true });
+    // A fresh plot per render, so one view's camera never carries to the other.
+    if (container._fullLayout) Plotly3d.purge(container);
+    container.replaceChildren();
+    Plotly3d.newPlot(container, traces, layout, { responsive: true, displayModeBar: true });
   }
 
   // ── Load and render ───────────────────────────────────────────────────────
@@ -224,9 +439,18 @@
 
   // ── Filter handlers ───────────────────────────────────────────────────────
   function onSentimentChange(btn) {
-    qsa(".og-sent-btn").forEach((b) => b.classList.remove("active"));
+    qsa(".og-sentiment-btn").forEach((b) => b.classList.remove("active"));
     btn.classList.add("active");
     _activeSentiment = btn.dataset.sentiment;
+    if (_graphData) renderGraph(_graphData);
+  }
+
+  function onViewChange(btn) {
+    qsa(".og-view-btn").forEach((b) => b.classList.remove("active"));
+    btn.classList.add("active");
+    _view = btn.dataset.view;
+    const layers = el("og-layer-controls");
+    if (layers) layers.hidden = _view !== "layered";
     if (_graphData) renderGraph(_graphData);
   }
 
@@ -247,6 +471,7 @@
     body.hidden = expanded;
     // Load on first expand if date available
     if (!expanded && !_graphData) loadAndRender();
+    else if (!expanded && _view === "cards") renderGraph(_graphData);  // lines need real sizes
   }
 
   // ── Wire up ───────────────────────────────────────────────────────────────
@@ -254,8 +479,12 @@
     const toggle = el("og-toggle");
     if (toggle) toggle.addEventListener("click", () => onToggle(toggle));
 
-    qsa(".og-sent-btn").forEach((btn) =>
+    qsa(".og-sentiment-btn").forEach((btn) =>
       btn.addEventListener("click", () => onSentimentChange(btn))
+    );
+
+    qsa(".og-view-btn").forEach((btn) =>
+      btn.addEventListener("click", () => onViewChange(btn))
     );
 
     qsa(".og-layer-cb").forEach((cb) =>

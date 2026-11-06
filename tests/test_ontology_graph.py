@@ -158,3 +158,14 @@ def test_graph_endpoint_valid(client, monkeypatch):
     assert resp.status_code == 200
     data = resp.get_json()
     assert "nodes" in data and "edges" in data
+
+
+def test_radial_overview_is_a_small_rooted_tree(graph):
+    radial = graph["radial"]
+    ids = [n["id"] for n in radial["nodes"]]
+    assert len(ids) == len(set(ids))
+    assert len(ids) <= 60
+    assert {"root", "planet", "group", "stock"} == {n["type"] for n in radial["nodes"]}
+    children = [e["to"] for e in radial["edges"]]
+    assert len(children) == len(set(children)), "every node has exactly one parent"
+    assert set(children) == set(ids) - {"root"}

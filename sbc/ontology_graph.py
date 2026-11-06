@@ -16,7 +16,10 @@ from sbc.aspect_sets import CLASSICAL_ASPECTS, evaluate_aspect
 from sbc.ontology_scoring import (
     PLANET_NATURE,
     PLANET_SECTORS,
+    SECTOR_GROUPS,
     SENSITIVE_STARS,
+    classify_regime,
+    compute_liquidity_flow,
     compute_readings,
     compute_sector_scores,
 )
@@ -152,6 +155,101 @@ def _xyz(node_type: str, index: int, total: int) -> tuple[float, float, float]:
         return 0.0, 0.0, z
     angle = 2 * math.pi * index / total
     return round(r * math.cos(angle), 4), round(r * math.sin(angle), 4), z
+
+
+# ── radial overview (Root → Planet → Sector group → Stock) ───────────────────
+
+# Representative basket per sector group. "Other" has no basket of its own.
+GROUP_STOCK_MAP: dict[str, str] = {
+    "Financials": "Bank", "Energy": "Energy", "Technology": "IT",
+    "Materials": "Metal", "Industrials": "Infra", "Consumer": "Consumer",
+}
+
+
+def _score_sentiment(score: float) -> str:
+    return "bullish" if score > 0.5 else ("bearish" if score < -0.5 else "volatile")
+
+
+def _build_radial(planets_raw: list[dict], sector_scores: list) -> dict[str, Any]:
+    """Readable hub-and-spoke tree: about 50 nodes rather than the full lineage."""
+    groups: dict[str, list] = {}
+    for sc in sector_scores:
+        groups.setdefault(SECTOR_GROUPS.get(sc.sector, "Other"), []).append(sc)
+
+    nodes: list[dict] = [{
+        "id": "root", "type": "root", "label": "Ontology Root",
+        "x": 0.0, "y": 0.0, "z": 0.0, "sentiment": "neutral", "score": 0.0,
+        "detail": {},
+    }]
+    edges: list[dict] = []
+
+    def link(src: str, dst: str, sent: str) -> None:
+        edges.append({"from": src, "to": dst, "label": "", "strength": 1.0,
+                      "color": "#cbd5e1", "sentiment": sent})
+
+    for i, p in enumerate(planets_raw):
+        theta = 2 * math.pi * i / max(len(planets_raw), 1)
+        score = p.get("signed_strength", 0.0)
+        pid = f"planet_{p['name']}"
+        sent = "bullish" if score > 0 else "bearish"
+        nodes.append({
+            "id": pid, "type": "planet",
+            "label": f"{p['name']} ({p['nakshatra']})",
+            "x": round(2.4 * math.cos(theta), 4),
+            "y": round(2.4 * math.sin(theta), 4),
+            "z": round(0.4 * math.sin(3 * theta), 4),
+            "sentiment": sent, "score": score,
+            "detail": {"rasi": p["sign"], "nature": p.get("nature", "")},
+        })
+        link("root", pid, sent)
+
+    known = {p["name"] for p in planets_raw}
+    names = sorted(groups)
+    flow = compute_liquidity_flow(sector_scores)
+    for i, group in enumerate(names):
+        members = groups[group]
+        avg = sum(m.score for m in members) / len(members)
+        sent = _score_sentiment(avg)
+        theta = 2 * math.pi * (i + 0.5) / len(names)
+        gx, gy, gz = 7.0 * math.cos(theta), 7.0 * math.sin(theta), math.cos(2 * theta)
+        gid = f"group_{group}"
+        stocks = STOCK_UNIVERSE.get(GROUP_STOCK_MAP.get(group, ""), [])
+        detail: dict[str, Any] = {
+            "sectors": len(members),
+            "strongest": max(members, key=lambda m: abs(m.score)).sector,
+        }
+        if not stocks:
+            detail["unconfigured"] = True
+        nodes.append({
+            "id": gid, "type": "group",
+            "label": f"{group} {flow.get(group, '')}".strip(),
+            "x": round(gx, 4), "y": round(gy, 4), "z": round(gz, 4),
+            "sentiment": sent, "score": round(avg, 2), "detail": detail,
+        })
+        # Attach to the planet carrying the most absolute weight in this group.
+        weight: dict[str, float] = {}
+        for m in members:
+            for name in m.planets:
+                if name in known:
+                    weight[name] = weight.get(name, 0.0) + abs(m.score)
+        parent = f"planet_{max(sorted(weight), key=weight.get)}" if weight else "root"
+        link(parent, gid, sent)
+
+        for j, sym in enumerate(stocks):
+            spread = (j - (len(stocks) - 1) / 2) * 0.42
+            sid = f"stock_{group}_{sym}"
+            nodes.append({
+                "id": sid, "type": "stock", "label": sym,
+                "x": round(gx + 2.6 * math.cos(theta + spread), 4),
+                "y": round(gy + 2.6 * math.sin(theta + spread), 4),
+                "z": round(gz, 4),
+                "sentiment": sent, "score": 0.0,
+                "detail": {"group": group, "symbol": sym},
+            })
+            link(gid, sid, sent)
+
+    regime, confidence = classify_regime(sector_scores)
+    return {"regime": regime, "confidence": confidence, "nodes": nodes, "edges": edges}
 
 
 # ── main builder ──────────────────────────────────────────────────────────────
@@ -437,6 +535,7 @@ def build_graph_data(
         "nodes": nodes,
         "edges": edges,
         "layers": ["planet", "rasi", "nakshatra", "aspect", "theme", "sector", "stock"],
+        "radial": _build_radial(planets_raw, sector_scores),
         "meta": {
             "planet_count": sum(1 for n in nodes if n["type"] == "planet"),
             "aspect_count": sum(1 for n in nodes if n["type"] == "aspect"),
