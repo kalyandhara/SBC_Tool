@@ -28,3 +28,8 @@ scripts/adhoc
 tests
 *.md
 !README.md
+
+# Secrets and internal working files must never enter the image
+.env
+**/.env
+.internal

@@ -19,9 +19,11 @@ def connect() -> psycopg.Connection:
         raise StoreUnavailable("NAV_DATABASE_URL is not set")
     try:
         return psycopg.connect(url, connect_timeout=3)
-    except psycopg.OperationalError as exc:
-        # Do not chain the original message into the text: it can echo the URL.
-        raise StoreUnavailable("Postgres is unreachable") from exc
+    except psycopg.ProgrammingError:
+        # Never chain: the original message and context can echo the URL/password.
+        raise StoreUnavailable("NAV_DATABASE_URL is invalid") from None
+    except psycopg.Error:
+        raise StoreUnavailable("Postgres is unreachable") from None
 
 
 def migrate() -> None:
