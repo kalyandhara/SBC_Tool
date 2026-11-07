@@ -107,7 +107,8 @@ def test_remote_read_refused(client):
 @pytest.mark.parametrize("method,path", [
     ("get", "/api/navigator/profile"), ("post", "/api/navigator/profile"),
     ("get", "/api/navigator/chart?profile_id=1"), ("get", "/api/navigator/score?profile_id=1"),
-    ("post", "/api/navigator/backtest"), ("get", "/api/navigator/backtest/1")])
+    ("post", "/api/navigator/backtest"), ("get", "/api/navigator/backtest/1"),
+    ("get", "/api/navigator/backtest/latest?profile_id=1")])
 def test_guard_covers_every_route_before_postgres(client, monkeypatch, method, path):
     _down(monkeypatch)    # a route that reached the store would be a 503
     r = getattr(client, method)(path, headers={"X-Forwarded-For": "8.8.8.8"},
@@ -659,6 +660,32 @@ def test_backtest_unknown_profile_404_and_no_run(client, db, market):
 @pytest.mark.parametrize("run", ["999999", "9" * 30])
 def test_unknown_run_404(client, db, run):
     assert client.get(f"/api/navigator/backtest/{run}").status_code == 404
+
+
+@pg
+def test_latest_backtest_matches_the_run_read(client, db, market, monkeypatch):
+    monkeypatch.setitem(B.DEFAULT_PARAMS, "n_placebo", 2)
+    monkeypatch.setitem(B.DEFAULT_PARAMS, "n_perm", 20)
+    pid = store.ensure_sample()
+    assert client.get(f"/api/navigator/backtest/latest?profile_id={pid}").status_code == 404
+    run = client.post("/api/navigator/backtest", json={"profile_id": pid}).get_json()["run_id"]
+    by_id = _wait(client, run)
+    r = client.get(f"/api/navigator/backtest/latest?profile_id={pid}")
+    assert r.status_code == 200 and r.get_json() == by_id
+    assert "chart_hash" not in r.get_data(as_text=True)
+    assert "engine_version" not in r.get_json() and "heartbeat_at" not in r.get_json()
+
+
+@pg
+def test_latest_backtest_unknown_profile_404(client, db):
+    assert client.get("/api/navigator/backtest/latest?profile_id=999").status_code == 404
+
+
+@pytest.mark.parametrize("q", ["", "?profile_id=0", "?profile_id=abc", "?profile_id=" + "9" * 30])
+def test_latest_backtest_bad_profile_id_400(client, monkeypatch, q):
+    _down(monkeypatch)
+    monkeypatch.setattr(bp, "_migrated", True)
+    assert client.get(f"/api/navigator/backtest/latest{q}").status_code == 400
 
 
 # ---- privacy ------------------------------------------------------------------

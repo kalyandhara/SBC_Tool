@@ -219,7 +219,10 @@ def test_exactly_at_the_limit_needs_no_adjustment():
 def test_clipped_day_counts_as_raised_by_its_clipped_value():
     factors = [{"term": "transit", "label": "x", "raw": 140.0}]
     out = S.lineage({**TERMS, "transit": 100.0}, factors)
-    assert out["raised"][0]["delta"] == pytest.approx(12.5)
+    # The clipped value, plus the score's rounding residual that lands on this line.
+    shown = sum(c["contribution"] for c in out["contributions"] if c["term"] == "transit")
+    assert out["raised"][0]["delta"] == pytest.approx(shown - 12.5, abs=.001)
+    assert out["raised"][0]["delta"] == pytest.approx(12.5, abs=.5)
 
 
 def test_rounding_residual_lands_on_the_largest_line_when_it_has_no_movers():
@@ -386,3 +389,17 @@ def test_real_the_t_minus_1_close_does_reach_day_t(real):
     b = S.score_series(sky, SAMPLE_PROFILE, opens, c2, vix, min_sessions=120)
     assert a.terms["histval"][:k].tolist() == b.terms["histval"][:k].tolist()
     assert a.terms["histval"][k] != b.terms["histval"][k]
+
+
+@pytest.mark.parametrize("terms", [TERMS, {k: 50.4 for k in TERMS},
+                                   {**TERMS, "transit": 61.6, "vol": 50.0},
+                                   {k: v + .37 for k, v in TERMS.items()}])
+def test_raised_and_lowered_equal_displayed_points_minus_baseline(terms):
+    out = S.lineage(terms, [])
+    shown = {}
+    for c in out["contributions"]:
+        shown[c["term"]] = shown.get(c["term"], 0) + round(c["contribution"] * 100)
+    expected = {k: shown[k] - round(W.TERM_WEIGHTS[k] * 50 * 100) for k in W.TERM_WEIGHTS}
+    moves = {m["term"]: round(m["delta"] * 100) for m in out["raised"] + out["lowered"]}
+    assert moves == {k: v for k, v in expected.items() if v}
+    assert all(m["delta"] > 0 for m in out["raised"]) and all(m["delta"] < 0 for m in out["lowered"])

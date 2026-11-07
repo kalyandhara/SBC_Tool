@@ -2310,7 +2310,8 @@ body {
    and never applied. */
 .nav-tabs { align-items: center; }
 @media (min-width: 761px) {
-  .nav-tabs { overflow: visible; }
+  /* Visible so the Advanced dropdown is not clipped; wrap so the tabs never widen the page. */
+  .nav-tabs { overflow: visible; flex-wrap: wrap; }
 }
 .advanced-workspaces {
   position: relative;
@@ -3719,3 +3720,7 @@ button.og-card:hover, button.og-card:focus-visible { border-color: var(--og-acce
 .nav-run:disabled { opacity: .55; cursor: not-allowed; }
 .nav-verdict { padding: 10px 12px; border-left: 4px solid var(--muted); background: var(--panel2); font-weight: 600; }
 .nav-verdict-edge { border-left-color: var(--green); }
+
+.nav-form { display: grid; grid-template-columns: minmax(0, 1fr); gap: 6px; max-width: 420px; margin-top: 8px; }
+.nav-form input { min-width: 0; padding: 6px 8px; background: var(--bg2); color: var(--text); border: 1px solid var(--line); border-radius: 6px; }
+.nav-form .nav-run { justify-self: start; margin-top: 6px; }

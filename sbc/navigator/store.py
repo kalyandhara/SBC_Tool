@@ -179,17 +179,27 @@ def fail_run(run_id: int, error: str) -> None:
         (str(error)[:500], run_id)))
 
 
-def get_run(run_id: int) -> dict | None:
+_RUN_SELECT = ("select id,profile_id,instrument,weights_version,data_asof,engine_version,chart_hash,"
+               "status,heartbeat_at,error,params,folds,results,created_at from backtest_run ")
+
+
+def _one_run(where: str, arg: int) -> dict | None:
     def work(c):
-        cur = c.execute(
-            "select id,profile_id,instrument,weights_version,data_asof,engine_version,chart_hash,"
-            "status,heartbeat_at,error,params,folds,results,created_at "
-            "from backtest_run where id=%s", (run_id,))
+        cur = c.execute(_RUN_SELECT + where, (arg,))
         row = cur.fetchone()
         return None if row is None else dict(zip([d.name for d in cur.description], row))
 
     run = _tx(work)
     return None if run is None else {k: _iso(v) for k, v in run.items()}
+
+
+def get_run(run_id: int) -> dict | None:
+    return _one_run("where id=%s", run_id)
+
+
+def latest_run(profile_id: int) -> dict | None:
+    """The profile's newest run, active or finished."""
+    return _one_run("where profile_id=%s order by id desc limit 1", profile_id)
 
 
 def expire_stale(seconds: int = 120) -> int:

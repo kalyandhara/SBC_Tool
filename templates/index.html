@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <link rel="icon" type="image/svg+xml" href="/static/favicon.svg">
   <title>Sarvatobhadra Chakra - Market Prediction</title>
-  <link rel="stylesheet" href="/static/style.css?v=37">
+  <link rel="stylesheet" href="/static/style.css?v=38">
   <script src="/static/chart.umd.min.js"></script>
   <script src="/static/js/api-token.js"></script>
 </head>
@@ -1602,7 +1602,27 @@
           <label for="nav-profile">Profile</label>
           <select id="nav-profile"></select>
         </div>
-        <p class="nav-note">Saved profiles are listed here, and the sample chart is created automatically. Birth details cannot be entered on this page; only a profile's number is sent when you choose it.</p>
+        <p class="nav-note">Saved profiles are listed here, and the sample chart is created automatically. Choosing a profile sends only its number.</p>
+        <details class="nav-details nav-add">
+          <summary>Add a birth chart</summary>
+          <form id="nav-profile-form" class="nav-form" method="post" autocomplete="off" novalidate>
+            <p class="nav-note">Birth details are sent once, in the request body, and stay in this app's local database. In Phase 1 they are stored unencrypted. A real chart has no backtest yet: run a new backtest before reading anything into its labels.</p>
+            <label for="nav-f-label">Label (optional)</label>
+            <input id="nav-f-label" name="label" type="text" maxlength="80" autocomplete="off">
+            <label for="nav-f-birth_date">Birth date</label>
+            <input id="nav-f-birth_date" name="birth_date" type="date" required autocomplete="off">
+            <label for="nav-f-birth_time">Exact birth time (local, with seconds)</label>
+            <input id="nav-f-birth_time" name="birth_time" type="time" step="1" required autocomplete="off">
+            <label for="nav-f-tz">Time zone (IANA name, for example Asia/Kolkata)</label>
+            <input id="nav-f-tz" name="tz" type="text" required autocomplete="off" spellcheck="false">
+            <label for="nav-f-lat">Latitude (-90 to 90, north positive)</label>
+            <input id="nav-f-lat" name="lat" type="number" step="any" min="-90" max="90" required autocomplete="off">
+            <label for="nav-f-lon">Longitude (-180 to 180, east positive)</label>
+            <input id="nav-f-lon" name="lon" type="number" step="any" min="-180" max="180" required autocomplete="off">
+            <button id="nav-f-save" class="nav-run" type="submit">Save chart</button>
+            <p id="nav-form-status" class="nav-note" role="status"></p>
+          </form>
+        </details>
         <p id="nav-status" class="nav-note" role="status"></p>
         <section id="nav-chart"></section>
         <section id="nav-score"></section>
@@ -1668,7 +1688,7 @@
   <script src="/static/js/rahu-ketu-trap.js?v=3"></script>
   <script src="/static/js/transit-almanac.js?v=3"></script>
   <script src="/static/js/sector-rotation.js?v=1"></script>
-  <script src="/static/js/navigator.js?v=1"></script>
+  <script src="/static/js/navigator.js?v=2"></script>
   <script src="/static/js/ashtakavarga.js?v=1"></script>
   <script src="/static/js/bullion-week.js?v=4"></script>
   <script src="/static/js/ontology_graph.js?v=5"></script>

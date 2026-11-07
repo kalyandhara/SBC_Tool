@@ -142,8 +142,15 @@ def lineage(terms_at_day: Mapping[str, float], factors: list[dict]) -> dict:
         line["contribution"] = c / 100
         if not line.get("adjustment"):
             line["factors"] = _factor_lines(line["term"], grouped[line["term"]], line["weight"], c)
-    moves = [{"term": k, "label": TERM_LABELS[k], "delta": round(w * (values[k] - _NEUTRAL), 2),
-              "size": w * (values[k] - _NEUTRAL)} for k, w in W.TERM_WEIGHTS.items()]
+    # From the displayed points, adjustment lines included, so a move always equals
+    # the table's points minus the neutral baseline, rounding residual and all.
+    shown = {k: 0 for k in W.TERM_WEIGHTS}
+    for line, c in zip(lines, cents):
+        shown[line["term"]] += c
+    moves = []
+    for k, w in W.TERM_WEIGHTS.items():
+        delta = shown[k] - _cents(w * _NEUTRAL)
+        moves.append({"term": k, "label": TERM_LABELS[k], "delta": delta / 100, "size": delta})
     moves.sort(key=lambda m: -abs(m["size"]))
     raised = [{k: v for k, v in m.items() if k != "size"} for m in moves if m["size"] > 0]
     lowered = [{k: v for k, v in m.items() if k != "size"} for m in moves if m["size"] < 0]

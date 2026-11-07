@@ -1,6 +1,7 @@
 // AstroTrade Navigator tab. Shows a weighted score, its lineage and the walk-forward backtest.
-// Every data value is set with textContent. Birth data is never requested: only the numeric
-// profile id goes to the server, and the profile list carries id, label and is_sample only.
+// Every data value is set with textContent. Birth data is never read back: the profile list
+// carries id, label and is_sample only. The add form sends birth data once, as a JSON POST
+// body, then resets; nothing from it is kept in storage or the DOM.
 
 const NAV_POLL_MS = 3000;
 const NAV_TIMEOUT_MS = 20000;
@@ -267,7 +268,7 @@ function navRenderRun(run) {
     : navNote(run.label));
   const edge = results.verdict !== NAV_NO_EDGE;
   out.appendChild(navEl("p", { class: edge ? "nav-verdict nav-verdict-edge" : "nav-verdict", text: navVerdictText(results) }));
-  out.appendChild(navNote(`Action labels are ${run.status_note}. ${run.disclaimer}`));
+  out.appendChild(navNote(run.disclaimer));
   out.appendChild(navNote(`${navShown(run.instrument)}, ${navShown(results.sessions_scored)} sessions scored, data through ${navShown(run.data_asof)}, weights ${navShown(run.weights_version)}, cost ${navShown(params.cost_bps)} bps, ${navShown(results.vol_neutral_days)} sessions with neutral Volatility.`));
   out.append(navOccupancy(results), navSessions(results), navHorizons(results), navFolds(run),
     navPlacebo(results), navCandidates(results), navSubheading("Notes"),
@@ -370,7 +371,72 @@ async function navLoadProfile() {
   await Promise.all([
     load(`/api/navigator/chart?profile_id=${id}`, navRenderChart, "nav-chart", "Chart"),
     load(`/api/navigator/score?profile_id=${id}`, navRenderScore, "nav-score", "Weighted score"),
+    navLoadLatest(seq, id),
   ]);
+}
+
+// A 404 means no run exists for this profile yet, so any failure just leaves the section empty.
+async function navLoadLatest(seq, id) {
+  let run;
+  try {
+    run = await navFetch(`/api/navigator/backtest/latest?profile_id=${id}`);
+  } catch (err) {
+    return;
+  }
+  if (seq !== NAV.loadSeq || NAV.runId !== null) return;
+  if (NAV_ACTIVE.includes(run.status)) {
+    NAV.runId = run.id;
+    navId("nav-run").disabled = true;
+    if (NAV.open) navHandleRun(run);
+  } else if (run.status === "done" && run.results) {
+    navMessage("nav-backtest-status", `Latest saved backtest: run ${run.id}, market data through ${navShown(run.data_asof)}. Run again to refresh it.`);
+    try {
+      navRenderRun(run);
+    } catch (err) {
+      navMessage("nav-backtest-status", "The saved backtest could not be displayed.", true);
+    }
+  } else {
+    navMessage("nav-backtest-status", `Latest saved backtest: run ${run.id} ${run.status}, market data through ${navShown(run.data_asof)}.`, run.status === "failed");
+  }
+}
+
+// Values are read by input type, sent once in the body, and the form is then reset.
+function navFormBody(form) {
+  const body = {};
+  for (const input of form.querySelectorAll("input[name]")) {
+    const value = input.value.trim();
+    if (input.type === "number") body[input.name] = value === "" ? null : Number(value);
+    else if (input.type === "time") body[input.name] = /^\d\d:\d\d$/.test(value) ? `${value}:00` : value;
+    else if (value !== "" || input.required) body[input.name] = value;
+  }
+  return body;
+}
+
+async function navSubmitProfile(event) {
+  event.preventDefault();
+  const form = event.target;
+  const save = navId("nav-f-save");
+  save.disabled = true;
+  navMessage("nav-form-status", "Saving the chart.");
+  try {
+    const created = await navFetch("/api/navigator/profile", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(navFormBody(form)),
+    });
+    form.reset();
+    NAV.profiles.push({ id: created.id, label: created.label, is_sample: false });
+    const select = navId("nav-profile");
+    select.appendChild(navEl("option", { value: String(created.id), text: created.label }));
+    select.value = String(created.id);
+    NAV.profileId = created.id;
+    navMessage("nav-form-status", `Saved as profile ${created.id} and selected. It has no backtest yet.`);
+    await navLoadProfile();
+  } catch (err) {
+    navMessage("nav-form-status", err.message, true);
+  } finally {
+    save.disabled = false;
+  }
 }
 
 async function navBoot() {
@@ -408,6 +474,7 @@ function navSync() {
   if (!pane) return;
   new MutationObserver(navSync).observe(pane, { attributes: true, attributeFilter: ["class"] });
   navId("nav-run").addEventListener("click", navStartRun);
+  navId("nav-profile-form").addEventListener("submit", navSubmitProfile);
   navId("nav-profile").addEventListener("change", (e) => {
     NAV.profileId = Number(e.target.value);
     navLoadProfile();

@@ -355,6 +355,13 @@ def backtest_start():
     return jsonify({"run_id": run_id, "is_new": is_new}), 202
 
 
+def _run_body(run: dict):
+    profile = _require_profile(run["profile_id"])
+    return jsonify({**{k: run[k] for k in _RUN_FIELDS}, "is_sample": profile.is_sample,
+                    "label": _result_label(profile), "status_note": STATUS,
+                    "disclaimer": DISCLAIMER})
+
+
 @navigator_bp.route("/backtest/<int:run_id>", methods=["GET"])
 def backtest_read(run_id: int):
     if run_id >= _MAX_ID:
@@ -363,7 +370,15 @@ def backtest_read(run_id: int):
     run = store.get_run(run_id)
     if run is None:
         raise _NotFound("Run not found")
-    profile = _require_profile(run["profile_id"])
-    return jsonify({**{k: run[k] for k in _RUN_FIELDS}, "is_sample": profile.is_sample,
-                    "label": _result_label(profile), "status_note": STATUS,
-                    "disclaimer": DISCLAIMER})
+    return _run_body(run)
+
+
+# A static segment: <int:run_id> never matches "latest", so the two cannot clash.
+@navigator_bp.route("/backtest/latest", methods=["GET"])
+def backtest_latest():
+    profile_id = _arg_id()
+    store.expire_stale()
+    run = store.latest_run(profile_id)
+    if run is None:
+        raise _NotFound("No backtest for this profile")
+    return _run_body(run)

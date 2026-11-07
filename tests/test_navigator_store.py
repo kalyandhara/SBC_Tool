@@ -313,3 +313,18 @@ def test_heartbeat_and_finish_report_whether_a_row_matched(db):
     rid2, _ = store.start_run(pid, META)
     assert store.finish_run(rid2, {"v": 1}, []) is True
     assert store.finish_run(10**9, {}, []) is False
+
+
+@pg
+def test_latest_run_is_the_newest_for_that_profile_only(db):
+    pid = store.ensure_sample()
+    other = store.create_profile(Profile(label="o", birth_date="1980-01-01", birth_time="01:02:03",
+                                         tz="UTC", lat=1.0, lon=2.0, is_sample=False))
+    assert store.latest_run(pid) is None
+    first, _ = store.start_run(pid, META)
+    store.finish_run(first, {"verdict": "x"}, [])
+    second, _ = store.start_run(pid, META)
+    store.start_run(other, META)
+    latest = store.latest_run(pid)
+    assert latest["id"] == second and latest == store.get_run(second)
+    assert store.latest_run(10**9) is None
