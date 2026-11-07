@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import datetime as dt
 import json
+import math
 import os
 from pathlib import Path
 
@@ -48,14 +49,13 @@ def _tx(work):
     """Run work(conn) in one transaction. Any driver error becomes a generic
     StoreUnavailable raised outside the except block, so no driver text (which
     can echo connection details or row values) is kept on the exception chain."""
-    failed = False
     try:
         with connect() as conn:
             return work(conn)
     except psycopg.Error:
-        failed = True
-    if failed:
-        raise StoreUnavailable("Postgres query failed")
+        pass
+    # Reached only after a driver error: the try body returns on success.
+    raise StoreUnavailable("Postgres query failed")
 
 
 def _json(value):
@@ -118,6 +118,9 @@ def cached_score(key: dict) -> dict | None:
 
 
 def save_score(key: dict, row: dict) -> None:
+    score = row["score"]
+    if not isinstance(score, (int, float)) or not math.isfinite(score):
+        raise ValueError("score must be a finite number")
     _tx(lambda c: c.execute(
         "insert into daily_score (profile_id,day,weights_version,data_asof,engine_version,"
         "chart_hash,score,band,action,lineage) values (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s) "
@@ -152,18 +155,20 @@ def start_run(profile_id: int, meta: dict) -> tuple[int, bool]:
     return _tx(work)
 
 
-def heartbeat(run_id: int) -> None:
-    _tx(lambda c: c.execute(
+def heartbeat(run_id: int) -> bool:
+    """True if an active run was updated; False if none matched (e.g. expired)."""
+    return _tx(lambda c: c.execute(
         f"update backtest_run set heartbeat_at=now(), status='running' "
-        f"where id=%s and status in {_ACTIVE}", (run_id,)))
+        f"where id=%s and status in {_ACTIVE}", (run_id,)).rowcount > 0)
 
 
-def finish_run(run_id: int, results, folds) -> None:
-    """Only an active run can finish; a run already expired to failed stays failed."""
-    r, f = _json(results), _json(folds)  # NaN raises ValueError here, before any write
-    _tx(lambda c: c.execute(
+def finish_run(run_id: int, results, folds) -> bool:
+    """Only an active run can finish; a run already expired to failed stays failed.
+    Returns True if a row matched."""
+    r, f = _json(results), _json(folds)  # Jsonb wrapping is lazy; NaN is rejected at execute
+    return _tx(lambda c: c.execute(
         f"update backtest_run set status='done', results=%s, folds=%s, heartbeat_at=now() "
-        f"where id=%s and status in {_ACTIVE}", (r, f, run_id)))
+        f"where id=%s and status in {_ACTIVE}", (r, f, run_id)).rowcount > 0)
 
 
 def fail_run(run_id: int, error: str) -> None:

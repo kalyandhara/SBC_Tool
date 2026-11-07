@@ -100,8 +100,11 @@ KEY_COLUMNS = ("profile_id", "day", "weights_version", "data_asof", "engine_vers
 def db(monkeypatch):
     """Only ever points at NAV_TEST_DATABASE_URL; truncates before and after."""
     test_url = os.environ["NAV_TEST_DATABASE_URL"]
-    assert os.environ.get("NAV_DATABASE_URL", "") != test_url, (
-        "NAV_DATABASE_URL equals the test URL; refusing to truncate a live database")
+    from psycopg.conninfo import conninfo_to_dict
+
+    live = os.environ.get("NAV_DATABASE_URL", "")
+    assert not live or conninfo_to_dict(live).get("dbname") != conninfo_to_dict(test_url).get(
+        "dbname"), "NAV_DATABASE_URL names the test database; refusing to truncate a live database"
     monkeypatch.setenv("NAV_DATABASE_URL", test_url)
     store.migrate()
 
@@ -284,3 +287,29 @@ def test_driver_error_text_never_escapes(monkeypatch):
         store.get_run(1)
     assert "s3cretpw" not in repr(exc.value) and "s3cretpw" not in str(exc.value)
     assert exc.value.__context__ is None and exc.value.__cause__ is None
+
+
+@pg
+@pytest.mark.parametrize("bad", [math.nan, math.inf, -math.inf])
+def test_save_score_rejects_non_finite_and_stores_nothing(db, bad):
+    pid = store.ensure_sample()
+    key = _key(pid)
+    with pytest.raises(ValueError):
+        store.save_score(key, dict(score=bad, band="b", action="a", lineage={}))
+    with store.connect() as c:
+        assert c.execute("select count(*) from daily_score").fetchone()[0] == 0
+
+
+@pg
+def test_heartbeat_and_finish_report_whether_a_row_matched(db):
+    pid = store.ensure_sample()
+    rid, _ = store.start_run(pid, META)
+    assert store.heartbeat(rid) is True
+    with store.connect() as c:
+        c.execute("update backtest_run set heartbeat_at=now()-interval '1 hour' where id=%s", (rid,))
+    store.expire_stale(120)
+    assert store.heartbeat(rid) is False
+    assert store.finish_run(rid, {"v": 1}, []) is False
+    rid2, _ = store.start_run(pid, META)
+    assert store.finish_run(rid2, {"v": 1}, []) is True
+    assert store.finish_run(10**9, {}, []) is False
