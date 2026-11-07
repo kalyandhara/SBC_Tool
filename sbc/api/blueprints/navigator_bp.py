@@ -1,0 +1,325 @@
+"""AstroTrade Navigator routes.
+
+Birth data stays out of logs and URLs: failures are logged by exception type only,
+because a message can quote the values. chart_hash is a cache key, never a response
+field. Postgres is touched on first request only, so the app boots without it.
+"""
+from __future__ import annotations
+
+import datetime as dt
+import hmac
+import logging
+import os
+import re
+import threading
+from dataclasses import asdict
+from functools import lru_cache
+from zoneinfo import ZoneInfo
+
+import numpy as np
+import pandas as pd
+from flask import Blueprint, jsonify, request
+from werkzeug.exceptions import HTTPException
+
+from sbc import market_store
+from sbc import nakshatra as N
+from sbc.engine_version import module_version
+from sbc.navigator import backtest as B
+from sbc.navigator import scoring as S
+from sbc.navigator import store
+from sbc.navigator.ephemeris import build_sky
+from sbc.navigator.profile import Profile, chart_hash, natal_points, validate
+from sbc.navigator.weights import WEIGHTS_VERSION
+
+log = logging.getLogger(__name__)
+navigator_bp = Blueprint("navigator", __name__, url_prefix="/api/navigator")
+
+INSTRUMENT, VIX_SYMBOL = "NIFTY", "INDIAVIX"
+STATUS = "unvalidated research output"
+DISCLAIMER = ("Action labels are unvalidated research output, not personal financial advice. "
+              "Scores use hand-set weights.")
+PIPELINE_LABEL = "Sample chart: pipeline check only"
+RESEARCH_LABEL = "Research-grade result with hand-set weights"
+RUN_FAILED = "The backtest failed. Check the server and start a new run."
+_DOWN = "Navigator database is unavailable. Start Postgres and retry."
+_NO_MARKET = "Market data is unavailable. Refresh market data and retry."
+_PROXY = ("X-Forwarded-For", "X-Forwarded-Proto", "X-Forwarded-Host", "X-Real-IP", "Forwarded", "Via")
+_RUN_FIELDS = ("id", "profile_id", "instrument", "weights_version", "data_asof", "status",
+               "error", "params", "folds", "results", "created_at")
+_DAY_RE = re.compile(r"[0-9]{4}-[0-9]{2}-[0-9]{2}")
+_ID_RE = re.compile(r"[0-9]{1,18}")     # 18 digits always fit Postgres BIGINT
+_MAX_ID = 10 ** 18
+_MAX_DAY = dt.date(2100, 12, 31)        # the Vimshottari and ephemeris range the app supports
+
+_migrated = False
+_migrate_lock = threading.Lock()
+
+
+class _BadRequest(Exception):
+    """Fixed-message 400; never carries client input."""
+
+
+class _NotFound(Exception):
+    pass
+
+
+class _NoMarketData(Exception):
+    pass
+
+
+class _Expired(Exception):
+    """The run was marked failed while this thread still held it."""
+
+
+@navigator_bp.before_request
+def _guard():
+    from sbc.app_factory import _LOCAL_ADDRS  # app_factory imports this module's package
+
+    token = os.environ.get("SBC_API_TOKEN", "").strip()
+    if token:
+        supplied = request.headers.get("X-API-Token", "")
+        # Bytes: compare_digest raises TypeError on non-ASCII str.
+        if supplied and hmac.compare_digest(supplied.encode(), token.encode()):
+            return None
+        return jsonify({"error": "a valid X-API-Token header is required"}), 401
+    if request.remote_addr in _LOCAL_ADDRS and not any(h in request.headers for h in _PROXY):
+        return None
+    return jsonify({"error": "navigator is local-only until SBC_API_TOKEN is set"}), 403
+
+
+@navigator_bp.before_request
+def _ensure_migrated():
+    global _migrated
+    if _migrated:
+        return
+    with _migrate_lock:
+        if not _migrated:
+            store.migrate()
+            _migrated = True
+
+
+@navigator_bp.errorhandler(store.StoreUnavailable)
+def _store_down(_):
+    return jsonify({"error": _DOWN}), 503
+
+
+@navigator_bp.errorhandler(_NoMarketData)
+def _market_down(_):
+    return jsonify({"error": _NO_MARKET}), 503
+
+
+@navigator_bp.errorhandler(_BadRequest)
+def _bad_request(exc):
+    return jsonify({"error": str(exc)}), 400
+
+
+@navigator_bp.errorhandler(_NotFound)
+def _not_found(exc):
+    return jsonify({"error": str(exc)}), 404
+
+
+@navigator_bp.errorhandler(Exception)
+def _failed(exc):
+    if isinstance(exc, HTTPException):
+        return exc
+    log.error("navigator request failed: %s", type(exc).__name__)
+    return jsonify({"error": "The navigator request failed."}), 500
+
+
+@lru_cache(maxsize=1)
+def _version() -> str:
+    # The navigator closure, which includes sbc.engine. engine_version() would hash
+    # the prediction series instead and miss a change to the scoring code.
+    return module_version("sbc.navigator.backtest")
+
+
+def _arg_id() -> int:
+    raw = request.args.get("profile_id", "")
+    if not _ID_RE.fullmatch(raw):
+        raise _BadRequest("profile_id must be a positive integer")
+    return int(raw)
+
+
+def _require_profile(profile_id: int) -> Profile:
+    # Checked first: a bad id would otherwise reach a foreign key and read as a 503.
+    profile = store.get_profile(profile_id)
+    if profile is None:
+        raise _NotFound("Profile not found")
+    return profile
+
+
+def _result_label(profile: Profile) -> str:
+    return PIPELINE_LABEL if profile.is_sample else RESEARCH_LABEL
+
+
+def _market():
+    """(daily bars, VIX closes), each only up to the last NIFTY session."""
+    bars = market_store.get_daily(INSTRUMENT)
+    if not bars:
+        raise _NoMarketData
+    ohlc = pd.DataFrame(bars)
+    ohlc["date"] = ohlc["date"].str[:10]
+    asof = ohlc["date"].iloc[-1]
+    # Every close: the first sessions need VIX history from before them.
+    vix = {r["date"][:10]: r["close"] for r in market_store.get_daily(VIX_SYMBOL)
+           if r["close"] is not None and r["date"][:10] <= asof}
+    return ohlc, vix
+
+
+def _parse_day() -> str:
+    raw = request.args.get("day")
+    if raw is None:
+        return dt.datetime.now(ZoneInfo("Asia/Kolkata")).date().isoformat()
+    day = None
+    if _DAY_RE.fullmatch(raw):
+        try:
+            day = dt.date.fromisoformat(raw)
+        except ValueError:
+            pass
+    if day is None or day > _MAX_DAY:
+        raise _BadRequest("day must be a valid YYYY-MM-DD date")
+    return raw
+
+
+def _compute(profile: Profile, ohlc: pd.DataFrame, vix: dict, day: str, future: bool) -> dict:
+    days = ohlc["date"].tolist()
+    opens, closes = ohlc["open"].to_numpy(float), ohlc["close"].to_numpy(float)
+    if future:
+        # Appended next to the last session, so T-1 would read as data_asof however
+        # far ahead the day is. Dropping that close leaves Vol neutral and flagged.
+        vix = {d: c for d, c in vix.items() if d != days[-1]}
+        days = days + [day]
+        opens, closes = np.append(opens, np.nan), np.append(closes, np.nan)
+    series = S.score_series(build_sky(days), profile, opens, closes, vix)
+    i = days.index(day)
+    score = int(series.score[i])
+    band = S.band_of(score)
+    return B._clean({"score": score, "band": band, "action": S.action_of(band),
+                     "lineage": S.day_lineage(series, i)})
+
+
+def _vol_neutral(lineage: dict) -> bool:
+    return any(f.get("neutral") for c in lineage["contributions"] if c["term"] == "vol"
+               for f in c.get("factors", []))
+
+
+@navigator_bp.route("/profile", methods=["GET"])
+def profile_read():
+    if "profile_id" in request.args:
+        profile = _require_profile(_arg_id())
+        return jsonify(asdict(profile))
+    store.ensure_sample()
+    return jsonify({"profiles": store.list_profiles()})
+
+
+@navigator_bp.route("/profile", methods=["POST"])
+def profile_create():
+    body = request.get_json(silent=True)
+    if not isinstance(body, dict):
+        raise _BadRequest("invalid birth data")
+    # Only the seeded chart is a sample: is_sample is never taken from a client.
+    fields = {k: v for k, v in body.items() if k != "is_sample"}
+    try:
+        profile = validate(fields)
+    except ValueError:
+        profile = None
+    if profile is None:
+        raise _BadRequest("invalid birth data")
+    return jsonify({"id": store.create_profile(profile), "label": profile.label,
+                    "is_sample": False}), 201
+
+
+@navigator_bp.route("/chart", methods=["GET"])
+def chart():
+    profile_id = _arg_id()
+    profile = _require_profile(profile_id)
+    points = []
+    for name, lon in natal_points(profile).items():
+        lon = float(lon) % 360.0
+        nakshatra, pada = N.nakshatra_of(lon)
+        points.append({"name": name, "longitude": round(lon, 4), "sign": N.RASHIS[int(lon // 30)],
+                       "degree": round(lon % 30, 4), "nakshatra": nakshatra, "pada": pada})
+    return jsonify({"profile_id": profile_id, "label": profile.label,
+                    "is_sample": profile.is_sample, "points": points})
+
+
+@navigator_bp.route("/score", methods=["GET"])
+def score():
+    profile_id, day = _arg_id(), _parse_day()
+    profile = _require_profile(profile_id)
+    ohlc, vix = _market()
+    asof = ohlc["date"].iloc[-1]
+    future = day > asof
+    if not future and day not in set(ohlc["date"]):
+        raise _BadRequest("day is not a market session")
+    key = {"profile_id": profile_id, "day": day, "weights_version": WEIGHTS_VERSION,
+           "data_asof": asof, "engine_version": _version(), "chart_hash": chart_hash(profile)}
+    row = None if future else store.cached_score(key)
+    cached = row is not None
+    if not cached:
+        row = _compute(profile, ohlc, vix, day, future)
+        if not future:
+            store.save_score(key, row)
+    return jsonify({"profile_id": profile_id, "day": day, "data_asof": asof,
+                    "weights_version": WEIGHTS_VERSION, "is_sample": profile.is_sample,
+                    "label": _result_label(profile), "score": int(row["score"]),
+                    "band": row["band"], "action": row["action"], "status": STATUS,
+                    "disclaimer": DISCLAIMER, "lineage": row["lineage"], "future": future,
+                    "vol_neutral": _vol_neutral(row["lineage"]), "cached": cached})
+
+
+def _job(run_id: int, profile: Profile, ohlc: pd.DataFrame, vix: dict) -> None:
+    def progress(_done, _total):
+        if not store.heartbeat(run_id):
+            raise _Expired
+
+    try:
+        progress(0, 0)
+        results = B._clean(B.run(profile, ohlc, vix, on_progress=progress))
+        folds = results.pop("folds", [])
+        store.finish_run(run_id, results, folds)
+    except _Expired:
+        log.info("navigator run %s stopped: no longer active", run_id)
+    except Exception as exc:  # a thread has no caller: anything uncaught is a silent hang
+        log.error("navigator run %s failed: %s", run_id, type(exc).__name__)
+        try:
+            store.fail_run(run_id, RUN_FAILED)
+        except store.StoreUnavailable:
+            log.error("navigator run %s: could not record the failure", run_id)
+
+
+def _start_job(run_id: int, profile: Profile, ohlc: pd.DataFrame, vix: dict) -> None:
+    threading.Thread(target=_job, args=(run_id, profile, ohlc, vix), daemon=True,
+                     name=f"navigator-run-{run_id}").start()
+
+
+@navigator_bp.route("/backtest", methods=["POST"])
+def backtest_start():
+    body = request.get_json(silent=True)
+    profile_id = body.get("profile_id") if isinstance(body, dict) else None
+    if isinstance(profile_id, bool) or not isinstance(profile_id, int) or not 0 < profile_id < _MAX_ID:
+        raise _BadRequest("profile_id must be a positive integer")
+    profile = _require_profile(profile_id)
+    ohlc, vix = _market()
+    store.expire_stale()
+    run_id, is_new = store.start_run(profile_id, {
+        "instrument": INSTRUMENT, "weights_version": WEIGHTS_VERSION,
+        "data_asof": ohlc["date"].iloc[-1], "engine_version": _version(),
+        "chart_hash": chart_hash(profile), "params": B.DEFAULT_PARAMS})
+    if is_new:
+        _start_job(run_id, profile, ohlc, vix)
+    return jsonify({"run_id": run_id, "is_new": is_new}), 202
+
+
+@navigator_bp.route("/backtest/<int:run_id>", methods=["GET"])
+def backtest_read(run_id: int):
+    if run_id >= _MAX_ID:
+        raise _NotFound("Run not found")
+    store.expire_stale()
+    run = store.get_run(run_id)
+    if run is None:
+        raise _NotFound("Run not found")
+    profile = _require_profile(run["profile_id"])
+    return jsonify({**{k: run[k] for k in _RUN_FIELDS}, "is_sample": profile.is_sample,
+                    "label": _result_label(profile), "status_note": STATUS,
+                    "disclaimer": DISCLAIMER})

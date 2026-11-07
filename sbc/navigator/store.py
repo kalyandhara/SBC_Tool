@@ -35,9 +35,11 @@ def connect() -> psycopg.Connection:
 
 
 def migrate() -> None:
-    with connect() as conn:
+    def work(conn):
         for path in sorted(MIGRATIONS.glob("*.sql")):
             conn.execute(path.read_text(encoding="utf8"))
+
+    _tx(work)
 
 
 # ---- queries -----------------------------------------------------------------
