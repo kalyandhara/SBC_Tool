@@ -29,9 +29,6 @@ API_ONLY = {
     # and the refreshes degrade per-source.
     "/api/economic/indicators", "/api/economic/refresh",
     "/api/sentiment/daily", "/api/sentiment/refresh",
-    # Navigator API: the tab arrives in the next task, which drops these entries.
-    "/api/navigator/profile", "/api/navigator/chart", "/api/navigator/score",
-    "/api/navigator/backtest", "/api/navigator/backtest/<int:run_id>",
 }
 
 

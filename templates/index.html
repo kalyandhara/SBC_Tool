@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <link rel="icon" type="image/svg+xml" href="/static/favicon.svg">
   <title>Sarvatobhadra Chakra - Market Prediction</title>
-  <link rel="stylesheet" href="/static/style.css?v=36">
+  <link rel="stylesheet" href="/static/style.css?v=37">
   <script src="/static/chart.umd.min.js"></script>
   <script src="/static/js/api-token.js"></script>
 </head>
@@ -85,6 +85,9 @@
       </button>
       <button class="nav-tab" data-tab="tab-rotation" role="tab" aria-selected="false" aria-controls="tab-rotation">
         <span class="tab-icon" aria-hidden="true">🔭</span> Sector Rotation
+      </button>
+      <button class="nav-tab" data-tab="tab-navigator" role="tab" aria-selected="false" aria-controls="tab-navigator">
+        <span class="tab-icon" aria-hidden="true">🧭</span> Navigator
       </button>
       <button class="nav-tab" data-tab="tab-bullion" role="tab" aria-selected="false" aria-controls="tab-bullion">
         <span class="tab-icon" aria-hidden="true">🥇</span> Bullion Week
@@ -1587,6 +1590,32 @@
       </section>
     </div>
 
+    <div id="tab-navigator" class="tab-pane" role="tabpanel">
+      <section class="panel nav-root">
+        <div class="panel-head">
+          <h2>AstroTrade Navigator</h2>
+          <span class="panel-sub">A hand-weighted score for one chart, each point traced to its factors, with a walk-forward backtest that can report no demonstrated edge.</span>
+        </div>
+        <div id="nav-sample-banner" class="nav-banner" hidden>SAMPLE chart. Results are a pipeline check, not about any real person.</div>
+        <p class="nav-disclaimer">Action labels are unvalidated research output, not personal financial advice. Scores use hand-set weights.</p>
+        <div class="nav-controls">
+          <label for="nav-profile">Profile</label>
+          <select id="nav-profile"></select>
+        </div>
+        <p class="nav-note">Saved profiles are listed here, and the sample chart is created automatically. Birth details cannot be entered on this page; only a profile's number is sent when you choose it.</p>
+        <p id="nav-status" class="nav-note" role="status"></p>
+        <section id="nav-chart"></section>
+        <section id="nav-score"></section>
+        <section id="nav-lineage"></section>
+        <section id="nav-backtest">
+          <h3 class="nav-heading">Backtest</h3>
+          <button id="nav-run" class="nav-run" type="button">Run backtest</button>
+          <p id="nav-backtest-status" class="nav-note" role="status"></p>
+          <div id="nav-backtest-out"></div>
+        </section>
+      </section>
+    </div>
+
     <div id="tab-bullion" class="tab-pane" role="tabpanel">
       <section class="panel analog-lab">
         <div class="panel-head">
@@ -1639,6 +1668,7 @@
   <script src="/static/js/rahu-ketu-trap.js?v=3"></script>
   <script src="/static/js/transit-almanac.js?v=3"></script>
   <script src="/static/js/sector-rotation.js?v=1"></script>
+  <script src="/static/js/navigator.js?v=1"></script>
   <script src="/static/js/ashtakavarga.js?v=1"></script>
   <script src="/static/js/bullion-week.js?v=4"></script>
   <script src="/static/js/ontology_graph.js?v=5"></script>
