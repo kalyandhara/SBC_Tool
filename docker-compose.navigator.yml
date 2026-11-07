@@ -1,0 +1,22 @@
+# Navigator Postgres. Start with:
+#   docker compose -f docker-compose.navigator.yml up -d postgres
+# The explicit project name keeps `down --remove-orphans` on the main compose
+# file from removing this service.
+name: sbc-navigator
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: sbc-nav-postgres
+    ports:
+      - "127.0.0.1:5433:5432"
+    environment:
+      - POSTGRES_DB=navigator
+      - POSTGRES_USER=navigator
+      - POSTGRES_PASSWORD=${NAV_PG_PASSWORD:?set NAV_PG_PASSWORD in .env}
+    volumes:
+      - nav_pgdata:/var/lib/postgresql/data
+    restart: unless-stopped
+
+volumes:
+  nav_pgdata: {}
