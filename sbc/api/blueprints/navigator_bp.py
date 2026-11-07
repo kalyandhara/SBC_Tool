@@ -43,7 +43,13 @@ RESEARCH_LABEL = "Research-grade result with hand-set weights"
 RUN_FAILED = "The backtest failed. Check the server and start a new run."
 _DOWN = "Navigator database is unavailable. Start Postgres and retry."
 _NO_MARKET = "Market data is unavailable. Refresh market data and retry."
-_PROXY = ("X-Forwarded-For", "X-Forwarded-Proto", "X-Forwarded-Host", "X-Real-IP", "Forwarded", "Via")
+RUN_NOT_STARTED = "The backtest could not start. Try again."
+_PROXY = ("X-Forwarded-For", "X-Forwarded-Proto", "X-Forwarded-Host", "X-Forwarded-Server",
+          "X-Real-IP", "Forwarded", "Via", "True-Client-IP", "CF-Connecting-IP", "X-Client-IP",
+          "X-Cluster-Client-IP", "X-Original-Forwarded-For", "Fastly-Client-IP")
+_LOCAL_AUTHORITY = r"(?:localhost|127\.0\.0\.1|\[::1\])(?::([0-9]{1,5}))?"
+_HOST_RE = re.compile(_LOCAL_AUTHORITY, re.ASCII)
+_ORIGIN_RE = re.compile(r"https?://" + _LOCAL_AUTHORITY, re.ASCII)
 _RUN_FIELDS = ("id", "profile_id", "instrument", "weights_version", "data_asof", "status",
                "error", "params", "folds", "results", "created_at")
 _DAY_RE = re.compile(r"[0-9]{4}-[0-9]{2}-[0-9]{2}")
@@ -71,6 +77,20 @@ class _Expired(Exception):
     """The run was marked failed while this thread still held it."""
 
 
+def _local_authority(pattern: re.Pattern, value: str) -> bool:
+    match = pattern.fullmatch(value.lower())
+    return match is not None and int(match.group(1) or 0) <= 65535
+
+
+def _local_browser_context() -> bool:
+    """Refuses DNS rebinding: a rebound name reaches the loopback listener from a
+    hostile page, so the peer address alone proves nothing. Same-origin GETs send
+    no Origin, so an absent one passes."""
+    origin = request.headers.get("Origin")
+    return (_local_authority(_HOST_RE, request.headers.get("Host", ""))
+            and (origin is None or _local_authority(_ORIGIN_RE, origin)))
+
+
 @navigator_bp.before_request
 def _guard():
     from sbc.app_factory import _LOCAL_ADDRS  # app_factory imports this module's package
@@ -82,7 +102,8 @@ def _guard():
         if supplied and hmac.compare_digest(supplied.encode(), token.encode()):
             return None
         return jsonify({"error": "a valid X-API-Token header is required"}), 401
-    if request.remote_addr in _LOCAL_ADDRS and not any(h in request.headers for h in _PROXY):
+    if (request.remote_addr in _LOCAL_ADDRS and not any(h in request.headers for h in _PROXY)
+            and _local_browser_context()):
         return None
     return jsonify({"error": "navigator is local-only until SBC_API_TOKEN is set"}), 403
 
@@ -135,9 +156,16 @@ def _version() -> str:
 
 def _arg_id() -> int:
     raw = request.args.get("profile_id", "")
-    if not _ID_RE.fullmatch(raw):
+    if not _ID_RE.fullmatch(raw) or int(raw) == 0:
         raise _BadRequest("profile_id must be a positive integer")
     return int(raw)
+
+
+def _json_body(message: str):
+    try:
+        return request.get_json(silent=True)
+    except RecursionError:  # silent covers ValueError only
+        raise _BadRequest(message) from None
 
 
 def _require_profile(profile_id: int) -> Profile:
@@ -153,11 +181,15 @@ def _result_label(profile: Profile) -> str:
 
 
 def _market():
-    """(daily bars, VIX closes), each only up to the last NIFTY session."""
+    """(daily bars, VIX closes), each only up to the last NIFTY session with a close."""
     bars = market_store.get_daily(INSTRUMENT)
     if not bars:
         raise _NoMarketData
     ohlc = pd.DataFrame(bars)
+    closed = ohlc.index[ohlc["close"].notna()]
+    if closed.empty:
+        raise _NoMarketData
+    ohlc = ohlc.loc[:closed[-1]].copy()
     ohlc["date"] = ohlc["date"].str[:10]
     asof = ohlc["date"].iloc[-1]
     # Every close: the first sessions need VIX history from before them.
@@ -214,7 +246,7 @@ def profile_read():
 
 @navigator_bp.route("/profile", methods=["POST"])
 def profile_create():
-    body = request.get_json(silent=True)
+    body = _json_body("invalid birth data")
     if not isinstance(body, dict):
         raise _BadRequest("invalid birth data")
     # Only the seeded chart is a sample: is_sample is never taken from a client.
@@ -252,13 +284,16 @@ def score():
     future = day > asof
     if not future and day not in set(ohlc["date"]):
         raise _BadRequest("day is not a market session")
+    # The VIX date sits in engine_version, the key's free text column: data_asof
+    # follows NIFTY alone, so a VIX backfill would otherwise hit the old row.
     key = {"profile_id": profile_id, "day": day, "weights_version": WEIGHTS_VERSION,
-           "data_asof": asof, "engine_version": _version(), "chart_hash": chart_hash(profile)}
+           "data_asof": asof, "engine_version": f"{_version()}+vix:{max(vix, default='none')}",
+           "chart_hash": chart_hash(profile)}
     row = None if future else store.cached_score(key)
     cached = row is not None
     if not cached:
         row = _compute(profile, ohlc, vix, day, future)
-        if not future:
+        if not future and not _vol_neutral(row["lineage"]):  # neutral may just mean VIX is late
             store.save_score(key, row)
     return jsonify({"profile_id": profile_id, "day": day, "data_asof": asof,
                     "weights_version": WEIGHTS_VERSION, "is_sample": profile.is_sample,
@@ -266,6 +301,13 @@ def score():
                     "band": row["band"], "action": row["action"], "status": STATUS,
                     "disclaimer": DISCLAIMER, "lineage": row["lineage"], "future": future,
                     "vol_neutral": _vol_neutral(row["lineage"]), "cached": cached})
+
+
+def _record_failure(run_id: int) -> None:
+    try:
+        store.fail_run(run_id, RUN_FAILED)
+    except Exception as exc:  # type only: a message can quote row values
+        log.error("navigator run %s: could not record the failure: %s", run_id, type(exc).__name__)
 
 
 def _job(run_id: int, profile: Profile, ohlc: pd.DataFrame, vix: dict) -> None:
@@ -282,10 +324,7 @@ def _job(run_id: int, profile: Profile, ohlc: pd.DataFrame, vix: dict) -> None:
         log.info("navigator run %s stopped: no longer active", run_id)
     except Exception as exc:  # a thread has no caller: anything uncaught is a silent hang
         log.error("navigator run %s failed: %s", run_id, type(exc).__name__)
-        try:
-            store.fail_run(run_id, RUN_FAILED)
-        except store.StoreUnavailable:
-            log.error("navigator run %s: could not record the failure", run_id)
+        _record_failure(run_id)
 
 
 def _start_job(run_id: int, profile: Profile, ohlc: pd.DataFrame, vix: dict) -> None:
@@ -295,7 +334,7 @@ def _start_job(run_id: int, profile: Profile, ohlc: pd.DataFrame, vix: dict) -> 
 
 @navigator_bp.route("/backtest", methods=["POST"])
 def backtest_start():
-    body = request.get_json(silent=True)
+    body = _json_body("profile_id must be a positive integer")
     profile_id = body.get("profile_id") if isinstance(body, dict) else None
     if isinstance(profile_id, bool) or not isinstance(profile_id, int) or not 0 < profile_id < _MAX_ID:
         raise _BadRequest("profile_id must be a positive integer")
@@ -307,7 +346,12 @@ def backtest_start():
         "data_asof": ohlc["date"].iloc[-1], "engine_version": _version(),
         "chart_hash": chart_hash(profile), "params": B.DEFAULT_PARAMS})
     if is_new:
-        _start_job(run_id, profile, ohlc, vix)
+        try:
+            _start_job(run_id, profile, ohlc, vix)
+        except Exception as exc:  # left active, the run would block this profile until it expires
+            log.error("navigator run %s did not start: %s", run_id, type(exc).__name__)
+            _record_failure(run_id)
+            return jsonify({"error": RUN_NOT_STARTED}), 500
     return jsonify({"run_id": run_id, "is_new": is_new}), 202
 
 

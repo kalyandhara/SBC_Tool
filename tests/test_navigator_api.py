@@ -137,6 +137,82 @@ def test_valid_token_passes_proxied(client, monkeypatch):
     assert r.status_code == 503    # past the guard
 
 
+LOCAL_OK = ["localhost", "localhost:5000", "LOCALHOST:8", "127.0.0.1", "127.0.0.1:65535",
+            "[::1]", "[::1]:5000"]
+LOCAL_BAD = ["evil.example", "evil.example:5000", "localhost.evil.example", "evil.localhost",
+             "127.0.0.1.evil.example", "localhost:", "localhost:abc",
+             "localhost:5000:1", "::1", "[::1", "[::1]5000", "[::2]:5000", "[::ffff:127.0.0.1]",
+             "user@localhost", "localhost, evil.example", "localhost."]
+
+
+@pytest.mark.parametrize("host", LOCAL_OK)
+def test_local_host_passes(client, monkeypatch, host):
+    _down(monkeypatch)    # a 503 proves the request got past the guard
+    r = client.get("/api/navigator/profile", headers={"Host": host})
+    assert r.status_code == 503
+
+
+@pytest.mark.parametrize("host", LOCAL_BAD)
+def test_rebound_host_refused(client, monkeypatch, host):
+    _down(monkeypatch)
+    r = client.get("/api/navigator/profile", headers={"Host": host})
+    assert r.status_code == 403
+
+
+def test_out_of_range_host_port_refused():   # the test client itself cannot send this one
+    assert bp._local_authority(bp._HOST_RE, "localhost:65535")
+    assert not bp._local_authority(bp._HOST_RE, "localhost:65536")
+    assert not bp._local_authority(bp._HOST_RE, "localhost:99999")
+
+
+@pytest.mark.parametrize("origin", ["http://localhost:5000", "http://127.0.0.1:5000",
+                                    "https://localhost", "http://[::1]:5000"])
+def test_local_origin_passes(client, monkeypatch, origin):
+    _down(monkeypatch)
+    r = client.post("/api/navigator/profile", json=GOOD, headers={"Origin": origin})
+    assert r.status_code == 503
+
+
+def test_absent_origin_passes(client, monkeypatch):
+    _down(monkeypatch)
+    assert client.get("/api/navigator/profile").status_code == 503
+
+
+@pytest.mark.parametrize("origin", ["http://evil.example", "http://localhost.evil.example",
+                                    "http://localhost@evil.example", "null", "localhost",
+                                    "ftp://localhost", "http://localhost:5000/x",
+                                    "http://localhost:99999", ""])
+def test_foreign_origin_refused(client, monkeypatch, origin):
+    _down(monkeypatch)
+    r = client.post("/api/navigator/profile", json=GOOD, headers={"Origin": origin})
+    assert r.status_code == 403
+
+
+def test_token_branch_ignores_host(client, monkeypatch):
+    monkeypatch.setenv("SBC_API_TOKEN", "s3cret")
+    _down(monkeypatch)
+    r = client.get("/api/navigator/profile",
+                   headers={"X-API-Token": "s3cret", "Host": "evil.example"})
+    assert r.status_code == 503
+
+
+@pytest.mark.parametrize("header", ["True-Client-IP", "CF-Connecting-IP", "X-Client-IP",
+                                    "X-Cluster-Client-IP", "X-Original-Forwarded-For",
+                                    "Fastly-Client-IP", "X-Forwarded-Server", "Via"])
+def test_more_proxy_headers_refused(client, monkeypatch, header):
+    _down(monkeypatch)
+    r = client.get("/api/navigator/profile", headers={header: "8.8.8.8"})
+    assert r.status_code == 403
+
+
+def test_proxy_headers_do_not_block_a_valid_token(client, monkeypatch):
+    monkeypatch.setenv("SBC_API_TOKEN", "s3cret")
+    _down(monkeypatch)
+    r = client.get("/api/navigator/profile",
+                   headers={"X-API-Token": "s3cret", "True-Client-IP": "8.8.8.8"})
+    assert r.status_code == 503
+
+
 # ---- availability -------------------------------------------------------------
 def test_503_when_store_down(client, monkeypatch):
     _down(monkeypatch)
@@ -209,6 +285,31 @@ def test_non_object_profile_400(client, monkeypatch, body):
     monkeypatch.setattr(store, "migrate", lambda: None)
     r = client.post("/api/navigator/profile", data=body, content_type="application/json")
     assert r.status_code == 400
+
+
+@pytest.mark.parametrize("url", ["/api/navigator/profile", "/api/navigator/backtest"])
+def test_deeply_nested_json_is_a_fixed_400(client, monkeypatch, url):
+    monkeypatch.setattr(store, "migrate", lambda: None)
+    r = client.post(url, data="[" * 200000, content_type="application/json")
+    assert r.status_code == 400
+    want = "invalid birth data" if url.endswith("profile") else "profile_id must be a positive integer"
+    assert r.get_json() == {"error": want}
+
+
+@pytest.mark.parametrize("path", ["chart", "score", "profile"])
+@pytest.mark.parametrize("pid", ["0", "000"])
+def test_zero_profile_id_is_400_on_get(client, monkeypatch, path, pid):
+    monkeypatch.setattr(store, "migrate", lambda: None)
+    r = client.get(f"/api/navigator/{path}?profile_id={pid}")
+    assert r.status_code == 400
+    assert r.get_json() == {"error": "profile_id must be a positive integer"}
+
+
+def test_zero_profile_id_is_400_on_post(client, monkeypatch):
+    monkeypatch.setattr(store, "migrate", lambda: None)
+    r = client.post("/api/navigator/backtest", json={"profile_id": 0})
+    assert r.status_code == 400
+    assert r.get_json() == {"error": "profile_id must be a positive integer"}
 
 
 @pg
@@ -300,6 +401,64 @@ def test_cache_needs_every_key_field(client, db, market, field, value):
         c.execute("update daily_score set score=7, " + field + "=%s", (value,))
     body = client.get(url).get_json()
     assert body["cached"] is False and body["score"] != 7
+
+
+@pytest.fixture
+def nov4(monkeypatch):
+    """NIFTY through 2026-11-04 while VIX stops at 11-02, so that day's T-1 close is missing."""
+    nifty = [b for b in _bars(1100, "2023-01-02") if b["date"] <= "2026-11-04"]
+    box = {"vix": [b for b in _bars(1400, "2022-01-03") if b["date"] <= "2026-11-02"]}
+
+    def get_daily(symbol, start=None, end=None):
+        return nifty if symbol == "NIFTY" else box["vix"]
+    monkeypatch.setattr(market_store, "get_daily", get_daily)
+
+    def backfill():
+        box["vix"] = [b for b in _bars(1400, "2022-01-03") if b["date"] <= "2026-11-03"]
+    return backfill
+
+
+@pg
+def test_neutral_vol_is_never_cached_and_backfill_gives_real_vol(client, db, nov4):
+    pid = store.ensure_sample()
+    url = f"/api/navigator/score?profile_id={pid}&day=2026-11-04"
+    stale = client.get(url).get_json()
+    assert stale["data_asof"] == "2026-11-04" and stale["vol_neutral"] is True
+    assert _rows("select 1 from daily_score") == []
+    assert client.get(url).get_json()["cached"] is False
+
+    nov4()
+    fresh = client.get(url).get_json()
+    assert fresh["vol_neutral"] is False and fresh["cached"] is False
+    assert len(_rows("select 1 from daily_score")) == 1
+    assert client.get(url).get_json()["cached"] is True
+
+
+@pg
+def test_vix_backfill_misses_a_row_cached_before_it(client, db, nov4):
+    pid = store.ensure_sample()
+    url = f"/api/navigator/score?profile_id={pid}&day=2026-11-03"
+    assert client.get(url).get_json()["vol_neutral"] is False   # its T-1 close exists
+    assert client.get(url).get_json()["cached"] is True
+    nov4()
+    assert client.get(url).get_json()["cached"] is False
+
+
+@pg
+@pytest.mark.parametrize("missing", [None, float("nan")])
+def test_data_asof_is_the_last_session_with_a_close(client, db, market, missing):
+    good = market[-1]["date"]
+    market.append({**market[-1], "date": "2026-01-05", "close": missing})
+    pid = store.ensure_sample()
+    body = client.get(f"/api/navigator/score?profile_id={pid}&day={good}").get_json()
+    assert body["data_asof"] == good and body["future"] is False
+
+
+def test_no_nifty_close_at_all_is_no_market_data(monkeypatch):
+    bars = [{**b, "close": None} for b in _bars(3)]
+    monkeypatch.setattr(market_store, "get_daily", lambda *a, **k: bars)
+    with pytest.raises(bp._NoMarketData):
+        bp._market()
 
 
 @pg
@@ -405,6 +564,51 @@ def test_failure_stores_generic_message_only(client, db, market, monkeypatch, ca
     body = _wait(client, run, "failed")
     assert body["error"] == bp.RUN_FAILED and "1971" not in json.dumps(body)
     assert "1971-03-04" not in caplog.text
+
+
+@pg
+def test_thread_start_failure_marks_run_failed_and_is_a_fixed_500(client, db, market, monkeypatch):
+    def boom(*a):
+        raise RuntimeError("no thread 1971-03-04")
+    monkeypatch.setattr(bp.threading.Thread, "start", boom)
+    pid = store.ensure_sample()
+    r = client.post("/api/navigator/backtest", json={"profile_id": pid})
+    assert r.status_code == 500
+    assert r.get_json() == {"error": bp.RUN_NOT_STARTED}
+    assert _rows("select status, error from backtest_run") == [("failed", bp.RUN_FAILED)]
+
+
+def test_thread_start_failure_is_a_fixed_500_even_if_the_store_then_fails(client, monkeypatch):
+    def boom(*a):
+        raise RuntimeError("1971-03-04")
+
+    def fail(*a):
+        raise psycopg.OperationalError("password=hunter2")
+    monkeypatch.setattr(store, "migrate", lambda: None)
+    monkeypatch.setattr(store, "get_profile", lambda i: SAMPLE_PROFILE)
+    monkeypatch.setattr(store, "expire_stale", lambda: None)
+    monkeypatch.setattr(store, "start_run", lambda *a: (5, True))
+    monkeypatch.setattr(store, "fail_run", fail)
+    monkeypatch.setattr(bp, "_start_job", boom)
+    monkeypatch.setattr(bp, "_market", lambda: (bp.pd.DataFrame({"date": ["2026-01-01"]}), {}))
+    r = client.post("/api/navigator/backtest", json={"profile_id": 1})
+    assert r.status_code == 500 and r.get_json() == {"error": bp.RUN_NOT_STARTED}
+
+
+@pytest.mark.parametrize("error", [RuntimeError, psycopg.OperationalError, store.StoreUnavailable])
+def test_job_fail_run_guard_logs_only_the_type(monkeypatch, caplog, error):
+    def run(*a, **k):
+        raise ValueError("1971-03-04 first")
+
+    def fail(*a):
+        raise error("1971-03-04 second")
+    monkeypatch.setattr(store, "heartbeat", lambda i: True)
+    monkeypatch.setattr(B, "run", run)
+    monkeypatch.setattr(store, "fail_run", fail)
+    caplog.set_level(logging.DEBUG)
+    bp._job(7, SAMPLE_PROFILE, None, {})     # nothing reaches threading.excepthook
+    assert "1971-03-04" not in caplog.text
+    assert error.__name__ in caplog.text
 
 
 @pg
