@@ -27,8 +27,18 @@ DEFAULT_PARAMS = {"cost_bps": 10, "n_placebo": 200, "seed": 1729, "horizons": [1
 EDGE, NO_EDGE = "edge candidate", "no demonstrated edge"
 BAND_NAMES = [name for _, name in S.BANDS]
 MIN_EVENTS = 30             # the verdict's floor; the `min_events` param only sets the label
+MIN_NATAL_DAYS = 30         # natal-band days the real chart needs for its percentile to mean anything
+MIN_FOLD_DAYS = 5           # band sessions a fold needs to count toward fold_pos
 MIN_PLACEBOS = 20           # with fewer, a 95th percentile cannot be told apart
 RATE_CHECK_AFTER = 10       # charts timed before projecting the run
+NOTES = [
+    "The natal percentile is measured on natal-band days: sessions where the natal-only "
+    "sub-score falls in the band, not the full score. The real chart needs at least 30.",
+    "Excess is the band mean against the all-session mean, which includes the band itself, "
+    "so it is diluted by how much of the sample the band occupies.",
+    "P-values are one-sided (upside only), net of cost, then Benjamini-Hochberg adjusted "
+    "across bands and horizons.",
+]
 _EDGES = [hi for hi, _ in S.BANDS[:-1]]
 _PLACEBO_START = dt.datetime(1950, 1, 1, tzinfo=dt.timezone.utc)
 _PLACEBO_SPAN = (dt.datetime(2006, 1, 1, tzinfo=dt.timezone.utc) - _PLACEBO_START).total_seconds()
@@ -91,7 +101,9 @@ def matched_control_mean(mask, prior, fwd) -> float:
 def verdict(b: Mapping, is_sample: bool) -> str:
     """Spec rule. Missing or NaN evidence fails. A sample chart never qualifies."""
     q, pct, folds = b.get("q"), b.get("natal_pct"), b.get("fold_pos")
+    natal_days = b.get("natal_band_days")
     ok = (q is not None and pct is not None and folds is not None
+          and natal_days is not None and natal_days >= MIN_NATAL_DAYS
           and q < .10 and bool(b["beats_control"]) and pct >= 95
           and b["events"] >= MIN_EVENTS and folds >= .60)
     return EDGE if ok and not is_sample else NO_EDGE
@@ -146,7 +158,8 @@ def _run_totals(mask, netted) -> np.ndarray:
 def _band_row(mask, returns, prior, cost_bps, n_perm, seed, min_events) -> dict:
     netted = net(returns, cost_bps)
     picked = netted[mask & np.isfinite(netted)]
-    events = count_events(mask)
+    usable = mask & np.isfinite(returns)       # tail sessions have no forward return
+    events = count_events(usable)
     nan = float("nan")
     row = {"days": int(mask.sum()), "events": events, "insufficient": events < min_events,
            "mean": nan, "vol": nan, "max_dd": nan, "hit": nan, "win": nan, "sharpe": nan,
@@ -156,7 +169,7 @@ def _band_row(mask, returns, prior, cost_bps, n_perm, seed, min_events) -> dict:
         return row
     std = picked.std()
     row.update(mean=float(picked.mean()), vol=float(std), max_dd=_max_drawdown(picked),
-               hit=float((picked > 0).mean()), win=float((_run_totals(mask, netted) > 0).mean()),
+               hit=float((picked > 0).mean()), win=float((_run_totals(usable, netted) > 0).mean()),
                sharpe=float(picked.mean() / std * math.sqrt(252)) if std > 0 else nan)
     if prior is not None:
         # The cost falls on the band's trades only; the control is the market's own return.
@@ -253,11 +266,12 @@ def _folds(index, years, outcomes, horizons, cost_bps):
         bands = {}
         for k, name in enumerate(BAND_NAMES):
             mask = index[fold] == k
+            counts = int(mask.sum()) >= MIN_FOLD_DAYS
             row = {"days": int(mask.sum())}
             for h, r in enumerate(outcomes):
                 value = _net_excess(mask, r[fold], cost_bps)
                 row[f"excess_{horizons[h]}"] = value
-                if np.isfinite(value):
+                if counts and np.isfinite(value):
                     active[k, h] += 1
                     positive[k, h] += value > 0
             bands[name] = row
@@ -311,6 +325,8 @@ def run_inputs(inputs: Inputs, params: Optional[Mapping] = None,
 
     real_full = _excess_table(series.score, outcomes, start, cost)
     real_natal = _excess_table(natal_subscore(series), outcomes, start, cost)
+    natal_days = np.bincount(_band_index(natal_subscore(series))[start:],
+                             minlength=len(BAND_NAMES))
     full, natal, placebo = _run_placebos(inputs, p, start, outcomes, on_progress)
 
     bands, candidates, by_band = {}, [], {}
@@ -325,7 +341,8 @@ def run_inputs(inputs: Inputs, params: Optional[Mapping] = None,
                      "excess_vs_control": row["excess_vs_control"],
                      "beats_control": bool(row["excess_vs_control"] > 0), "events": row["events"],
                      "fold_pos": float(fold_pos[k, h]) if np.isfinite(fold_pos[k, h]) else None,
-                     "full_pct": pct["full"], "natal_pct": pct["natal"]}
+                     "full_pct": pct["full"], "natal_pct": pct["natal"],
+                     "natal_band_days": int(natal_days[k])}
             entry["verdict"] = verdict({**entry, "q": entry["q"] if np.isfinite(entry["q"]) else None},
                                        is_sample)
             by_horizon[str(horizon)] = entry
@@ -339,7 +356,8 @@ def run_inputs(inputs: Inputs, params: Optional[Mapping] = None,
         band["mean_oc"] = float(np.nanmean(oc[mask])) if np.isfinite(oc[mask]).any() else None
         for h, horizon in enumerate(horizons):
             band[f"mean_oo_{horizon}"] = per_horizon[h][name]["mean"]
-        band.update({key: best[key] for key in ("excess_vs_control", "p", "q", "verdict")})
+        band.update({key: best[key] for key in ("excess_vs_control", "p", "q", "verdict",
+                                                "natal_band_days")})
         band["by_horizon"] = by_horizon
         bands[name] = band
         if best["verdict"] == EDGE:
@@ -351,7 +369,8 @@ def run_inputs(inputs: Inputs, params: Optional[Mapping] = None,
                    natal_pct=by_band[top][first_horizon]["natal"], by_band=by_band)
     return _clean({
         "bands": bands, "folds": folds, "placebo": placebo,
-        "verdict": EDGE if len(candidates) == len(BAND_NAMES) else NO_EDGE,
+        "verdict": EDGE if candidates else NO_EDGE, "research_grade": True,
+        "notes": NOTES,
         "candidate_bands": candidates, "is_sample": is_sample,
         "label": ("Sample chart: pipeline check only" if is_sample
                   else "Research-grade result with hand-set weights"),

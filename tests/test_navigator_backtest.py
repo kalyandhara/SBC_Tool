@@ -96,7 +96,7 @@ def test_control_with_nothing_usable_is_nan():
     assert np.isnan(B.matched_control_mean(np.ones(5, bool), np.arange(5.0), np.zeros(5)))
 
 
-GOOD = dict(q=.05, beats_control=True, natal_pct=96, events=40, fold_pos=.7)
+GOOD = dict(q=.05, beats_control=True, natal_pct=96, events=40, fold_pos=.7, natal_band_days=40)
 
 
 def test_verdict_rules():
@@ -104,7 +104,7 @@ def test_verdict_rules():
     assert B.verdict(GOOD, is_sample=True) == "no demonstrated edge"
     for k, v in [("q", .2), ("beats_control", False), ("natal_pct", 90), ("events", 20),
                  ("fold_pos", .5), ("q", float("nan")), ("q", None), ("natal_pct", None),
-                 ("fold_pos", None)]:
+                 ("fold_pos", None), ("natal_band_days", 29), ("natal_band_days", None)]:
         assert B.verdict({**GOOD, k: v}, False) == "no demonstrated edge", (k, v)
 
 
@@ -112,7 +112,8 @@ def test_verdict_rules():
     ("q", .0999, "edge candidate"), ("q", .10, "no demonstrated edge"),
     ("natal_pct", 95, "edge candidate"), ("natal_pct", 94.9, "no demonstrated edge"),
     ("events", 30, "edge candidate"), ("events", 29, "no demonstrated edge"),
-    ("fold_pos", .60, "edge candidate"), ("fold_pos", .59, "no demonstrated edge")])
+    ("fold_pos", .60, "edge candidate"), ("fold_pos", .59, "no demonstrated edge"),
+    ("natal_band_days", 30, "edge candidate"), ("natal_band_days", 29, "no demonstrated edge")])
 def test_verdict_boundaries(k, v, want):
     assert B.verdict({**GOOD, k: v}, False) == want
 
@@ -202,6 +203,26 @@ def test_detection_and_false_positive_rates_over_seeds():
     assert false_pos <= .12
 
 
+def test_events_and_win_exclude_tail_sessions_without_a_forward_return():
+    scores = np.array([50] * 5 + [70, 70, 50, 70, 70])
+    ret = np.array([0.0] * 5 + [.02, .02, 0.0, np.nan, np.nan])
+    out = B.band_stats(scores, ret, cost_bps=0, n_perm=10)[HP]
+    assert out["days"] == 4 and out["events"] == 1
+    assert out["win"] == pytest.approx(1.0)
+
+
+def test_fold_pos_ignores_folds_with_under_five_band_sessions():
+    k = B.BAND_NAMES.index(HP)
+    index = np.array([k] * 4 + [0] * 20 + [k] * 10 + [0] * 20)
+    years = np.array(["2020"] * 24 + ["2021"] * 30)
+    ret = np.concatenate(([-.05] * 4, np.zeros(20), [.05] * 10, np.zeros(20)))
+    _, pos = B._folds(index, years, [ret], [1], 0)
+    assert pos[k, 0] == 1.0       # the 4-session fold is not counted
+    index[:5] = k                 # now five band sessions: the fold counts and fails
+    _, pos = B._folds(index, years, [ret], [1], 0)
+    assert 0 < pos[k, 0] < 1
+
+
 # --- score_for ---------------------------------------------------------------
 
 ENTRY = 300
@@ -278,6 +299,10 @@ def test_result_structure_and_json_safe(sample_inputs):
     needed = {"days", "events", "mean_oc", "mean_oo_1", "mean_oo_5", "vol", "max_dd", "hit",
               "win", "sharpe", "excess_vs_control", "p", "q", "insufficient", "verdict"}
     assert all(needed <= set(b) for b in out["bands"].values())
+    assert all("natal_band_days" in b for b in out["bands"].values())
+    assert out["research_grade"] is True
+    notes = " ".join(out["notes"]).lower()
+    assert "natal-band days" in notes and "diluted" in notes and "one-sided" in notes
     assert {"full_pct", "natal_pct", "n", "seconds"} <= set(out["placebo"])
     assert out["placebo"]["n"] == 3
     json.dumps(out, allow_nan=False)
@@ -311,7 +336,8 @@ def test_placebo_births_in_range():
 def test_sample_is_labelled_pipeline_check_and_never_candidate(sample_inputs):
     out = B.run_inputs(sample_inputs, FAST)
     assert out["is_sample"] is True
-    assert out["verdict"] == "no demonstrated edge"
+    assert out["verdict"] == "no demonstrated edge" and out["candidate_bands"] == []
+    assert all(b["verdict"] == "no demonstrated edge" for b in out["bands"].values())
     assert "pipeline check" in out["label"]
 
 
@@ -319,6 +345,9 @@ def test_default_warm_up_on_short_fixture_reports_nothing_scored(sample_inputs):
     out = B.run_inputs(sample_inputs, {"n_placebo": 1, "n_perm": 10})
     assert sum(b["days"] for b in out["bands"].values()) == 0
     assert out["folds"] == [] and out["verdict"] == "no demonstrated edge"
+    assert out["candidate_bands"] == []
+    assert all(b["events"] == 0 and b["p"] is None and b["verdict"] == "no demonstrated edge"
+               for b in out["bands"].values())
     json.dumps(out, allow_nan=False)
 
 
@@ -380,7 +409,8 @@ def market_case():
 
 def test_full_pipeline_noise_is_not_a_candidate(market_case):
     base, _, params, _ = market_case
-    assert B.run_inputs(base, params)["candidate_bands"] == []
+    out = B.run_inputs(base, params)
+    assert out["candidate_bands"] == [] and out["verdict"] == "no demonstrated edge"
 
 
 def test_full_pipeline_finds_planted_edge_but_not_for_a_sample(market_case):
@@ -388,5 +418,8 @@ def test_full_pipeline_finds_planted_edge_but_not_for_a_sample(market_case):
     ohlc = synthetic_market(days, (sub > 60) & (sub <= 80), .006)
     out = B.run_inputs(base._replace(ohlc=ohlc), params)
     assert HP in out["candidate_bands"], out["bands"][HP]
+    assert out["verdict"] == "edge candidate" and out["research_grade"] is True
+    assert out["bands"][HP]["natal_band_days"] >= 30
     sample = base._replace(ohlc=ohlc, profile=SAMPLE_PROFILE)
-    assert B.run_inputs(sample, params)["candidate_bands"] == []
+    s_out = B.run_inputs(sample, params)
+    assert s_out["candidate_bands"] == [] and s_out["verdict"] == "no demonstrated edge"
