@@ -19,8 +19,14 @@ def ASPECT_WEIGHT(planet, point, aspect) -> float:
     b = BENEFIC[planet]
     sign = ASPECT_SIGN[aspect]
     w = 30.0 * b if sign is None else 20.0 * sign * (1.0 + b if sign > 0 else 1.0 - b)
-    # Ketu always mirrors Rahu, so each carries half and the axis counts once.
-    return w * NODE_FACTOR if planet in ("Rahu", "Ketu") else w
+    # Ketu always mirrors Rahu, so each node carries half and the axis counts once.
+    # Applies to a transiting node and to a natal Rahu/Ketu point; a node-to-node
+    # contact gets both factors (0.25).
+    if planet in ("Rahu", "Ketu"):
+        w *= NODE_FACTOR
+    if point in ("Rahu", "Ketu"):
+        w *= NODE_FACTOR
+    return w
 
 
 # Moon Sentiment Score parts, summing to at most +/-100.

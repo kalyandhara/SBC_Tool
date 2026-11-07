@@ -76,6 +76,7 @@ def transit_term(sky, natal) -> Term:
     raw = _transit_contrib(lon, points, weights).sum(axis=(0, 1, 2))
 
     def factors(i):
+        i = range(lon.shape[1])[i]
         c = _transit_contrib(lon[:, i:i + 1], points, weights)[..., 0]
         return [{"term": "transit", "raw": float(c[b, p, a]),
                  "label": f"{bodies[b]} {ASPECT_NAMES[codes[a]]} natal {names[p]}"}
@@ -192,5 +193,5 @@ def vol_term(days, vix_by_day, window=252) -> Term:
             return [{"term": "vol", "label": "India VIX unavailable, neutral value used",
                      "raw": 0.0, "neutral": True}]
         return [{"term": "vol", "raw": float(raw[i]),
-                 "label": f"India VIX prior close at {pcts[i]:.0f}th percentile"}]
+                 "label": f"India VIX prior close at percentile {pcts[i]:.0f}"}]
     return Term(values, raw, factors)

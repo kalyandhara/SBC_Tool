@@ -1,3 +1,4 @@
+import re
 import math
 import numpy as np
 import pytest
@@ -371,3 +372,33 @@ def test_factor_text_uses_no_mystical_wording(real):
         for i in range(len(s.days)):
             for f in t.factors(i):
                 assert not any(b in f["label"].lower() for b in bad), f["label"]
+
+
+# --- fix round 1 -------------------------------------------------------------
+
+def test_natal_node_axis_counts_once():
+    t = T.transit_term(one_day(Mars=200.0), {"Rahu": 200.0, "Ketu": 20.0})
+    assert by_label(t, "Mars conjunct natal Rahu")["raw"] == pytest.approx(-7.5)
+    assert by_label(t, "Mars opposite natal Ketu")["raw"] == pytest.approx(-15.0)
+
+
+def test_node_factor_applies_to_transiting_and_natal_nodes():
+    assert W.ASPECT_WEIGHT("Mars", "Rahu", "CONJ") == pytest.approx(-7.5)
+    assert W.ASPECT_WEIGHT("Mars", "Ketu", "OPP") == pytest.approx(-15.0)
+    assert W.ASPECT_WEIGHT("Rahu", "Mars", "CONJ") == pytest.approx(-7.5)
+    both = 30.0 * W.BENEFIC["Rahu"] * .25
+    assert W.ASPECT_WEIGHT("Rahu", "Ketu", "CONJ") == pytest.approx(both)
+    assert W.WEIGHTS_VERSION == "nav-1"
+
+
+def test_transit_factors_accept_negative_index():
+    t = T.transit_term(sky([120.0, 121.5, 123.0]), {"Jupiter": 0.0})
+    assert t.factors(-1) == t.factors(2)
+    assert t.factors(-3) == t.factors(0) and t.factors(0)
+
+
+def test_vol_label_says_percentile_number_not_ordinal():
+    t = T.vol_term(VOL_DAYS, wavy(), window=30)
+    label = t.factors(30)[0]["label"]
+    assert re.fullmatch(r"India VIX prior close at percentile \d+", label), label
+    assert not re.search(r"\d(st|nd|rd|th)\b", label)

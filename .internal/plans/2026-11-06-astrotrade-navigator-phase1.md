@@ -523,6 +523,8 @@ def transit_term(sky, natal):
 
 **Interfaces:** Produces `band_of(int) -> str`, `action_of(band) -> str`, `hist_val(base_scores, returns, horizon, min_sessions) -> np.ndarray`, `combine(terms: dict[str,np.ndarray]) -> np.ndarray`, `lineage(terms_at_day: dict[str,float], factors: list[dict]) -> dict` with `{score:int, contributions:[...], raised:[...], lowered:[...]}`, and `score_series(sky, profile, opens, closes, vix) -> ScoreSeries(days,score,base,terms)`.
 
+**Fix-round requirements (from Task 5):** Transit raw is unclipped, so on clipped days (about 2% on the sample chart) the Transit factors sum to the unclipped raw, not to the clipped value. `lineage` must show the clipping as an explicit adjustment line so contributions still sum to the displayed score. `score_series` must pass at least 253 earlier VIX sessions as lead-in to `vol_term`; days before that history exists are neutral and flagged.
+
 **Acceptance Criteria:** Exact band boundaries (20/21, 40/41, 60/61, 80/81). Displayed contributions sum exactly to the displayed integer score on real days. HistVal is neutral for the first 3 years and unchanged when returns inside the embargo change. No factor text has mystical wording.
 
 - [ ] **Step 1: Failing tests**
@@ -587,6 +589,8 @@ Compute band labels once with `np.digitize` for speed when implementing, since t
 **Files:** Create `sbc/navigator/backtest.py`, `tests/test_navigator_backtest.py`, and a frozen fixture `tests/fixtures/navigator_nifty_sample.csv` (a copy of 500 Nifty rows).
 
 **Interfaces:** Consumes `score_series`, `sbc.stats.bh_adjust`, `shift_pvalue`. Produces `run(profile, ohlc, vix, sky, params, on_progress=None) -> dict` with `{bands:{name:{days,events,mean_oc,mean_oo_1,mean_oo_5,vol,max_dd,hit,win,sharpe,excess_vs_control,p,q,insufficient}}, folds:[...], placebo:{full_pct,natal_pct,n,seconds}, verdict, is_sample}`. Also produces `Inputs` (NamedTuple: `profile, ohlc, vix, sky`), `score_for(inputs, min_sessions=756) -> ScoreSeries`, `run_inputs(inputs, params) -> dict` (which `run` wraps), `band_stats(scores, returns) -> dict`. Defaults: `DEFAULT_PARAMS={"cost_bps":10,"n_placebo":200,"seed":1729,"horizons":[1,5],"min_events":30}`.
+
+**Fix-round requirement (from Task 5):** `score_for` and `run_inputs` must pass at least 253 earlier VIX sessions as lead-in to `vol_term`; days before that history exists are neutral and flagged.
 
 **Acceptance Criteria:**
 - Altering every price after an entry leaves prior scores identical.
