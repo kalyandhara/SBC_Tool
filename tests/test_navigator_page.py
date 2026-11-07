@@ -158,3 +158,16 @@ def test_tab_bar_wraps_at_desktop_width():
     css = (ROOT / "static" / "style.css").read_text(encoding="utf-8")
     block = re.search(r"@media \(min-width: 761px\) \{[^{]*?\.nav-tabs \{([^}]*)\}", css)
     assert block and "flex-wrap: wrap" in block.group(1)
+
+
+def test_score_card_shows_the_latest_verdict_beside_the_action_label(code):
+    render = code[code.index("function navRenderScore"):]
+    render = render[:render.index("\n}\n")]
+    action = render.index("Action label:")
+    assert "latest_verdict" in render[action:action + 400]
+
+
+def test_occupancy_label_names_the_first_horizon(code):
+    occ = code[code.index("function navOccupancy"):]
+    occ = occ[:occ.index("\n}\n")]
+    assert "band.occupancy" in occ and "first horizon" in occ and "strongest horizon" not in occ

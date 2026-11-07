@@ -698,3 +698,57 @@ def test_birth_values_absent_from_logs(client, db, market, caplog):
     client.get(f"/api/navigator/score?profile_id={pid}&day={market[-2]['date']}")
     for value in BIRTH_VALUES:
         assert value not in caplog.text
+
+
+# ---- latest verdict beside the action label -------------------------------------
+def _score_body(client, pid, market):
+    r = client.get(f"/api/navigator/score?profile_id={pid}&day={market[-3]['date']}")
+    assert r.status_code == 200
+    return r.get_json()
+
+
+@pg
+def test_score_says_no_backtest_yet(client, db, market):
+    body = _score_body(client, store.ensure_sample(), market)
+    assert body["latest_verdict"] == {"available": True, "run_id": None, "verdict": None,
+                                      "status": None, "data_asof": None, "stale": False,
+                                      "text": "no backtest yet"}
+
+
+@pg
+def test_score_carries_the_latest_run_verdict_without_chart_hash(client, db, market, monkeypatch):
+    pid = store.ensure_sample()
+    run = {"id": 7, "profile_id": pid, "status": "done", "data_asof": "2023-05-01",
+           "weights_version": bp.WEIGHTS_VERSION, "engine_version": bp._version(),
+           "chart_hash": "secret-hash", "results": {"verdict": "no demonstrated edge"}}
+    monkeypatch.setattr(store, "latest_run", lambda i: run if i == pid else None)
+    body = _score_body(client, pid, market)
+    v = body["latest_verdict"]
+    assert v["available"] and v["run_id"] == 7 and v["verdict"] == "no demonstrated edge"
+    assert v["status"] == "done" and v["data_asof"] == "2023-05-01" and v["stale"] is False
+    assert "secret-hash" not in json.dumps(body) and "chart_hash" not in json.dumps(body)
+
+
+@pg
+@pytest.mark.parametrize("field", ["weights_version", "engine_version"])
+def test_score_flags_a_stale_latest_run(client, db, market, monkeypatch, field):
+    pid = store.ensure_sample()
+    run = {"id": 3, "status": "done", "data_asof": "2023-05-01", "chart_hash": "h",
+           "weights_version": bp.WEIGHTS_VERSION, "engine_version": bp._version(),
+           "results": {"verdict": "no demonstrated edge"}, field: "old"}
+    monkeypatch.setattr(store, "latest_run", lambda i: run)
+    v = _score_body(client, pid, market)["latest_verdict"]
+    assert v["stale"] is True and "stale" in v["text"]
+
+
+@pg
+def test_score_survives_a_latest_run_failure(client, db, market, monkeypatch):
+    pid = store.ensure_sample()
+
+    def boom(i):
+        raise store.StoreUnavailable("x")
+    monkeypatch.setattr(store, "latest_run", boom)
+    body = _score_body(client, pid, market)
+    assert body["score"] is not None
+    assert body["latest_verdict"]["available"] is False
+    assert body["latest_verdict"]["text"] == "verdict unavailable"

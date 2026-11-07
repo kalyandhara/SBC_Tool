@@ -38,8 +38,6 @@ INSTRUMENT, VIX_SYMBOL = "NIFTY", "INDIAVIX"
 STATUS = "unvalidated research output"
 DISCLAIMER = ("Action labels are unvalidated research output, not personal financial advice. "
               "Scores use hand-set weights.")
-PIPELINE_LABEL = "Sample chart: pipeline check only"
-RESEARCH_LABEL = "Research-grade result with hand-set weights"
 RUN_FAILED = "The backtest failed. Check the server and start a new run."
 _DOWN = "Navigator database is unavailable. Start Postgres and retry."
 _NO_MARKET = "Market data is unavailable. Refresh market data and retry."
@@ -177,7 +175,7 @@ def _require_profile(profile_id: int) -> Profile:
 
 
 def _result_label(profile: Profile) -> str:
-    return PIPELINE_LABEL if profile.is_sample else RESEARCH_LABEL
+    return B.label_for(profile.is_sample)
 
 
 def _market():
@@ -226,8 +224,33 @@ def _compute(profile: Profile, ohlc: pd.DataFrame, vix: dict, day: str, future: 
     i = days.index(day)
     score = int(series.score[i])
     band = S.band_of(score)
-    return B._clean({"score": score, "band": band, "action": S.action_of(band),
+    return B.clean_json({"score": score, "band": band, "action": S.action_of(band),
                      "lineage": S.day_lineage(series, i)})
+
+
+def _latest_verdict(profile_id: int) -> dict:
+    """The verdict shown beside the action label. A store failure here must not
+    fail the score, so it degrades to "verdict unavailable". chart_hash stays out."""
+    try:
+        run = store.latest_run(profile_id)
+    except Exception as exc:  # type only: a message can quote row values
+        log.warning("navigator latest verdict unavailable: %s", type(exc).__name__)
+        return {"available": False, "run_id": None, "verdict": None, "status": None,
+                "data_asof": None, "stale": False, "text": "verdict unavailable"}
+    if run is None:
+        return {"available": True, "run_id": None, "verdict": None, "status": None,
+                "data_asof": None, "stale": False, "text": "no backtest yet"}
+    results = run.get("results") if isinstance(run.get("results"), dict) else {}
+    verdict = results.get("verdict") if run.get("status") == "done" else None
+    stale = (run.get("weights_version") != WEIGHTS_VERSION
+             or run.get("engine_version") != _version())
+    text = (f"Latest backtest (run {run['id']}, data through {run.get('data_asof')}): "
+            + (verdict if verdict else f"no verdict, run {run.get('status')}"))
+    if stale:
+        text += ". This run is stale: the weights or engine have changed since"
+    return {"available": True, "run_id": run["id"], "verdict": verdict,
+            "status": run.get("status"), "data_asof": run.get("data_asof"),
+            "stale": bool(stale), "text": text}
 
 
 def _vol_neutral(lineage: dict) -> bool:
@@ -300,7 +323,8 @@ def score():
                     "label": _result_label(profile), "score": int(row["score"]),
                     "band": row["band"], "action": row["action"], "status": STATUS,
                     "disclaimer": DISCLAIMER, "lineage": row["lineage"], "future": future,
-                    "vol_neutral": _vol_neutral(row["lineage"]), "cached": cached})
+                    "vol_neutral": _vol_neutral(row["lineage"]), "cached": cached,
+                    "latest_verdict": _latest_verdict(profile_id)})
 
 
 def _record_failure(run_id: int) -> None:
@@ -317,7 +341,7 @@ def _job(run_id: int, profile: Profile, ohlc: pd.DataFrame, vix: dict) -> None:
 
     try:
         progress(0, 0)
-        results = B._clean(B.run(profile, ohlc, vix, on_progress=progress))
+        results = B.clean_json(B.run(profile, ohlc, vix, on_progress=progress))
         folds = results.pop("folds", [])
         store.finish_run(run_id, results, folds)
     except _Expired:

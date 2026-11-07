@@ -25,7 +25,7 @@ A natal-chart decision-support and research feature that behaves like a quantita
 - `sbc/yogas.py`: `vimshottari` gains Pratyantar as a third level, without changing existing keys.
 - `sbc/api/blueprints/navigator_bp.py`: routes, registered the way other blueprints are.
 - `static/js/navigator.js`, `templates/index.html`, `static/style.css`: the Navigator tab. No new CDN dependency.
-- `docker-compose.yml`: `postgres` service, port bound to `127.0.0.1`, password from the environment, named volume.
+- `docker-compose.navigator.yml`: `postgres` service, port bound to `127.0.0.1`, password from the environment, named volume. The main `docker-compose.yml` is unchanged.
 
 The scoring and backtest modules take plain inputs and do not import the store, so they are testable without Postgres.
 

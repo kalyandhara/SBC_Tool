@@ -617,3 +617,44 @@ def test_golden_pins_are_sensitive(sample_inputs, monkeypatch):
     monkeypatch.setitem(GOLDEN_PARAMS, "seed", 1730)
     with pytest.raises(AssertionError):
         assert_same(golden_result(sample_inputs), want)
+
+
+# --- final review: pinned percentile and verdict, occupancy, labels, notes -----
+
+def test_percentile_pinned_with_twenty_or_more_placebos():
+    placebos = np.linspace(-.01, .01, 40)          # 40 charts, n_placebo >= 20
+    assert B.percentile(.0, placebos) == 50.0
+    assert B.percentile(.0095, placebos) == 97.5
+    assert B.percentile(.02, placebos[:20]) == 100.0
+    with_empty = np.append(placebos, [np.nan] * 5)  # bands with no sessions are dropped
+    assert B.percentile(.0095, with_empty) == 97.5
+
+
+def test_verdict_pinned_for_a_non_sample_chart_from_the_placebo_percentile():
+    placebos = np.linspace(-.01, .01, 40)
+    entry = {"q": .04, "beats_control": True, "events": 31, "fold_pos": .65,
+             "natal_band_days": 45, "natal_pct": B.percentile(.0095, placebos)}
+    assert B.verdict(entry, is_sample=False) == B.EDGE
+    entry["natal_pct"] = B.percentile(.0085, placebos)   # 92.5: under the 95th
+    assert entry["natal_pct"] == 92.5 and B.verdict(entry, is_sample=False) == B.NO_EDGE
+
+
+def test_occupancy_events_use_the_first_horizon(monkeypatch):
+    out = diverging_case(monkeypatch)
+    hp = out["bands"][HP]
+    assert hp["horizon"] == "5"
+    assert hp["occupancy"] == {"horizon": "1", "events": hp["by_horizon"]["1"]["events"],
+                               "insufficient": hp["by_horizon"]["1"]["insufficient"]}
+
+
+def test_labels_have_one_definition():
+    from sbc.api.blueprints import navigator_bp as bp
+    assert not hasattr(bp, "PIPELINE_LABEL") and not hasattr(bp, "RESEARCH_LABEL")
+    assert B.label_for(True) == B.PIPELINE_LABEL and B.label_for(False) == B.RESEARCH_LABEL
+    assert B.clean_json({"x": np.float64("nan"), "y": np.int64(2)}) == {"x": None, "y": 2}
+    assert not hasattr(B, "_clean")
+
+
+def test_notes_disclose_whole_sample_decile_cut_points():
+    assert any("decile cut-points" in n and "whole sample" in n and "not the signal" in n
+               for n in B.NOTES)

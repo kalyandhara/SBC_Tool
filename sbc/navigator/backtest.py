@@ -39,7 +39,15 @@ NOTES = [
     "so it is diluted by how much of the sample the band occupies.",
     "P-values are one-sided (upside only), net of cost, then Benjamini-Hochberg adjusted "
     "across bands and horizons.",
+    "The control's decile cut-points for the T-1 return come from the whole sample; "
+    "they affect only the descriptive control, not the signal.",
 ]
+PIPELINE_LABEL = "Sample chart: pipeline check only"
+RESEARCH_LABEL = "Research-grade result with hand-set weights"
+
+
+def label_for(is_sample: bool) -> str:
+    return PIPELINE_LABEL if is_sample else RESEARCH_LABEL
 SESSION_STATS = ("days", "vol", "max_dd", "hit", "win", "sharpe")
 _EDGES = [hi for hi, _ in S.BANDS[:-1]]
 _PLACEBO_START = dt.datetime(1950, 1, 1, tzinfo=dt.timezone.utc)
@@ -284,11 +292,12 @@ def _folds(index, years, outcomes, horizons, cost_bps):
     return folds, share, active
 
 
-def _clean(x):
+def clean_json(x):
+    """JSON-safe copy: numpy scalars become Python ones, NaN and inf become None."""
     if isinstance(x, dict):
-        return {k: _clean(v) for k, v in x.items()}
+        return {k: clean_json(v) for k, v in x.items()}
     if isinstance(x, (list, tuple)):
-        return [_clean(v) for v in x]
+        return [clean_json(v) for v in x]
     if isinstance(x, (bool, np.bool_)):
         return bool(x)
     if isinstance(x, (float, np.floating)):
@@ -370,6 +379,9 @@ def run_inputs(inputs: Inputs, params: Optional[Mapping] = None,
         band.update({key: best[key] for key in ("events", "insufficient", "excess_vs_control",
                                                 "p", "q", "verdict", "natal_band_days")})
         band["horizon"] = best_h
+        # Occupancy is a fixed-horizon count, as _top_band uses: never the best horizon's.
+        band["occupancy"] = {"horizon": first_horizon, "events": first["events"],
+                             "insufficient": first["insufficient"]}
         band["by_horizon"] = by_horizon
         bands[name] = band
         for horizon, entry in by_horizon.items():
@@ -379,14 +391,13 @@ def run_inputs(inputs: Inputs, params: Optional[Mapping] = None,
     top = BAND_NAMES[_top_band(per_horizon[0], p["min_events"])]
     placebo.update(top_band=top, horizon=first_horizon, full_pct=by_band[top][first_horizon]["full"],
                    natal_pct=by_band[top][first_horizon]["natal"], by_band=by_band)
-    return _clean({
+    return clean_json({
         "bands": bands, "folds": folds, "placebo": placebo,
         "verdict": EDGE if candidates else NO_EDGE, "research_grade": not is_sample,
         "notes": NOTES,
         "candidates": candidates,
         "candidate_bands": list(dict.fromkeys(c["band"] for c in candidates)), "is_sample": is_sample,
-        "label": ("Sample chart: pipeline check only" if is_sample
-                  else "Research-grade result with hand-set weights"),
+        "label": label_for(is_sample),
         "sessions_scored": len(scores),
         "vol_neutral_days": int(np.sum(series.terms["vol"][start:] == 50.0)),
         "weights_version": W.WEIGHTS_VERSION, "params": p,

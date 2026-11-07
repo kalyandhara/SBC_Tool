@@ -41,6 +41,11 @@
    "mean_oo_1": null,
    "mean_oo_5": null,
    "natal_band_days": 0,
+   "occupancy": {
+    "events": 0,
+    "horizon": "1",
+    "insufficient": true
+   },
    "p": null,
    "q": null,
    "session_stats": {
@@ -95,6 +100,11 @@
    "mean_oo_1": -0.0023106626683651503,
    "mean_oo_5": -0.006405119915862148,
    "natal_band_days": 45,
+   "occupancy": {
+    "events": 17,
+    "horizon": "1",
+    "insufficient": true
+   },
    "p": 1.0,
    "q": 1.0,
    "session_stats": {
@@ -149,6 +159,11 @@
    "mean_oo_1": null,
    "mean_oo_5": null,
    "natal_band_days": 0,
+   "occupancy": {
+    "events": 0,
+    "horizon": "1",
+    "insufficient": true
+   },
    "p": null,
    "q": null,
    "session_stats": {
@@ -203,6 +218,11 @@
    "mean_oo_1": -0.000911421064161961,
    "mean_oo_5": -0.0012607468912952736,
    "natal_band_days": 328,
+   "occupancy": {
+    "events": 22,
+    "horizon": "1",
+    "insufficient": true
+   },
    "p": 1.0,
    "q": 1.0,
    "session_stats": {
@@ -257,6 +277,11 @@
    "mean_oo_1": -0.004186814300250164,
    "mean_oo_5": -0.002709648092523742,
    "natal_band_days": 6,
+   "occupancy": {
+    "events": 4,
+    "horizon": "1",
+    "insufficient": true
+   },
    "p": 1.0,
    "q": 1.0,
    "session_stats": {
@@ -342,7 +367,8 @@
  "notes": [
   "The natal percentile is measured on natal-band days: sessions where the natal-only sub-score falls in the band, not the full score. The real chart needs at least 30.",
   "Excess is the band mean against the all-session mean, which includes the band itself, so it is diluted by how much of the sample the band occupies.",
-  "P-values are one-sided (upside only), net of cost, then Benjamini-Hochberg adjusted across bands and horizons."
+  "P-values are one-sided (upside only), net of cost, then Benjamini-Hochberg adjusted across bands and horizons.",
+  "The control's decile cut-points for the T-1 return come from the whole sample; they affect only the descriptive control, not the signal."
  ],
  "params": {
   "cost_bps": 10,

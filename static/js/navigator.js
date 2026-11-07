@@ -155,6 +155,7 @@ function navRenderScore(data) {
       navEl("div", {}, [
         navEl("strong", { text: `Action label: ${data.action}` }),
         navEl("span", { class: "nav-tag", text: data.status }),
+        navEl("span", { class: "nav-tag", text: (data.latest_verdict || {}).text || "verdict unavailable" }),
       ]),
     ]),
   ]));
@@ -186,10 +187,11 @@ function navOccupancy(results) {
   const rows = NAV_BANDS.map(([name, action]) => {
     const band = navBandRow(results, name);
     const days = (band.session_stats || {}).days || 0;
-    return [name, action, `${days} days`, band.events || 0,
-      navEventWord(days ? band.insufficient : true), band.verdict || NAV_NO_EDGE];
+    const occ = band.occupancy || {};
+    return [name, action, `${days} days`, occ.events || 0,
+      navEventWord(days ? occ.insufficient : true), band.verdict || NAV_NO_EDGE];
   });
-  return navTable(`Band occupancy, beside action labels. Bands are not rescaled. Minimum ${navShown(minimum)} events; each band's event count comes from its strongest horizon.`,
+  return navTable(`Band occupancy, beside action labels. Bands are not rescaled. Minimum ${navShown(minimum)} events; event counts are for the first horizon; per-horizon counts are in the horizon table.`,
     ["Band", "Action label", "Days", "Events", "Event count", "Verdict"], rows);
 }
 
