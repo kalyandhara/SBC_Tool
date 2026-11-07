@@ -50,8 +50,10 @@ def forward_returns(opens, closes, horizon: int) -> np.ndarray:
     """returns[t] = closes[t+horizon-1] / opens[t] - 1; NaN if not yet closed."""
     opens, closes = np.asarray(opens, float), np.asarray(closes, float)
     out = np.full(len(opens), np.nan)
-    with np.errstate(divide="ignore", invalid="ignore"):
-        out[:len(opens) - horizon + 1] = closes[horizon - 1:] / opens[:len(opens) - horizon + 1] - 1
+    m = len(opens) - horizon + 1
+    if m > 0:
+        with np.errstate(divide="ignore", invalid="ignore"):
+            out[:m] = closes[horizon - 1:] / opens[:m] - 1
     return out
 
 
