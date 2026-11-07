@@ -574,3 +574,46 @@ def test_top_band_ignores_returns_even_when_the_best_horizon_flips(monkeypatch):
     assert lifted["bands"][HP]["horizon"] == "5" and flat["bands"][HP]["horizon"] == "1"
     # 29 first-horizon events are under the floor in both, so Normal is the top band
     assert lifted["placebo"]["top_band"] == flat["placebo"]["top_band"] == "Normal"
+
+
+# --- frozen fixture golden values -------------------------------------------
+
+GOLDEN_FILE = FIXTURES / "navigator_golden.json"
+GOLDEN_PARAMS = {"n_placebo": 5, "seed": 1729, "min_sessions": 120, "n_perm": 50}
+
+
+def golden_result(inputs):
+    """Everything run_inputs returns except wall-clock time, plus the score series."""
+    out = B.run_inputs(inputs, GOLDEN_PARAMS)
+    out["placebo"] = strip_seconds(out["placebo"])
+    out["scores"] = [round(float(s), 8) for s in B.score_for(inputs, GOLDEN_PARAMS["min_sessions"]).score]
+    return json.loads(json.dumps(out))
+
+
+def assert_same(got, want, path="result"):
+    assert type(got) is type(want) or {type(got), type(want)} == {int, float}, path
+    if isinstance(want, dict):
+        assert got.keys() == want.keys(), path
+        for key in want:
+            assert_same(got[key], want[key], f"{path}.{key}")
+    elif isinstance(want, list):
+        assert len(got) == len(want), path
+        for i, (g, w) in enumerate(zip(got, want)):
+            assert_same(g, w, f"{path}[{i}]")
+    elif isinstance(want, float):
+        assert got == pytest.approx(want, rel=1e-9, abs=1e-9), path
+    else:
+        assert got == want, path
+
+
+def test_frozen_fixture_golden_values(sample_inputs):
+    """Regenerating this file is a results change: only with a disclosed reason."""
+    assert_same(golden_result(sample_inputs), json.loads(GOLDEN_FILE.read_text()))
+
+
+def test_golden_pins_are_sensitive(sample_inputs, monkeypatch):
+    want = json.loads(GOLDEN_FILE.read_text())
+    assert want["weights_version"] == "nav-1" and want["sessions_scored"] == 380
+    monkeypatch.setitem(GOLDEN_PARAMS, "seed", 1730)
+    with pytest.raises(AssertionError):
+        assert_same(golden_result(sample_inputs), want)
