@@ -169,16 +169,18 @@ def strength_term(sky) -> Term:
     return Term(_scale(raw), raw, factors)
 
 
-def vol_term(days, vix_by_day, window=252) -> Term:
+def vol_term(days, vix_by_day, window=252, min_history=_MIN_VOL_HISTORY) -> Term:
     """Percentile of the T-1 close among the `window` closes before it, so the
-    entry day's own value can never reach day T's score."""
+    entry day's own value can never reach day T's score. Neutral until
+    `min_history` closes exist before T-1; gaps in the series do not restart it."""
     n = len(days)
     vix = np.array([vix_by_day.get(d, np.nan) for d in days], float)
     vix[~np.isfinite(vix)] = np.nan
     values, pcts = np.full(n, 50.0), np.full(n, np.nan)
+    closes_before = np.concatenate(([0], np.cumsum(~np.isnan(vix))))
     for i in range(1, n):
         last = vix[i - 1]
-        if np.isnan(last):
+        if np.isnan(last) or closes_before[i - 1] < min_history:
             continue
         past = vix[max(0, i - 1 - window):i - 1]
         past = past[~np.isnan(past)]
