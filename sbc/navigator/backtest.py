@@ -40,6 +40,7 @@ NOTES = [
     "P-values are one-sided (upside only), net of cost, then Benjamini-Hochberg adjusted "
     "across bands and horizons.",
 ]
+SESSION_STATS = ("days", "vol", "max_dd", "hit", "win", "sharpe")
 _EDGES = [hi for hi, _ in S.BANDS[:-1]]
 _PLACEBO_START = dt.datetime(1950, 1, 1, tzinfo=dt.timezone.utc)
 _PLACEBO_SPAN = (dt.datetime(2006, 1, 1, tzinfo=dt.timezone.utc) - _PLACEBO_START).total_seconds()
@@ -296,8 +297,8 @@ def _clean(x):
 
 
 def _top_band(bands, min_events) -> int:
-    """Highest band with enough events, else the highest with any days. Chosen
-    from occupancy, never from returns."""
+    """Highest band with enough events, else the highest with any days. `bands` is
+    one fixed horizon's rows: a best-horizon row would let returns pick the band."""
     order = range(len(BAND_NAMES) - 1, -1, -1)
     for test in (lambda b: b["events"] >= min_events, lambda b: b["days"] > 0):
         for k in order:
@@ -335,6 +336,7 @@ def run_inputs(inputs: Inputs, params: Optional[Mapping] = None,
     full, natal, placebo = _run_placebos(inputs, p, start, outcomes, on_progress)
 
     bands, candidates, by_band = {}, [], {}
+    first_horizon = str(horizons[0])
     for k, name in enumerate(BAND_NAMES):
         by_horizon, by_band[name] = {}, {}
         for h, horizon in enumerate(horizons):
@@ -358,8 +360,9 @@ def run_inputs(inputs: Inputs, params: Optional[Mapping] = None,
         best = by_horizon[best_h]
         first = per_horizon[0][name]
         mask = index == k
-        band = {key: first[key] for key in ("days", "events", "vol", "max_dd", "hit", "win",
-                                            "sharpe")}
+        # One-session figures: at longer horizons overlapping returns make these meaningless.
+        band = {"session_stats": {"horizon": first_horizon,
+                                  **{key: first[key] for key in SESSION_STATS}}}
         band["mean_oc"] = float(np.nanmean(oc[mask])) if np.isfinite(oc[mask]).any() else None
         for h, horizon in enumerate(horizons):
             band[f"mean_oo_{horizon}"] = per_horizon[h][name]["mean"]
@@ -373,9 +376,8 @@ def run_inputs(inputs: Inputs, params: Optional[Mapping] = None,
             if entry["verdict"] == EDGE:
                 candidates.append({"band": name, "horizon": horizon, "q": entry["q"]})
 
-    top = BAND_NAMES[_top_band(bands, p["min_events"])]
-    first_horizon = str(horizons[0])
-    placebo.update(top_band=top, full_pct=by_band[top][first_horizon]["full"],
+    top = BAND_NAMES[_top_band(per_horizon[0], p["min_events"])]
+    placebo.update(top_band=top, horizon=first_horizon, full_pct=by_band[top][first_horizon]["full"],
                    natal_pct=by_band[top][first_horizon]["natal"], by_band=by_band)
     return _clean({
         "bands": bands, "folds": folds, "placebo": placebo,

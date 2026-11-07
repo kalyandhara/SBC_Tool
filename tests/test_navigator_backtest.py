@@ -1,7 +1,9 @@
 """Backtest mechanics. Prices here are synthetic or the frozen fixture, used for
 structure and determinism only: no assertion depends on market outcomes."""
 import json
+import zlib
 from pathlib import Path
+from types import SimpleNamespace
 import numpy as np
 import pandas as pd
 import pytest
@@ -209,7 +211,7 @@ def test_events_and_win_exclude_tail_sessions_without_a_forward_return():
     ret = np.array([0.0] * 5 + [.02, .02, 0.0, np.nan, np.nan, 0.0, -.03, -.03, 0.0, np.nan, np.nan])
     out = B.band_stats(scores, ret, cost_bps=0, n_perm=10)[HP]
     assert out["days"] == 8 and out["events"] == 2
-    assert out["win"] == pytest.approx(0.5)     # NaN runs would give 1/4 or 2/3
+    assert out["win"] == pytest.approx(0.5)     # counting the NaN runs would give 1/4, or 1/3 if the last is dropped
 
 
 def _fold_case(years_n, k, extra_short=False):
@@ -347,14 +349,15 @@ def test_result_structure_and_json_safe(sample_inputs):
     out = B.run_inputs(sample_inputs, FAST)
     assert set(out) >= {"bands", "folds", "placebo", "verdict", "is_sample"}
     assert set(out["bands"]) == {name for _, name in S.BANDS}
-    needed = {"days", "events", "mean_oc", "mean_oo_1", "mean_oo_5", "vol", "max_dd", "hit",
-              "win", "sharpe", "excess_vs_control", "p", "q", "insufficient", "verdict"}
+    needed = {"session_stats", "events", "mean_oc", "mean_oo_1", "mean_oo_5", "excess_vs_control",
+              "p", "q", "insufficient", "verdict", "horizon"}
     assert all(needed <= set(b) for b in out["bands"].values())
+    assert all(b["session_stats"]["horizon"] == "1" for b in out["bands"].values())
     assert all("natal_band_days" in b for b in out["bands"].values())
     assert out["research_grade"] is False       # sample: not research grade
     notes = " ".join(out["notes"]).lower()
     assert "natal-band days" in notes and "diluted" in notes and "one-sided" in notes
-    assert {"full_pct", "natal_pct", "n", "seconds"} <= set(out["placebo"])
+    assert {"full_pct", "natal_pct", "horizon", "n", "seconds"} <= set(out["placebo"])
     assert out["placebo"]["n"] == 3
     json.dumps(out, allow_nan=False)
 
@@ -362,7 +365,7 @@ def test_result_structure_and_json_safe(sample_inputs):
 def test_band_days_add_up_to_scored_sessions(sample_inputs):
     out = B.run_inputs(sample_inputs, FAST)
     scored = len(sample_inputs.ohlc) - 120
-    assert sum(b["days"] for b in out["bands"].values()) == scored
+    assert sum(b["session_stats"]["days"] for b in out["bands"].values()) == scored
     assert sum(f["sessions"] for f in out["folds"]) == scored
 
 
@@ -395,7 +398,7 @@ def test_sample_is_labelled_pipeline_check_and_never_candidate(sample_inputs):
 
 def test_default_warm_up_on_short_fixture_reports_nothing_scored(sample_inputs):
     out = B.run_inputs(sample_inputs, {"n_placebo": 1, "n_perm": 10})
-    assert sum(b["days"] for b in out["bands"].values()) == 0
+    assert sum(b["session_stats"]["days"] for b in out["bands"].values()) == 0
     assert out["folds"] == [] and out["verdict"] == "no demonstrated edge"
     assert out["candidate_bands"] == []
     assert all(b["events"] == 0 and b["p"] is None and b["verdict"] == "no demonstrated edge"
@@ -475,3 +478,99 @@ def test_full_pipeline_finds_planted_edge_but_not_for_a_sample(market_case):
     sample = base._replace(ohlc=ohlc, profile=SAMPLE_PROFILE)
     s_out = B.run_inputs(sample, params)
     assert s_out["candidate_bands"] == [] and s_out["verdict"] == "no demonstrated edge"
+
+
+# --- horizons that diverge: fixed scores and outcomes, so only the second can qualify -
+
+N_CASE, FLAT, BAND_SCORE = 1000, 50, 70
+BAND_DAYS = np.arange(0, N_CASE, 5)            # single-day events, so days == events
+THIN = BAND_DAYS[:87:3]                        # 29 events, all inside the first two years
+
+
+def diverging_case(monkeypatch, h1_only_thin=True, lift5=.01):
+    """Horizon 1 keeps a return on THIN band sessions alone unless told otherwise: 29
+    events, 29 natal days, 2 active folds. Horizon 5 keeps all 200. Scores do not move
+    with prices here, unlike the real HistVal term, and q is fixed at .01 (h=1) and
+    .05 (h=5) for High Probability, so whatever separates horizons is the gates."""
+    rng = np.random.default_rng(6)
+    r1, r5 = rng.normal(0, .001, (2, N_CASE))
+    r1[BAND_DAYS] += .01
+    r5[BAND_DAYS] += lift5
+    if h1_only_thin:
+        r1[np.setdiff1d(BAND_DAYS, THIN)] = np.nan
+    real = np.full(N_CASE, float(FLAT))
+    real[BAND_DAYS] = BAND_SCORE
+
+    def fake_score(inputs, min_sessions=756):
+        scores = real
+        if inputs.profile.label == "placebo":
+            r = np.random.default_rng(zlib.crc32(inputs.profile.birth_date.encode()))
+            scores = np.where(r.random(N_CASE) < .2, BAND_SCORE, FLAT).astype(float)
+        terms = {t: scores for t in ("transit", "dasha", "strength")}
+        return SimpleNamespace(score=scores, terms={**terms, "vol": np.full(N_CASE, 40.0)})
+
+    def fake_q(ps):
+        out = [1.0] * len(ps)
+        k = B.BAND_NAMES.index(HP)
+        out[k], out[len(B.BAND_NAMES) + k] = .01, .05
+        return out
+
+    monkeypatch.setattr(B, "score_for", fake_score)
+    monkeypatch.setattr(B.stats, "bh_adjust", fake_q)
+    monkeypatch.setattr(B, "open_returns", lambda opens, h: {1: r1, 5: r5}[h])
+    days = [str(d)[:10] for d in pd.bdate_range("2015-01-01", periods=N_CASE)]
+    closes = 1000 * np.cumprod(1 + rng.normal(0, .01, N_CASE))
+    ohlc = pd.DataFrame({"open": closes, "close": closes}, index=days)
+    chart = Profile("synthetic", False, SAMPLE_PROFILE.birth_date, SAMPLE_PROFILE.birth_time,
+                    SAMPLE_PROFILE.tz, SAMPLE_PROFILE.lat, SAMPLE_PROFILE.lon)
+    return B.run_inputs(B.Inputs(chart, ohlc, {}, None),
+                        {"n_placebo": 25, "seed": 5, "min_sessions": 0, "n_perm": 10})
+
+
+def test_only_the_second_horizon_qualifies(monkeypatch):
+    out = diverging_case(monkeypatch)
+    band = out["bands"][HP]
+    one, five = band["by_horizon"]["1"], band["by_horizon"]["5"]
+    assert (one["events"], one["insufficient"], one["natal_band_days"]) == (29, True, 29)
+    assert (five["events"], five["insufficient"], five["natal_band_days"]) == (200, False, 200)
+    assert one["active_folds"] == 2 and one["fold_pos"] is None
+    assert five["active_folds"] == 4 and five["fold_pos"] == 1.0
+    assert one["verdict"] == "no demonstrated edge" and five["verdict"] == "edge candidate"
+    assert one["q"] < five["q"]               # so only the verdict can put h=5 first
+    assert band["horizon"] == "5" and band["q"] == five["q"] and band["verdict"] == "edge candidate"
+    assert (band["events"], band["insufficient"], band["natal_band_days"]) == (200, False, 200)
+    assert out["candidates"] == [{"band": HP, "horizon": "5", "q": .05}]
+
+
+def test_every_qualifying_horizon_is_a_candidate(monkeypatch):
+    out = diverging_case(monkeypatch, h1_only_thin=False)
+    assert out["bands"][HP]["horizon"] == "1"
+    assert out["candidates"] == [{"band": HP, "horizon": "1", "q": .01},
+                                 {"band": HP, "horizon": "5", "q": .05}]
+    assert out["candidate_bands"] == [HP]
+
+
+def test_session_stats_are_labelled_first_horizon_and_not_beside_best(monkeypatch):
+    band = diverging_case(monkeypatch)["bands"][HP]
+    row = band["session_stats"]
+    # only horizon 5 changes between these, so a first-horizon row cannot move
+    assert row == diverging_case(monkeypatch, lift5=0.0)["bands"][HP]["session_stats"]
+    assert band["horizon"] == "5" and row["horizon"] == "1"
+    assert set(row) == {"horizon", "days", "vol", "max_dd", "hit", "win", "sharpe"}
+    assert row["days"] == 200 and row["vol"] > 0
+    assert not (set(row) - {"horizon"}) & set(band)
+
+
+def test_placebo_names_the_horizon_of_its_percentiles(monkeypatch):
+    p = diverging_case(monkeypatch)["placebo"]
+    assert p["horizon"] == "1"
+    assert p["full_pct"] == p["by_band"][p["top_band"]]["1"]["full"]
+    assert p["natal_pct"] == p["by_band"][p["top_band"]]["1"]["natal"]
+
+
+def test_top_band_ignores_returns_even_when_the_best_horizon_flips(monkeypatch):
+    lifted = diverging_case(monkeypatch)
+    flat = diverging_case(monkeypatch, lift5=0.0)
+    assert lifted["bands"][HP]["horizon"] == "5" and flat["bands"][HP]["horizon"] == "1"
+    # 29 first-horizon events are under the floor in both, so Normal is the top band
+    assert lifted["placebo"]["top_band"] == flat["placebo"]["top_band"] == "Normal"
