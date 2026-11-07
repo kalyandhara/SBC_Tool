@@ -204,23 +204,74 @@ def test_detection_and_false_positive_rates_over_seeds():
 
 
 def test_events_and_win_exclude_tail_sessions_without_a_forward_return():
-    scores = np.array([50] * 5 + [70, 70, 50, 70, 70])
-    ret = np.array([0.0] * 5 + [.02, .02, 0.0, np.nan, np.nan])
+    # an all-NaN run in the middle: it must not count as an event, nor as a win or loss
+    scores = np.array([50] * 5 + [70, 70, 50, 70, 70, 50, 70, 70, 50, 70, 70])
+    ret = np.array([0.0] * 5 + [.02, .02, 0.0, np.nan, np.nan, 0.0, -.03, -.03, 0.0, np.nan, np.nan])
     out = B.band_stats(scores, ret, cost_bps=0, n_perm=10)[HP]
-    assert out["days"] == 4 and out["events"] == 1
-    assert out["win"] == pytest.approx(1.0)
+    assert out["days"] == 8 and out["events"] == 2
+    assert out["win"] == pytest.approx(0.5)     # NaN runs would give 1/4 or 2/3
+
+
+def _fold_case(years_n, k, extra_short=False):
+    index, years, ret = [], [], []
+    for i in range(years_n):
+        n = 4 if (extra_short and i == 0) else 10
+        index += [k] * n + [0] * 20
+        years += [str(2020 + i)] * (n + 20)
+        ret += [.05] * n + [0.0] * 20
+    return np.array(index), np.array(years), np.array(ret)
 
 
 def test_fold_pos_ignores_folds_with_under_five_band_sessions():
     k = B.BAND_NAMES.index(HP)
-    index = np.array([k] * 4 + [0] * 20 + [k] * 10 + [0] * 20)
-    years = np.array(["2020"] * 24 + ["2021"] * 30)
-    ret = np.concatenate(([-.05] * 4, np.zeros(20), [.05] * 10, np.zeros(20)))
-    _, pos = B._folds(index, years, [ret], [1], 0)
-    assert pos[k, 0] == 1.0       # the 4-session fold is not counted
-    index[:5] = k                 # now five band sessions: the fold counts and fails
-    _, pos = B._folds(index, years, [ret], [1], 0)
-    assert 0 < pos[k, 0] < 1
+    index, years, ret = _fold_case(4, k, extra_short=True)
+    _, pos, active = B._folds(index, years, [ret], [1], 0)
+    assert active[k, 0] == 3 and pos[k, 0] == 1.0     # the 4-session fold is not counted
+    ret[:4] = -.05
+    index[:5] = k                                     # five band sessions now: counts and fails
+    _, pos, active = B._folds(index, years, [ret], [1], 0)
+    assert active[k, 0] == 4 and 0 < pos[k, 0] < 1
+
+
+def test_fold_pos_is_none_under_three_active_folds():
+    k = B.BAND_NAMES.index(HP)
+    index, years, ret = _fold_case(2, k)
+    _, pos, active = B._folds(index, years, [ret], [1], 0)
+    assert active[k, 0] == 2 and np.isnan(pos[k, 0])
+    index, years, ret = _fold_case(3, k)
+    _, pos, active = B._folds(index, years, [ret], [1], 0)
+    assert active[k, 0] == 3 and pos[k, 0] == 1.0
+
+
+def test_fold_floor_counts_only_sessions_with_a_forward_return():
+    k = B.BAND_NAMES.index(HP)
+    index, years, ret = _fold_case(3, k)
+    ret[[0, 1, 2, 3, 4, 5]] = np.nan          # fold 1 keeps 4 band sessions with a return
+    _, pos, active = B._folds(index, years, [ret], [1], 0)
+    assert active[k, 0] == 2 and np.isnan(pos[k, 0])
+
+
+def test_natal_band_days_and_fold_count_are_per_horizon(market_case):
+    base, sub, params, days = market_case
+    out = B.run_inputs(base, params)
+    one = [b["by_horizon"]["1"]["natal_band_days"] for b in out["bands"].values()]
+    five = [b["by_horizon"]["5"]["natal_band_days"] for b in out["bands"].values()]
+    assert sum(one) - sum(five) == 4          # h=5 loses its last 5 open-to-open sessions less 1
+    assert all("active_folds" in b["by_horizon"]["1"] for b in out["bands"].values())
+
+
+def test_top_level_band_fields_follow_the_best_horizon(market_case):
+    base, sub, params, days = market_case
+    ohlc = synthetic_market(days, (sub > 60) & (sub <= 80), .006)
+    out = B.run_inputs(base._replace(ohlc=ohlc), params)
+    for b in out["bands"].values():
+        h = b["by_horizon"][b["horizon"]]
+        assert (b["events"], b["insufficient"], b["natal_band_days"], b["q"], b["verdict"]) ==             (h["events"], h["insufficient"], h["natal_band_days"], h["q"], h["verdict"])
+    assert {"band": HP, "horizon": out["bands"][HP]["horizon"],
+            "q": out["bands"][HP]["q"]} in out["candidates"]
+    assert {c["band"] for c in out["candidates"]} == set(out["candidate_bands"])
+    for c in out["candidates"]:
+        assert out["bands"][c["band"]]["by_horizon"][c["horizon"]]["verdict"] == "edge candidate"
 
 
 # --- score_for ---------------------------------------------------------------
@@ -300,7 +351,7 @@ def test_result_structure_and_json_safe(sample_inputs):
               "win", "sharpe", "excess_vs_control", "p", "q", "insufficient", "verdict"}
     assert all(needed <= set(b) for b in out["bands"].values())
     assert all("natal_band_days" in b for b in out["bands"].values())
-    assert out["research_grade"] is True
+    assert out["research_grade"] is False       # sample: not research grade
     notes = " ".join(out["notes"]).lower()
     assert "natal-band days" in notes and "diluted" in notes and "one-sided" in notes
     assert {"full_pct", "natal_pct", "n", "seconds"} <= set(out["placebo"])
@@ -338,7 +389,8 @@ def test_sample_is_labelled_pipeline_check_and_never_candidate(sample_inputs):
     assert out["is_sample"] is True
     assert out["verdict"] == "no demonstrated edge" and out["candidate_bands"] == []
     assert all(b["verdict"] == "no demonstrated edge" for b in out["bands"].values())
-    assert "pipeline check" in out["label"]
+    assert "pipeline check" in out["label"] and out["research_grade"] is False
+    assert out["candidates"] == []
 
 
 def test_default_warm_up_on_short_fixture_reports_nothing_scored(sample_inputs):

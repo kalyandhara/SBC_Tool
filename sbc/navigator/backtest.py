@@ -28,7 +28,8 @@ EDGE, NO_EDGE = "edge candidate", "no demonstrated edge"
 BAND_NAMES = [name for _, name in S.BANDS]
 MIN_EVENTS = 30             # the verdict's floor; the `min_events` param only sets the label
 MIN_NATAL_DAYS = 30         # natal-band days the real chart needs for its percentile to mean anything
-MIN_FOLD_DAYS = 5           # band sessions a fold needs to count toward fold_pos
+MIN_FOLD_DAYS = 5           # band sessions with a forward return a fold needs to count
+MIN_FOLDS = 3               # active folds needed before fold_pos means anything
 MIN_PLACEBOS = 20           # with fewer, a 95th percentile cannot be told apart
 RATE_CHECK_AFTER = 10       # charts timed before projecting the run
 NOTES = [
@@ -257,7 +258,8 @@ def _run_placebos(inputs, p, start, outcomes, on_progress):
 
 def _folds(index, years, outcomes, horizons, cost_bps):
     """One test year per fold, from the first scored year. fold_pos[k, h] is the
-    share of folds with sessions in the band that had positive net excess."""
+    share of active folds (at least MIN_FOLD_DAYS band sessions with a forward return)
+    that had positive net excess, NaN under MIN_FOLDS. Returns (folds, fold_pos, active)."""
     positive = np.zeros((len(BAND_NAMES), len(horizons)))
     active = np.zeros_like(positive)
     folds = []
@@ -266,18 +268,19 @@ def _folds(index, years, outcomes, horizons, cost_bps):
         bands = {}
         for k, name in enumerate(BAND_NAMES):
             mask = index[fold] == k
-            counts = int(mask.sum()) >= MIN_FOLD_DAYS
             row = {"days": int(mask.sum())}
             for h, r in enumerate(outcomes):
                 value = _net_excess(mask, r[fold], cost_bps)
                 row[f"excess_{horizons[h]}"] = value
+                counts = int((mask & np.isfinite(r[fold])).sum()) >= MIN_FOLD_DAYS
                 if counts and np.isfinite(value):
                     active[k, h] += 1
                     positive[k, h] += value > 0
             bands[name] = row
         folds.append({"year": year, "sessions": int(fold.sum()), "bands": bands})
     with np.errstate(invalid="ignore"):
-        return folds, positive / active
+        share = np.where(active >= MIN_FOLDS, positive / active, np.nan)
+    return folds, share, active
 
 
 def _clean(x):
@@ -321,12 +324,14 @@ def run_inputs(inputs: Inputs, params: Optional[Mapping] = None,
     per_horizon = [band_stats(scores, r, prior, cost, p["n_perm"], p["seed"] + 100 * (h + 1),
                               p["min_events"]) for h, r in enumerate(scored)]
     qs = stats.bh_adjust([row[name]["p"] for row in per_horizon for name in BAND_NAMES])
-    folds, fold_pos = _folds(index, np.array([d[:4] for d in days[start:]]), scored, horizons, cost)
+    folds, fold_pos, active = _folds(index, np.array([d[:4] for d in days[start:]]), scored, horizons, cost)
 
     real_full = _excess_table(series.score, outcomes, start, cost)
     real_natal = _excess_table(natal_subscore(series), outcomes, start, cost)
-    natal_days = np.bincount(_band_index(natal_subscore(series))[start:],
-                             minlength=len(BAND_NAMES))
+    natal_index = _band_index(natal_subscore(series))[start:]
+    # counted on the statistic's own mask: sessions with a finite forward return
+    natal_days = [np.bincount(natal_index[np.isfinite(r)], minlength=len(BAND_NAMES))
+                  for r in scored]
     full, natal, placebo = _run_placebos(inputs, p, start, outcomes, on_progress)
 
     bands, candidates, by_band = {}, [], {}
@@ -340,28 +345,33 @@ def run_inputs(inputs: Inputs, params: Optional[Mapping] = None,
             entry = {"p": row["p"], "q": qs[h * len(BAND_NAMES) + k], "excess": row["excess"],
                      "excess_vs_control": row["excess_vs_control"],
                      "beats_control": bool(row["excess_vs_control"] > 0), "events": row["events"],
+                     "insufficient": row["insufficient"], "active_folds": int(active[k, h]),
                      "fold_pos": float(fold_pos[k, h]) if np.isfinite(fold_pos[k, h]) else None,
                      "full_pct": pct["full"], "natal_pct": pct["natal"],
-                     "natal_band_days": int(natal_days[k])}
+                     "natal_band_days": int(natal_days[h][k])}
             entry["verdict"] = verdict({**entry, "q": entry["q"] if np.isfinite(entry["q"]) else None},
                                        is_sample)
             by_horizon[str(horizon)] = entry
         # BH already covers every horizon, so the band shows its strongest one.
-        best = min(by_horizon.values(), key=lambda e: (e["verdict"] != EDGE,
-                                                       e["q"] if np.isfinite(e["q"]) else 2.0))
+        best_h = min(by_horizon, key=lambda x: (by_horizon[x]["verdict"] != EDGE,
+                                                by_horizon[x]["q"] if np.isfinite(by_horizon[x]["q"]) else 2.0))
+        best = by_horizon[best_h]
         first = per_horizon[0][name]
         mask = index == k
         band = {key: first[key] for key in ("days", "events", "vol", "max_dd", "hit", "win",
-                                            "sharpe", "insufficient")}
+                                            "sharpe")}
         band["mean_oc"] = float(np.nanmean(oc[mask])) if np.isfinite(oc[mask]).any() else None
         for h, horizon in enumerate(horizons):
             band[f"mean_oo_{horizon}"] = per_horizon[h][name]["mean"]
-        band.update({key: best[key] for key in ("excess_vs_control", "p", "q", "verdict",
-                                                "natal_band_days")})
+        # events, insufficient, natal_band_days, p, q and verdict all come from this one horizon
+        band.update({key: best[key] for key in ("events", "insufficient", "excess_vs_control",
+                                                "p", "q", "verdict", "natal_band_days")})
+        band["horizon"] = best_h
         band["by_horizon"] = by_horizon
         bands[name] = band
-        if best["verdict"] == EDGE:
-            candidates.append(name)
+        for horizon, entry in by_horizon.items():
+            if entry["verdict"] == EDGE:
+                candidates.append({"band": name, "horizon": horizon, "q": entry["q"]})
 
     top = BAND_NAMES[_top_band(bands, p["min_events"])]
     first_horizon = str(horizons[0])
@@ -369,9 +379,10 @@ def run_inputs(inputs: Inputs, params: Optional[Mapping] = None,
                    natal_pct=by_band[top][first_horizon]["natal"], by_band=by_band)
     return _clean({
         "bands": bands, "folds": folds, "placebo": placebo,
-        "verdict": EDGE if candidates else NO_EDGE, "research_grade": True,
+        "verdict": EDGE if candidates else NO_EDGE, "research_grade": not is_sample,
         "notes": NOTES,
-        "candidate_bands": candidates, "is_sample": is_sample,
+        "candidates": candidates,
+        "candidate_bands": list(dict.fromkeys(c["band"] for c in candidates)), "is_sample": is_sample,
         "label": ("Sample chart: pipeline check only" if is_sample
                   else "Research-grade result with hand-set weights"),
         "sessions_scored": len(scores),
