@@ -51,3 +51,32 @@ def sample_date():
 def sample_datetime():
     """Sample datetime for testing."""
     return "2026-09-11 09:15"
+
+
+@pytest.fixture(scope="module")
+def synthetic():
+    """60 real NSE sessions to 2026-11-06 with synthetic prices and real skies."""
+    import datetime as dt
+    from functools import lru_cache
+
+    import numpy as np
+    from sbc import market_holidays as MH
+    from sbc.analogs import SkyArrays
+    from sbc.fingerprint import fingerprint
+    from sbc.navigator import analogs as A
+    d, dates = dt.date(2026, 11, 6), []
+    while len(dates) < 60:
+        if MH.is_trading_day(d):
+            dates.append(d.isoformat())
+        d -= dt.timedelta(days=1)
+    dates.reverse()
+    fp = lru_cache(maxsize=None)(fingerprint)
+    sky = SkyArrays.from_fingerprints([fp(x) for x in dates])
+    rng = np.random.default_rng(7)
+    o = 20000 * np.cumprod(1 + rng.normal(0, 0.01, 60))
+    c = o * (1 + rng.normal(0, 0.005, 60))
+    p = {"open": o, "close": c, "low": np.minimum(o, c) * 0.995,
+         "bank_open": o * 2, "bank_close": c * 2, "vix_close": np.full(60, 14.0),
+         "sector_open": {s: o for s in A.SECTORS}, "sector_close": {s: c for s in A.SECTORS}}
+    vix = {x: 14.0 for x in dates}
+    return A.Market(dates, p, vix), sky, fp

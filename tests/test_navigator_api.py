@@ -2,6 +2,7 @@
 import json
 import logging
 import os
+import threading as _threading
 import time
 
 import numpy as np
@@ -12,6 +13,7 @@ from psycopg.conninfo import conninfo_to_dict
 from sbc import market_store
 from sbc.api.blueprints import navigator_bp as bp
 from sbc.app_factory import create_app
+from sbc.navigator import analogs as A
 from sbc.navigator import backtest as B
 from sbc.navigator import store
 from sbc.navigator.profile import SAMPLE_PROFILE, chart_hash
@@ -755,11 +757,6 @@ def test_score_survives_a_latest_run_failure(client, db, market, monkeypatch):
 
 
 # ---- Phase 4: similar dates (/analogs) ----
-import threading as _threading
-
-from sbc.navigator import analogs as A
-from tests.test_navigator_analogs import synthetic  # noqa: F401  (module fixture)
-
 FAKE_ANALOGS = {"version": "nav-analog-1", "data_asof": "2026-11-06", "window": {}, "mode": "top_scores",
                 "targets": [], "notes": ["n"]}
 
@@ -838,7 +835,9 @@ def test_analogs_cache_hits_and_key_parts(client, db, analog_state, monkeypatch)
     a = client.get(url).get_json()
     b = client.get(url).get_json()
     assert len(calls) == 1 and a["cached"] is False and b["cached"] is True
-    assert any("seconds" in n for n in b["notes"])
+    assert any("Computed in" in n and "seconds" in n for n in a["notes"]) and not any("cached" in n for n in a["notes"])
+    assert any("seconds (cached result)" in n for n in b["notes"]) and not any("seconds." in n for n in b["notes"])
+    assert a["notes"] == ["n", a["notes"][1]] and len(b["notes"]) == 2
     client.get(f"/api/navigator/analogs?profile_id={pid}&days=11")
     assert len(calls) == 2
     analog_state["market"].dates.append("2026-11-09")       # data date
@@ -850,12 +849,22 @@ def test_analogs_cache_hits_and_key_parts(client, db, analog_state, monkeypatch)
     monkeypatch.setattr(bp, "_version", lambda: "other-engine")
     client.get(url)
     assert len(calls) == 5
-    monkeypatch.setattr(bp, "chart_hash", lambda p: "other-chart")
+    monkeypatch.setattr(bp, "_analog_version", lambda: "other-analogs")   # analogs.py / signature.py closure
     client.get(url)
     assert len(calls) == 6
+    monkeypatch.setattr(bp, "chart_hash", lambda p: "other-chart")
+    client.get(url)
+    assert len(calls) == 7
     pid2 = _profile(client, label="Two")
     client.get(f"/api/navigator/analogs?profile_id={pid2}&days=10")
-    assert len(calls) == 7
+    assert len(calls) == 8
+
+
+def test_analog_version_covers_analogs_and_signature():
+    from sbc.engine_version import module_closure, ROOT, _read
+    rel = {p.relative_to(ROOT).as_posix() for p in module_closure({"sbc.navigator.analogs"}, _read, frozenset())}
+    assert {"sbc/navigator/analogs.py", "sbc/navigator/signature.py"} <= rel
+    assert bp._analog_version() == bp.module_version("sbc.navigator.analogs")
 
 
 @pg
