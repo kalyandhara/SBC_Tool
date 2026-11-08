@@ -417,7 +417,8 @@ _BAD_DAYS = "days must be an integer from 5 to 60"
 _DAYS_RE = re.compile(r"[0-9]{1,2}")
 _ANALOG_CACHE_SIZE = 8
 _analog_lock = threading.Lock()          # single flight: one computation per process
-_analog_cache: OrderedDict = OrderedDict()   # only read or written while _analog_lock is held
+_analog_cache_lock = threading.Lock()   # short lock around cache reads and writes only
+_analog_cache: OrderedDict = OrderedDict()   # only read or written while _analog_cache_lock is held
 
 
 @lru_cache(maxsize=1)
@@ -438,29 +439,31 @@ def analogs():
     days = _arg_days()
     profile_id = _arg_id()
     profile = _require_profile(profile_id)
-    if not _analog_lock.acquire(blocking=False):
-        return jsonify({"error": ANALOGS_BUSY}), 429
     try:
-        try:
-            market = A.load_market()
-        except market_store.MarketDataMissing:
-            raise _NoMarketData from None
-        # chart_hash keys the cache only; it never enters the response.
-        key = (profile_id, chart_hash(profile), market.dates[-1], G.ANALOG_VERSION, _version(), _analog_version(), days)
+        market = A.load_market()
+    except market_store.MarketDataMissing:
+        raise _NoMarketData from None
+    # chart_hash keys the cache only; it never enters the response.
+    key = (profile_id, chart_hash(profile), market.dates[-1], G.ANALOG_VERSION, _version(), _analog_version(), days)
+    with _analog_cache_lock:
         result = _analog_cache.get(key)
-        cached = result is not None
-        if cached:
+        if result is not None:
             _analog_cache.move_to_end(key)
-        else:
+    cached = result is not None
+    if not cached:
+        if not _analog_lock.acquire(blocking=False):
+            return jsonify({"error": ANALOGS_BUSY}), 429
+        try:
             t0 = time.perf_counter()
             result = B.clean_json(A.build(profile, market, days))
             result["notes"] = list(result.get("notes", []))
             result["_timing"] = time.perf_counter() - t0
-            _analog_cache[key] = result      # only reached on success: errors are never cached
-            while len(_analog_cache) > _ANALOG_CACHE_SIZE:
-                _analog_cache.popitem(last=False)
-    finally:
-        _analog_lock.release()
+            with _analog_cache_lock:     # only reached on success: errors are never cached
+                _analog_cache[key] = result
+                while len(_analog_cache) > _ANALOG_CACHE_SIZE:
+                    _analog_cache.popitem(last=False)
+        finally:
+            _analog_lock.release()
     body = {k: v for k, v in result.items() if k != "_timing"}
     body["notes"] = list(result["notes"]) + [
         f"Computed in {result['_timing']:.1f} seconds" + (" (cached result)." if cached else ".")]

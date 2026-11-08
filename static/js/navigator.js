@@ -285,9 +285,9 @@ function navRenderRun(run) {
 
 function navShare(x) { return typeof x === "number" ? `${(x * 100).toFixed(1)}%` : null; }
 
-function navRandomSentence(prefix, n, share, note) {
+function navRandomSentence(prefix, n, share) {
   const pct = navShare(share);
-  if (pct === null) return `${prefix}: n/a.${note ? ` ${note}` : ""}`;
+  if (pct === null) return `${prefix}: n/a.`;
   return `${prefix}: random sets of ${n} did at least this well ${pct} of the time.`;
 }
 
@@ -322,10 +322,10 @@ function navSummaryLines(s) {
     `Analogs: ${navShown(s.n)}, ${navShown(s.n_with_outcome)} with a next-5 outcome.`,
     `Win ratio: ${navPct(s.win_ratio, 1)}. Average next-5: ${navPct(s.mean_next5)}. Median next-5: ${navPct(s.median_next5)}. Average drawdown: ${navPct(s.mean_drawdown)}.`,
     navBaselineText("All-eras baseline", s.baseline),
-    navRandomSentence("All eras", s.n_with_outcome, s.random_share, null),
+    `${navRandomSentence("All eras", s.n_with_outcome, s.random_share)}${s.random_note ? ` ${s.random_note}` : ""}`,
     `Era window: ${navShown(era.start)} to ${navShown(era.end)}.`,
     navBaselineText("Era-matched baseline", s.era_baseline),
-    navRandomSentence("Era-matched", s.n_with_outcome, s.era_random_share, null),
+    `${navRandomSentence("Era-matched", s.n_with_outcome, s.era_random_share)}${s.era_random_note ? ` ${s.era_random_note}` : ""}`,
     s.era_note ? `Era note: ${s.era_note}` : "Era note: n/a.",
     `Median analog age: ${typeof s.median_age_years === "number" ? `${s.median_age_years.toFixed(1)} years` : "n/a"}.`,
   ];

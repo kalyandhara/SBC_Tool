@@ -816,6 +816,20 @@ def test_analogs_busy_429_without_blocking(client, db, analog_state):
 
 
 @pg
+def test_analogs_cached_result_served_while_another_build_runs(client, db, analog_state):
+    pid = _profile(client)
+    url = f"/api/navigator/analogs?profile_id={pid}&days=10"
+    assert client.get(url).status_code == 200
+    assert bp._analog_lock.acquire()          # another computation is in flight
+    try:
+        r = client.get(url)
+        assert r.status_code == 200 and r.get_json()["cached"] is True
+        assert client.get(f"/api/navigator/analogs?profile_id={pid}&days=11").status_code == 429
+    finally:
+        bp._analog_lock.release()
+
+
+@pg
 def test_analogs_lock_released_after_error_and_error_not_cached(client, db, analog_state, monkeypatch, caplog):
     pid = _profile(client)
     def boom(*a, **k):
@@ -908,4 +922,5 @@ def test_analogs_real_run_redacted(client, db, synthetic, monkeypatch):
         if kind == "value" and isinstance(v, (int, float, str)) and not isinstance(v, bool):
             assert str(v) not in BIRTH_VALUES and v not in (12.3456, 76.5432)
     assert any("seconds" in n for n in body["notes"])
-    assert any("2026-10-29" in n and "VIX starts 2008-03" in n for n in body["notes"])
+    ends = A.data_coverage_note(A.load_market())      # derived from the loaded data, not hard-coded
+    assert ends in body["notes"] and any("VIX starts 2008-03" in n for n in body["notes"])

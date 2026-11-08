@@ -187,14 +187,70 @@ def test_summary_fields():
 
 def test_summary_era_fields_and_note():
     rows = [{"date": "2025-01-01", "age_years": 1.0, "outcomes": {"next5": 0.02, "drawdown": -0.01}}] * 2
-    era = {"random_share": 0.4, "baseline": {"n": 2, "win_ratio": 0.5, "mean_next5": 0.01},
-           "window": ("2024-01-01", "2026-01-01"), "note": None}
+    era = {"random_share": 0.4, "short": 0, "baseline": {"n": 2, "win_ratio": 0.5, "mean_next5": 0.01},
+           "window": ("2024-01-01", "2026-01-01"), "widened": False, "clipped": False}
     s = A.summarize(rows, np.array([0.01]), 0.1, 0, era)
     assert s["era_random_share"] == 0.4
     assert s["era_baseline"] == {"n": 2, "win_ratio": 0.5, "mean_next5": 0.01}
     assert s["era_window"] == {"start": "2024-01-01", "end": "2026-01-01"}
-    assert s["era_note"] == ("Analogs are mostly from 2024-01-01 to 2026-01-01; compare with the era-matched "
-                             "figures, because the all-eras pool mixes market regimes.")
+    assert s["era_note"].startswith(
+        "Era window 2024-01-01 to 2026-01-01: middle half of the analog dates, widened to 2 years where "
+        "shorter, clipped to the available data.")
+    assert "2.0 years" in s["era_note"] and "(widened)" not in s["era_note"] and "(clipped" not in s["era_note"]
+    assert s["random_note"] is None and s["era_random_note"] is None
+
+
+def _era(**kw):
+    base = {"random_share": 0.4, "short": 0, "baseline": None,
+            "window": ("2024-01-01", "2026-01-01"), "widened": False, "clipped": False}
+    return {**base, **kw}
+
+
+_ROWS = [{"date": "2025-01-01", "age_years": 1.0, "outcomes": {"next5": 0.02, "drawdown": -0.01}}] * 2
+
+
+def test_era_note_flags_widened_and_clipped():
+    w = A.summarize(_ROWS, np.array([0.01]), 0.1, 0, _era(widened=True))["era_note"]
+    c = A.summarize(_ROWS, np.array([0.01]), 0.1, 0, _era(clipped=True))["era_note"]
+    both = A.summarize(_ROWS, np.array([0.01]), 0.1, 0, _era(widened=True, clipped=True))["era_note"]
+    assert "(widened)" in w and "(clipped to data)" not in w
+    assert "(clipped to data)" in c and "(widened)" not in c
+    assert "(widened)" in both and "(clipped to data)" in both
+    assert "1.5 years" in A.summarize(_ROWS, np.array([0.01]), 0.1, 0,
+                                      _era(window=("2025-01-01", "2026-07-01")))["era_note"]
+
+
+def test_era_window_info_reports_widened_and_clipped():
+    lo, hi, widened, clipped = A.era_window_info(["2025-01-31", "2025-01-01", "2025-01-15"])
+    assert (lo, hi) == A.era_window(["2025-01-31", "2025-01-01", "2025-01-15"]) and widened and not clipped
+    *_, widened, clipped = A.era_window_info(["2025-01-01", "2025-01-15"], first="2024-12-01", last="2025-02-01")
+    assert widened and clipped
+    *_, widened, clipped = A.era_window_info(["2015-01-01", "2020-01-01", "2024-01-01"])
+    assert not widened and not clipped
+
+
+def test_short_draws_blank_share_in_both_pools_with_a_note():
+    s = A.summarize(_ROWS, np.array([0.01]), 0.9, 7, _era(random_share=0.8, short=3))
+    assert s["random_share"] is None and s["era_random_share"] is None
+    assert "7 of" in s["random_note"] and "All-eras" in s["random_note"]
+    assert "3 of" in s["era_random_note"] and "Era-matched" in s["era_random_note"]
+    ok = A.summarize(_ROWS, np.array([0.01]), 0.9, 0, _era(random_share=0.8, short=0))
+    assert ok["random_share"] == 0.9 and ok["era_random_share"] == 0.8
+
+
+def test_missing_share_without_draws_gets_a_note():
+    s = A.summarize(_ROWS, np.array([0.01]), None, 1000, _era(random_share=None, short=1000))
+    assert s["random_share"] is None and "no outcomes" in s["random_note"]
+    assert s["era_random_share"] is None and "no outcomes" in s["era_random_note"]
+
+
+def test_data_end_note_derives_dates_from_market():
+    p = _prices()
+    market = A.Market(DATES, p, {})
+    note = A.data_coverage_note(market)
+    assert "2026-10-29" not in note
+    assert DATES[10] in note          # Bank Nifty's last close is on index 10
+    assert DATES[39] in note          # sectors run to the last session
 
 
 def test_build_deterministic_and_leak_free(synthetic):
@@ -218,8 +274,10 @@ def test_build_deterministic_and_leak_free(synthetic):
             i = pos[an["date"]]
             assert an["outcomes"]["next5"] == market.prices["open"][i + 5] / market.prices["open"][i] - 1
         assert t["summary"]["label"] == f"anecdotal: {len(t['analogs'])} analogs, not a tested signal"
-        assert 0.0 <= t["summary"]["random_share"] <= 1.0
+        rs = t["summary"]["random_share"]
+        assert (0.0 <= rs <= 1.0) if rs is not None else t["summary"]["random_note"]
         assert t["summary"]["era_window"]["start"] <= t["summary"]["era_window"]["end"]
         e = t["summary"]["era_baseline"]
         assert e is None or e["n"] <= t["summary"]["baseline"]["n"]
-        assert t["summary"]["era_random_share"] is None or 0.0 <= t["summary"]["era_random_share"] <= 1.0
+        ers = t["summary"]["era_random_share"]
+        assert (0.0 <= ers <= 1.0) if ers is not None else t["summary"]["era_random_note"]
