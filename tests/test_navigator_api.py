@@ -108,7 +108,7 @@ def test_remote_read_refused(client):
     ("get", "/api/navigator/profile"), ("post", "/api/navigator/profile"),
     ("get", "/api/navigator/chart?profile_id=1"), ("get", "/api/navigator/score?profile_id=1"),
     ("post", "/api/navigator/backtest"), ("get", "/api/navigator/backtest/1"),
-    ("get", "/api/navigator/backtest/latest?profile_id=1")])
+    ("get", "/api/navigator/backtest/latest?profile_id=1"), ("get", "/api/navigator/analogs?profile_id=1")])
 def test_guard_covers_every_route_before_postgres(client, monkeypatch, method, path):
     _down(monkeypatch)    # a route that reached the store would be a 503
     r = getattr(client, method)(path, headers={"X-Forwarded-For": "8.8.8.8"},
@@ -752,3 +752,151 @@ def test_score_survives_a_latest_run_failure(client, db, market, monkeypatch):
     assert body["score"] is not None
     assert body["latest_verdict"]["available"] is False
     assert body["latest_verdict"]["text"] == "verdict unavailable"
+
+
+# ---- Phase 4: similar dates (/analogs) ----
+import threading as _threading
+
+from sbc.navigator import analogs as A
+from tests.test_navigator_analogs import synthetic  # noqa: F401  (module fixture)
+
+FAKE_ANALOGS = {"version": "nav-analog-1", "data_asof": "2026-11-06", "window": {}, "mode": "top_scores",
+                "targets": [], "notes": ["n"]}
+
+
+@pytest.fixture
+def analog_state(monkeypatch):
+    monkeypatch.setattr(bp, "_analog_cache", bp.OrderedDict())
+    monkeypatch.setattr(bp, "_analog_lock", _threading.Lock())
+    market = A.Market(["2026-11-05", "2026-11-06"], {}, {})
+    monkeypatch.setattr(A, "load_market", lambda: market)
+    calls = []
+
+    def fake_build(profile, mkt, days=30, **_):
+        calls.append((profile.label, mkt.dates[-1], days))
+        return {**FAKE_ANALOGS, "notes": ["n"]}
+    monkeypatch.setattr(A, "build", fake_build)
+    return {"market": market, "calls": calls}
+
+
+def test_analogs_guarded(client, monkeypatch):
+    _down(monkeypatch)
+    r = client.get("/api/navigator/analogs?profile_id=1", headers={"X-Forwarded-For": "8.8.8.8"})
+    assert r.status_code == 403
+
+
+@pytest.mark.parametrize("days", ["4", "61", "x", "30.5", "", "-10", "0x10"])
+def test_analogs_bad_days_400(client, monkeypatch, days):
+    monkeypatch.setattr(store, "migrate", lambda: None)
+    _down(monkeypatch)    # rejected before any store read
+    r = client.get(f"/api/navigator/analogs?profile_id=1&days={days}")
+    assert r.status_code == 400
+    assert r.get_json() == {"error": "days must be an integer from 5 to 60"}
+
+
+def test_analogs_store_down_503(client, monkeypatch):
+    _down(monkeypatch)
+    assert client.get("/api/navigator/analogs?profile_id=1").status_code == 503
+
+
+@pg
+def test_analogs_unknown_profile_404(client, db, analog_state):
+    assert client.get("/api/navigator/analogs?profile_id=999").status_code == 404
+
+
+@pg
+def test_analogs_busy_429_without_blocking(client, db, analog_state):
+    pid = _profile(client)
+    assert bp._analog_lock.acquire()
+    try:
+        t0 = time.time()
+        r = client.get(f"/api/navigator/analogs?profile_id={pid}")
+        assert time.time() - t0 < 5
+        assert r.status_code == 429 and r.get_json() == {"error": bp.ANALOGS_BUSY}
+    finally:
+        bp._analog_lock.release()
+    assert client.get(f"/api/navigator/analogs?profile_id={pid}").status_code == 200
+
+
+@pg
+def test_analogs_lock_released_after_error_and_error_not_cached(client, db, analog_state, monkeypatch, caplog):
+    pid = _profile(client)
+    def boom(*a, **k):
+        raise ValueError("secret 12.3456")
+    monkeypatch.setattr(A, "build", boom)
+    with caplog.at_level(logging.ERROR):
+        r = client.get(f"/api/navigator/analogs?profile_id={pid}")
+    assert r.status_code == 500 and "12.3456" not in caplog.text and "ValueError" in caplog.text
+    assert not bp._analog_lock.locked() and len(bp._analog_cache) == 0
+
+
+@pg
+def test_analogs_cache_hits_and_key_parts(client, db, analog_state, monkeypatch):
+    pid = _profile(client)
+    calls = analog_state["calls"]
+    url = f"/api/navigator/analogs?profile_id={pid}&days=10"
+    a = client.get(url).get_json()
+    b = client.get(url).get_json()
+    assert len(calls) == 1 and a["cached"] is False and b["cached"] is True
+    assert any("seconds" in n for n in b["notes"])
+    client.get(f"/api/navigator/analogs?profile_id={pid}&days=11")
+    assert len(calls) == 2
+    analog_state["market"].dates.append("2026-11-09")       # data date
+    client.get(url)
+    assert len(calls) == 3
+    monkeypatch.setattr(bp.G, "ANALOG_VERSION", "nav-analog-2")
+    client.get(url)
+    assert len(calls) == 4
+    monkeypatch.setattr(bp, "_version", lambda: "other-engine")
+    client.get(url)
+    assert len(calls) == 5
+    monkeypatch.setattr(bp, "chart_hash", lambda p: "other-chart")
+    client.get(url)
+    assert len(calls) == 6
+    pid2 = _profile(client, label="Two")
+    client.get(f"/api/navigator/analogs?profile_id={pid2}&days=10")
+    assert len(calls) == 7
+
+
+@pg
+def test_analogs_cache_holds_at_most_8(client, db, analog_state):
+    pid = _profile(client)
+    for d in range(5, 15):
+        client.get(f"/api/navigator/analogs?profile_id={pid}&days={d}")
+    assert len(bp._analog_cache) == 8
+
+
+def _walk(obj):
+    if isinstance(obj, dict):
+        for k, v in obj.items():
+            yield ("key", k)
+            yield from _walk(v)
+    elif isinstance(obj, list):
+        for v in obj:
+            yield from _walk(v)
+    else:
+        yield ("value", obj)
+
+
+@pg
+def test_analogs_real_run_redacted(client, db, synthetic, monkeypatch):
+    market, sky, fp = synthetic
+    monkeypatch.setattr(bp, "_analog_cache", bp.OrderedDict())
+    monkeypatch.setattr(A, "load_market", lambda: market)
+    real = A.build
+    monkeypatch.setattr(A, "build", lambda p, m, days=30: real(p, m, days, sky_history=sky, fingerprint_fn=fp))
+    pid = _profile(client)
+    r = client.get(f"/api/navigator/analogs?profile_id={pid}&days=5")
+    assert r.status_code == 200
+    body = r.get_json()
+    assert body["targets"] and body["version"] == "nav-analog-1"
+    banned = {"chart_hash", "birth_date", "birth_time", "tz", "lat", "lon", "natal", "longitude",
+              "longitudes", "natal_points"}
+    items = list(_walk(body))
+    keys = {v for kind, v in items if kind == "key"}
+    assert not keys & (banned - {"natal"})
+    for kind, v in items:
+        if kind == "value" and isinstance(v, (int, float, str)) and not isinstance(v, bool):
+            assert str(v) not in BIRTH_VALUES and v not in (12.3456, 76.5432)
+    assert any("seconds" in n for n in body["notes"])
+    assert any("2026-10-29" in n and "VIX starts 2008-03" in n for n in body["notes"])

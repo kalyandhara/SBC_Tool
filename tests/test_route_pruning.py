@@ -29,6 +29,8 @@ API_ONLY = {
     # and the refreshes degrade per-source.
     "/api/economic/indicators", "/api/economic/refresh",
     "/api/sentiment/daily", "/api/sentiment/refresh",
+    # Navigator Phase 4: the similar-dates panel (Task 4) removes this entry.
+    "/api/navigator/analogs",
 }
 
 

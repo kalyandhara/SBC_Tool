@@ -12,6 +12,8 @@ import logging
 import os
 import re
 import threading
+import time
+from collections import OrderedDict
 from dataclasses import asdict
 from functools import lru_cache
 from zoneinfo import ZoneInfo
@@ -24,7 +26,9 @@ from werkzeug.exceptions import HTTPException
 from sbc import market_store
 from sbc import nakshatra as N
 from sbc.engine_version import module_version
+from sbc.navigator import analogs as A
 from sbc.navigator import backtest as B
+from sbc.navigator import signature as G
 from sbc.navigator import scoring as S
 from sbc.navigator import store
 from sbc.navigator.ephemeris import build_sky
@@ -406,3 +410,50 @@ def backtest_latest():
     if run is None:
         raise _NotFound("No backtest for this profile")
     return _run_body(run)
+
+
+ANALOGS_BUSY = "Another similar-dates computation is running. Try again shortly."
+_BAD_DAYS = "days must be an integer from 5 to 60"
+_DAYS_RE = re.compile(r"[0-9]{1,2}")
+_ANALOG_CACHE_SIZE = 8
+_analog_lock = threading.Lock()          # single flight: one computation per process
+_analog_cache: OrderedDict = OrderedDict()
+
+
+def _arg_days() -> int:
+    raw = request.args.get("days", "30")
+    if not _DAYS_RE.fullmatch(raw) or not 5 <= int(raw) <= 60:
+        raise _BadRequest(_BAD_DAYS)
+    return int(raw)
+
+
+@navigator_bp.route("/analogs", methods=["GET"])
+def analogs():
+    days = _arg_days()
+    profile_id = _arg_id()
+    profile = _require_profile(profile_id)
+    if not _analog_lock.acquire(blocking=False):
+        return jsonify({"error": ANALOGS_BUSY}), 429
+    try:
+        try:
+            market = A.load_market()
+        except market_store.MarketDataMissing:
+            raise _NoMarketData from None
+        # chart_hash keys the cache only; it never enters the response.
+        key = (profile_id, chart_hash(profile), market.dates[-1], G.ANALOG_VERSION, _version(), days)
+        result = _analog_cache.get(key)
+        cached = result is not None
+        if cached:
+            _analog_cache.move_to_end(key)
+        else:
+            t0 = time.perf_counter()
+            result = B.clean_json(A.build(profile, market, days))
+            result["notes"] = list(result.get("notes", [])) + [
+                f"Computed in {time.perf_counter() - t0:.1f} seconds."]
+            _analog_cache[key] = result      # only reached on success: errors are never cached
+            while len(_analog_cache) > _ANALOG_CACHE_SIZE:
+                _analog_cache.popitem(last=False)
+    finally:
+        _analog_lock.release()
+    return jsonify({**result, "profile_id": profile_id, "is_sample": profile.is_sample,
+                    "status": STATUS, "cached": cached})
