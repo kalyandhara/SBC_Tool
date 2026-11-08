@@ -120,6 +120,32 @@ def test_random_share_bounds_and_seed():
     assert A.random_share(-np.ones(500), 10, 5, 0.1) == 0.0
 
 
+def test_random_share_none_without_outcomes():
+    assert A.random_draws(np.ones(50), 0, 5, 0.0) == (None, 1000)
+    assert A.random_draws(np.full(50, np.nan), 5, 5, 0.0)[0] is None
+    assert A.random_share(np.ones(50), 0, 5, 0.0) is None
+
+
+def test_era_window_exact_and_widened():
+    # span 2025-01-01..2025-01-31 = 30 days; widened to 730 days: 700 extra, 350 each side
+    assert A.era_window(["2025-01-31", "2025-01-01", "2025-01-15"]) == ("2024-01-17", "2026-01-16")
+    # already wider than 2 years: unchanged
+    assert A.era_window(["2020-01-01", "2024-01-01"]) == ("2020-01-01", "2024-01-01")
+
+
+def test_era_pool_filters_by_date_inclusive():
+    dates = ["2020-01-01", "2020-06-01", "2021-01-01", "2022-01-01"]
+    assert A.era_pool(dates, np.array([0, 1, 2, 3]), ("2020-06-01", "2021-01-01")).tolist() == [1, 2]
+
+
+def test_select_returns_the_pool_mask_it_used():
+    dates = [(dt.date(2023, 1, 2) + dt.timedelta(days=i)).isoformat() for i in range(200)]
+    idx, note, pool = A._select(np.arange(200, dtype=float), dates, dates[199])
+    far = np.array([abs(dt.date.fromisoformat(dates[199]).toordinal() - dt.date.fromisoformat(d).toordinal()) > 30
+                    for d in dates])
+    assert pool.tolist() == np.where(A.eligible_mask(dates, dates[199]) & far)[0].tolist()
+
+
 def test_random_draws_respect_spacing_and_disclose_shortfall():
     share, short = A.random_draws(np.ones(20), 10, 5, 0.5, draws=10)
     assert short == 10 and share == 1.0   # 20 sessions cannot hold 10 spaced 5 apart
@@ -137,6 +163,19 @@ def test_summary_fields():
     assert s["baseline"] == {"n": 4, "win_ratio": 0.5, "mean_next5": pytest.approx(0.005)}
     assert s["random_share"] == 0.25 and s["median_age_years"] == 5.0
     assert s["label"] == "anecdotal: 3 analogs, not a tested signal"
+    assert s["era_random_share"] is None and s["era_baseline"] is None and s["era_window"] is None
+
+
+def test_summary_era_fields_and_note():
+    rows = [{"date": "2025-01-01", "age_years": 1.0, "outcomes": {"next5": 0.02, "drawdown": -0.01}}] * 2
+    era = {"random_share": 0.4, "baseline": {"n": 2, "win_ratio": 0.5, "mean_next5": 0.01},
+           "window": ("2024-01-01", "2026-01-01"), "note": None}
+    s = A.summarize(rows, np.array([0.01]), 0.1, 0, era)
+    assert s["era_random_share"] == 0.4
+    assert s["era_baseline"] == {"n": 2, "win_ratio": 0.5, "mean_next5": 0.01}
+    assert s["era_window"] == {"start": "2024-01-01", "end": "2026-01-01"}
+    assert s["era_note"] == ("Analogs are mostly from 2024-01-01 to 2026-01-01; compare with the era-matched "
+                             "figures, because the all-eras pool mixes market regimes.")
 
 
 @pytest.fixture(scope="module")
@@ -186,3 +225,7 @@ def test_build_deterministic_and_leak_free(synthetic):
             assert an["outcomes"]["next5"] == market.prices["open"][i + 5] / market.prices["open"][i] - 1
         assert t["summary"]["label"] == f"anecdotal: {len(t['analogs'])} analogs, not a tested signal"
         assert 0.0 <= t["summary"]["random_share"] <= 1.0
+        assert t["summary"]["era_window"]["start"] <= min(a["date"] for a in t["analogs"])
+        e = t["summary"]["era_baseline"]
+        assert e is None or e["n"] <= t["summary"]["baseline"]["n"]
+        assert t["summary"]["era_random_share"] is None or 0.0 <= t["summary"]["era_random_share"] <= 1.0

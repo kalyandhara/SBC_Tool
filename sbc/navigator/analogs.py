@@ -35,6 +35,7 @@ EXCLUDE_DAYS = 30
 HIGH_SCORE = 61
 FALLBACK_TARGETS = 5
 SEED, DRAWS = 1729, 1000
+ERA_MIN_DAYS = 730
 TOO_FEW = "too few analogs"
 NO_HIGH = "no high-scoring date in this window"
 # The 11 CNX sector indices with data, excluding CNXBANK (CNXMEDIA, CNXHEALTH and
@@ -54,6 +55,8 @@ NOTES = [
     "Missing values show as n/a and are never filled.",
     "Random share: the fraction of 1,000 random draws (seed 1729) of the same size and spacing from the "
     "eligible pool whose win ratio was at least as high. No significance claim.",
+    "Era-matched random share and baseline use the same procedure on pool sessions dated between the oldest "
+    "and newest analog (widened to at least 2 years); the all-eras figures mix market regimes.",
 ]
 
 
@@ -92,17 +95,37 @@ def select_analogs(sim, dates, target_date: str, k: int = TOP_N) -> tuple[list[i
     """Best-first, eligible, outside the exclusion window, thinned to SPACING sessions.
     Reuses sbc.analogs._thin; sbc.analogs.select is not used because its threshold
     mode and TOP_K of 30 do not match this spec."""
+    kept, note, _ = _select(sim, dates, target_date, k)
+    return kept, note
+
+
+def _select(sim, dates, target_date: str, k: int = TOP_N):
+    """select_analogs plus the eligible, outside-exclusion pool indices it computed."""
     t = _ord(target_date)
     far = np.array([abs(t - _ord(d)) > EXCLUDE_DAYS for d in dates])
     cand = np.where(eligible_mask(dates, target_date) & far)[0]
     if not len(cand):
-        return [], TOO_FEW
+        return [], TOO_FEW, cand
     scores = np.asarray(sim, float)[cand]
     order = np.argsort(-scores, kind="stable")
     kept = [int(cand[j]) for j in SA._thin(order, cand, SPACING, k)]
     if len(kept) < MIN_ANALOGS:
-        return [], TOO_FEW
-    return kept, None
+        return [], TOO_FEW, cand
+    return kept, None, cand
+
+
+def era_window(analog_dates) -> tuple[str, str]:
+    """Oldest..newest analog date, widened symmetrically to at least ERA_MIN_DAYS."""
+    lo, hi = min(_ord(d) for d in analog_dates), max(_ord(d) for d in analog_dates)
+    extra = ERA_MIN_DAYS - (hi - lo)
+    if extra > 0:
+        lo, hi = lo - extra // 2, hi + (extra - extra // 2)
+    return dt.date.fromordinal(lo).isoformat(), dt.date.fromordinal(hi).isoformat()
+
+
+def era_pool(dates, pool, window) -> np.ndarray:
+    pool = np.asarray(pool, int)
+    return np.array([i for i in pool if window[0] <= dates[i] <= window[1]], dtype=int)
 
 
 def _ret(o, c) -> float | None:
@@ -144,7 +167,7 @@ def random_draws(pool_next5, n, spacing, observed_win, seed=SEED, draws=DRAWS, p
     ok = np.isfinite(vals)
     vals, pos = vals[ok], pos[ok]
     if not len(vals) or n <= 0:
-        return 1.0, draws
+        return None, draws
     rng = np.random.default_rng(seed)
     hits = short = 0
     for _ in range(draws):
@@ -155,11 +178,11 @@ def random_draws(pool_next5, n, spacing, observed_win, seed=SEED, draws=DRAWS, p
     return hits / draws, short
 
 
-def random_share(pool_next5, n, spacing, observed_win, seed=SEED, draws=DRAWS, positions=None) -> float:
+def random_share(pool_next5, n, spacing, observed_win, seed=SEED, draws=DRAWS, positions=None):
     return random_draws(pool_next5, n, spacing, observed_win, seed, draws, positions)[0]
 
 
-def summarize(rows, pool_next5, share, short) -> dict:
+def summarize(rows, pool_next5, share, short, era=None) -> dict:
     nx = np.array([r["outcomes"]["next5"] for r in rows if r["outcomes"]["next5"] is not None], float)
     dd = np.array([r["outcomes"]["drawdown"] for r in rows if r["outcomes"]["drawdown"] is not None], float)
     pool = np.asarray(pool_next5, float)
@@ -176,6 +199,12 @@ def summarize(rows, pool_next5, share, short) -> dict:
         "random_share": share, "random_short_draws": int(short),
         "median_age_years": float(np.median([r["age_years"] for r in rows])) if rows else None,
         "label": f"anecdotal: {len(rows)} analogs, not a tested signal",
+        "era_random_share": era["random_share"] if era else None,
+        "era_baseline": era["baseline"] if era else None,
+        "era_window": {"start": era["window"][0], "end": era["window"][1]} if era else None,
+        "era_note": ((era["note"] or "") + (" " if era["note"] else "") + (
+            f"Analogs are mostly from {era['window'][0]} to {era['window'][1]}; compare with the "
+            "era-matched figures, because the all-eras pool mixes market regimes.")) if era else None,
     }
 
 
@@ -257,21 +286,34 @@ def build(profile: Profile, market: Market, days: int = 30, sky_history=None,
         sky_sim = SA.similarity(target, sky_history)["overall"]
         nat_sim = G.natal_similarity(n + k, contacts, antar, prat, pool_idx)
         blended = G.blend(nat_sim, sky_sim)
-        idx, note = select_analogs(blended, dates, tdate)
+        idx, note, pool = _select(blended, dates, tdate)
         t_ord = _ord(tdate)
         rows = [{"date": dates[i],
                  "age_years": round((t_ord - _ord(dates[i])) / 365.25, 1),
                  "similarity": round(float(blended[i]), 4),
                  "natal": round(float(nat_sim[i]), 4), "sky": round(float(sky_sim[i]), 4),
                  "outcomes": outcomes(i, market.prices)} for i in idx]
-        far = np.array([abs(t_ord - _ord(d)) > EXCLUDE_DAYS for d in dates])
-        pool = np.where(eligible_mask(dates, tdate) & far)[0]
         summary = None
         if rows:
             vals = [r["outcomes"]["next5"] for r in rows if r["outcomes"]["next5"] is not None]
             win = float(np.mean([v > 0 for v in vals])) if vals else 0.0
             share, short = random_draws(next5[pool], len(vals), SPACING, win, positions=pool)
-            summary = summarize(rows, next5[pool], share, short)
+            win_era = era_window([r["date"] for r in rows])
+            ep = era_pool(dates, pool, win_era)
+            e_share, e_short = random_draws(next5[ep], len(vals), SPACING, win, positions=ep)
+            e_note = None
+            if e_share is not None and e_short:
+                e_share = None
+                e_note = (f"Era-matched random share unavailable: the era pool could not hold "
+                          f"{len(vals)} spaced draws in {e_short} of {DRAWS} draws.")
+            elif e_share is None:
+                e_note = "Era-matched random share unavailable: no era outcomes to draw from."
+            e_vals = next5[ep][np.isfinite(next5[ep])]
+            era = {"random_share": e_share, "window": win_era, "note": e_note,
+                   "baseline": {"n": int(len(e_vals)),
+                                "win_ratio": float((e_vals > 0).mean()) if len(e_vals) else None,
+                                "mean_next5": float(e_vals.mean()) if len(e_vals) else None}}
+            summary = summarize(rows, next5[pool], share, short, era)
             if short:
                 note = f"spacing could not be met in {short} of {DRAWS} random draws"
         score = scores[k]
