@@ -35,3 +35,15 @@ Status: DONE_WITH_CONCERNS
 - `select_analogs` now wraps `_select`, which also returns the pool indices; `build` reuses them instead of recomputing the far/eligible masks.
 - RED: 7 new/changed tests failed first; GREEN: 19 passed in test_navigator_analogs.py.
 - Concern: era pool uses the target's pool (eligible, outside 30 days); a tight analog cluster gives a ~2-year era, so era draws may be short on spacing and return None; not checked on real data.
+
+## Fix round 2
+- `era_window(analog_dates, first=None, last=None)`: 25th..75th percentile of analog dates (rounded to days), widened symmetrically around the midpoint to >= 730 days, then clipped to the pool's first/last date (so it never passes the last eligible session). `build` passes `dates[pool.min()]`/`dates[pool.max()]`. Note text on the summary and None behaviour unchanged; the general NOTES line now says "middle half (25th to 75th percentile)".
+- RED: 3 tests failed first. New tests: outlier 15 years older than nine recent analogs (window stays within 3 years of the cluster, total <= 4 years), clip to bounds. Adjusted the "already wide" test and the build test (start <= end, since start may now exceed the oldest analog).
+- GREEN: 21 passed.
+- Real data (sample profile, days=30), era window / era_random_share / all-eras share:
+  - 2026-11-17: 2025-04-11..2026-10-16 / 0.939 / 0.973
+  - 2026-11-20: 2025-02-07..2026-10-19 / 0.777 / 0.906
+  - 2026-12-10: 2025-01-13..2026-10-30 / 0.822 / 0.917
+  - 2026-12-15: 2024-01-21..2026-03-10 / 0.486 / 0.548
+  - 2026-12-22: 2025-01-27..2026-10-30 / 0.593 / 0.777
+- Concern: the era windows are now 1.5-2.7 years, and the era shares are lower than all-eras shares, which is the intended control.

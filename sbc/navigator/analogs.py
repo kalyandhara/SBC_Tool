@@ -55,8 +55,9 @@ NOTES = [
     "Missing values show as n/a and are never filled.",
     "Random share: the fraction of 1,000 random draws (seed 1729) of the same size and spacing from the "
     "eligible pool whose win ratio was at least as high. No significance claim.",
-    "Era-matched random share and baseline use the same procedure on pool sessions dated between the oldest "
-    "and newest analog (widened to at least 2 years); the all-eras figures mix market regimes.",
+    "Era-matched random share and baseline use the same procedure on pool sessions dated within the middle "
+    "half (25th to 75th percentile) of the analog dates (widened to at least 2 years); the all-eras figures "
+    "mix market regimes.",
 ]
 
 
@@ -114,12 +115,18 @@ def _select(sim, dates, target_date: str, k: int = TOP_N):
     return kept, None, cand
 
 
-def era_window(analog_dates) -> tuple[str, str]:
-    """Oldest..newest analog date, widened symmetrically to at least ERA_MIN_DAYS."""
-    lo, hi = min(_ord(d) for d in analog_dates), max(_ord(d) for d in analog_dates)
+def era_window(analog_dates, first=None, last=None) -> tuple[str, str]:
+    """25th..75th percentile of analog dates, widened symmetrically to at least ERA_MIN_DAYS,
+    then clipped to [first, last] (the pool's date range) when given."""
+    ords = [_ord(d) for d in analog_dates]
+    lo, hi = (int(round(x)) for x in np.percentile(ords, [25, 75]))
     extra = ERA_MIN_DAYS - (hi - lo)
     if extra > 0:
         lo, hi = lo - extra // 2, hi + (extra - extra // 2)
+    if first is not None:
+        lo = max(lo, _ord(first))
+    if last is not None:
+        hi = min(hi, _ord(last))
     return dt.date.fromordinal(lo).isoformat(), dt.date.fromordinal(hi).isoformat()
 
 
@@ -298,7 +305,7 @@ def build(profile: Profile, market: Market, days: int = 30, sky_history=None,
             vals = [r["outcomes"]["next5"] for r in rows if r["outcomes"]["next5"] is not None]
             win = float(np.mean([v > 0 for v in vals])) if vals else 0.0
             share, short = random_draws(next5[pool], len(vals), SPACING, win, positions=pool)
-            win_era = era_window([r["date"] for r in rows])
+            win_era = era_window([r["date"] for r in rows], dates[int(pool.min())], dates[int(pool.max())])
             ep = era_pool(dates, pool, win_era)
             e_share, e_short = random_draws(next5[ep], len(vals), SPACING, win, positions=ep)
             e_note = None

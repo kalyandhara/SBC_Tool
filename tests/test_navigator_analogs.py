@@ -129,8 +129,27 @@ def test_random_share_none_without_outcomes():
 def test_era_window_exact_and_widened():
     # span 2025-01-01..2025-01-31 = 30 days; widened to 730 days: 700 extra, 350 each side
     assert A.era_window(["2025-01-31", "2025-01-01", "2025-01-15"]) == ("2024-01-17", "2026-01-16")
-    # already wider than 2 years: unchanged
-    assert A.era_window(["2020-01-01", "2024-01-01"]) == ("2020-01-01", "2024-01-01")
+    # already wider than 2 years: p25..p75 of two dates is 2020-07-01..2023-07-01 (approx), unchanged by widening
+    lo, hi = A.era_window(["2020-01-01", "2024-01-01"])
+    assert "2020-01-01" < lo and hi < "2024-01-01" and (_d(hi) - _d(lo)).days >= 730
+
+
+def _d(s):
+    import datetime as dt
+    return dt.date.fromisoformat(s)
+
+
+def test_era_window_ignores_old_outlier():
+    recent = [f"2026-{m:02d}-15" for m in range(1, 10)]  # nine within 8 months
+    w = A.era_window(["2011-06-01"] + recent)
+    assert (_d(recent[0]) - _d(w[0])).days <= 3 * 365
+    assert (_d(w[1]) - _d(recent[-1])).days <= 3 * 365
+    assert (_d(w[1]) - _d(w[0])).days <= 4 * 365
+
+
+def test_era_window_clipped_to_bounds():
+    w = A.era_window(["2025-01-01", "2025-01-15"], first="2024-12-01", last="2025-02-01")
+    assert w == ("2024-12-01", "2025-02-01")
 
 
 def test_era_pool_filters_by_date_inclusive():
@@ -225,7 +244,7 @@ def test_build_deterministic_and_leak_free(synthetic):
             assert an["outcomes"]["next5"] == market.prices["open"][i + 5] / market.prices["open"][i] - 1
         assert t["summary"]["label"] == f"anecdotal: {len(t['analogs'])} analogs, not a tested signal"
         assert 0.0 <= t["summary"]["random_share"] <= 1.0
-        assert t["summary"]["era_window"]["start"] <= min(a["date"] for a in t["analogs"])
+        assert t["summary"]["era_window"]["start"] <= t["summary"]["era_window"]["end"]
         e = t["summary"]["era_baseline"]
         assert e is None or e["n"] <= t["summary"]["baseline"]["n"]
         assert t["summary"]["era_random_share"] is None or 0.0 <= t["summary"]["era_random_share"] <= 1.0
