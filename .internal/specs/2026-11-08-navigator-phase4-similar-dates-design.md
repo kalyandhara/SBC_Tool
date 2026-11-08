@@ -18,9 +18,9 @@ For each upcoming high-scoring date of a profile, show at least 5 past dates wit
 All parts are on a 0 to 1 scale.
 
 **Natal similarity:**
-- **Contacts, weight 0.5:** weighted Jaccard of the two days' active transit contacts to the profile's natal points. A contact is a key (planet, natal point, aspect) using the Phase 1 aspect set, orb and bodies. Its weight is the Phase 1 orb factor: 1 at exact, 0 at the orb edge. Weighted Jaccard is the sum of minimums over the sum of maximums. If both days have no contacts, the value is 1.
-- **Dasha, weight 0.3:** 0.5 if the Mahadasha lords match, 0.3 if the Antardasha lords match, 0.2 if the Pratyantar lords match. These add.
-- **Moon, weight 0.2:** the mean of four checks: same Moon sign, same Moon nakshatra, same tithi group (Nanda, Bhadra, Jaya, Rikta or Purna, from `sbc.nakshatra`), and same paksha.
+- **Contacts, weight 0.8:** weighted Jaccard of the two days' active transit contacts to the profile's natal points. A contact is a key (planet, natal point, aspect) using the Phase 1 aspect set, orb and bodies. Its weight is the Phase 1 orb factor: 1 at exact, 0 at the orb edge. Weighted Jaccard is the sum of minimums over the sum of maximums. If both days have no contacts, the value is 1.
+- **Dasha, weight 0.2:** 0.6 if the Antardasha lords match, plus 0.4 if the Pratyantar lords match. The Mahadasha is left out, because it lasts years and would make analogs cluster by era.
+- **Moon:** no separate Moon component. The sky part already carries the Moon, so a natal Moon term would count it twice.
 
 **Sky similarity:** `sbc.analogs.similarity(...)["overall"]`, unchanged. Fingerprints for future dates come from `sbc.fingerprint`; historical ones come from the existing history.
 
@@ -30,10 +30,11 @@ Every weight lives in one module with `ANALOG_VERSION = "nav-analog-1"`, pinned 
 
 ## Eligible past dates
 
-- **Pool:** Nifty sessions. A session qualifies only if its full outcome window had closed by the last close before the target. That is the 5-session window, and the day's own open-to-close for the day returns. Reuse the rule in `sbc.analogs.History.usable_before`, adapted so the definitions match exactly.
+- **Pool:** Nifty sessions. A session qualifies only if its full outcome window had closed by the last close before the target. Concretely, its open 5 sessions later must be on or before the last session before the target. Reuse the rule in `sbc.analogs.History.usable_before`, adapted so the definitions match exactly.
 - **Exclusions:** sessions within 30 calendar days of the target are excluded.
 - **Spacing:** analogs are thinned to at least 5 sessions apart, keeping the most similar, as `sbc.analogs` does.
 - **Count:** the top 10 by blended similarity. If fewer than 5 remain, the target says "too few analogs" and shows none.
+- **Era check:** each target reports the median age in years of its analogs, so clustering by era is visible.
 
 ## Per-analog outcomes
 
@@ -45,8 +46,8 @@ These use the analog's own date. All returns are raw: no costs, because nothing 
 | Bank Nifty day return | CNXBANK open-to-close on the analog date |
 | VIX change | India VIX close on the analog date against the previous session's close, in percent |
 | Top 5 sectors | The 11 CNX sector indices (excluding CNXBANK) ranked by open-to-close return that day. Sectors with no bar that day are listed as missing, and the top 5 is taken from those present. |
-| Next-5 return | Nifty open of the analog date to the close 4 sessions later (5 sessions inclusive) |
-| Max drawdown (next 5) | Worst peak-to-trough fall of Nifty closes within that 5-session window, measured from the analog date's open |
+| Next-5 return | Nifty open of the analog date to the Nifty open 5 sessions later. This matches Phase 1's `oo_5` and is labelled "open to open, 5 sessions, as in the backtest". |
+| Max drawdown (next 5) | Worst fall within the same window: from the analog-day open through each session's low or close in the window, up to the exit open |
 
 Missing data is shown as "n/a" and is never filled.
 
@@ -54,6 +55,7 @@ Missing data is shown as "n/a" and is never filled.
 
 - **Analog figures:** number of analogs; win ratio (share with a positive next-5 return); average and median next-5 return; average max drawdown.
 - **Baseline:** the same win ratio and average for the whole eligible pool, shown next to them.
+- **Random comparison:** beside the win ratio, show the share of 1,000 random draws from the eligible pool, of the same size and spacing on a fixed seed, whose win ratio was at least as high. It is plain text and makes no significance claim.
 - **Label:** always "anecdotal: N analogs, not a tested signal". No p-values and no verdict.
 
 ## API
@@ -65,6 +67,7 @@ Missing data is shown as "n/a" and is never filled.
     - `targets`: a list of {`date`, `score`, `band`, `analogs` (list), `summary`, `note`}.
     - `notes`: the disclosures listed above.
 - **Redaction:** no `chart_hash` and no birth data.
+- **Cost control:** one analog computation at a time per process, using a non-blocking lock. A second request gets 429 with a fixed message. Results are cached in memory by (profile, data date, ANALOG_VERSION, engine version, days), keeping the last 8. The response never includes natal longitudes.
 - **Performance:** results are not stored in Postgres in this phase; they are computed on demand. Target under 30 seconds for 30 days with up to 30 targets on this machine. History arrays are cached in memory per data date and version. If the target cannot be met, report the measured time in the response notes rather than cutting content.
 
 ## Page
@@ -93,3 +96,19 @@ Missing data is shown as "n/a" and is never filled.
 ## Out of scope (follow-up bead)
 
 A walk-forward test of whether the analog average ever predicted outcomes. Until it exists, the anecdotal label stays.
+
+## Stress Test Results: Phase 4
+
+### Resolved Decisions
+- **Dasha:** weight cut to 0.2, using Antardasha and Pratyantar only (0.6/0.4), with no Mahadasha. Each target reports the analogs' median age.
+- **Moon:** no natal Moon component (it was double counted). Natal = 0.8 contacts + 0.2 dasha.
+- **Random comparison:** each win ratio shows a random-draw comparison from the pool.
+- **Next-5 return:** open to open, as in Phase 1's `oo_5`. Drawdown and eligibility use the same window.
+- **Cost and privacy:** single-flight lock with 429, a cache of the last 8 results, timing in the notes, and no natal longitudes in responses.
+
+### Changes Made
+All five are applied above.
+
+### Confidence Assessment
+- Overall: Medium-High.
+- Concern: analogs stay anecdotal until a walk-forward test of them exists.
