@@ -5,6 +5,9 @@
 
 const NAV_POLL_MS = 3000;
 const NAV_TIMEOUT_MS = 20000;
+// A cold similar-dates run takes several seconds; the server's own lock answers 429 if busy.
+const NAV_ANALOG_TIMEOUT_MS = 120000;
+const NAV_NEXT5 = "open to open, 5 sessions, as in the backtest";
 // Mirrors sbc.navigator.scoring.ACTIONS, highest band first; a test pins the two together.
 const NAV_BANDS = [
   ["Exceptional Setup", "Trade Aggressively"],
@@ -20,6 +23,7 @@ const NAV_ACTIVE = ["queued", "running"];
 const NAV = {
   open: false, booted: false, profiles: [], profileId: null,
   loadSeq: 0, pollSeq: 0, timer: null, ctl: null, runId: null,
+  analogSeq: 0, analogCtl: null, analogFor: null,
 };
 
 function navId(id) { return document.getElementById(id); }
@@ -53,12 +57,12 @@ function navToken() {
 }
 
 // api-token.js covers writes only, and the navigator guard covers reads too.
-async function navFetch(url, init = {}, ctl = new AbortController()) {
+async function navFetch(url, init = {}, ctl = new AbortController(), timeoutMs = NAV_TIMEOUT_MS) {
   const headers = new Headers(init.headers || {});
   const token = navToken();
   if (token) headers.set("X-API-Token", token);
   let timedOut = false;
-  const limit = setTimeout(() => { timedOut = true; ctl.abort(); }, NAV_TIMEOUT_MS);
+  const limit = setTimeout(() => { timedOut = true; ctl.abort(); }, timeoutMs);
   try {
     const res = await fetch(url, { ...init, headers, signal: ctl.signal });
     const body = await res.json().catch(() => null);
@@ -277,6 +281,121 @@ function navRenderRun(run) {
     navEl("ul", { class: "nav-list" }, (results.notes || []).map((n) => navEl("li", { text: n }))));
 }
 
+// ---- Similar past dates ----------------------------------------------------------------
+
+function navShare(x) { return typeof x === "number" ? `${(x * 100).toFixed(1)}%` : null; }
+
+function navRandomSentence(prefix, n, share, note) {
+  const pct = navShare(share);
+  if (pct === null) return `${prefix}: n/a.${note ? ` ${note}` : ""}`;
+  return `${prefix}: random sets of ${n} did at least this well ${pct} of the time.`;
+}
+
+function navBaselineText(title, b) {
+  if (!b) return `${title}: n/a.`;
+  return `${title}: ${navShown(b.n)} sessions, win ratio ${navPct(b.win_ratio, 1)}, average next-5 ${navPct(b.mean_next5)}.`;
+}
+
+function navSectors(o) {
+  const top = (o.sectors_top5 || []).map((x) => `${x.symbol} ${navPct(x.return)}`).join(", ");
+  return top || "n/a";
+}
+
+function navAnalogTable(rows) {
+  return navTable(`Analogs. Next-5 is ${NAV_NEXT5}.`,
+    ["Date", "Age (years)", "Similarity", "Natal", "Sky", "Nifty day", "Bank Nifty day",
+      "India VIX change", "Top 5 sectors", "Sectors missing", `Next-5 (${NAV_NEXT5})`, "Max drawdown"],
+    rows.map((r) => {
+      const o = r.outcomes || {};
+      return [r.date, navNum(r.age_years, 1), navNum(r.similarity, 4), navNum(r.natal, 4), navNum(r.sky, 4),
+        navPct(o.nifty_day), navPct(o.bank_day),
+        typeof o.vix_change_pct === "number" ? `${o.vix_change_pct.toFixed(2)}%` : "n/a",
+        navSectors(o), (o.sectors_missing || []).join(", ") || "none",
+        navPct(o.next5), navPct(o.drawdown)];
+    }));
+}
+
+function navSummaryLines(s) {
+  const era = s.era_window || {};
+  return [
+    `${s.label}.`,
+    `Analogs: ${navShown(s.n)}, ${navShown(s.n_with_outcome)} with a next-5 outcome.`,
+    `Win ratio: ${navPct(s.win_ratio, 1)}. Average next-5: ${navPct(s.mean_next5)}. Median next-5: ${navPct(s.median_next5)}. Average drawdown: ${navPct(s.mean_drawdown)}.`,
+    navBaselineText("All-eras baseline", s.baseline),
+    navRandomSentence("All eras", s.n_with_outcome, s.random_share, null),
+    `Era window: ${navShown(era.start)} to ${navShown(era.end)}.`,
+    navBaselineText("Era-matched baseline", s.era_baseline),
+    navRandomSentence("Era-matched", s.n_with_outcome, s.era_random_share, null),
+    s.era_note ? `Era note: ${s.era_note}` : "Era note: n/a.",
+    `Median analog age: ${typeof s.median_age_years === "number" ? `${s.median_age_years.toFixed(1)} years` : "n/a"}.`,
+  ];
+}
+
+function navAnalogTarget(t) {
+  const rows = t.analogs || [];
+  const s = t.summary;
+  const head = `${t.date}: score ${navShown(t.score)}, ${navShown(t.band)}, ${rows.length} analogs`;
+  const box = navEl("details", { class: "nav-analog-target" }, [navEl("summary", { text: head })]);
+  if (s) {
+    box.appendChild(navEl("ul", { class: "nav-analog-summary" }, navSummaryLines(s).map((line) => navEl("li", { text: line }))));
+  } else {
+    box.appendChild(navNote("Too few analogs: no summary for this date."));
+  }
+  if (t.note) box.appendChild(navNote(`Note: ${t.note}`));
+  if (rows.length) box.appendChild(navAnalogTable(rows));
+  return box;
+}
+
+function navRenderAnalogs(data) {
+  const out = navId("nav-analogs-out");
+  navClear(out);
+  const w = data.window || {};
+  if (data.is_sample) out.appendChild(navEl("p", { class: "nav-banner", text: "Sample chart: pipeline check only." }));
+  out.appendChild(navNote(`${data.status}. Next ${navShown(w.sessions)} sessions, ${navShown(w.start)} to ${navShown(w.end)}. Market data through ${navShown(data.data_asof)}. Similarity ${navShown(data.version)}.`));
+  out.appendChild(navEl("p", { class: "nav-band", text: data.mode === "high_scoring"
+    ? "High-scoring dates in this window"
+    : "no high-scoring date in this window: showing the top-scoring dates instead" }));
+  const targets = data.targets || [];
+  if (!targets.length) out.appendChild(navNote("No target dates in this window."));
+  for (const t of targets) out.appendChild(navAnalogTarget(t));
+  out.append(navSubheading("Data caveats and notes"),
+    navEl("ul", { class: "nav-list" }, (data.notes || []).map((n) => navEl("li", { text: n }))));
+}
+
+function navStopAnalogs() {
+  NAV.analogSeq += 1;
+  if (NAV.analogCtl) NAV.analogCtl.abort();
+  NAV.analogCtl = null;
+}
+
+// Fired without await, so the score never waits on it. A new call aborts the old request,
+// so one is in flight at a time, and the sequence check drops a stale render.
+async function navLoadAnalogs(id) {
+  navStopAnalogs();
+  const seq = NAV.analogSeq;
+  const ctl = new AbortController();
+  NAV.analogCtl = ctl;
+  NAV.analogFor = null;
+  navClear(navId("nav-analogs-out"));
+  navMessage("nav-analogs-status", "Loading similar past dates. A first run takes several seconds.");
+  try {
+    const data = await navFetch(`/api/navigator/analogs?profile_id=${id}&days=30`, {}, ctl, NAV_ANALOG_TIMEOUT_MS);
+    if (seq !== NAV.analogSeq) return;
+    NAV.analogCtl = null;
+    navMessage("nav-analogs-status", "");
+    try {
+      navRenderAnalogs(data);
+      NAV.analogFor = id;
+    } catch (err) {
+      navMessage("nav-analogs-status", "Similar past dates loaded, but could not be displayed.", true);
+    }
+  } catch (err) {
+    if (seq !== NAV.analogSeq) return;
+    NAV.analogCtl = null;
+    navMessage("nav-analogs-status", err.message, true);
+  }
+}
+
 function navStopPolling() {
   NAV.pollSeq += 1;
   clearTimeout(NAV.timer);
@@ -362,6 +481,9 @@ async function navLoadProfile() {
   navMessage("nav-backtest-status", "");
   navId("nav-chart").textContent = "Loading chart.";
   navId("nav-score").textContent = "Loading score.";
+  navStopAnalogs();
+  NAV.analogFor = null;
+  if (NAV.open) navLoadAnalogs(id);
   const load = async (url, render, target, title) => {
     try {
       const data = await navFetch(url);
@@ -466,8 +588,17 @@ function navSync() {
   const open = navId("tab-navigator").classList.contains("active");
   if (open === NAV.open) return;
   NAV.open = open;
-  if (!open) { navStopPolling(); return; }
+  if (!open) {
+    navStopPolling();
+    if (NAV.analogCtl) {  // left mid-load: cancel, and reload on the next visit
+      navStopAnalogs();
+      NAV.analogFor = null;
+      navMessage("nav-analogs-status", "");
+    }
+    return;
+  }
   if (!NAV.booted) { NAV.booted = true; navBoot(); return; }
+  if (NAV.profileId !== null && NAV.analogFor !== NAV.profileId && !NAV.analogCtl) navLoadAnalogs(NAV.profileId);
   if (NAV.runId !== null) navPoll();
 }
 

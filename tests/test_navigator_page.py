@@ -171,3 +171,67 @@ def test_occupancy_label_names_the_first_horizon(code):
     occ = code[code.index("function navOccupancy"):]
     occ = occ[:occ.index("\n}\n")]
     assert "band.occupancy" in occ and "first horizon" in occ and "strongest horizon" not in occ
+
+
+# --- Phase 4: similar past dates -------------------------------------------------------
+
+def test_similar_dates_section_sits_between_score_and_backtest(html):
+    pane = html[html.index('id="tab-navigator"', html.index('class="tab-pane')):]
+    for node in ("nav-analogs", "nav-analogs-status", "nav-analogs-out"):
+        assert f'id="{node}"' in pane, node
+    assert pane.index('id="nav-score"') < pane.index('id="nav-analogs"') < pane.index('id="nav-backtest"')
+    section = pane[pane.index('id="nav-analogs"'):pane.index('id="nav-backtest"')]
+    assert "Similar past dates" in section
+    assert re.search(r'id="nav-analogs-status"[^>]*role="status"', section)
+
+
+def test_similar_dates_caveats_are_static_markup(html):
+    section = html[html.index('id="nav-analogs"'):html.index('id="nav-backtest"')]
+    assert "not a tested signal" in section
+    assert "open to open, 5 sessions, as in the backtest" in section
+    assert "n/a" in section
+
+
+def test_similar_dates_calls_the_api_with_profile_and_days(code):
+    assert "/api/navigator/analogs?profile_id=${" in code
+    assert "&days=30" in code
+
+
+def test_similar_dates_labels(code):
+    for label in ("open to open, 5 sessions, as in the backtest", "random sets of ",
+                  "did at least this well", "of the time", "Era window", "Era-matched baseline",
+                  "All-eras baseline", "Median analog age", "Average drawdown", "Median next-5",
+                  "Average next-5", "Win ratio", "Loading similar past dates",
+                  "no high-scoring date in this window", "High-scoring dates"):
+        assert label in code, label
+    for field in ("nifty_day", "bank_day", "vix_change_pct", "sectors_top5", "sectors_missing",
+                  "next5", "drawdown", "age_years", "similarity", "natal", "sky",
+                  "era_note", "era_window", "era_random_share", "era_baseline", "median_age_years",
+                  "random_share", "label"):
+        assert f".{field}" in code, field
+
+
+def test_similar_dates_cancel_stale_renders_and_one_request(code):
+    assert "analogSeq" in code
+    body = code[code.index("async function navLoadAnalogs"):]
+    body = body[:body.index("\n}\n")]
+    assert body.count("seq !== NAV.analogSeq") >= 2 and "NAV.analogCtl = ctl" in body
+    stop = code[code.index("function navStopAnalogs"):]
+    assert ".abort()" in stop[:stop.index("\n}\n")]
+    load = code[code.index("async function navLoadProfile"):]
+    assert "navStopAnalogs" in load[:load.index("\n}\n")]
+
+
+def test_similar_dates_is_lazy_and_does_not_block_the_score(code):
+    load = code[code.index("async function navLoadProfile"):]
+    load = load[:load.index("\n}\n")]
+    # Fired without await, outside the Promise.all that renders the score.
+    assert "navLoadAnalogs(" in load
+    assert "await navLoadAnalogs" not in load
+    assert "navLoadAnalogs" not in load[load.index("Promise.all"):]
+    sync = code[code.index("function navSync"):]
+    assert "navStopAnalogs" in sync[:sync.index("\n}\n")]
+
+
+def test_navigator_script_version_bumped(html):
+    assert re.search(r'navigator\.js\?v=([3-9]|\d\d+)"', html)
