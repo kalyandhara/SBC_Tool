@@ -1,6 +1,7 @@
 import numpy as np
 import pytest
-from sbc.confluence_engine import detect_ma_cross, confluence_signal, net_trade_return
+
+from sbc.confluence_engine import confluence_signal, detect_ma_cross, net_trade_return
 
 
 def test_detect_ma_cross():

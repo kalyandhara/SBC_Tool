@@ -10,7 +10,6 @@ baseline for >=2 months.
 from __future__ import annotations
 
 import datetime as dt
-from typing import List, Dict
 
 ENABLED = False  # flip to True only after B-40 verdict shows edge
 
@@ -21,7 +20,7 @@ def _require_enabled():
             "Enable ENABLED=True only after third-party score beats baseline for >=2 months."
         )
 
-def fit_monthly_weights(month: str, source: str = "third_party_monthly") -> Dict:
+def fit_monthly_weights(month: str, source: str = "third_party_monthly") -> dict:
     """Fit linear weights to reproduce published monthly scores.
 
     Args:
@@ -32,9 +31,8 @@ def fit_monthly_weights(month: str, source: str = "third_party_monthly") -> Dict
         dict with fitted coefficients, R², and caveat.
     """
     _require_enabled()
-    from sbc.forecast_ledger import get_external
-    from sbc.market_store import get_daily
     from sbc import fingerprint_store
+    from sbc.forecast_ledger import get_external
 
     # Load published scores
     year, mon = map(int, month.split("-"))
@@ -79,11 +77,11 @@ def fit_monthly_weights(month: str, source: str = "third_party_monthly") -> Dict
         "gated": True,
     }
 
-def rebuild_monthly_score(month: str, source: str = "third_party_monthly") -> List[Dict]:
+def rebuild_monthly_score(month: str, source: str = "third_party_monthly") -> list[dict]:
     """Reproduce monthly score series using fitted weights.
 
     Returns list of {date, score_published, score_rebuilt}.
     """
-    res = fit_monthly_weights(month, source)
+    fit_monthly_weights(month, source)
     # placeholder: return empty
     return []

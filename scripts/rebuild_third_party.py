@@ -3,9 +3,11 @@
 
 import argparse
 import sys
+
 sys.path.insert(0, r'C:\Users\Owner\OneDrive\Documents\Trading\SBC_Tool')
 
-from sbc.third_party_rebuild import fit_monthly_weights, ENABLED
+from sbc.third_party_rebuild import ENABLED, fit_monthly_weights
+
 
 def main():
     p = argparse.ArgumentParser(description="B-47 rebuild third-party monthly score")
@@ -14,7 +16,7 @@ def main():
     args = p.parse_args()
 
     if not ENABLED:
-        print(f"B-47 is gated. ENABLED=False. Run B-40 scoring first.")
+        print("B-47 is gated. ENABLED=False. Run B-40 scoring first.")
         print("Set ENABLED=True in sbc/third_party_rebuild.py after verdict shows edge.")
         sys.exit(1)
 

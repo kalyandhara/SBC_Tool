@@ -280,11 +280,11 @@ def _detect_triggers(jupiter, saturn, sun, mercury, venus, rahu, ketu, moon, mar
         # Saturn-Pluto conjunction (systemic crisis)
         if _saturn_pluto_conjunction(saturn, pluto):
             triggers.append(("saturn_pluto_conjunction", _trigger_weight("saturn_pluto_conjunction")))
-        
+
         # Neptune in Aquarius (bubble risk)
         if _neptune_aquarius_ingress(neptune):
             triggers.append(("neptune_aquarius_ingress", _trigger_weight("neptune_aquarius_ingress")))
-        
+
         # Uranus-Mars aspect (volatility)
         if mars and _uranus_mars_aspect(uranus, mars):
             triggers.append(("uranus_mars_aspect", _trigger_weight("uranus_mars_aspect")))

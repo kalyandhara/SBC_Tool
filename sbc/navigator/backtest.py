@@ -9,12 +9,16 @@ must never be passed to hist_val.
 Pure: no store import, no I/O. Results are JSON-safe (NaN becomes None).
 """
 from __future__ import annotations
+
 import datetime as dt
 import math
 import time
-from typing import Callable, Mapping, NamedTuple, Optional
+from collections.abc import Callable, Mapping
+from typing import NamedTuple
+
 import numpy as np
 import pandas as pd
+
 from sbc import stats
 from sbc.navigator import scoring as S
 from sbc.navigator import weights as W
@@ -50,8 +54,8 @@ def label_for(is_sample: bool) -> str:
     return PIPELINE_LABEL if is_sample else RESEARCH_LABEL
 SESSION_STATS = ("days", "vol", "max_dd", "hit", "win", "sharpe")
 _EDGES = [hi for hi, _ in S.BANDS[:-1]]
-_PLACEBO_START = dt.datetime(1950, 1, 1, tzinfo=dt.timezone.utc)
-_PLACEBO_SPAN = (dt.datetime(2006, 1, 1, tzinfo=dt.timezone.utc) - _PLACEBO_START).total_seconds()
+_PLACEBO_START = dt.datetime(1950, 1, 1, tzinfo=dt.UTC)
+_PLACEBO_SPAN = (dt.datetime(2006, 1, 1, tzinfo=dt.UTC) - _PLACEBO_START).total_seconds()
 _clock = time.perf_counter
 
 
@@ -119,7 +123,7 @@ def verdict(b: Mapping, is_sample: bool) -> str:
     return EDGE if ok and not is_sample else NO_EDGE
 
 
-def percentile(real: float, placebos) -> Optional[float]:
+def percentile(real: float, placebos) -> float | None:
     """Share of placebos strictly below the real chart, 0-100. Placebos with no
     sessions in the band are dropped; None if too few remain."""
     placebos = np.asarray(placebos, float)
@@ -316,8 +320,8 @@ def _top_band(bands, min_events) -> int:
     return len(BAND_NAMES) - 1
 
 
-def run_inputs(inputs: Inputs, params: Optional[Mapping] = None,
-               on_progress: Optional[Callable[[int, int], None]] = None) -> dict:
+def run_inputs(inputs: Inputs, params: Mapping | None = None,
+               on_progress: Callable[[int, int], None] | None = None) -> dict:
     p = {**DEFAULT_PARAMS, **(params or {})}
     cost, horizons = p["cost_bps"], list(p["horizons"])
     is_sample = bool(inputs.profile.is_sample)
@@ -404,8 +408,8 @@ def run_inputs(inputs: Inputs, params: Optional[Mapping] = None,
     })
 
 
-def run(profile: Profile, ohlc: pd.DataFrame, vix, sky: Optional[SkyTable] = None,
-        params: Optional[Mapping] = None,
-        on_progress: Optional[Callable[[int, int], None]] = None) -> dict:
+def run(profile: Profile, ohlc: pd.DataFrame, vix, sky: SkyTable | None = None,
+        params: Mapping | None = None,
+        on_progress: Callable[[int, int], None] | None = None) -> dict:
     sky = sky if sky is not None else build_sky(_prices(ohlc)[0])
     return run_inputs(Inputs(profile, ohlc, vix, sky), params, on_progress)

@@ -1,9 +1,11 @@
 import re
 from decimal import Decimal
 from pathlib import Path
+
 import numpy as np
 import pandas as pd
 import pytest
+
 from sbc.navigator import scoring as S
 from sbc.navigator import terms as T
 from sbc.navigator import weights as W
@@ -68,7 +70,7 @@ def test_combine_uses_the_spec_weights():
 
 def test_combine_renormalises_without_histval():
     terms = {k: np.array([v]) for k, v in
-             dict(transit=80.0, moon=40.0, dasha=60.0, strength=20.0, vol=100.0).items()}
+             {"transit": 80.0, "moon": 40.0, "dasha": 60.0, "strength": 20.0, "vol": 100.0}.items()}
     expected = (.25 * 80 + .2 * 40 + .2 * 60 + .15 * 20 + .1 * 100) / .9
     assert S.combine(terms)[0] == pytest.approx(expected)
 
@@ -152,7 +154,7 @@ def test_hist_val_rejects_mismatched_lengths():
 
 # --- lineage ----------------------------------------------------------------
 
-TERMS = dict(transit=61.37, moon=48.91, dasha=55.13, strength=47.77, histval=50.0, vol=62.5)
+TERMS = {"transit": 61.37, "moon": 48.91, "dasha": 55.13, "strength": 47.77, "histval": 50.0, "vol": 62.5}
 
 
 def test_contributions_sum_exactly():
@@ -226,7 +228,7 @@ def test_clipped_day_counts_as_raised_by_its_clipped_value():
 
 
 def test_rounding_residual_lands_on_the_largest_line_when_it_has_no_movers():
-    out = S.lineage({k: 50.4 for k in TERMS}, [])
+    out = S.lineage(dict.fromkeys(TERMS, 50.4), [])
     assert out["score"] == 50
     assert_sums_exactly(out)
 
@@ -391,7 +393,7 @@ def test_real_the_t_minus_1_close_does_reach_day_t(real):
     assert a.terms["histval"][k] != b.terms["histval"][k]
 
 
-@pytest.mark.parametrize("terms", [TERMS, {k: 50.4 for k in TERMS},
+@pytest.mark.parametrize("terms", [TERMS, dict.fromkeys(TERMS, 50.4),
                                    {**TERMS, "transit": 61.6, "vol": 50.0},
                                    {k: v + .37 for k, v in TERMS.items()}])
 def test_raised_and_lowered_equal_displayed_points_minus_baseline(terms):

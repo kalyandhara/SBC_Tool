@@ -2,6 +2,7 @@
 
 from numbers import Real
 from typing import Literal
+
 import numpy as np
 
 
@@ -28,12 +29,14 @@ def confluence_signal(
 ) -> Literal["BUY", "SELL", "HOLD"]:
     """Generate trade signal when technical cross aligns with astrological bias."""
     numeric_bias = isinstance(astro_bias, Real) and not isinstance(astro_bias, bool)
-    if technical_cross == 1:
-        if astro_bias == "bullish" or (numeric_bias and astro_bias > astro_threshold):
-            return "BUY"
-    elif technical_cross == -1:
-        if astro_bias == "bearish" or (numeric_bias and astro_bias < -astro_threshold):
-            return "SELL"
+    if technical_cross == 1 and (
+        astro_bias == "bullish" or (numeric_bias and astro_bias > astro_threshold)
+    ):
+        return "BUY"
+    if technical_cross == -1 and (
+        astro_bias == "bearish" or (numeric_bias and astro_bias < -astro_threshold)
+    ):
+        return "SELL"
     return "HOLD"
 
 

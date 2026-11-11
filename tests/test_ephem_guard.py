@@ -2,8 +2,9 @@
 
 import threading
 
-import sbc  # noqa: F401  (installs the guard)
 import swisseph as swe
+
+import sbc  # noqa: F401  (installs the guard)
 
 JD = 2461325.0  # 2026-10-11
 FLAGS = swe.FLG_MOSEPH | swe.FLG_SIDEREAL

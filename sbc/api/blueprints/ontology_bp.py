@@ -21,6 +21,12 @@ from flask import Blueprint, jsonify, request
 
 from sbc import ontology as ont
 from sbc.ontology_graph import build_graph_data
+from sbc.ontology_scoring import (
+    build_report,
+    compute_readings,
+    compute_sector_scores,
+    report_to_dict,
+)
 
 # 15-minute TTL cache keyed by "date|time|tz"
 _GRAPH_CACHE: dict[str, tuple[float, dict]] = {}
@@ -36,12 +42,6 @@ def _cached_graph(date: str, time_str: str, tz: str) -> dict:
     val = build_graph_data(date, time_str, tz)
     _GRAPH_CACHE[key] = (time.monotonic(), val)
     return val
-from sbc.ontology_scoring import (
-    build_report,
-    compute_readings,
-    compute_sector_scores,
-    report_to_dict,
-)
 
 ontology_bp = Blueprint("ontology", __name__, url_prefix="/api/ontology")
 
@@ -248,7 +248,6 @@ def import_ontology():
     return jsonify({
         "filename": up.filename,
         "asserted": len(triples),
-        "derivations": len(reasoner.derivations),
         "valid": checked.get("ok", False),
         "check": checked,
         "derivations": [d.text() for d in reasoner.derivations],

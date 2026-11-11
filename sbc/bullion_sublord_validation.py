@@ -124,7 +124,7 @@ def group_stats(labels, values, sess_id, codes) -> dict[str, float]:
 
 def _flatten(sessions, values_key="ret"):
     lords = sorted({x for s in sessions for x in s["lords"]} | set(bw.READING))
-    codes = {l: i for i, l in enumerate(lords)}
+    codes = {lord: i for i, lord in enumerate(lords)}
     labels = np.concatenate([[codes[x] for x in s["lords"]] for s in sessions])
     values = np.concatenate([s[values_key] for s in sessions])
     hours = np.concatenate([s["hours"] for s in sessions])
@@ -162,7 +162,7 @@ def permutation_test(sessions, n_perm=N_PERM, seed=0) -> dict:
     rng = np.random.default_rng(seed)
     # Flat bar positions of each session, grouped by session length (the permutation strata).
     strata = [starts[lengths == n][:, None] + np.arange(n) for n in np.unique(lengths)]
-    ge = {v: {g: 0 for g in GROUPS} for v in variants}
+    ge = {v: dict.fromkeys(GROUPS, 0) for v in variants}
     for _ in range(n_perm):
         perm_labels = labels.copy()
         for pos in strata:

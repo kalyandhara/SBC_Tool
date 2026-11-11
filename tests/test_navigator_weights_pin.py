@@ -2,7 +2,9 @@
 and a new entry in PINNED, so results are never silently produced by other weights."""
 import hashlib
 import json
+
 import pytest
+
 from sbc.navigator import weights as W
 
 PINNED = {"nav-1": "d6fe9cd8f98c9b2a269ab7a3ad4efc9ccdfdbbe5a38c2424d1ce587accf20b54"}

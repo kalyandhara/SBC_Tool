@@ -4,13 +4,15 @@ import json
 import zlib
 from pathlib import Path
 from types import SimpleNamespace
+
 import numpy as np
 import pandas as pd
 import pytest
+
 from sbc.navigator import backtest as B
 from sbc.navigator import scoring as S
 from sbc.navigator.ephemeris import build_sky
-from sbc.navigator.profile import Profile, SAMPLE_PROFILE
+from sbc.navigator.profile import SAMPLE_PROFILE, Profile
 
 FIXTURES = Path(__file__).parent / "fixtures"
 HP = "High Probability"
@@ -98,7 +100,7 @@ def test_control_with_nothing_usable_is_nan():
     assert np.isnan(B.matched_control_mean(np.ones(5, bool), np.arange(5.0), np.zeros(5)))
 
 
-GOOD = dict(q=.05, beats_control=True, natal_pct=96, events=40, fold_pos=.7, natal_band_days=40)
+GOOD = {"q": .05, "beats_control": True, "natal_pct": 96, "events": 40, "fold_pos": .7, "natal_band_days": 40}
 
 
 def test_verdict_rules():
@@ -506,7 +508,7 @@ def diverging_case(monkeypatch, h1_only_thin=True, lift5=.01):
         if inputs.profile.label == "placebo":
             r = np.random.default_rng(zlib.crc32(inputs.profile.birth_date.encode()))
             scores = np.where(r.random(N_CASE) < .2, BAND_SCORE, FLAT).astype(float)
-        terms = {t: scores for t in ("transit", "dasha", "strength")}
+        terms = dict.fromkeys(("transit", "dasha", "strength"), scores)
         return SimpleNamespace(score=scores, terms={**terms, "vol": np.full(N_CASE, 40.0)})
 
     def fake_q(ps):

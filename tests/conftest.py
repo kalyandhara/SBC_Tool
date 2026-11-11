@@ -60,6 +60,7 @@ def synthetic():
     from functools import lru_cache
 
     import numpy as np
+
     from sbc import market_holidays as MH
     from sbc.analogs import SkyArrays
     from sbc.fingerprint import fingerprint
@@ -77,6 +78,6 @@ def synthetic():
     c = o * (1 + rng.normal(0, 0.005, 60))
     p = {"open": o, "close": c, "low": np.minimum(o, c) * 0.995,
          "bank_open": o * 2, "bank_close": c * 2, "vix_close": np.full(60, 14.0),
-         "sector_open": {s: o for s in A.SECTORS}, "sector_close": {s: c for s in A.SECTORS}}
-    vix = {x: 14.0 for x in dates}
+         "sector_open": dict.fromkeys(A.SECTORS, o), "sector_close": dict.fromkeys(A.SECTORS, c)}
+    vix = dict.fromkeys(dates, 14.0)
     return A.Market(dates, p, vix), sky, fp

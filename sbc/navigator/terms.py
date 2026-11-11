@@ -5,9 +5,12 @@
 are vectorised over the shared SkyTable and factor lists are built on demand.
 """
 from __future__ import annotations
+
+from collections.abc import Callable
 from dataclasses import dataclass
-from typing import Callable
+
 import numpy as np
+
 from sbc import nakshatra as N
 from sbc.navigator import weights as W
 from sbc.planets import COMBUST_ORB, DEBIL, EXALT
@@ -106,7 +109,7 @@ def moon_term(sky) -> Term:
                  (f"Tithi {tithi[i]} ({group} group)", tithi_pts[i]),
                  (f"Moon in {_RASHIS[sign[i]]}", sign_pts[i]),
                  (f"Moon in {_NAK_NAMES[nak[i]]} ({star} star group)", nak_pts[i])]
-        return [{"term": "moon", "label": l, "raw": float(r)} for l, r in parts if r]
+        return [{"term": "moon", "label": lbl, "raw": float(r)} for lbl, r in parts if r]
     return Term(_scale(raw), raw, factors)
 
 
@@ -120,7 +123,7 @@ def _flatten_periods(timeline):
             if child:
                 walk(p[child], depth + 1)
     walk(timeline["mahadashas"], 0)
-    return {k: (np.array([s for s, _ in v], "datetime64[us]"), np.array([l for _, l in v]))
+    return {k: (np.array([s for s, _ in v], "datetime64[us]"), np.array([lbl for _, lbl in v]))
             for k, v in rows.items()}
 
 
@@ -144,8 +147,8 @@ def dasha_term(sky, moon_natal_lon, birth_date) -> Term:
         if not covered[i]:
             return [{"term": "dasha", "label": "Date outside dasha timeline",
                      "raw": 0.0, "neutral": True}]
-        return [{"term": "dasha", "label": f"{lords[l][i]} {period_name[l]}",
-                 "raw": float(parts[l][i])} for l, _ in _LEVELS]
+        return [{"term": "dasha", "label": f"{lords[lvl][i]} {period_name[lvl]}",
+                 "raw": float(parts[lvl][i])} for lvl, _ in _LEVELS]
     return Term(_scale(raw), raw, factors)
 
 
@@ -164,8 +167,8 @@ def strength_term(sky) -> Term:
     raw = np.sum([c for _, c in parts], axis=0)
 
     def factors(i):
-        return [{"term": "strength", "label": l, "raw": float(c[i]), "note": STRENGTH_NOTE}
-                for l, c in parts if c[i]]
+        return [{"term": "strength", "label": lbl, "raw": float(c[i]), "note": STRENGTH_NOTE}
+                for lbl, c in parts if c[i]]
     return Term(_scale(raw), raw, factors)
 
 

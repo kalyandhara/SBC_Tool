@@ -281,7 +281,7 @@ def sensitivity(rows, planet):
     rng = np.random.default_rng(SEED)
     print(f"\n## Sensitivity grid - {planet}: rebound-after-downtrend "
           f"rate (p)\n")
-    print("| K \ M | " + " | ".join(f"M={m}" for m in M_LIST) + " |")
+    print(r"| K \ M | " + " | ".join(f"M={m}" for m in M_LIST) + " |")
     print("|---" * (len(M_LIST) + 1) + "|")
     for k in K_LIST:
         cells = []
@@ -333,7 +333,7 @@ def main():
     fh = None
     if args.save:
         os.makedirs(os.path.dirname(args.save) or ".", exist_ok=True)
-        fh = open(args.save, "w", encoding="utf-8")
+        fh = open(args.save, "w", encoding="utf-8")  # noqa: SIM115 - outlives this block as the stdout tee; closed in the finally below
         sys.stdout = _Tee(sys.stdout, fh)
     try:
         got = run_asset(args.asset, start, datetime.date.today())

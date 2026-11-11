@@ -159,10 +159,10 @@ def main():
             f"never in the state.\n\n"
             + ("".join(f"Note: {' and '.join(f'{k} resampled from {v}' for k, v in resampled_from.items())} "
                        f"(yfinance serves no native interval).\n\n" if resampled_from else ""))
-            + f"Bias rule (frozen): >= 6/7 bullish = "
-              f"Strong Bullish, > 1/2 = Bullish, == 1/2 = Mixed, mirrored "
-              f"for bearish; Weak = HA close not beyond both EMAs; "
-              f"up/down arrows = crossed on the latest closed candle.\n\n")
+            + "Bias rule (frozen): >= 6/7 bullish = "
+              "Strong Bullish, > 1/2 = Bullish, == 1/2 = Mixed, mirrored "
+              "for bearish; Weak = HA close not beyond both EMAs; "
+              "up/down arrows = crossed on the latest closed candle.\n\n")
     tail = "\n## Bias distribution\n\n" + ", ".join(
         f"{k}: {v}" for k, v in sorted(bias_counts.items(),
                                        key=lambda kv: -kv[1])) + "\n"

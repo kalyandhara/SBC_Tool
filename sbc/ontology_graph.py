@@ -12,9 +12,8 @@ import datetime as dt
 import math
 from typing import Any
 
-from sbc.aspect_sets import CLASSICAL_ASPECTS, evaluate_aspect
+from sbc.aspect_sets import evaluate_aspect
 from sbc.ontology_scoring import (
-    PLANET_NATURE,
     PLANET_SECTORS,
     SECTOR_GROUPS,
     SENSITIVE_STARS,
@@ -72,9 +71,8 @@ _THEME_TABLE: list[tuple[frozenset[str], set[str], str]] = [
 def _lookup_theme(p_a: str, p_b: str, aspect_name: str) -> str:
     pair = frozenset({p_a, p_b})
     for entry_pair, aspects, label in _THEME_TABLE:
-        if entry_pair == pair:
-            if "any" in aspects or aspect_name in aspects:
-                return label
+        if entry_pair == pair and ("any" in aspects or aspect_name in aspects):
+            return label
     # Fallback: slower planet archetype via aspect
     slower = p_a if PLANET_MEAN_MOTION.get(p_a, 1.0) <= PLANET_MEAN_MOTION.get(p_b, 1.0) else p_b
     return f"{slower} / {aspect_name}"

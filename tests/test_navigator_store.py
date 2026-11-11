@@ -91,8 +91,8 @@ from sbc.navigator.profile import SAMPLE_PROFILE, Profile  # noqa: E402
 
 pg = pytest.mark.skipif(not os.environ.get("NAV_TEST_DATABASE_URL"), reason="needs Postgres")
 
-META = dict(instrument="NIFTY", weights_version="w", data_asof="2026-01-01",
-            engine_version="e", chart_hash="h", params={})
+META = {"instrument": "NIFTY", "weights_version": "w", "data_asof": "2026-01-01",
+            "engine_version": "e", "chart_hash": "h", "params": {}}
 KEY_COLUMNS = ("profile_id", "day", "weights_version", "data_asof", "engine_version", "chart_hash")
 
 
@@ -118,8 +118,8 @@ def db(monkeypatch):
 
 
 def _key(pid, **over):
-    return {**dict(profile_id=pid, day="2026-01-05", weights_version="w",
-                   data_asof="2026-01-02", engine_version="e", chart_hash="h"), **over}
+    return {**{"profile_id": pid, "day": "2026-01-05", "weights_version": "w",
+                   "data_asof": "2026-01-02", "engine_version": "e", "chart_hash": "h"}, **over}
 
 
 @pg
@@ -216,7 +216,7 @@ def test_late_finish_does_not_resurrect_expired_run(db):
 def test_cache_key_includes_data_asof(db):
     pid = store.ensure_sample()
     key = _key(pid)
-    store.save_score(key, dict(score=55, band="Normal", action="Reduce Position Size", lineage={}))
+    store.save_score(key, {"score": 55, "band": "Normal", "action": "Reduce Position Size", "lineage": {}})
     assert store.cached_score(key)["score"] == 55
     assert store.cached_score({**key, "data_asof": "2026-01-03"}) is None
 
@@ -229,7 +229,7 @@ def test_every_key_column_participates(db, col):
     alt = {"profile_id": other, "day": "2026-01-06", "weights_version": "w2",
            "data_asof": "2026-01-03", "engine_version": "e2", "chart_hash": "h2"}
     key = _key(pid)
-    store.save_score(key, dict(score=1, band="b", action="a", lineage={}))
+    store.save_score(key, {"score": 1, "band": "b", "action": "a", "lineage": {}})
     assert store.cached_score({**key, col: alt[col]}) is None
 
 
@@ -237,8 +237,8 @@ def test_every_key_column_participates(db, col):
 def test_save_score_overwrites_same_key(db):
     pid = store.ensure_sample()
     key = _key(pid)
-    store.save_score(key, dict(score=1, band="b", action="a", lineage={"k": None}))
-    store.save_score(key, dict(score=2.5, band="c", action="d", lineage={"k": 1}))
+    store.save_score(key, {"score": 1, "band": "b", "action": "a", "lineage": {"k": None}})
+    store.save_score(key, {"score": 2.5, "band": "c", "action": "d", "lineage": {"k": 1}})
     got = store.cached_score(key)
     assert (got["score"], got["band"], got["action"], got["lineage"]) == (2.5, "c", "d", {"k": 1})
 
@@ -295,7 +295,7 @@ def test_save_score_rejects_non_finite_and_stores_nothing(db, bad):
     pid = store.ensure_sample()
     key = _key(pid)
     with pytest.raises(ValueError):
-        store.save_score(key, dict(score=bad, band="b", action="a", lineage={}))
+        store.save_score(key, {"score": bad, "band": "b", "action": "a", "lineage": {}})
     with store.connect() as c:
         assert c.execute("select count(*) from daily_score").fetchone()[0] == 0
 

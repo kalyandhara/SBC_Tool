@@ -267,7 +267,7 @@ class Market:
 def load_market() -> Market:
     """Nifty sessions up to the last close, with Bank Nifty, VIX and sectors aligned (NaN if absent)."""
     from sbc import market_store as M
-    bars = [b for b in M.get_daily("NIFTY")]
+    bars = list(M.get_daily("NIFTY"))
     while bars and bars[-1]["close"] is None:
         bars.pop()
     if not bars:

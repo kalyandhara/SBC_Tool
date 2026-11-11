@@ -4,7 +4,9 @@ natal = 0.8 * weighted-Jaccard of active transit contacts + 0.2 * dasha match
 (Antardasha 0.6, Pratyantar 0.4; no Mahadasha, no separate natal Moon term).
 Blended = 0.5 * natal + 0.5 * sky. Changing any value means a new ANALOG_VERSION."""
 from __future__ import annotations
+
 import numpy as np
+
 from sbc.navigator import weights as W
 from sbc.navigator.terms import _flatten_periods
 from sbc.yogas import vimshottari

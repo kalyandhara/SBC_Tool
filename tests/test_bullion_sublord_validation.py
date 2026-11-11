@@ -41,7 +41,7 @@ def test_planted_effect_is_found_and_null_is_not():
     for i in range(300):
         lords = [cycle[(i + k // 2) % 9] for k in range(15)]
         noise = rng.normal(0, 0.001, 15)
-        boost = np.array([0.002 if l in ("Venus", "Jupiter") else 0.0 for l in lords])
+        boost = np.array([0.002 if lord in ("Venus", "Jupiter") else 0.0 for lord in lords])
         d = (dt.date(2015, 1, 1) + dt.timedelta(days=i)).isoformat()
         planted.append(_session(d, lords, noise + boost))
         null.append(_session(d, lords, noise))

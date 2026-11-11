@@ -79,7 +79,7 @@ def test_known_october_2026_aspects_match_backlog():
     assert mo_ur[0]["rashis"] in ("Ta-Ta", "Aries-Aries"), f"Rashis: {mo_ur[0]['rashis']}"
 
     # Find Sun-Moon trine (120°)
-    su_mo_trine = [a for a in aspects if set([a["pl1"], a["pl2"]]) == {"Sun", "Moon"} and a["aspect"] == 120]
+    su_mo_trine = [a for a in aspects if {a["pl1"], a["pl2"]} == {"Sun", "Moon"} and a["aspect"] == 120]
     assert su_mo_trine, "su_mo_trine missing"
     expected = T(2026, 10, 1, 12, 36)
     actual = dt.datetime.strptime(f"{su_mo_trine[0]['date']} {su_mo_trine[0]['time']}", "%Y-%m-%d %H:%M")
@@ -87,7 +87,7 @@ def test_known_october_2026_aspects_match_backlog():
     assert su_mo_trine[0]["rashis"] in ("Vi-Ta", "Virgo-Taurus"), f"Rashis: {su_mo_trine[0]['rashis']}"
 
     # Find Sun-Saturn opposition
-    su_sa = [a for a in aspects if set([a["pl1"], a["pl2"]]) == {"Sun", "Saturn"} and a["aspect"] == 180]
+    su_sa = [a for a in aspects if {a["pl1"], a["pl2"]} == {"Sun", "Saturn"} and a["aspect"] == 180]
     assert su_sa, "su_sa missing"
     expected = T(2026, 10, 4, 17, 53)
     actual = dt.datetime.strptime(f"{su_sa[0]['date']} {su_sa[0]['time']}", "%Y-%m-%d %H:%M")
@@ -95,14 +95,14 @@ def test_known_october_2026_aspects_match_backlog():
     assert su_sa[0]["rashis"] in ("Vi-Pi", "Virgo-Pisces"), f"Rashis: {su_sa[0]['rashis']}"
 
     # Find new moon (Sun-Moon conjunction)
-    new_moon = [a for a in aspects if set([a["pl1"], a["pl2"]]) == {"Sun", "Moon"} and a["aspect"] == 0]
+    new_moon = [a for a in aspects if {a["pl1"], a["pl2"]} == {"Sun", "Moon"} and a["aspect"] == 0]
     assert new_moon, "new_moon missing"
     expected = T(2026, 10, 10, 21, 22)
     actual = dt.datetime.strptime(f"{new_moon[0]['date']} {new_moon[0]['time']}", "%Y-%m-%d %H:%M")
     assert close_to_minute(actual, expected), f"Su 0 Mo (new moon): got {actual}, expected ~{expected}"
 
     # Find Moon-Venus conjunction
-    mo_ve = [a for a in aspects if set([a["pl1"], a["pl2"]]) == {"Moon", "Venus"} and a["aspect"] == 0]
+    mo_ve = [a for a in aspects if {a["pl1"], a["pl2"]} == {"Moon", "Venus"} and a["aspect"] == 0]
     assert mo_ve, "mo_ve missing"
     expected = T(2026, 10, 12, 9, 58)
     actual = dt.datetime.strptime(f"{mo_ve[0]['date']} {mo_ve[0]['time']}", "%Y-%m-%d %H:%M")
@@ -118,7 +118,7 @@ def test_ksc_ksp_orb_entry_events():
     aspects = get_aspects(D(2026, 10, 8), D(2026, 10, 8))
 
     # Find Sun-Moon sextile and any KSc events for same pair
-    su_mo = [a for a in aspects if set([a["pl1"], a["pl2"]]) == {"Sun", "Moon"}]
+    su_mo = [a for a in aspects if {a["pl1"], a["pl2"]} == {"Sun", "Moon"}]
     ksc_events = [a for a in su_mo if a["aspect"] in ("KSc", "KSp")]
     exact_events = [a for a in su_mo if isinstance(a["aspect"], int)]
 
@@ -210,8 +210,6 @@ def test_muhurta_integration():
 
     aspects = get_aspects(D(2026, 10, 5), D(2026, 10, 5))  # Known Ghabad day
     if aspects:
-        # Check at least one aspect has muhurta info
-        has_muhurta = any(a["muhurta"] for a in aspects)
         # Verify it matches ghabad_kind_at
         for a in aspects:
             when = dt.datetime.strptime(f"{a['date']} {a['time']}", "%Y-%m-%d %H:%M")

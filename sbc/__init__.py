@@ -1,5 +1,9 @@
 """Sarvatobhadra Chakra market prediction engine."""
 
+# The ephemeris guard must be installed before any submodule import below runs, so the
+# imports deliberately follow the install call.
+# ruff: noqa: E402
+
 # Must run before any module computes positions (B-68: per-thread sidereal mode).
 from .ephem_guard import install as _install_ephem_guard
 

@@ -286,9 +286,9 @@ def monthly_projection():
     trading flag, and NIFTY closes so far. Hypothetical, unvalidated.
     """
     import calendar
-    from sbc import fingerprint_store, market_store
+
+    from sbc import data_freshness, fingerprint_store, market_store
     from sbc.market_holidays import is_trading_day
-    from sbc import data_freshness
 
     month_str = request.args.get("month")
     if not month_str:

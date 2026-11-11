@@ -115,7 +115,7 @@ def _planet_dict(name, lon, speed):
 
 def refine_natures(planets, tithi):
     """Apply the classical nature switches for Mercury and the Moon.
-    
+
     Outer planets (Uranus, Neptune, Pluto) keep their natural malefic nature
     and do not have phase-dependent switches like Mercury or the Moon.
     """

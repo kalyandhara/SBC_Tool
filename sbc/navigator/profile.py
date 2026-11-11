@@ -57,7 +57,7 @@ def _parse(d: dict):
     first = naive.replace(tzinfo=zone, fold=0)
     if first.utcoffset() != naive.replace(tzinfo=zone, fold=1).utcoffset():
         raise ValueError  # ambiguous (fold)
-    back = first.astimezone(dt.timezone.utc).astimezone(zone).replace(tzinfo=None)
+    back = first.astimezone(dt.UTC).astimezone(zone).replace(tzinfo=None)
     if back != naive:
         raise ValueError  # nonexistent (DST gap)
     lat, lon = _num(d["lat"]), _num(d["lon"])

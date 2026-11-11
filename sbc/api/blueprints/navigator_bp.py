@@ -28,8 +28,8 @@ from sbc import nakshatra as N
 from sbc.engine_version import module_version
 from sbc.navigator import analogs as A
 from sbc.navigator import backtest as B
-from sbc.navigator import signature as G
 from sbc.navigator import scoring as S
+from sbc.navigator import signature as G
 from sbc.navigator import store
 from sbc.navigator.ephemeris import build_sky
 from sbc.navigator.profile import Profile, chart_hash, natal_points, validate

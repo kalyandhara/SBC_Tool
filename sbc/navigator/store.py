@@ -90,7 +90,7 @@ def get_profile(profile_id: int) -> Profile | None:
 def list_profiles() -> list[dict]:
     rows = _tx(lambda c: c.execute(
         "select id,label,is_sample from natal_profile order by id").fetchall())
-    return [{"id": i, "label": l, "is_sample": s} for i, l, s in rows]
+    return [{"id": i, "label": lbl, "is_sample": s} for i, lbl, s in rows]
 
 
 def ensure_sample() -> int:

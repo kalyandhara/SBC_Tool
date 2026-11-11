@@ -5,9 +5,12 @@ Timing: entry is day T's open and T-1's close is the last input. HistVal reads
 sessions later, so a session t' has closed by T-1 exactly when t'+horizon <= T.
 """
 from __future__ import annotations
+
+from collections.abc import Callable, Mapping
 from dataclasses import dataclass
-from typing import Callable, Mapping
+
 import numpy as np
+
 from sbc.navigator import terms as T
 from sbc.navigator import weights as W
 from sbc.navigator.profile import Profile, natal_points
@@ -144,7 +147,7 @@ def lineage(terms_at_day: Mapping[str, float], factors: list[dict]) -> dict:
             line["factors"] = _factor_lines(line["term"], grouped[line["term"]], line["weight"], c)
     # From the displayed points, adjustment lines included, so a move always equals
     # the table's points minus the neutral baseline, rounding residual and all.
-    shown = {k: 0 for k in W.TERM_WEIGHTS}
+    shown = dict.fromkeys(W.TERM_WEIGHTS, 0)
     for line, c in zip(lines, cents):
         shown[line["term"]] += c
     moves = []

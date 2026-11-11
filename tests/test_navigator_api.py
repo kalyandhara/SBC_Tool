@@ -875,7 +875,7 @@ def test_analogs_cache_hits_and_key_parts(client, db, analog_state, monkeypatch)
 
 
 def test_analog_version_covers_analogs_and_signature():
-    from sbc.engine_version import module_closure, ROOT, _read
+    from sbc.engine_version import ROOT, _read, module_closure
     rel = {p.relative_to(ROOT).as_posix() for p in module_closure({"sbc.navigator.analogs"}, _read, frozenset())}
     assert {"sbc/navigator/analogs.py", "sbc/navigator/signature.py"} <= rel
     assert bp._analog_version() == bp.module_version("sbc.navigator.analogs")

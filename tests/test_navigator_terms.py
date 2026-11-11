@@ -1,7 +1,9 @@
-import re
 import math
+import re
+
 import numpy as np
 import pytest
+
 from sbc import nakshatra as N
 from sbc.navigator import terms as T
 from sbc.navigator import weights as W
@@ -87,7 +89,7 @@ def test_moon_raw_bounded_and_nakshatra_names_real():
     r = T.moon_term(s).raw
     assert r.min() >= -100 and r.max() <= 100 and r.std() > 5
     names = {N.nakshatra_of(float(x))[0] for x in range(360)}
-    assert W.DRUVA | W.UGRA <= names
+    assert names >= W.DRUVA | W.UGRA
 
 
 def test_moon_druva_member_exact_score():
@@ -308,7 +310,7 @@ def test_vol_percentile_exact_with_ties_half_counted():
 
 def test_vol_window_limits_the_reference_set():
     days = VOL_DAYS[:32]
-    vix = {d: 100.0 for d in days[:5]}    # old spikes fall outside window=20
+    vix = dict.fromkeys(days[:5], 100.0)    # old spikes fall outside window=20
     vix.update({d: float(i) for i, d in enumerate(days) if i >= 5})
     # T=31: T-1=30; window=20 holds 10..29, all lower, so pct is 100.
     assert T.vol_term(days, vix, window=20).values[31] == 0

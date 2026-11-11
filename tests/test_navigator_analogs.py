@@ -131,7 +131,7 @@ def test_era_window_exact_and_widened():
     assert A.era_window(["2025-01-31", "2025-01-01", "2025-01-15"]) == ("2024-01-17", "2026-01-16")
     # already wider than 2 years: p25..p75 of two dates is 2020-07-01..2023-07-01 (approx), unchanged by widening
     lo, hi = A.era_window(["2020-01-01", "2024-01-01"])
-    assert "2020-01-01" < lo and hi < "2024-01-01" and (_d(hi) - _d(lo)).days >= 730
+    assert lo > "2020-01-01" and hi < "2024-01-01" and (_d(hi) - _d(lo)).days >= 730
 
 
 def _d(s):

@@ -1,3 +1,4 @@
+import dataclasses
 import math
 
 import pytest
@@ -6,8 +7,8 @@ import swisseph as swe
 from sbc.engine import _julday, _utc_from_local
 from sbc.navigator import profile as P
 
-GOOD = dict(label="x", birth_date="1985-03-14", birth_time="06:30",
-            tz="Asia/Kolkata", lat=12.97, lon=77.59)
+GOOD = {"label": "x", "birth_date": "1985-03-14", "birth_time": "06:30",
+            "tz": "Asia/Kolkata", "lat": 12.97, "lon": 77.59}
 
 
 def _independent_sidereal_asc(date, time, tz, lat, lon):
@@ -132,7 +133,7 @@ def test_validate_normalises_and_defaults_label_only():
     p = P.validate({k: v for k, v in GOOD.items() if k != "label"})
     assert p.label == "Unnamed" and p.is_sample is False
     assert (p.birth_date, p.birth_time) == ("1985-03-14", "06:30:00")
-    with pytest.raises(Exception):
+    with pytest.raises(dataclasses.FrozenInstanceError):
         p.lat = 1.0  # frozen
 
 

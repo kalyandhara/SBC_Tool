@@ -1,5 +1,4 @@
-import pytest
-from sbc.aspect_sets import angular_separation, evaluate_aspect, CLASSICAL_ASPECTS, normalize_angle
+from sbc.aspect_sets import angular_separation, evaluate_aspect, normalize_angle
 
 
 def test_angular_separation():

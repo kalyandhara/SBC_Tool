@@ -15,7 +15,6 @@ from __future__ import annotations
 import datetime as dt
 import sqlite3
 from pathlib import Path
-from typing import List, Dict
 
 DB_PATH = Path(__file__).resolve().parent.parent / "data" / "trade_journal.db"
 DB_PATH.parent.mkdir(parents=True, exist_ok=True)
@@ -62,7 +61,7 @@ def add_exit(trade_id: int, exit_date: str, exit_price: float, qty: float, type_
         c.execute("INSERT INTO exits(trade_id,exit_date,exit_price,qty,type) VALUES (?,?,?,?,?)",
                   (trade_id, exit_date, exit_price, qty, type_))
 
-def get_trade(trade_id: int) -> Dict:
+def get_trade(trade_id: int) -> dict:
     with _conn() as c:
         row = c.execute("SELECT * FROM trades WHERE id=?", (trade_id,)).fetchone()
         if not row:
@@ -84,7 +83,7 @@ def get_trade(trade_id: int) -> Dict:
             trade["r_multiple"] = total_r
         return trade
 
-def list_trades(symbol: str | None = None, limit: int = 100) -> List[Dict]:
+def list_trades(symbol: str | None = None, limit: int = 100) -> list[dict]:
     with _conn() as c:
         if symbol:
             rows = c.execute("SELECT id FROM trades WHERE symbol=? ORDER BY entry_date DESC LIMIT ?", (symbol, limit)).fetchall()

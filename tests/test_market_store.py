@@ -30,7 +30,7 @@ SECTOR_KEYS = {
 def test_sector_symbols_cover_the_fifteen_nse_indices(store):
     assert set(store.SECTOR_SYMBOLS) == SECTOR_KEYS
     assert all(isinstance(t, str) and t for t in store.SECTOR_SYMBOLS.values())
-    assert SECTOR_KEYS <= set(store.RESEARCH_SYMBOLS)
+    assert set(store.RESEARCH_SYMBOLS) >= SECTOR_KEYS
 
 
 def test_refresh_stores_sector_rows_from_injected_fetch(store):

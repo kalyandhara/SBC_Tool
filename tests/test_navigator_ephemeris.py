@@ -1,10 +1,11 @@
 import numpy as np
 import pytest
+
+from sbc import nakshatra
+from sbc.engine import _julday, _utc_from_local
 from sbc.navigator import weights as W
 from sbc.navigator.ephemeris import SkyTable, build_sky
-from sbc.engine import _julday, _utc_from_local
 from sbc.planets import positions
-from sbc import nakshatra
 
 
 @pytest.mark.parametrize("a,b", [(("Jupiter", "Jupiter", "TRI"), 40),
@@ -58,7 +59,7 @@ def test_dasha_and_strength_tables():
 
 def test_nakshatra_sets_use_real_names():
     names = set(nakshatra.NAKSHATRAS_27)
-    assert W.DRUVA <= names and W.UGRA <= names
+    assert names >= W.DRUVA and names >= W.UGRA
 
 
 def test_sky_bodies_and_shape():

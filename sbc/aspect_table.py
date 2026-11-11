@@ -10,8 +10,9 @@ The public entry point is get_aspects(start_date, end_date) -> list[dict].
 from __future__ import annotations
 
 import datetime as dt
+from collections.abc import Callable
 from datetime import date, datetime, time, timedelta
-from typing import Any, Callable, Dict, List, Tuple
+from typing import Any
 
 import swisseph as swe
 
@@ -87,7 +88,7 @@ def _sidereal_flags():
     return FLAGS
 
 
-def _sign_info(lon: float) -> Tuple[int, str, str]:
+def _sign_info(lon: float) -> tuple[int, str, str]:
     idx = int(lon // 30) % 12
     name = SIGN_NAMES[idx]
     abbr = SIGN_ABBREV[name]
@@ -99,11 +100,11 @@ def _angular_sep(lon1: float, lon2: float) -> float:
     return d
 
 
-def _positions_at(when: datetime) -> Dict[str, Dict[str, Any]]:
+def _positions_at(when: datetime) -> dict[str, dict[str, Any]]:
     """Return planet data for a naive IST datetime."""
     jd = _julday_ist(when)
     swe.set_sid_mode(swe.SIDM_LAHIRI)
-    out: Dict[str, Dict[str, Any]] = {}
+    out: dict[str, dict[str, Any]] = {}
     rahu_lon = rahu_speed = None
     for name, body in PLANET_SWE:
         xx, _ = swe.calc_ut(jd, body, FLAGS)
@@ -134,7 +135,7 @@ def _positions_at(when: datetime) -> Dict[str, Dict[str, Any]]:
     return out
 
 
-def _winner(pl_a: Dict[str, Any], pl_b: Dict[str, Any], name_a: str, name_b: str) -> str:
+def _winner(pl_a: dict[str, Any], pl_b: dict[str, Any], name_a: str, name_b: str) -> str:
     s_a = abs(pl_a["speed"])
     s_b = abs(pl_b["speed"])
     if abs(s_a - s_b) > 1e-9:
@@ -158,7 +159,7 @@ def _relations(sign_idx_a: int, sign_idx_b: int, aspect: int) -> str:
     return f"{first}/{second}"
 
 
-def _combust(p_data: Dict[str, Any], sun_lon: float, planet_name: str) -> bool:
+def _combust(p_data: dict[str, Any], sun_lon: float, planet_name: str) -> bool:
     if planet_name in ("Sun",):
         return False
     orb = COMBUST_ORB.get(planet_name)
@@ -168,7 +169,7 @@ def _combust(p_data: Dict[str, Any], sun_lon: float, planet_name: str) -> bool:
     return sep < orb
 
 
-def _targets(angle: int) -> Tuple[int, ...]:
+def _targets(angle: int) -> tuple[int, ...]:
     """Signed offsets of an aspect: 90 happens both ahead of and behind the other body."""
     return (angle,) if angle in (0, 180) else (angle, -angle)
 
@@ -242,7 +243,7 @@ def _stamp(when: datetime | None) -> str | None:
     return when.strftime("%Y-%m-%d %H:%M") if when else None
 
 
-def _build_row(when: datetime, name_a: str, name_b: str, aspect_code: int | str, angle: int) -> Dict[str, Any]:
+def _build_row(when: datetime, name_a: str, name_b: str, aspect_code: int | str, angle: int) -> dict[str, Any]:
     pos = _positions_at(when)
     pa = pos[name_a]
     pb = pos[name_b]
@@ -276,7 +277,7 @@ def _build_row(when: datetime, name_a: str, name_b: str, aspect_code: int | str,
     }
 
 
-def get_aspects(start_date: date, end_date: date) -> List[Dict[str, Any]]:
+def get_aspects(start_date: date, end_date: date) -> list[dict[str, Any]]:
     """Return exact sidereal aspects with Moon included for the date range.
 
     One row per exact crossing, found on an hourly grid and refined to the
@@ -302,7 +303,7 @@ def get_aspects(start_date: date, end_date: date) -> List[Dict[str, Any]]:
     grid = [start_dt + timedelta(hours=h) for h in range(hours + 1)]
     lons = [{name: data["lon"] for name, data in _positions_at(t).items()} for t in grid]
 
-    rows: List[Dict[str, Any]] = []
+    rows: list[dict[str, Any]] = []
     for i in range(hours):
         t0, t1 = grid[i], grid[i + 1]
         lon0, lon1 = lons[i], lons[i + 1]
@@ -317,8 +318,8 @@ def get_aspects(start_date: date, end_date: date) -> List[Dict[str, Any]]:
                     f1 = (raw1 - target + 180.0) % 360.0 - 180.0
                     if abs(f0) > 90.0:  # far side of the circle, the wrap is not a crossing
                         continue
-                    offset = lambda t: _pair_offset(t, name_a, name_b, target)
-                    gap = lambda t: abs(offset(t)) - orb
+                    offset = lambda t, a=name_a, b=name_b, tg=target: _pair_offset(t, a, b, tg)
+                    gap = lambda t, off=offset, o=orb: abs(off(t)) - o
                     if f0 == 0 or f0 * f1 < 0:
                         exact = _bisect_time(t0, t1, offset).replace(second=0, microsecond=0)
                         row = _build_row(exact, name_a, name_b, angle, angle)

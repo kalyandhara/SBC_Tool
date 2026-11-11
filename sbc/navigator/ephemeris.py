@@ -1,7 +1,10 @@
 """One daily position table, shared by every chart (spec: placebos)."""
 from __future__ import annotations
+
 from dataclasses import dataclass
+
 import numpy as np
+
 from sbc.engine import _julday, _utc_from_local
 from sbc.navigator.weights import TRANSIT_BODIES
 from sbc.planets import positions
