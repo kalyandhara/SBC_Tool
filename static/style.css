@@ -3766,3 +3766,8 @@ button.og-card:hover, button.og-card:focus-visible { border-color: var(--og-acce
 .nav-analog-target { margin-top: 8px; border: 1px solid var(--line); border-radius: 6px; padding: 6px 10px; background: var(--panel2); min-width: 0; }
 .nav-analog-target summary { cursor: pointer; font-weight: 600; overflow-wrap: anywhere; }
 .nav-analog-summary { margin: 6px 0; padding-left: 18px; overflow-wrap: anywhere; }
+
+/* Navigator "Add a birth chart": the Enter Birthdata layout, wrapping on phones. */
+#nav-profile-form .profile-controls { flex-wrap: wrap; }
+#nav-profile-form .profile-controls select { min-width: 0; flex-basis: 180px; }
+#nav-profile-form .form-actions { justify-content: flex-start; }

@@ -118,13 +118,73 @@ def form(html):
 
 def test_birth_form_has_every_field_and_autocomplete_off(form):
     assert re.search(r'<form id="nav-profile-form"[^>]*autocomplete="off"', form)
-    for name, kind in (("label", "text"), ("birth_date", "date"), ("birth_time", "time"),
-                       ("tz", "text"), ("lat", "number"), ("lon", "number")):
-        tag = re.search(rf'<input[^>]*id="nav-f-{name}"[^>]*>', form)
+    assert 'class="birth-form"' in form and 'class="birth-form-grid"' in form
+    for name, kind in (("label", "text"), ("birth_date", "date"), ("birth_time", "time"), ("tz", "text")):
+        tag = re.search(rf'<input[^>]*name="{name}"[^>]*>', form)
         assert tag, name
         assert f'type="{kind}"' in tag.group(0) and 'autocomplete="off"' in tag.group(0), name
-    assert 'step="1"' in re.search(r'<input[^>]*id="nav-f-birth_time"[^>]*>', form).group(0)
+    assert 'step="1"' in re.search(r'<input[^>]*id="nav-bd-time"[^>]*>', form).group(0)
+    for node in ("nav-bd-date", "nav-bd-time", "nav-bd-city", "nav-bd-city-status", "nav-bd-city-results",
+                 "nav-bd-lon-deg", "nav-bd-lon-min", "nav-bd-lon-sec", "nav-bd-lat-deg", "nav-bd-lat-min",
+                 "nav-bd-lat-sec", "nav-bd-tz-hours", "nav-bd-tz-mins", "nav-bd-tz", "nav-bd-label",
+                 "nav-bd-profile-select", "nav-bd-profile-load", "nav-bd-load-latest", "nav-f-save"):
+        assert f'id="{node}"' in form, node
     assert "method=\"post\"" in form.lower() and "action=" not in form.lower()
+
+
+def test_birth_form_labels_match_enter_birthdata(form):
+    for text in ("Birthdate (Gregorian)", "Birthtime (0–24 hrs)", "City name", "Search Worldwide",
+                 "Search USA", "Longitude", "Latitude", "Time Zone (Standard Time)",
+                 "Time zone name (handles daylight saving)", "Load Selected Profile",
+                 "Load Latest Profile", "Create Navigator chart", "Executive Overview"):
+        assert text in form, text
+    for gone in ("bd-gender", "altitude", "pressure", "Rename", "Set Default", "Export", "Import"):
+        assert gone not in form, gone
+    assert 'data-picker-for="nav-bd-date"' in form and 'data-picker-for="nav-bd-time"' in form
+
+
+def test_birth_city_is_a_reusable_initializer_used_by_both_forms(code):
+    city = (ROOT / "static" / "js" / "birth-city.js").read_text(encoding="utf-8")
+    assert "window.initBirthCity" in city
+    assert "document.querySelectorAll('.city-buttons button')" not in city, "buttons must be scoped per form"
+    assert "innerHTML" not in city
+    assert "initBirthCity(" in code and "onSelect" in code
+    assert "/api/astro/profile?user_key=default" in code and "/api/tz/from_coords" in code
+
+
+def test_navigator_never_stores_birth_data(code):
+    assert "localStorage.setItem" not in code and "sessionStorage" not in code
+    assert "console." not in code
+
+
+def _run_dms(cases):
+    import json
+    import subprocess
+    src = JS.read_text(encoding="utf-8")
+    start = src.index("function navDmsToDecimal")
+    fn = src[start:src.index("\n}\n", start) + 2]
+    script = fn + f"\nconsole.log(JSON.stringify({json.dumps(cases)}.map(c => navDmsToDecimal(...c))));"
+    try:
+        out = subprocess.run(["node", "-e", script], capture_output=True, text=True, timeout=60)
+    except FileNotFoundError:
+        pytest.skip("node not installed")
+    assert out.returncode == 0, out.stderr
+    return json.loads(out.stdout)
+
+
+def test_dms_to_decimal_keeps_the_sign_and_the_hemisphere_of_negative_zero():
+    got = _run_dms([
+        ["28", "36", "36", False],     # 28.61
+        ["-77", "12", "36", False],    # -77.21
+        ["-0", "30", "0", False],      # typed minus zero: west of Greenwich
+        ["0", "30", "0", True],        # minus zero lost by the number field, kept as a hemisphere flag
+        ["0", "30", "0", False],
+        ["", "", "", False],           # missing -> null, the server rejects it
+        ["12", "", "", False],
+    ])
+    assert got[0] == pytest.approx(28.61) and got[1] == pytest.approx(-77.21)
+    assert got[2] == pytest.approx(-0.5) and got[3] == pytest.approx(-0.5) and got[4] == pytest.approx(0.5)
+    assert got[5] is None and got[6] == pytest.approx(12.0)
 
 
 def test_birth_form_wording(html, form):

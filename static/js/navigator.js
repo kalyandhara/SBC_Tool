@@ -524,16 +524,131 @@ async function navLoadLatest(seq, id) {
   }
 }
 
-// Values are read by input type, sent once in the body, and the form is then reset.
+// Degrees, minutes and seconds to a decimal. The sign comes from the degree text,
+// and "neg" keeps the hemisphere when the degree is zero (a number field shows -0 as 0).
+// Any blank part of an entered degree counts as 0; a blank degree gives null.
+function navDmsToDecimal(deg, min, sec, neg) {
+  const d = String(deg ?? "").trim();
+  if (d === "") return null;
+  const whole = Math.abs(Number(d));
+  const m = Number(String(min ?? "").trim() || 0);
+  const s = Number(String(sec ?? "").trim() || 0);
+  if (![whole, m, s].every(Number.isFinite)) return null;
+  const negative = d.startsWith("-") || (whole === 0 && Boolean(neg));
+  const value = whole + m / 60 + s / 3600;
+  return negative ? -value : value;
+}
+
+function navCoord(prefix) {
+  const deg = navId(`${prefix}-deg`);
+  return navDmsToDecimal(deg.value, navId(`${prefix}-min`).value, navId(`${prefix}-sec`).value,
+    deg.dataset.neg === "1");
+}
+
+// Keeps the hemisphere of a source value whose degree is zero.
+function navMarkHemisphere(prefix, negative) {
+  const deg = navId(`${prefix}-deg`);
+  if (negative) deg.dataset.neg = "1";
+  else delete deg.dataset.neg;
+}
+
+// Named inputs are read by type; coordinates come from the degree fields.
+// Everything is sent once in the body, and the form is then reset.
 function navFormBody(form) {
   const body = {};
   for (const input of form.querySelectorAll("input[name]")) {
     const value = input.value.trim();
-    if (input.type === "number") body[input.name] = value === "" ? null : Number(value);
-    else if (input.type === "time") body[input.name] = /^\d\d:\d\d$/.test(value) ? `${value}:00` : value;
+    if (input.type === "time") body[input.name] = /^\d\d:\d\d$/.test(value) ? `${value}:00` : value;
     else if (value !== "" || input.required) body[input.name] = value;
   }
+  body.lat = navCoord("nav-bd-lat");
+  body.lon = navCoord("nav-bd-lon");
   return body;
+}
+
+// The IANA name for a place. Coordinates are rounded to 0.01 degree before they
+// go in the query string, which is enough to pick a time zone.
+async function navTzFromCoords(lat, lon) {
+  if (lat === null || lon === null) return;
+  const q = `lat=${lat.toFixed(2)}&lon=${lon.toFixed(2)}`;
+  try {
+    const data = await navFetch(`/api/tz/from_coords?${q}`);
+    if (data.timezone) navId("nav-bd-tz").value = data.timezone;
+  } catch (err) {
+    navMessage("nav-form-status", "The time zone name could not be found. Type it in.", true);
+  }
+}
+
+const NAV_BIRTH = { profiles: [] };
+
+async function navLoadBirthProfiles() {
+  const select = navId("nav-bd-profile-select");
+  try {
+    const list = await navFetch("/api/astro/profile?user_key=default");
+    NAV_BIRTH.profiles = Array.isArray(list) ? list : [];
+  } catch (err) {
+    NAV_BIRTH.profiles = [];
+  }
+  navClear(select);
+  select.appendChild(navEl("option", { value: "", text: "-- Select saved profile --" }));
+  for (const p of NAV_BIRTH.profiles) {
+    const d = p.data || {};
+    const text = `${p.name ? p.name + ": " : ""}${d.date || "?"} ${d.city || ""} ${p.created_at || ""}`.trim();
+    select.appendChild(navEl("option", { value: String(p.id), text: text + (p.is_default ? " ★" : "") }));
+  }
+}
+
+function navSetDms(prefix, part) {
+  const v = (x) => (x === null || x === undefined ? "" : String(x));
+  navId(`${prefix}-deg`).value = v(part.deg);
+  navId(`${prefix}-min`).value = v(part.min);
+  navId(`${prefix}-sec`).value = v(part.sec);
+  navMarkHemisphere(prefix, v(part.deg).trim().startsWith("-"));
+}
+
+async function navFillFromProfile(p) {
+  if (!p) { navMessage("nav-form-status", "No saved profile was found.", true); return; }
+  const d = p.data || {};
+  const set = (id, x) => { navId(id).value = x === null || x === undefined ? "" : String(x); };
+  set("nav-bd-date", d.date);
+  set("nav-bd-time", d.time);
+  set("nav-bd-city", d.city);
+  set("nav-bd-tz-hours", d.tz_hours);
+  set("nav-bd-tz-mins", d.tz_mins);
+  set("nav-bd-tz", "");
+  if (d.lat) navSetDms("nav-bd-lat", d.lat);
+  if (d.lon) navSetDms("nav-bd-lon", d.lon);
+  navMessage("nav-form-status", "Profile loaded. Check the time zone name, then create the chart.");
+  await navTzFromCoords(navCoord("nav-bd-lat"), navCoord("nav-bd-lon"));
+}
+
+function navInitBirthForm() {
+  if (typeof window.initBirthCity === "function") {
+    window.initBirthCity({
+      cityInput: "nav-bd-city", status: "nav-bd-city-status", list: "nav-bd-city-results",
+      lonDeg: "nav-bd-lon-deg", lonMin: "nav-bd-lon-min", lonSec: "nav-bd-lon-sec",
+      latDeg: "nav-bd-lat-deg", latMin: "nav-bd-lat-min", latSec: "nav-bd-lat-sec",
+      buttons: "#nav-profile-form .city-buttons button",
+      onSelect: (city) => {
+        navMarkHemisphere("nav-bd-lat", city.lat < 0);
+        navMarkHemisphere("nav-bd-lon", city.lon < 0);
+        if (city.timezone) navId("nav-bd-tz").value = city.timezone;
+        else navTzFromCoords(city.lat, city.lon);
+      },
+    });
+  }
+  for (const prefix of ["nav-bd-lat", "nav-bd-lon"]) {  // a typed degree carries its own sign
+    navId(`${prefix}-deg`).addEventListener("input", () => navMarkHemisphere(prefix, false));
+  }
+  navId("nav-bd-profile-load").addEventListener("click", () => {
+    const id = navId("nav-bd-profile-select").value;
+    if (!id) { navMessage("nav-form-status", "Choose a saved profile first.", true); return; }
+    navFillFromProfile(NAV_BIRTH.profiles.find((p) => String(p.id) === id));
+  });
+  navId("nav-bd-load-latest").addEventListener("click", async () => {
+    await navLoadBirthProfiles();
+    navFillFromProfile(NAV_BIRTH.profiles[0]);
+  });
 }
 
 async function navSubmitProfile(event) {
@@ -549,6 +664,8 @@ async function navSubmitProfile(event) {
       body: JSON.stringify(navFormBody(form)),
     });
     form.reset();
+    navMarkHemisphere("nav-bd-lat", false);
+    navMarkHemisphere("nav-bd-lon", false);
     NAV.profiles.push({ id: created.id, label: created.label, is_sample: false });
     const select = navId("nav-profile");
     select.appendChild(navEl("option", { value: String(created.id), text: created.label }));
@@ -577,6 +694,7 @@ async function navBoot() {
     }
     NAV.profileId = NAV.profiles[0].id;
     navMessage("nav-status", "");
+    navLoadBirthProfiles();
     await navLoadProfile();
   } catch (err) {
     NAV.booted = false;  // the next visit to the tab retries
@@ -608,6 +726,7 @@ function navSync() {
   new MutationObserver(navSync).observe(pane, { attributes: true, attributeFilter: ["class"] });
   navId("nav-run").addEventListener("click", navStartRun);
   navId("nav-profile-form").addEventListener("submit", navSubmitProfile);
+  navInitBirthForm();
   navId("nav-profile").addEventListener("change", (e) => {
     NAV.profileId = Number(e.target.value);
     navLoadProfile();
