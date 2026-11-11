@@ -137,7 +137,7 @@ def create_app() -> Flask:
     app.before_request(_require_write_token)
     app.register_error_handler(Exception, _unhandled)
     app.after_request(_headers)
-    # Back-compat: some frontend code calls /health (not /healthz).
+    # Back-compat alias for monitors and old probes that hit /health (not /healthz).
     app.add_url_rule("/healthz", "healthz", healthz)
     app.add_url_rule("/health", "health", healthz)
 

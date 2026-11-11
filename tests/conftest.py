@@ -22,7 +22,45 @@ os.environ["SBC_DAILY_LEDGER_DB"] = os.path.join(tempfile.gettempdir(), f"sbc_te
 os.environ["SBC_MARKET_DB"] = os.path.join(tempfile.gettempdir(), f"sbc_test_market_{os.getpid()}.db")
 os.environ["SBC_FORECAST_DB"] = os.path.join(tempfile.gettempdir(), f"sbc_test_forecast_{os.getpid()}.db")
 
+
+def _build_test_cities_db() -> str:
+    """A small cities DB from tests/fixtures/cities_sample.tsv (real GeoNames rows).
+
+    data/cities.db is git-ignored and seeded from a GeoNames download, so it is absent in
+    CI; tests use this fixture everywhere so city lookups give the same answer on every
+    machine.
+    """
+    import csv
+    import sqlite3
+
+    from sbc.cities import _SCHEMA
+
+    path = os.environ["SBC_CITIES_DB"]
+    if os.path.exists(path):
+        os.remove(path)
+    src = Path(__file__).parent / "fixtures" / "cities_sample.tsv"
+    with open(src, encoding="utf-8") as fh:
+        rows = list(csv.DictReader((ln for ln in fh if not ln.startswith("#")), delimiter="\t"))
+    conn = sqlite3.connect(path)
+    try:
+        conn.executescript(_SCHEMA)
+        conn.executemany(
+            "INSERT INTO cities VALUES (?,?,?,?,?,?,?,?,?,?)",
+            [(int(r["id"]), r["name"], r["ascii_name"], r["country"], r["country_code"],
+              r["admin_name"] or None, float(r["lat"]), float(r["lon"]),
+              int(r["population"]), r["timezone"] or None) for r in rows])
+        conn.commit()
+    finally:
+        conn.close()
+    return path
+
+
+# sbc.cities reads the path once at import, so set it before the app is imported.
+os.environ["SBC_CITIES_DB"] = os.path.join(tempfile.gettempdir(), f"sbc_test_cities_{os.getpid()}.db")
+
 from app import app as flask_app
+
+_build_test_cities_db()
 
 
 @pytest.fixture
