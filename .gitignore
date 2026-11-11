@@ -227,3 +227,5 @@ data/intraday/cache/
 *.gate.lock*
 # bd worktree
 .worktrees/sector-rotation-task-10/
+# bd worktree
+.worktrees/astrotrade-navigator/

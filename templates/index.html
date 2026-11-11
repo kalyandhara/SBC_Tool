@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <link rel="icon" type="image/svg+xml" href="/static/favicon.svg">
   <title>Sarvatobhadra Chakra - Market Prediction</title>
-  <link rel="stylesheet" href="/static/style.css?v=36">
+  <link rel="stylesheet" href="/static/style.css?v=40">
   <script src="/static/chart.umd.min.js"></script>
   <script src="/static/js/api-token.js"></script>
 </head>
@@ -1451,8 +1451,8 @@
       </section>
       <section class="panel analog-lab" id="aspect-table-panel">
         <div class="panel-head">
-          <h2>Aspect Table</h2>
-          <span class="panel-sub">Exact-time geocentric sidereal aspects with Moon included, IST to the minute. KSc/KSp mark orb-entry events.</span>
+          <h2>Aspect Timeline</h2>
+          <span class="panel-sub">Exact-time geocentric sidereal aspects, IST to the minute. Each bar runs from orb entry (KSc/KSp) to the exact moment.</span>
         </div>
         <div class="analog-banner" role="note">
           <strong>Traditional timing, untested.</strong>
@@ -1482,7 +1482,7 @@
             <select id="at-aspect">
               <option value="">All aspects</option>
               <option value="0">Conjunction (0°)</option>
-              <option value="30">Sextile (30°)</option>
+              <option value="30">Semi-sextile (30°)</option>
               <option value="45">Semi-square (45°)</option>
               <option value="60">Sextile (60°)</option>
               <option value="90">Square (90°)</option>
@@ -1497,7 +1497,25 @@
           <button type="submit" class="btn">Show aspects</button>
         </form>
         <div id="at-status" class="nifty-chart-status" role="status" aria-live="polite"></div>
-        <div id="at-results"></div>
+        <div class="at-controls" role="group" aria-label="Timeline rows">
+          <button type="button" id="at-toggle-moon" class="ta-seg" aria-pressed="false">Moon</button>
+          <button type="button" id="at-toggle-ketu" class="ta-seg" aria-pressed="false" title="Ketu sits opposite Rahu, so these rows repeat Rahu's moments from the opposite point">Ketu mirrors</button>
+          <div class="at-legend" aria-hidden="true">
+            <span><svg width="12" height="12" class="at-conj"><circle cx="6" cy="6" r="4.5"/></svg>Conjunction</span>
+            <span><svg width="12" height="12" class="at-tense"><path d="M6 .5l5 5.5-5 5.5-5-5.5z"/></svg>Tense 45 90 135 180</span>
+            <span><svg width="12" height="12" class="at-easy"><path d="M6 1l5 9H1z"/></svg>Easy 30 60 120</span>
+            <span><svg width="12" height="12" class="at-inconj"><rect x="2.5" y="2.5" width="7" height="7"/></svg>Inconjunct 150</span>
+            <span><i class="at-key-orb"></i>Inside orb</span>
+            <span><i class="at-key-entry"></i>KSc/KSp orb entry</span>
+          </div>
+        </div>
+        <div id="at-chart" class="at-chart"></div>
+        <div id="at-tip" class="at-tip" role="tooltip" hidden></div>
+        <p id="at-detail" class="analog-note" aria-live="polite"></p>
+        <details class="fe-details">
+          <summary id="at-table-summary">Full table</summary>
+          <div id="at-results"></div>
+        </details>
       </section>
       <section class="panel analog-lab" id="transit-almanac">
         <div class="panel-head">
@@ -1627,7 +1645,7 @@
   <script src="/static/js/analog-lab.js?v=2"></script>
   <script src="/static/js/forecast-card.js?v=2"></script>
   <script src="/static/js/forward-calendar.js?v=3"></script>
-  <script src="/static/js/aspect-table.js?v=1"></script>
+  <script src="/static/js/aspect-table.js?v=3"></script>
   <script src="/static/js/infographic.js?v=1"></script>
   <script src="/static/js/planet-series.js?v=1"></script>
   <script src="/static/js/monthly-score.js?v=1"></script>

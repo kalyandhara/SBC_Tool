@@ -11,7 +11,7 @@ from __future__ import annotations
 
 import datetime as dt
 from datetime import date, datetime, time, timedelta
-from typing import Any, Dict, List, Tuple
+from typing import Any, Callable, Dict, List, Tuple
 
 import swisseph as swe
 
@@ -50,6 +50,8 @@ PLANET_SWE = [
     ("Rahu", swe.TRUE_NODE),
 ]
 
+SWE_BODY = dict(PLANET_SWE)
+
 COMBUST_ORB = {
     "Moon": 12.0, "Mars": 17.0, "Mercury": 14.0,
     "Jupiter": 11.0, "Venus": 10.0, "Saturn": 15.0
@@ -73,6 +75,9 @@ ANGLE_ORB_MAP = {
     180: ASPECT_ORBS.get("opposition", 8.0),
 }
 DEFAULT_ORB = 2.0
+
+# How far to walk from an event looking for its orb entry or exact partner.
+MAX_ORB_WALK_DAYS = 400
 
 FLAGS = swe.FLG_MOSEPH | swe.FLG_SIDEREAL | swe.FLG_SPEED
 
@@ -163,95 +168,81 @@ def _combust(p_data: Dict[str, Any], sun_lon: float, planet_name: str) -> bool:
     return sep < orb
 
 
-def _bisect_root(t0: datetime, t1: datetime, sep0: float, sep1: float, target: float) -> datetime | None:
-    """Bisection to minute precision for sep==target inside [t0, t1]."""
-    if sep0 == target:
-        return t0
-    if sep1 == target:
-        return t1
-    # sign change check
-    if (sep0 - target) * (sep1 - target) > 0:
-        return None
-    lo, hi = t0, t1
-    for _ in range(30):
-        mid = lo + (hi - lo) / 2
-        pos_mid = _positions_at(mid)
-        # we need the two planets – caller will supply? We'll assume generic?
-        # This helper is not used directly; kept for structure.
-    return None
+def _targets(angle: int) -> Tuple[int, ...]:
+    """Signed offsets of an aspect: 90 happens both ahead of and behind the other body."""
+    return (angle,) if angle in (0, 180) else (angle, -angle)
 
 
-def _find_exact_between(t0: datetime, t1: datetime, pa: Dict[str, Any], pb: Dict[str, Any], name_a: str, name_b: str, angle: int) -> datetime | None:
-    pos0_a = _positions_at(t0)[name_a]
-    pos0_b = _positions_at(t0)[name_b]
-    pos1_a = _positions_at(t1)[name_a]
-    pos1_b = _positions_at(t1)[name_b]
-    sep0 = _angular_sep(pos0_a["lon"], pos0_b["lon"])
-    sep1 = _angular_sep(pos1_a["lon"], pos1_b["lon"])
-    diff0 = sep0 - angle
-    diff1 = sep1 - angle
-    if abs(diff0) < 1e-6:
-        return t0
-    if abs(diff1) < 1e-6:
-        return t1
-    if diff0 * diff1 > 0:
-        return None
-    lo, hi = t0, t1
-    for _ in range(35):
+def _pair_offset(when: datetime, name_a: str, name_b: str, target: int) -> float:
+    """Signed distance in degrees from exact, in [-180, 180). Zero means exact.
+
+    Signed, because the folded 0..180 separation touches 0 and 180 without ever
+    crossing them, which is what hid conjunctions and oppositions.
+    """
+    jd = _julday_ist(when)
+    swe.set_sid_mode(swe.SIDM_LAHIRI)
+
+    def lon(name: str) -> float:
+        base = SWE_BODY["Rahu" if name == "Ketu" else name]
+        value = swe.calc_ut(jd, base, FLAGS)[0][0]
+        return value + 180.0 if name == "Ketu" else value
+
+    return (lon(name_a) - lon(name_b) - target + 180.0) % 360.0 - 180.0
+
+
+def _bisect_time(lo: datetime, hi: datetime, fn: Callable[[datetime], float]) -> datetime:
+    """Earlier end of a bracket under 30 seconds wide around fn's sign change."""
+    f_lo = fn(lo)
+    while hi - lo > timedelta(seconds=30):
         mid = lo + (hi - lo) / 2
-        mid_pos = _positions_at(mid)
-        sep_mid = _angular_sep(mid_pos[name_a]["lon"], mid_pos[name_b]["lon"])
-        diff_mid = sep_mid - angle
-        if abs(diff_mid) < 1e-6:
-            return mid
-        if diff0 * diff_mid <= 0:
+        f_mid = fn(mid)
+        if f_lo * f_mid <= 0:
             hi = mid
-            diff1 = diff_mid
         else:
-            lo = mid
-            diff0 = diff_mid
+            lo, f_lo = mid, f_mid
     return lo
 
 
-def _orb_entry_time(lo_time: datetime, exact_time: datetime, name_a: str, name_b: str, angle: int, orb: float) -> datetime | None:
-    """Find time when |sep - angle| == orb before exact_time, by scanning backwards."""
-    # start search window: up to 48h before exact
-    start = exact_time - timedelta(hours=48)
-    if start < lo_time:
-        start = lo_time
-    # coarse hourly check
-    t = exact_time
-    step = timedelta(hours=-1)
-    prev_time = None
-    prev_sep = None
-    # walk backwards hourly
-    cur = exact_time
-    while cur >= start:
-        pos = _positions_at(cur)
-        sep = _angular_sep(pos[name_a]["lon"], pos[name_b]["lon"])
-        if prev_sep is not None:
-            # check if orb crossing between prev and cur
-            if (abs(prev_sep - angle) - orb) * (abs(sep - angle) - orb) <= 0:
-                # bisect between prev and cur
-                lo, hi = cur, prev_time
-                for _ in range(30):
-                    mid = lo + (hi - lo) / 2
-                    mid_pos = _positions_at(mid)
-                    sep_mid = _angular_sep(mid_pos[name_a]["lon"], mid_pos[name_b]["lon"])
-                    if abs(abs(sep_mid - angle) - orb) < 1e-6:
-                        return mid
-                    if (abs(sep_mid - angle) - orb) * (abs(sep - angle) - orb) <= 0:
-                        hi = mid
-                    else:
-                        lo = mid
-                return lo
-        prev_time = cur
-        prev_sep = sep
-        cur += step
+def _walk_step(name_a: str, name_b: str) -> timedelta:
+    return timedelta(hours=3) if "Moon" in (name_a, name_b) else timedelta(days=1)
+
+
+def _orb_entry_before(exact: datetime, name_a: str, name_b: str, target: int, orb: float) -> datetime | None:
+    """Most recent time before an exact aspect that the pair came inside the orb."""
+    gap = lambda t: abs(_pair_offset(t, name_a, name_b, target)) - orb
+    step = _walk_step(name_a, name_b)
+    inside = exact
+    limit = exact - timedelta(days=MAX_ORB_WALK_DAYS)
+    while inside > limit:
+        outside = inside - step
+        if gap(outside) >= 0:
+            return _bisect_time(outside, inside, gap)
+        inside = outside
     return None
 
 
-def _build_row(when: datetime, name_a: str, name_b: str, aspect_code: str, angle: int) -> Dict[str, Any]:
+def _exact_after(entry: datetime, name_a: str, name_b: str, target: int, orb: float) -> datetime | None:
+    """The exact aspect following an orb entry, or None if the pair leaves the orb first."""
+    offset = lambda t: _pair_offset(t, name_a, name_b, target)
+    step = _walk_step(name_a, name_b)
+    prev = entry
+    limit = entry + timedelta(days=MAX_ORB_WALK_DAYS)
+    while prev < limit:
+        cur = prev + step
+        value = offset(cur)
+        if offset(prev) * value <= 0:
+            return _bisect_time(prev, cur, offset)
+        if abs(value) > orb:
+            return None
+        prev = cur
+    return None
+
+
+def _stamp(when: datetime | None) -> str | None:
+    return when.strftime("%Y-%m-%d %H:%M") if when else None
+
+
+def _build_row(when: datetime, name_a: str, name_b: str, aspect_code: int | str, angle: int) -> Dict[str, Any]:
     pos = _positions_at(when)
     pa = pos[name_a]
     pb = pos[name_b]
@@ -259,7 +250,7 @@ def _build_row(when: datetime, name_a: str, name_b: str, aspect_code: str, angle
     rashi1 = pa["abbr"]
     rashi2 = pb["abbr"]
     rashis = f"{rashi1}-{rashi2}"
-    relations = _relations(pa["sign_idx"], pb["sign_idx"], angle if isinstance(aspect_code, int) else 0)
+    relations = _relations(pa["sign_idx"], pb["sign_idx"], angle)
     combust = _combust(pa, sun["lon"], name_a) or _combust(pb, sun["lon"], name_b)
     retro = pa["retro"] or pb["retro"]
     winner = _winner(pa, pb, name_a, name_b)
@@ -269,7 +260,8 @@ def _build_row(when: datetime, name_a: str, name_b: str, aspect_code: str, angle
         "weekday": weekday,
         "time": when.strftime("%H:%M"),
         "pl1": name_a,
-        "aspect": str(aspect_code),
+        "aspect": aspect_code,
+        "target_angle": angle,
         "pl2": name_b,
         "rashi1": pa["sign"],
         "rashi2": pb["sign"],
@@ -279,14 +271,20 @@ def _build_row(when: datetime, name_a: str, name_b: str, aspect_code: str, angle
         "retro": bool(retro),
         "winner": winner,
         "muhurta": ghabad_kind_at(when) or "",
+        "orb_entry": None,
+        "exact_at": None,
     }
 
 
 def get_aspects(start_date: date, end_date: date) -> List[Dict[str, Any]]:
     """Return exact sidereal aspects with Moon included for the date range.
 
-    Scans hourly and refines to minute precision via bisection.
-    Includes KSc/KSp orb-entry rows.
+    One row per exact crossing, found on an hourly grid and refined to the
+    minute, plus one KSc/KSp row per orb entry. Exact rows carry the preceding
+    orb_entry and entry rows the following exact_at, either of which may fall
+    outside the range; both are None when the walk finds none. Rahu-Ketu is
+    skipped: the pair is always 180 degrees apart, so it is not an event.
+    Rahu and Ketu each keep their own rows.
     """
     if isinstance(start_date, str):
         start_date = date.fromisoformat(start_date)
@@ -295,80 +293,42 @@ def get_aspects(start_date: date, end_date: date) -> List[Dict[str, Any]]:
     if end_date < start_date:
         raise ValueError("end_date must be >= start_date")
 
-    planets = ["Sun", "Moon", "Mercury", "Venus", "Mars", "Jupiter", "Saturn",
-               "Uranus", "Neptune", "Pluto", "Rahu", "Ketu"]
+    planets = [name for name, _ in PLANET_SWE] + ["Ketu"]
+    pairs = [(a, b) for i, a in enumerate(planets) for b in planets[i + 1:] if {a, b} != {"Rahu", "Ketu"}]
 
-    # build hourly timeline
     start_dt = datetime.combine(start_date, time(0, 0))
-    end_dt = datetime.combine(end_date + timedelta(days=1), time(0, 0)) - timedelta(minutes=1)
-    times = []
-    cur = start_dt
-    while cur <= end_dt:
-        times.append(cur)
-        cur += timedelta(hours=1)
+    end_dt = datetime.combine(end_date + timedelta(days=1), time(0, 0))
+    hours = int((end_dt - start_dt).total_seconds() // 3600)
+    grid = [start_dt + timedelta(hours=h) for h in range(hours + 1)]
+    lons = [{name: data["lon"] for name, data in _positions_at(t).items()} for t in grid]
 
     rows: List[Dict[str, Any]] = []
-    seen = set()
-
-    # pre-cache positions for speed
-    pos_cache: Dict[datetime, Dict[str, Any]] = {}
-
-    def get_pos(dt_: datetime) -> Dict[str, Any]:
-        if dt_ not in pos_cache:
-            pos_cache[dt_] = _positions_at(dt_)
-        return pos_cache[dt_]
-
-    # main scan
-    for i in range(len(times) - 1):
-        t0 = times[i]
-        t1 = times[i + 1]
-        pos0 = get_pos(t0)
-        pos1 = get_pos(t1)
-        for ia in range(len(planets)):
-            for ib in range(ia + 1, len(planets)):
-                name_a = planets[ia]
-                name_b = planets[ib]
-                if name_a not in pos0 or name_b not in pos0:
-                    continue
-                lon0_a = pos0[name_a]["lon"]
-                lon0_b = pos0[name_b]["lon"]
-                lon1_a = pos1[name_a]["lon"]
-                lon1_b = pos1[name_b]["lon"]
-                sep0 = _angular_sep(lon0_a, lon0_b)
-                sep1 = _angular_sep(lon1_a, lon1_b)
-                for angle in ASPECT_ANGLES:
-                    diff0 = sep0 - angle
-                    diff1 = sep1 - angle
-                    # exact at start
-                    if abs(diff0) < 0.05:
-                        key = (t0.date(), t0.hour, name_a, name_b, angle)
-                        if key not in seen:
-                            rows.append(_build_row(t0, name_a, name_b, angle, angle))
-                            seen.add(key)
-                    # crossing
-                    if diff0 * diff1 < 0:
-                        root = _find_exact_between(t0, t1, pos0, pos1, name_a, name_b, angle)
-                        if root:
-                            # round to minute
-                            root_min = root.replace(second=0, microsecond=0)
-                            key = (root_min.date(), root_min.hour, root_min.minute, name_a, name_b, angle)
-                            if key not in seen:
-                                rows.append(_build_row(root_min, name_a, name_b, angle, angle))
-                                seen.add(key)
-                                # orb entry
-                                orb = ANGLE_ORB_MAP.get(angle, DEFAULT_ORB)
-                                entry = _orb_entry_time(t0, root_min, name_a, name_b, angle, orb)
-                                if entry:
-                                    entry_min = entry.replace(second=0, microsecond=0)
-                                    entry_code = "KSp" if angle == 0 else "KSc"
-                                    entry_key = (entry_min.date(), entry_min.hour, entry_min.minute, name_a, name_b, entry_code)
-                                    if entry_key not in seen:
-                                        # relations for entry use actual aspect angle for context
-                                        e_row = _build_row(entry_min, name_a, name_b, entry_code, angle)
-                                        # keep aspect code as KSc/KSp
-                                        e_row["aspect"] = entry_code
-                                        rows.append(e_row)
-                                        seen.add(entry_key)
+    for i in range(hours):
+        t0, t1 = grid[i], grid[i + 1]
+        lon0, lon1 = lons[i], lons[i + 1]
+        for name_a, name_b in pairs:
+            raw0 = lon0[name_a] - lon0[name_b]
+            raw1 = lon1[name_a] - lon1[name_b]
+            for angle in ASPECT_ANGLES:
+                orb = ANGLE_ORB_MAP.get(angle, DEFAULT_ORB)
+                entry_code = "KSp" if angle == 0 else "KSc"
+                for target in _targets(angle):
+                    f0 = (raw0 - target + 180.0) % 360.0 - 180.0
+                    f1 = (raw1 - target + 180.0) % 360.0 - 180.0
+                    if abs(f0) > 90.0:  # far side of the circle, the wrap is not a crossing
+                        continue
+                    offset = lambda t: _pair_offset(t, name_a, name_b, target)
+                    gap = lambda t: abs(offset(t)) - orb
+                    if f0 == 0 or f0 * f1 < 0:
+                        exact = _bisect_time(t0, t1, offset).replace(second=0, microsecond=0)
+                        row = _build_row(exact, name_a, name_b, angle, angle)
+                        row["orb_entry"] = _stamp(_orb_entry_before(exact, name_a, name_b, target, orb))
+                        rows.append(row)
+                    if abs(f0) > orb >= abs(f1):
+                        entry = _bisect_time(t0, t1, gap)
+                        row = _build_row(entry.replace(second=0, microsecond=0), name_a, name_b, entry_code, angle)
+                        row["exact_at"] = _stamp(_exact_after(entry, name_a, name_b, target, orb))
+                        rows.append(row)
 
     rows.sort(key=lambda r: (r["date"], r["time"], r["pl1"], r["pl2"]))
     return rows
