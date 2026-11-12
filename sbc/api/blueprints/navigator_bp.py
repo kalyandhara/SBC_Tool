@@ -16,6 +16,7 @@ import time
 from collections import OrderedDict
 from dataclasses import asdict
 from functools import lru_cache
+from typing import Any, cast
 from zoneinfo import ZoneInfo
 
 import numpy as np
@@ -163,11 +164,12 @@ def _arg_id() -> int:
     return int(raw)
 
 
-def _json_body(message: str):
+def _json_body(message: str) -> dict[str, Any] | None:
     try:
-        return request.get_json(silent=True)
+        body = request.get_json(silent=True)
     except RecursionError:  # silent covers ValueError only
         raise _BadRequest(message) from None
+    return body if isinstance(body, dict) else None
 
 
 def _require_profile(profile_id: int) -> Profile:
@@ -182,7 +184,7 @@ def _result_label(profile: Profile) -> str:
     return B.label_for(profile.is_sample)
 
 
-def _market():
+def _market() -> tuple[pd.DataFrame, dict[str, Any]]:
     """(daily bars, VIX closes), each only up to the last NIFTY session with a close."""
     bars = market_store.get_daily(INSTRUMENT)
     if not bars:
@@ -215,7 +217,7 @@ def _parse_day() -> str:
     return raw
 
 
-def _compute(profile: Profile, ohlc: pd.DataFrame, vix: dict, day: str, future: bool) -> dict:
+def _compute(profile: Profile, ohlc: pd.DataFrame, vix: dict[str, Any], day: str, future: bool) -> dict[str, Any]:
     days = ohlc["date"].tolist()
     opens, closes = ohlc["open"].to_numpy(float), ohlc["close"].to_numpy(float)
     if future:
@@ -228,11 +230,12 @@ def _compute(profile: Profile, ohlc: pd.DataFrame, vix: dict, day: str, future: 
     i = days.index(day)
     score = int(series.score[i])
     band = S.band_of(score)
-    return B.clean_json({"score": score, "band": band, "action": S.action_of(band),
-                     "lineage": S.day_lineage(series, i)})
+    return cast(dict[str, Any], B.clean_json({"score": score, "band": band,
+                                               "action": S.action_of(band),
+                                               "lineage": S.day_lineage(series, i)}))
 
 
-def _latest_verdict(profile_id: int) -> dict:
+def _latest_verdict(profile_id: int) -> dict[str, Any]:
     """The verdict shown beside the action label. A store failure here must not
     fail the score, so it degrades to "verdict unavailable". chart_hash stays out."""
     try:
@@ -244,7 +247,8 @@ def _latest_verdict(profile_id: int) -> dict:
     if run is None:
         return {"available": True, "run_id": None, "verdict": None, "status": None,
                 "data_asof": None, "stale": False, "text": "no backtest yet"}
-    results = run.get("results") if isinstance(run.get("results"), dict) else {}
+    results: dict[str, Any] = (cast(dict[str, Any], run.get("results"))
+                                if isinstance(run.get("results"), dict) else {})
     verdict = results.get("verdict") if run.get("status") == "done" else None
     stale = (run.get("weights_version") != WEIGHTS_VERSION
              or run.get("engine_version") != _version())
@@ -257,13 +261,13 @@ def _latest_verdict(profile_id: int) -> dict:
             "stale": bool(stale), "text": text}
 
 
-def _vol_neutral(lineage: dict) -> bool:
+def _vol_neutral(lineage: dict[str, Any]) -> bool:
     return any(f.get("neutral") for c in lineage["contributions"] if c["term"] == "vol"
                for f in c.get("factors", []))
 
 
 @navigator_bp.route("/profile", methods=["GET"])
-def profile_read():
+def profile_read() -> Any:
     if "profile_id" in request.args:
         profile = _require_profile(_arg_id())
         return jsonify(asdict(profile))
@@ -272,7 +276,7 @@ def profile_read():
 
 
 @navigator_bp.route("/profile", methods=["POST"])
-def profile_create():
+def profile_create() -> Any:
     body = _json_body("invalid birth data")
     if not isinstance(body, dict):
         raise _BadRequest("invalid birth data")
@@ -289,7 +293,7 @@ def profile_create():
 
 
 @navigator_bp.route("/chart", methods=["GET"])
-def chart():
+def chart() -> Any:
     profile_id = _arg_id()
     profile = _require_profile(profile_id)
     points = []
@@ -303,7 +307,7 @@ def chart():
 
 
 @navigator_bp.route("/score", methods=["GET"])
-def score():
+def score() -> Any:
     profile_id, day = _arg_id(), _parse_day()
     profile = _require_profile(profile_id)
     ohlc, vix = _market()
@@ -322,6 +326,8 @@ def score():
         row = _compute(profile, ohlc, vix, day, future)
         if not future and not _vol_neutral(row["lineage"]):  # neutral may just mean VIX is late
             store.save_score(key, row)
+    if row is None:
+        raise RuntimeError("score computation returned no result")
     return jsonify({"profile_id": profile_id, "day": day, "data_asof": asof,
                     "weights_version": WEIGHTS_VERSION, "is_sample": profile.is_sample,
                     "label": _result_label(profile), "score": int(row["score"]),
@@ -361,9 +367,9 @@ def _start_job(run_id: int, profile: Profile, ohlc: pd.DataFrame, vix: dict) -> 
 
 
 @navigator_bp.route("/backtest", methods=["POST"])
-def backtest_start():
+def backtest_start() -> Any:
     body = _json_body("profile_id must be a positive integer")
-    profile_id = body.get("profile_id") if isinstance(body, dict) else None
+    profile_id = body.get("profile_id") if body is not None else None
     if isinstance(profile_id, bool) or not isinstance(profile_id, int) or not 0 < profile_id < _MAX_ID:
         raise _BadRequest("profile_id must be a positive integer")
     profile = _require_profile(profile_id)
@@ -383,15 +389,15 @@ def backtest_start():
     return jsonify({"run_id": run_id, "is_new": is_new}), 202
 
 
-def _run_body(run: dict):
-    profile = _require_profile(run["profile_id"])
+def _run_body(run: dict[str, Any]) -> Any:
+    profile = _require_profile(int(run["profile_id"]))
     return jsonify({**{k: run[k] for k in _RUN_FIELDS}, "is_sample": profile.is_sample,
                     "label": _result_label(profile), "status_note": STATUS,
                     "disclaimer": DISCLAIMER})
 
 
 @navigator_bp.route("/backtest/<int:run_id>", methods=["GET"])
-def backtest_read(run_id: int):
+def backtest_read(run_id: int) -> Any:
     if run_id >= _MAX_ID:
         raise _NotFound("Run not found")
     store.expire_stale()
@@ -403,7 +409,7 @@ def backtest_read(run_id: int):
 
 # A static segment: <int:run_id> never matches "latest", so the two cannot clash.
 @navigator_bp.route("/backtest/latest", methods=["GET"])
-def backtest_latest():
+def backtest_latest() -> Any:
     profile_id = _arg_id()
     store.expire_stale()
     run = store.latest_run(profile_id)
@@ -435,7 +441,7 @@ def _arg_days() -> int:
 
 
 @navigator_bp.route("/analogs", methods=["GET"])
-def analogs():
+def analogs() -> Any:
     days = _arg_days()
     profile_id = _arg_id()
     profile = _require_profile(profile_id)
@@ -455,7 +461,7 @@ def analogs():
             return jsonify({"error": ANALOGS_BUSY}), 429
         try:
             t0 = time.perf_counter()
-            result = B.clean_json(A.build(profile, market, days))
+            result = cast(dict[str, Any], B.clean_json(A.build(profile, market, days)))
             result["notes"] = list(result.get("notes", []))
             result["_timing"] = time.perf_counter() - t0
             with _analog_cache_lock:     # only reached on success: errors are never cached
@@ -464,6 +470,8 @@ def analogs():
                     _analog_cache.popitem(last=False)
         finally:
             _analog_lock.release()
+    if result is None:
+        raise RuntimeError("analog computation returned no result")
     body = {k: v for k, v in result.items() if k != "_timing"}
     body["notes"] = list(result["notes"]) + [
         f"Computed in {result['_timing']:.1f} seconds" + (" (cached result)." if cached else ".")]
