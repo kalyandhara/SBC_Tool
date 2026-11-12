@@ -1,0 +1,11 @@
+# GeoNames rows (CC BY 4.0, https://www.geonames.org/) copied from data/cities.db for the
+# test suite: tests/conftest.py builds a small cities DB from them, so city lookups work
+# without the full GeoNames seed (absent in CI). Columns follow sbc/cities.py _SCHEMA.
+id	name	ascii_name	country	country_code	admin_name	lat	lon	population	timezone
+1275339	Mumbai	Mumbai	India	IN	Maharashtra	19.07283	72.88261	12691836	Asia/Kolkata
+1261481	New Delhi	New Delhi	India	IN	Delhi	28.62137	77.2148	317797	Asia/Kolkata
+1277333	Bengaluru	Bengaluru	India	IN	Karnataka	12.97194	77.59369	8495492	Asia/Kolkata
+292223	Dubai	Dubai	United Arab Emirates	AE	Dubai	25.07725	55.30927	3790000	Asia/Dubai
+2643743	London	London	United Kingdom	GB	England	51.50853	-0.12574	8961989	Europe/London
+5128581	New York City	New York City	United States	US	New York	40.71427	-74.00597	8804190	America/New_York
+1273294	Delhi	Delhi	India	IN	Delhi	28.65195	77.23149	11034555	Asia/Kolkata

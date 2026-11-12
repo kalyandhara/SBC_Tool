@@ -67,7 +67,7 @@ _FLAGS = swe.FLG_SWIEPH | swe.FLG_SIDEREAL | swe.FLG_SPEED
 
 def _jd(day: dt.date, hh: int, mm: int) -> float:
     ist = dt.datetime(day.year, day.month, day.day, hh, mm) - dt.timedelta(hours=5, minutes=30)
-    return swe.julday(ist.year, ist.month, ist.day, ist.hour + ist.minute / 60.0)
+    return float(swe.julday(ist.year, ist.month, ist.day, ist.hour + ist.minute / 60.0))
 
 
 def _fmt(lon: float) -> str:

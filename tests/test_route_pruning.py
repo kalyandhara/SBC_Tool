@@ -14,7 +14,12 @@ DELETED = [
 # Kept on purpose although no page calls them: infrastructure, the TradingView
 # integration, and the prediction engine's operational endpoints.
 API_ONLY = {
-    "/healthz", "/webhook/sbc", "/api/sbc/latest",
+    "/healthz", "/webhook/sbc",
+    # Alias of /healthz kept for external monitors and old probes (sbc/app_factory.py).
+    "/health",
+    # Unified Briefing summary (plan 2026-10-30): built and tested, but the briefing panel
+    # renders from /api/sector_rotation, so no page calls it yet.
+    "/api/briefing_summary", "/api/sbc/latest",
     "/api/engine/aspect_windows", "/api/engine/fingerprint", "/api/engine/fingerprint/status",
     "/api/engine/forecast/ledger", "/api/engine/intraday_forecast/freeze",
     # Muhurta / journal endpoints with no panel yet.

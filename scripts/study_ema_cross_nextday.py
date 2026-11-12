@@ -34,7 +34,6 @@ Example:
 """
 
 import argparse
-import datetime as dt
 import os
 import sys
 import time
@@ -152,7 +151,7 @@ def main():
     events = {"up": {"same": [], "fwd1": [], "fwd5": [], "years": []},
               "down": {"same": [], "fwd1": [], "fwd5": [], "years": []}}
     controls = {"same": [], "fwd1": [], "fwd5": [], "years": []}
-    for sym, df in raw.items():
+    for df in raw.values():
         if len(df) < MIN_VALID_BARS:
             skipped += 1
             continue

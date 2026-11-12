@@ -16,6 +16,7 @@ from __future__ import annotations
 
 import datetime as dt
 from functools import lru_cache
+from typing import Any
 
 import swisseph as swe
 
@@ -119,7 +120,7 @@ def _tithi(jd: float) -> int:
     return int(diff // 12.0) + 1
 
 
-def _ghabad_state(jd: float) -> dict:
+def _ghabad_state(jd: float) -> dict[str, Any]:
     """Ghabad state at an instant: nakshatras Sun->Moon inclusive x3 + tithi, mod 7."""
     sun_lon = _sun_lon(jd)
     moon_lon = _moon_lon(jd)
@@ -160,11 +161,13 @@ def ghabad_status(day: dt.date, jd: float | None = None) -> dict:
 
 def ghabad_kind_at(when: dt.datetime) -> str | None:
     """'Ghabad', 'Ardha-ghabad' or None at a naive IST instant."""
-    return _ghabad_state(_jd(when))["kind"]
+    kind: str | None = _ghabad_state(_jd(when))["kind"]
+    return kind
 
 
 def _ghabad_kind_jd(jd: float) -> str | None:
-    return _ghabad_state(jd)["kind"]
+    kind: str | None = _ghabad_state(jd)["kind"]
+    return kind
 
 
 def _kind_edge(a: float, b: float) -> float:

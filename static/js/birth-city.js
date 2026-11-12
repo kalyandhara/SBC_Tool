@@ -1,13 +1,19 @@
-/* Birth-data form: city search and longitude/latitude fill-in.
- * Moved out of templates/index.html (B-17); behaviour unchanged. */
-document.addEventListener('DOMContentLoaded', function(){
-  const cityInput = document.getElementById('bd-city');
-  const lonDeg = document.getElementById('lon-deg');
-  const lonMin = document.getElementById('lon-min');
-  const lonSec = document.getElementById('lon-sec');
-  const latDeg = document.getElementById('lat-deg');
-  const latMin = document.getElementById('lat-min');
-  const latSec = document.getElementById('lat-sec');
+/* Birth-data forms: city search and longitude/latitude fill-in.
+ * window.initBirthCity(opts) wires one form; Executive Overview and the
+ * Navigator each call it with their own ids. Server strings use textContent. */
+window.initBirthCity = function(opts){
+  const el = (id) => (id ? document.getElementById(id) : null);
+  const cityInput = el(opts.cityInput);
+  if(!cityInput) return;
+  const lonDeg = el(opts.lonDeg);
+  const lonMin = el(opts.lonMin);
+  const lonSec = el(opts.lonSec);
+  const latDeg = el(opts.latDeg);
+  const latMin = el(opts.latMin);
+  const latSec = el(opts.latSec);
+  const cityStatus = el(opts.status);
+  const cityList = el(opts.list);
+  const buttons = opts.buttons ? document.querySelectorAll(opts.buttons) : [];
   function toDMS(dec){
     // Round once, in whole arc-seconds, then split. Rounding the seconds
     // after flooring minutes turned 22.7 into 22°41'60" (float drift),
@@ -39,33 +45,39 @@ document.addEventListener('DOMContentLoaded', function(){
     return await res.json();
   }
   // B-14: results list instead of alert(); click (or Enter) picks a city.
-  const cityStatus = document.getElementById('bd-city-status');
-  const cityList = document.getElementById('bd-city-results');
-  const escHtml = (v) => String(v ?? '').replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
   function setCityStatus(msg){ if(cityStatus) cityStatus.textContent = msg; }
-  function hideCities(){ if(cityList){ cityList.classList.add('hidden'); cityList.innerHTML = ''; } }
+  function hideCities(){ if(cityList){ cityList.classList.add('hidden'); cityList.replaceChildren(); } }
   function pickCity(r){
     const parts = [r.name, r.admin, r.country].filter(Boolean);
     cityInput.value = parts.join(', ');
     fillCoords(r.lat, r.lon);
     setCityStatus(`Selected ${parts.join(', ')} (${r.lat.toFixed(4)}, ${r.lon.toFixed(4)}${r.timezone ? ', ' + r.timezone : ''})`);
     hideCities();
+    if(typeof opts.onSelect === 'function') opts.onSelect({lat: r.lat, lon: r.lon, timezone: r.timezone || ''});
+  }
+  function cityItem(r){
+    const li = document.createElement('li');
+    li.setAttribute('role', 'option');
+    li.tabIndex = 0;
+    const name = document.createElement('strong');
+    name.textContent = String(r.name ?? '');
+    const where = document.createElement('span');
+    where.className = 'muted';
+    where.textContent = [r.admin, r.country].filter(Boolean).join(', ');
+    const pop = document.createElement('span');
+    pop.className = 'city-pop';
+    pop.textContent = Number(r.population || 0).toLocaleString();
+    li.append(name, ' ', where, ' ', pop);
+    li.addEventListener('click', () => pickCity(r));
+    li.addEventListener('keydown', (e) => { if(e.key === 'Enter'){ e.preventDefault(); pickCity(r); } });
+    return li;
   }
   function showCities(results){
     if(!cityList) return;
     if(!results.length){ hideCities(); setCityStatus('No matching city with 15,000+ people. Enter the coordinates by hand.'); return; }
     setCityStatus(`${results.length} match${results.length === 1 ? '' : 'es'}`);
-    cityList.innerHTML = results.map((r, i) => `
-      <li role="option" tabindex="0" data-i="${i}">
-        <strong>${escHtml(r.name)}</strong> <span class="muted">${escHtml([r.admin, r.country].filter(Boolean).join(', '))}</span>
-        <span class="city-pop">${Number(r.population || 0).toLocaleString()}</span>
-      </li>`).join('');
+    cityList.replaceChildren(...results.map(cityItem));
     cityList.classList.remove('hidden');
-    cityList.querySelectorAll('li').forEach(li => {
-      const r = results[Number(li.dataset.i)];
-      li.addEventListener('click', () => pickCity(r));
-      li.addEventListener('keydown', (e) => { if(e.key === 'Enter'){ e.preventDefault(); pickCity(r); } });
-    });
   }
   async function runCitySearch(country){
     const q = cityInput?.value?.trim();
@@ -73,17 +85,26 @@ document.addEventListener('DOMContentLoaded', function(){
     try { showCities(await searchCities(q, country)); }
     catch { hideCities(); setCityStatus('City search failed. Try again.'); }
   }
-  document.querySelectorAll('.city-buttons button').forEach(btn=>{
+  buttons.forEach(btn=>{
     btn.addEventListener('click', () => runCitySearch(btn.dataset.country || ''));
   });
   let cityTimer = null;
-  cityInput?.addEventListener('input', () => {
+  cityInput.addEventListener('input', () => {
     clearTimeout(cityTimer);
     cityTimer = setTimeout(() => runCitySearch(''), 300);
   });
-  cityInput?.addEventListener('keydown', (e) => {
+  cityInput.addEventListener('keydown', (e) => {
     if(e.key === 'Escape') hideCities();
     if(e.key === 'ArrowDown'){ const first = cityList?.querySelector('li'); if(first){ e.preventDefault(); first.focus(); } }
+  });
+};
+
+document.addEventListener('DOMContentLoaded', function(){
+  window.initBirthCity({
+    cityInput: 'bd-city', status: 'bd-city-status', list: 'bd-city-results',
+    lonDeg: 'lon-deg', lonMin: 'lon-min', lonSec: 'lon-sec',
+    latDeg: 'lat-deg', latMin: 'lat-min', latSec: 'lat-sec',
+    buttons: '#birth-data-form .city-buttons button',
   });
 });
 

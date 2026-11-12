@@ -1,7 +1,8 @@
 # tests/test_ontology_graph.py
 """Unit tests for sbc/ontology_graph.py — build_graph_data()."""
-import pytest
 from unittest.mock import patch
+
+import pytest
 
 MOCK_PLANETS = [
     {"name": "Jupiter", "longitude": 45.0, "sign": "Taurus", "sign_index": 1,

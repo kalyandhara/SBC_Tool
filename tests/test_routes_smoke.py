@@ -43,6 +43,11 @@ def test_get_route_does_not_crash(client, path):
     if path in SKIP:
         pytest.skip(SKIP[path])
     resp = client.get(path, query_string=DEFAULTS)
+    if (path.startswith("/api/navigator/") and resp.status_code == 503
+            and b"Navigator database is unavailable" in resp.data):
+        # Without Postgres (CI, or Docker down) the Navigator answers a deliberate 503 with
+        # a readable message; that is graceful degradation, not a crash.
+        return
     assert resp.status_code < 500, (
         f"{path} -> {resp.status_code}: {resp.data[:300]!r}"
     )

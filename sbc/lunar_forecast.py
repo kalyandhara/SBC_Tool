@@ -438,10 +438,10 @@ def generate_lunar_sector_forecast(date_str, planets, tithi, sun, moon, current_
     # Key dates
     key_dates = []
     if lunar["is_purnima"]:
-        key_dates.append({"date": "Today", "event": "Purnima (Full Moon)", "impact": "HIGH", 
+        key_dates.append({"date": "Today", "event": "Purnima (Full Moon)", "impact": "HIGH",
                          "note": "Emotional peak, realization (BEARISH per University of Michigan study)"})
     if lunar["is_amavasya"]:
-        key_dates.append({"date": "Today", "event": "Amavasya (New Moon)", "impact": "HIGH", 
+        key_dates.append({"date": "Today", "event": "Amavasya (New Moon)", "impact": "HIGH",
                          "note": "New beginnings, optimism (BULLISH per University of Michigan study)"})
     if lunar["is_ekadashi"]:
         key_dates.append({"date": "Today", "event": "Ekadashi", "impact": "MEDIUM", "note": "Spiritual, low volume"})

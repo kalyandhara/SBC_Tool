@@ -30,6 +30,7 @@ import datetime as dt
 import hashlib
 import os
 import re
+from collections.abc import Iterable
 
 RDF = "http://www.w3.org/1999/02/22-rdf-syntax-ns#"
 RDFS = "http://www.w3.org/2000/01/rdf-schema#"
@@ -102,7 +103,7 @@ def _expand(term: str, prefixes: dict[str, str]) -> str:
     return iri(prefixes[prefix] + local)
 
 
-def _parse_turtle_lines(lines, source_label: str) -> list[Triple]:
+def _parse_turtle_lines(lines: Iterable[str], source_label: str) -> list[Triple]:
     """Core restricted-Turtle parser over an iterable of raw lines.
 
     One statement per line, ending with a dot.  Inline comments are only

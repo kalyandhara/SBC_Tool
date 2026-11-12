@@ -52,7 +52,7 @@ def sidereal_diff(day: dt.date) -> float:
     flags = swe.FLG_MOSEPH | swe.FLG_SIDEREAL
     venus = swe.calc_ut(jd, swe.VENUS, flags)[0][0]
     sun = swe.calc_ut(jd, swe.SUN, flags)[0][0]
-    return (venus - sun + 180.0) % 360.0 - 180.0
+    return float((venus - sun + 180.0) % 360.0 - 180.0)
 
 
 def inferior_conjunctions(first: dt.date, last: dt.date) -> list[str]:

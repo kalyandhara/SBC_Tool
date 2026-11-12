@@ -2276,7 +2276,7 @@ body {
   background: var(--bg2);
   border-bottom: 1px solid var(--line);
   position: sticky;
-  top: 75px;
+  top: var(--topbar-h, 75px);  /* measured by static/js/sticky-offset.js */
   z-index: 15;
   backdrop-filter: blur(8px);
 }
@@ -2310,7 +2310,8 @@ body {
    and never applied. */
 .nav-tabs { align-items: center; }
 @media (min-width: 761px) {
-  .nav-tabs { overflow: visible; }
+  /* Visible so the Advanced dropdown is not clipped; wrap so the tabs never widen the page. */
+  .nav-tabs { overflow: visible; flex-wrap: wrap; }
 }
 .advanced-workspaces {
   position: relative;
@@ -3725,3 +3726,48 @@ button.og-card:hover, button.og-card:focus-visible { border-color: var(--og-acce
   .og-card-mid { order: -1; }
   .og-card-lines { display: none; }
 }
+
+/* AstroTrade Navigator tab. Uses the theme variables, so it follows light and dark. */
+.nav-root { display: grid; gap: 12px; grid-template-columns: minmax(0, 1fr); }
+.nav-root > *, .nav-root section > * { min-width: 0; }
+#nav-backtest-out { display: grid; gap: 12px; grid-template-columns: minmax(0, 1fr); }
+#nav-backtest-out > * { min-width: 0; }
+.nav-banner { padding: 10px 12px; border: 1px solid var(--accent); border-radius: 8px; color: var(--accent); background: var(--panel2); font-weight: 600; overflow-wrap: anywhere; }
+.nav-disclaimer { color: var(--text); font-weight: 600; }
+.nav-note { color: var(--muted); font-size: 13px; overflow-wrap: anywhere; }
+.nav-note:empty { display: none; }
+.nav-error, .nav-note.nav-error { color: var(--red); font-weight: 600; overflow-wrap: anywhere; }
+.nav-controls { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.nav-controls select { max-width: 100%; padding: 6px 8px; background: var(--panel2); color: var(--text); border: 1px solid var(--line); border-radius: 6px; }
+.nav-heading { margin: 12px 0 8px; font-size: 16px; }
+.nav-subheading { margin: 8px 0 4px; font-size: 14px; }
+.nav-scroll { overflow-x: auto; max-width: 100%; -webkit-overflow-scrolling: touch; }
+.nav-table { border-collapse: collapse; width: 100%; font-size: 13px; font-variant-numeric: tabular-nums; }
+.nav-table caption { caption-side: top; text-align: left; padding: 4px 0; color: var(--muted); }
+.nav-table th, .nav-table td { padding: 6px 8px; border-bottom: 1px solid var(--line); text-align: left; white-space: nowrap; }
+.nav-table th { background: var(--head); color: var(--text); }
+.nav-score-row { display: flex; flex-wrap: wrap; gap: 16px; align-items: center; margin-bottom: 8px; }
+.nav-score-value { font-size: 40px; font-weight: 700; line-height: 1; color: var(--accent); }
+.nav-band { font-size: 16px; font-weight: 600; }
+.nav-tag { display: inline-block; margin-left: 8px; padding: 1px 8px; border: 1px dashed var(--line); border-radius: 999px; color: var(--muted); font-size: 12px; }
+.nav-moves { display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(min(220px, 100%), 1fr)); }
+.nav-list { margin: 0; padding-left: 18px; }
+.nav-details { margin-top: 6px; }
+.nav-details summary { cursor: pointer; }
+.nav-run { margin-bottom: 8px; padding: 8px 14px; border: 1px solid var(--accent); border-radius: 6px; background: var(--panel2); color: var(--accent); font-weight: 600; cursor: pointer; }
+.nav-run:disabled { opacity: .55; cursor: not-allowed; }
+.nav-verdict { padding: 10px 12px; border-left: 4px solid var(--muted); background: var(--panel2); font-weight: 600; }
+.nav-verdict-edge { border-left-color: var(--green); }
+
+.nav-form { display: grid; grid-template-columns: minmax(0, 1fr); gap: 6px; max-width: 420px; margin-top: 8px; }
+.nav-form input { min-width: 0; padding: 6px 8px; background: var(--bg2); color: var(--text); border: 1px solid var(--line); border-radius: 6px; }
+.nav-form .nav-run { justify-self: start; margin-top: 6px; }
+.nav-analogs { min-width: 0; }
+.nav-analog-target { margin-top: 8px; border: 1px solid var(--line); border-radius: 6px; padding: 6px 10px; background: var(--panel2); min-width: 0; }
+.nav-analog-target summary { cursor: pointer; font-weight: 600; overflow-wrap: anywhere; }
+.nav-analog-summary { margin: 6px 0; padding-left: 18px; overflow-wrap: anywhere; }
+
+/* Navigator "Add a birth chart": the Enter Birthdata layout, wrapping on phones. */
+#nav-profile-form .profile-controls { flex-wrap: wrap; }
+#nav-profile-form .profile-controls select { min-width: 0; flex-basis: 180px; }
+#nav-profile-form .form-actions { justify-content: flex-start; }

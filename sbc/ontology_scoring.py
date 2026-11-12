@@ -14,6 +14,7 @@ and the rule chain that produced it, so the UI can render
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from typing import Any
 
 from sbc import ontology as ont
 from sbc.planets import positioned_planets
@@ -246,7 +247,7 @@ def compute_liquidity_flow(sector_scores: list[SectorScore]) -> dict[str, str]:
     """Liquidity Flow Map: sector group -> up/down/flat arrow."""
     group_scores: dict[str, list[float]] = {}
     for s in sector_scores:
-        grp = SECTOR_GROUPS.get(sector_scores and s.sector, "Other")
+        grp = SECTOR_GROUPS.get(s.sector, "Other")
         group_scores.setdefault(grp, []).append(s.score)
     flow: dict[str, str] = {}
     for grp, vals in group_scores.items():
@@ -283,7 +284,7 @@ def build_report(date_str: str, time_str: str = "09:15",
     actions = trading_actions_for(regime, confidence)
 
     # Reasoning paths: planet -> nakshatra -> lord -> behaviour -> sector
-    reasoning_paths = []
+    reasoning_paths: list[dict[str, Any]] = []
     for r in readings:
         for sector in r.sectors:
             reasoning_paths.append({
@@ -313,7 +314,7 @@ def build_report(date_str: str, time_str: str = "09:15",
     user_rules = ont.load_user_rules(ont.USER_RULES)
     reasoner = ont.Reasoner(triples, user_rules)
     reasoner.run()
-    certificate = {
+    certificate: dict[str, Any] = {
         "asserted": len(reasoner.asserted),
         "derivations": len(reasoner.derivations),
         "by_verdict": {},

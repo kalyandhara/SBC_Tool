@@ -4,7 +4,7 @@
 # (then put this header back).
 beautifulsoup4==4.15.0    # via yfinance
 blinker==1.9.0            # via flask
-certifi==2026.7.22        # via curl-cffi, requests
+certifi==2026.10.23       # via curl-cffi, requests
 cffi==2.1.1               # via curl-cffi, timezonefinder
 charset-normalizer==3.5.2  # via requests
 click==8.5.0              # via flask
@@ -30,9 +30,11 @@ openpyxl==3.1.5           # via -r requirements.txt
 packaging==26.3           # via gunicorn, matplotlib
 pandas==3.0.6             # via yfinance, -r requirements.txt
 peewee==4.5.2             # via yfinance
-pillow==12.3.0            # via matplotlib
+pillow==13.0.0            # via matplotlib
 platformdirs==4.12.3      # via yfinance
 protobuf==7.36.2          # via yfinance
+psycopg==3.3.8            # via -r requirements.txt
+psycopg-binary==3.3.8     # via psycopg
 pycparser==3.0            # via cffi
 pyparsing==3.3.3          # via matplotlib
 pyswisseph==2.10.3.2      # via -r requirements.txt
@@ -44,7 +46,7 @@ six==1.17.0               # via python-dateutil
 soupsieve==2.10           # via beautifulsoup4
 timezonefinder==8.3.0     # via -r requirements.txt
 timezonefinder-data==1.2026.3  # via timezonefinder
-typing-extensions==4.16.0  # via beautifulsoup4, python-docx
+typing-extensions==4.16.0  # via beautifulsoup4, psycopg, python-docx
 urllib3==2.8.0            # via requests
 websockets==17.2          # via yfinance
 werkzeug==3.1.9           # via flask

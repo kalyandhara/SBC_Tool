@@ -3,11 +3,6 @@
 Backtest Alcohol sector bullish planetary syntax.
 """
 
-import sys
-
-sys.path.insert(0, r'D:\SBC_Tool')
-
-
 from typing import Any
 
 from sbc.cgsp_framework import angular_distance, get_planet

@@ -8,30 +8,31 @@ Usage:
 import argparse
 import os
 import sys
+
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from sbc.economic_data import refresh_fred_data, add_rbi_manual_data
+from sbc.economic_data import refresh_fred_data
 
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    parser.add_argument("--years", type=int, default=10, 
+    parser.add_argument("--years", type=int, default=10,
                        help="Number of years of historical data to fetch (default: 10)")
     args = parser.parse_args()
-    
+
     print(f"Refreshing economic data for the last {args.years} years...")
-    
+
     # Check for FRED API key
     if not os.environ.get("FRED_API_KEY"):
         print("WARNING: FRED_API_KEY environment variable not set")
         print("FRED data will not be fetched. Set it with:")
         print("  export FRED_API_KEY=your_api_key_here")
         print("  or set it in your shell profile")
-    
+
     # Refresh FRED data
     try:
         results = refresh_fred_data(years=args.years)
-        print(f"\nRefresh complete:")
+        print("\nRefresh complete:")
         print(f"  Series fetched: {len(results['series_fetched'])}")
         print(f"  Total observations: {results['total_observations']}")
         if results['errors']:
@@ -40,7 +41,7 @@ def main():
                 print(f"    - {error}")
     except Exception as e:
         print(f"Error refreshing FRED data: {e}")
-    
+
     # RBI data must be added manually (no public API)
     print("\nRBI data:")
     print("  RBI does not have a public API for policy rates")

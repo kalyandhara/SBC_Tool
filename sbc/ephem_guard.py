@@ -16,6 +16,7 @@ A thread that never set a mode uses the last mode set by any thread (the old beh
 from __future__ import annotations
 
 import threading
+from typing import Any
 
 import swisseph as swe
 
@@ -26,7 +27,7 @@ _MODE_READERS = ("calc_ut", "calc", "houses_ex", "houses_ex2", "get_ayanamsa_ut"
 
 _lock = threading.RLock()
 _local = threading.local()
-_state = {"installed": False, "last": None}
+_state: dict[str, Any] = {"installed": False, "last": None}
 
 
 def install() -> None:
@@ -50,7 +51,7 @@ def install() -> None:
                 return fn(*a, **k)
         wrapped.__name__ = getattr(fn, "__name__", "wrapped")
         wrapped.__doc__ = getattr(fn, "__doc__", None)
-        wrapped.__wrapped__ = fn
+        wrapped.__wrapped__ = fn  # type: ignore[attr-defined]  # functools.wraps-style marker
         return wrapped
 
     for name in _MODE_READERS:

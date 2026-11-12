@@ -102,7 +102,8 @@ def build_sessions(bars: dict[dt.datetime, float], lord_cache: dict) -> list[dic
     return sessions
 
 
-def _segments(labels: np.ndarray, values: np.ndarray, sess_id: np.ndarray):
+def _segments(labels: np.ndarray, values: np.ndarray,
+              sess_id: np.ndarray) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
     """Runs of equal label within a session -> (label, sum of values, bar count)."""
     brk = np.r_[True, (labels[1:] != labels[:-1]) | (sess_id[1:] != sess_id[:-1])]
     starts = np.flatnonzero(brk)
@@ -111,7 +112,8 @@ def _segments(labels: np.ndarray, values: np.ndarray, sess_id: np.ndarray):
     return labels[starts], sums, counts, sess_id[starts]
 
 
-def group_stats(labels, values, sess_id, codes) -> dict[str, float]:
+def group_stats(labels: np.ndarray, values: np.ndarray, sess_id: np.ndarray,
+                codes: dict[str, int]) -> dict[str, float]:
     lab, sums, cnt, _ = _segments(labels, values, sess_id)
     per_hour = sums / cnt
     out = {}
@@ -124,7 +126,7 @@ def group_stats(labels, values, sess_id, codes) -> dict[str, float]:
 
 def _flatten(sessions, values_key="ret"):
     lords = sorted({x for s in sessions for x in s["lords"]} | set(bw.READING))
-    codes = {l: i for i, l in enumerate(lords)}
+    codes = {lord: i for i, lord in enumerate(lords)}
     labels = np.concatenate([[codes[x] for x in s["lords"]] for s in sessions])
     values = np.concatenate([s[values_key] for s in sessions])
     hours = np.concatenate([s["hours"] for s in sessions])
@@ -143,7 +145,7 @@ def controlled(values: np.ndarray, hours: np.ndarray) -> tuple[np.ndarray, np.nd
     return dm, z
 
 
-def permutation_test(sessions, n_perm=N_PERM, seed=0) -> dict:
+def permutation_test(sessions: list[dict], n_perm: int = N_PERM, seed: int = 0) -> dict:
     labels, raw, hours, sess, codes = _flatten(sessions)
     dm, z = controlled(raw, hours)
     variants = {"raw": (raw, raw), "controlled": (dm, z)}  # (values for up/down, values for vol)
@@ -162,7 +164,7 @@ def permutation_test(sessions, n_perm=N_PERM, seed=0) -> dict:
     rng = np.random.default_rng(seed)
     # Flat bar positions of each session, grouped by session length (the permutation strata).
     strata = [starts[lengths == n][:, None] + np.arange(n) for n in np.unique(lengths)]
-    ge = {v: {g: 0 for g in GROUPS} for v in variants}
+    ge = {v: dict.fromkeys(GROUPS, 0) for v in variants}
     for _ in range(n_perm):
         perm_labels = labels.copy()
         for pos in strata:

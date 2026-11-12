@@ -398,7 +398,7 @@ def _strip(ax, block, y):
     return y - h - 0.06, False
 
 
-def _bars(ax: "matplotlib.axes.Axes", block: dict, y: float) -> tuple[float, bool]:
+def _bars(ax: matplotlib.axes.Axes, block: dict, y: float) -> tuple[float, bool]:
     items = block["items"]
     if not items:
         ax.text(M, y, "No data for this window.", fontsize=10.5, color=MUTED, va="top")

@@ -5,8 +5,8 @@ import datetime as dt
 import numpy as np
 import pytest
 
-from scripts import sector_rotation_report as rep
 from sbc import sector_rotation as sr
+from scripts import sector_rotation_report as rep
 
 
 def _series(seed=0):
@@ -99,7 +99,7 @@ def test_flows_conserve_occurrence_counts():
         for h, flow in by_h.items():
             n = out["rotation"][name][h]["occurrences"]
             links = flow["links"]
-            to_sector = sum(l["value"] for l in links if l["target"] in rep.SECTOR_KEYS)
-            to_nifty = sum(l["value"] for l in links if l["target"] in ("NIFTY up", "NIFTY down"))
+            to_sector = sum(lk["value"] for lk in links if lk["target"] in rep.SECTOR_KEYS)
+            to_nifty = sum(lk["value"] for lk in links if lk["target"] in ("NIFTY up", "NIFTY down"))
             assert to_sector + flow["unranked"] == n
             assert to_nifty + flow["nifty_missing"] == to_sector

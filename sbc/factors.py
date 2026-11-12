@@ -121,7 +121,7 @@ FACTORS: list[Factor] = [
            lambda fp, prev, nxt, dec: _moon_with_node(fp)),
     Factor("jupiter_dignity", "directional", "Jupiter exalted/own -> bullish, debilitated -> bearish",
            lambda fp, prev, nxt, dec: _jupiter_dignity(fp)),
-    Factor("mercury_retrograde_risk", "directional", 
+    Factor("mercury_retrograde_risk", "directional",
            "Mercury retrograde -> higher risk (wider stops, smaller positions)",
            lambda fp, prev, nxt, dec: _mercury_retrograde_risk(fp)),
 ]

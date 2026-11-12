@@ -94,7 +94,7 @@ def _cache_path(name: str) -> Path:
     return CACHE_DIR / f"{slug}.csv"
 
 
-def _read_cache(path: Path, max_age: dt.timedelta | None):
+def _read_cache(path: Path, max_age: dt.timedelta | None) -> list[str] | None:
     if not path.exists():
         return None
     if max_age is not None:
@@ -115,7 +115,7 @@ def _fetch_csv(url: str) -> str:
     import urllib.request
     req = urllib.request.Request(url, headers=_UA)
     with urllib.request.urlopen(req, timeout=30) as resp:
-        return resp.read().decode("utf-8", "replace")
+        return str(resp.read().decode("utf-8", "replace"))
 
 
 def _symbols_from_list_csv(text: str) -> list[str]:

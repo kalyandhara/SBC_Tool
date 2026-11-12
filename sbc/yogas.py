@@ -22,6 +22,8 @@ synthetic charts; the wrapper assembles the chart from sbc.natal.
 from __future__ import annotations
 
 import datetime as dt
+from collections.abc import Callable
+from typing import Any
 
 from .nakshatra import RASHIS
 from .planets import COMBUST_ORB
@@ -51,10 +53,12 @@ SIGN_LORDS = {0: "Mars", 1: "Venus", 2: "Mercury", 3: "Moon", 4: "Sun",
 
 def vimshottari(moon_longitude: float, birth_date: str,
                 at_date: str | None = None) -> dict:
-    """Mahadasha/Antardasha timeline from the Moon's nakshatra.
+    """Mahadasha/Antardasha/Pratyantar timeline from the Moon's nakshatra.
 
     Returns {birth_maha, balance_years, mahadashas: [{lord, start, end,
-    antardashas: [{lord, start, end}]}], at: {maha, antar, ends}}.
+    antardashas: [{lord, start, end, pratyantars: [{lord, start,
+    end}]}]}], at: {date, maha, antar, pratyantar}}. Pratyantars (9 per
+    antardasha) begin with the antardasha lord and are proportional.
     """
     birth = dt.date.fromisoformat(birth_date)
     at = dt.date.fromisoformat(at_date) if at_date else dt.date.today()
@@ -68,22 +72,36 @@ def vimshottari(moon_longitude: float, birth_date: str,
     maha_start = birth_dt - dt.timedelta(days=start_years * elapsed_frac
                                          * YEAR_DAYS)
 
-    mahadashas = []
+    mahadashas: list[dict[str, Any]] = []
     idx = start_lord_idx
     cursor = maha_start
     for _ in range(9):  # one full 120-year cycle is more than any scan
         lord, years = VIMSHOTTARI[idx]
         end = cursor + dt.timedelta(days=years * YEAR_DAYS)
         # Antardashas: begin with the Mahadasha lord, proportional.
-        antars = []
+        antars: list[dict[str, Any]] = []
         acursor = cursor
         ant_idx = idx
         for _a in range(9):
             alord, ayears = VIMSHOTTARI[ant_idx]
             alen = dt.timedelta(days=years * ayears / 120.0 * YEAR_DAYS)
+            # Pratyantars: begin with the Antardasha lord, proportional.
+            pratyantars: list[dict[str, Any]] = []
+            pcursor = acursor
+            p_idx = ant_idx
+            antar_days = alen.total_seconds() / 86400.0
+            for _p in range(9):
+                plord, pyears = VIMSHOTTARI[p_idx]
+                plen = dt.timedelta(days=antar_days * pyears / 120.0)
+                pratyantars.append({"lord": plord,
+                                    "start": pcursor.isoformat(),
+                                    "end": (pcursor + plen).isoformat()})
+                pcursor += plen
+                p_idx = (p_idx + 1) % 9
             antars.append({"lord": alord,
                            "start": acursor.isoformat(),
-                           "end": (acursor + alen).isoformat()})
+                           "end": (acursor + alen).isoformat(),
+                           "pratyantars": pratyantars})
             acursor += alen
             ant_idx = (ant_idx + 1) % 9
         mahadashas.append({"lord": lord, "start": cursor.isoformat(),
@@ -101,6 +119,11 @@ def vimshottari(moon_longitude: float, birth_date: str,
         at_antar = next((a for a in at_maha["antardashas"]
                          if dt.datetime.fromisoformat(a["start"]) <= at_dt
                          < dt.datetime.fromisoformat(a["end"])), None)
+    at_pratyantar = None
+    if at_antar:
+        at_pratyantar = next((p for p in at_antar["pratyantars"]
+                              if dt.datetime.fromisoformat(p["start"]) <= at_dt
+                              < dt.datetime.fromisoformat(p["end"])), None)
     balance = (dt.datetime.fromisoformat(mahadashas[0]["end"])
                - birth_dt).total_seconds() / 86400.0 / YEAR_DAYS
     return {"birth_maha": mahadashas[0]["lord"],
@@ -108,7 +131,9 @@ def vimshottari(moon_longitude: float, birth_date: str,
             "mahadashas": mahadashas,
             "at": {"date": at.isoformat(),
                    "maha": at_maha["lord"] if at_maha else None,
-                   "antar": at_antar["lord"] if at_antar else None}}
+                   "antar": at_antar["lord"] if at_antar else None,
+                   "pratyantar": (at_pratyantar["lord"]
+                                  if at_pratyantar else None)}}
 
 
 def drishti_targets(planet: str, planet_sign: int) -> set[int]:
@@ -692,7 +717,7 @@ def evaluate_chandra_aditya(longitudes: dict[str, float],
     return out
 
 
-YOGAS = {
+YOGAS: dict[str, Callable[..., dict]] = {
     "gaja_kesari": gaja_kesari,
     "budha_aditya": evaluate_budha_aditya,
     "guru_chandal": evaluate_guru_chandal,

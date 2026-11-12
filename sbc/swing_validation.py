@@ -23,6 +23,7 @@ B. The full model as specified (window entry, confluence exit), 2008 onward:
 from __future__ import annotations
 
 import datetime as dt
+from typing import Any
 
 import numpy as np
 
@@ -82,7 +83,7 @@ def part_a(dates: list[str], closes: np.ndarray, n_perm: int) -> dict:
     return grade_a(dates, closes, entry_entries(dates, closes, active), active, n_perm)
 
 
-def grade_a(dates: list[str], closes: np.ndarray, entries: list[dict], active: list[list[dict]],
+def grade_a(dates: list[str], closes: np.ndarray, entries: list[dict], active: list[list[Any]],
             n_perm: int) -> dict:
     """Grade entry-timing signals and the no-astro control; `active` is the windows per session.
 

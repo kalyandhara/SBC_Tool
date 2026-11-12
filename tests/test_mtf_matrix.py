@@ -10,9 +10,14 @@ import pandas as pd
 import pytest
 
 from sbc.screener.indicators import ema, heikin_ashi
-from sbc.screener.mtf_matrix import (MIN_BARS, bias_label, compute_matrix,
-                                     provisional_state, timeframe_state,
-                                     to_markdown)
+from sbc.screener.mtf_matrix import (
+    MIN_BARS,
+    bias_label,
+    compute_matrix,
+    provisional_state,
+    timeframe_state,
+    to_markdown,
+)
 
 
 def raw_frame(closes, base=100.0):

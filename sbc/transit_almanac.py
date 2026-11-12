@@ -21,7 +21,9 @@ Meanings are traditional readings in plain words, not tested market signals.
 from __future__ import annotations
 
 import datetime as dt
+from collections.abc import Callable
 from functools import lru_cache
+from typing import Any
 
 import swisseph as swe
 
@@ -40,8 +42,8 @@ MIN_YEAR, MAX_YEAR = 1990, 2050
 def _flags(sidereal: bool) -> int:
     if sidereal:
         swe.set_sid_mode(swe.SIDM_LAHIRI)
-        return swe.FLG_MOSEPH | swe.FLG_SPEED | swe.FLG_SIDEREAL
-    return swe.FLG_MOSEPH | swe.FLG_SPEED
+        return int(swe.FLG_MOSEPH | swe.FLG_SPEED | swe.FLG_SIDEREAL)
+    return int(swe.FLG_MOSEPH | swe.FLG_SPEED)
 
 
 def _lon(jd: float, body: int, sid: bool) -> tuple[float, float]:
@@ -53,7 +55,7 @@ def _wrap(x: float) -> float:
     return (x + 180.0) % 360.0 - 180.0
 
 
-def _bisect(f, a: float, b: float, n: int = 40) -> float:
+def _bisect(f: Callable[..., float], a: float, b: float, n: int = 40) -> float:
     fa = f(a)
     for _ in range(n):
         m = (a + b) / 2
@@ -89,14 +91,14 @@ def build(year: int, zodiac: str = "sidereal") -> dict:
     j1 = swe.julday(year + 1, 1, 1, 0) - IST_DAYS
     grid = [j0 + i * STEP for i in range(int((j1 - j0) / STEP) + 1)]
     samples = {name: [_lon(j, body, sid) for j in grid] for name, body in BODIES}
-    rows = []
+    rows: list[dict[str, Any]] = []
 
     for name, body in BODIES:
         s = samples[name]
         events, marks = [], []
         for i in range(1, len(grid)):
             if (s[i - 1][1] < 0) != (s[i][1] < 0):
-                t = _bisect(lambda j: _lon(j, body, sid)[1], grid[i - 1], grid[i])
+                t = _bisect(lambda j, body=body: _lon(j, body, sid)[1], grid[i - 1], grid[i])
                 lon = _lon(t, body, sid)[0]
                 marks.append(t)
                 events.append({"t": _frac(t, j0, j1), "date": _date(t), "type": "station",
@@ -106,7 +108,7 @@ def build(year: int, zodiac: str = "sidereal") -> dict:
             if a != b:
                 forward = (b - a) % 12 == 1
                 edge = (b if forward else a) * 30
-                t = _bisect(lambda j: _wrap(_lon(j, body, sid)[0] - edge), grid[i - 1], grid[i])
+                t = _bisect(lambda j, body=body, edge=edge: _wrap(_lon(j, body, sid)[0] - edge), grid[i - 1], grid[i])
                 marks.append(t)
                 events.append({"t": _frac(t, j0, j1), "date": _date(t), "type": "ingress", "body": name,
                                "sign": SIGNS[b], "back": not forward})
@@ -126,7 +128,7 @@ def build(year: int, zodiac: str = "sidereal") -> dict:
             ss, sf = samples[slow], samples[fast]
             for angle, aspect in ASPECTS:
                 for side in ([1, -1] if angle not in (0, 180) else [1]):
-                    def gap(j, angle=angle, side=side):
+                    def gap(j, angle=angle, side=side, fast_body=fast_body, slow_body=slow_body):
                         return _wrap(_lon(j, fast_body, sid)[0] - _lon(j, slow_body, sid)[0] - side * angle)
                     prev = _wrap(sf[0][0] - ss[0][0] - side * angle)
                     for k in range(1, len(grid)):
@@ -150,7 +152,7 @@ def build(year: int, zodiac: str = "sidereal") -> dict:
         a, b = node(coarse[k - 1]), node(coarse[k])
         if int(a // 30) != int(b // 30):
             edge = int(a // 30) * 30
-            t = _bisect(lambda j: _wrap(node(j) - edge), coarse[k - 1], coarse[k])
+            t = _bisect(lambda j, edge=edge: _wrap(node(j) - edge), coarse[k - 1], coarse[k])
             cuts.append(t)
             node_events.append({"t": _frac(t, j0, j1), "date": _date(t), "type": "ingress",
                                 "body": "Nodes", "sign": _sign(b), "back": True})

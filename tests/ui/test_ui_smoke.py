@@ -81,3 +81,21 @@ def test_every_tab_and_button(page):
     page.wait_for_timeout(2000)  # let in-flight requests settle and report
     assert errors == {}, errors
     assert page.errors == [], page.errors
+
+
+def test_tab_bar_stays_clickable_below_a_wrapped_topbar(page, base_url):
+    """The sticky tab bar must sit below the sticky topbar even when the topbar wraps
+    (narrow window, wider fonts); a fixed offset let the topbar swallow tab clicks in CI."""
+    pg = page.context.browser.new_page(viewport={"width": 900, "height": 900})
+    try:
+        pg.goto(base_url + "/", wait_until="load")
+        pg.mouse.wheel(0, 600)
+        pg.wait_for_timeout(300)
+        hit = pg.evaluate("""() => {
+            const r = document.querySelector(".nav-tab[data-tab='tab-transit']").getBoundingClientRect();
+            const el = document.elementFromPoint(r.x + r.width / 2, r.y + r.height / 2);
+            return el && el.closest('.nav-tab') ? 'nav-tab' : (el && (el.id || el.tagName));
+        }""")
+    finally:
+        pg.close()
+    assert hit == "nav-tab"

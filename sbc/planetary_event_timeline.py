@@ -11,6 +11,7 @@ the decile control mean). Null: event labels exchanged within each decile.
 """
 
 import numpy as np
+from numpy.typing import ArrayLike
 
 from sbc.stats import bh_adjust
 
@@ -25,17 +26,17 @@ ALPHA = 0.05
 
 def is_event(planets: dict) -> bool:
     """planets: name -> planet dict from sbc.planets at 09:15 IST."""
-    return planets["Mars"]["nakshatra"] == "Pushya" and planets["Moon"]["nakshatra"] == "Rohini"
+    return bool(planets["Mars"]["nakshatra"] == "Pushya" and planets["Moon"]["nakshatra"] == "Rohini")
 
 
-def episode_starts(flags) -> np.ndarray:
+def episode_starts(flags: ArrayLike) -> np.ndarray:
     """Boolean mask marking the first session of each run of consecutive True flags."""
     flags = np.asarray(flags, dtype=bool)
     prev = np.concatenate(([False], flags[:-1]))
-    return flags & ~prev
+    return np.asarray(flags & ~prev)
 
 
-def same_day_returns(closes) -> np.ndarray:
+def same_day_returns(closes: ArrayLike) -> np.ndarray:
     """r0[t] = close[t] / close[t-1] - 1; NaN on the first session."""
     c = np.asarray(closes, dtype=float)
     r0 = np.full(len(c), np.nan)
@@ -43,7 +44,7 @@ def same_day_returns(closes) -> np.ndarray:
     return r0
 
 
-def decile_labels(r0) -> np.ndarray:
+def decile_labels(r0: ArrayLike) -> np.ndarray:
     """Decile 0..9 of each finite same-day return over the whole sample; -1 where undefined."""
     r0 = np.asarray(r0, dtype=float)
     labels = np.full(len(r0), -1)
@@ -53,7 +54,7 @@ def decile_labels(r0) -> np.ndarray:
     return labels
 
 
-def forward_returns(closes, horizon: int) -> np.ndarray:
+def forward_returns(closes: ArrayLike, horizon: int) -> np.ndarray:
     """fwd[t] = close[t + horizon] / close[t] - 1; NaN where the window runs past the sample."""
     c = np.asarray(closes, dtype=float)
     fwd = np.full(len(c), np.nan)
@@ -61,7 +62,8 @@ def forward_returns(closes, horizon: int) -> np.ndarray:
     return fwd
 
 
-def excess_statistic(fwd, labels, ev, ctrl=None) -> float:
+def excess_statistic(fwd: np.ndarray, labels: np.ndarray, ev: ArrayLike,
+                     ctrl: ArrayLike | None = None) -> float:
     """Mean over events of (fwd - mean fwd of same-decile control sessions).
 
     ctrl defaults to every non-event session. Events with no finite forward return,
@@ -80,7 +82,7 @@ def excess_statistic(fwd, labels, ev, ctrl=None) -> float:
     return total / count if count else float("nan")
 
 
-def permutation_p(fwd, labels, ev, observed: float, iters: int = N_PERMUTATIONS,
+def permutation_p(fwd: np.ndarray, labels: np.ndarray, ev: ArrayLike, observed: float, iters: int = N_PERMUTATIONS,
                   seed: int = SEED) -> float:
     """Two-sided p from a decile-preserving permutation of event labels.
 
@@ -105,14 +107,14 @@ def permutation_p(fwd, labels, ev, observed: float, iters: int = N_PERMUTATIONS,
     return (hits + 1) / (iters + 1)
 
 
-def event_path(closes, starts, before: int = 5, after: int = 20) -> np.ndarray:
+def event_path(closes: ArrayLike, starts: ArrayLike, before: int = 5, after: int = 20) -> np.ndarray:
     """One row per event: closes from -before to +after sessions, scaled so the event close = 100.
 
     Rows run past the sample edge are NaN.
     """
     c = np.asarray(closes, dtype=float)
     rows = []
-    for i in np.flatnonzero(starts):
+    for i in (int(k) for k in np.flatnonzero(starts)):
         row = np.full(before + after + 1, np.nan)
         lo, hi = i - before, i + after
         src = c[max(lo, 0):min(hi, len(c) - 1) + 1]
@@ -130,6 +132,6 @@ def grade(n_episodes: int, p: float, q: float, same_sign: bool) -> str:
     return "no edge"
 
 
-def benjamini_hochberg(pvalues) -> list[float]:
+def benjamini_hochberg(pvalues: ArrayLike) -> list[float]:
     """BH-adjusted q-values across one family (thin wrapper over sbc.stats)."""
     return bh_adjust(pvalues)

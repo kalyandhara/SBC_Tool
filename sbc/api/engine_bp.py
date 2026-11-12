@@ -286,9 +286,9 @@ def monthly_projection():
     trading flag, and NIFTY closes so far. Hypothetical, unvalidated.
     """
     import calendar
-    from sbc import fingerprint_store, market_store
+
+    from sbc import data_freshness, fingerprint_store, market_store
     from sbc.market_holidays import is_trading_day
-    from sbc import data_freshness
 
     month_str = request.args.get("month")
     if not month_str:
@@ -868,10 +868,10 @@ def trade_journal():
     """
     from sbc import trade_journal as tj
     if request.method == "GET":
-        tid = request.args.get("id")
-        if tid:
+        tid_arg = request.args.get("id")
+        if tid_arg:
             try:
-                trade = tj.get_trade(int(tid))
+                trade = tj.get_trade(int(tid_arg))
                 return jsonify(trade), 200 if trade else 404
             except Exception as e:
                 return jsonify({"error": str(e)}), 400
