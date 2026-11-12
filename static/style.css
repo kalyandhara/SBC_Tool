@@ -2276,7 +2276,7 @@ body {
   background: var(--bg2);
   border-bottom: 1px solid var(--line);
   position: sticky;
-  top: 75px;
+  top: var(--topbar-h, 75px);  /* measured by static/js/sticky-offset.js */
   z-index: 15;
   backdrop-filter: blur(8px);
 }
