@@ -669,7 +669,8 @@ def test_latest_backtest_matches_the_run_read(client, db, market, monkeypatch):
     monkeypatch.setitem(B.DEFAULT_PARAMS, "n_placebo", 2)
     monkeypatch.setitem(B.DEFAULT_PARAMS, "n_perm", 20)
     pid = store.ensure_sample()
-    assert client.get(f"/api/navigator/backtest/latest?profile_id={pid}").status_code == 404
+    empty = client.get(f"/api/navigator/backtest/latest?profile_id={pid}")
+    assert empty.status_code == 200 and empty.get_json() == {"run": None}
     run = client.post("/api/navigator/backtest", json={"profile_id": pid}).get_json()["run_id"]
     by_id = _wait(client, run)
     r = client.get(f"/api/navigator/backtest/latest?profile_id={pid}")

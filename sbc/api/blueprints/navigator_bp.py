@@ -411,10 +411,11 @@ def backtest_read(run_id: int) -> Any:
 @navigator_bp.route("/backtest/latest", methods=["GET"])
 def backtest_latest() -> Any:
     profile_id = _arg_id()
+    _require_profile(profile_id)
     store.expire_stale()
     run = store.latest_run(profile_id)
     if run is None:
-        raise _NotFound("No backtest for this profile")
+        return jsonify({"run": None})   # a known profile with no run yet is not an error
     return _run_body(run)
 
 

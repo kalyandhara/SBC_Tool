@@ -66,7 +66,11 @@ async function navFetch(url, init = {}, ctl = new AbortController(), timeoutMs =
   try {
     const res = await fetch(url, { ...init, headers, signal: ctl.signal });
     const body = await res.json().catch(() => null);
-    if (!res.ok) throw new Error((body && body.error) || `The server returned HTTP ${res.status}.`);
+    if (!res.ok) {
+      const err = new Error((body && body.error) || `The server returned HTTP ${res.status}.`);
+      err.status = res.status;
+      throw err;
+    }
     if (body === null) throw new Error("The server sent an unreadable response.");
     return body;
   } catch (err) {
@@ -370,6 +374,11 @@ function navStopAnalogs() {
 
 // Fired without await, so the score never waits on it. A new call aborts the old request,
 // so one is in flight at a time, and the sequence check drops a stale render.
+const NAV_ANALOG_TRIES = 3;
+const NAV_ANALOG_WAITS_MS = [5000, 10000];
+
+// A busy server answers 429 while another chart's computation runs: retry after 5, then 10
+// seconds (3 tries in all). The sequence check after every await drops a cancelled chain.
 async function navLoadAnalogs(id) {
   navStopAnalogs();
   const seq = NAV.analogSeq;
@@ -378,21 +387,31 @@ async function navLoadAnalogs(id) {
   NAV.analogFor = null;
   navClear(navId("nav-analogs-out"));
   navMessage("nav-analogs-status", "Loading similar past dates. A first run takes several seconds.");
-  try {
-    const data = await navFetch(`/api/navigator/analogs?profile_id=${id}&days=30`, {}, ctl, NAV_ANALOG_TIMEOUT_MS);
-    if (seq !== NAV.analogSeq) return;
-    NAV.analogCtl = null;
-    navMessage("nav-analogs-status", "");
+  for (let attempt = 1; attempt <= NAV_ANALOG_TRIES; attempt += 1) {
     try {
-      navRenderAnalogs(data);
-      NAV.analogFor = id;
+      const data = await navFetch(`/api/navigator/analogs?profile_id=${id}&days=30`, {}, ctl, NAV_ANALOG_TIMEOUT_MS);
+      if (seq !== NAV.analogSeq) return;
+      NAV.analogCtl = null;
+      navMessage("nav-analogs-status", "");
+      try {
+        navRenderAnalogs(data);
+        NAV.analogFor = id;
+      } catch (err) {
+        navMessage("nav-analogs-status", "Similar past dates loaded, but could not be displayed.", true);
+      }
+      return;
     } catch (err) {
-      navMessage("nav-analogs-status", "Similar past dates loaded, but could not be displayed.", true);
+      if (seq !== NAV.analogSeq) return;
+      if (err.status === 429 && attempt < NAV_ANALOG_TRIES) {
+        navMessage("nav-analogs-status", "Similar past dates are being computed for another chart; retrying…");
+        await new Promise((resolve) => setTimeout(resolve, NAV_ANALOG_WAITS_MS[attempt - 1]));
+        if (seq !== NAV.analogSeq) return;
+        continue;
+      }
+      NAV.analogCtl = null;
+      navMessage("nav-analogs-status", err.message, true);
+      return;
     }
-  } catch (err) {
-    if (seq !== NAV.analogSeq) return;
-    NAV.analogCtl = null;
-    navMessage("nav-analogs-status", err.message, true);
   }
 }
 
@@ -499,7 +518,7 @@ async function navLoadProfile() {
   ]);
 }
 
-// A 404 means no run exists for this profile yet, so any failure just leaves the section empty.
+// A null run means no saved backtest yet, so any failure just leaves the section empty.
 async function navLoadLatest(seq, id) {
   let run;
   try {
@@ -508,6 +527,7 @@ async function navLoadLatest(seq, id) {
     return;
   }
   if (seq !== NAV.loadSeq || NAV.runId !== null) return;
+  if (run.run === null) return;  // no saved backtest yet
   if (NAV_ACTIVE.includes(run.status)) {
     NAV.runId = run.id;
     navId("nav-run").disabled = true;
@@ -534,6 +554,7 @@ function navDmsToDecimal(deg, min, sec, neg) {
   const m = Number(String(min ?? "").trim() || 0);
   const s = Number(String(sec ?? "").trim() || 0);
   if (![whole, m, s].every(Number.isFinite)) return null;
+  if (m < 0 || m >= 60 || s < 0 || s >= 60) return null;
   const negative = d.startsWith("-") || (whole === 0 && Boolean(neg));
   const value = whole + m / 60 + s / 3600;
   return negative ? -value : value;
@@ -606,6 +627,21 @@ function navSetDms(prefix, part) {
   navMarkHemisphere(prefix, v(part.deg).trim().startsWith("-"));
 }
 
+function navClearDms(prefix) {
+  navSetDms(prefix, { deg: "", min: "", sec: "" });
+}
+
+// The newest saved profile by creation time, then id; the list order puts the default first.
+function navNewestProfile(list) {
+  let best;
+  for (const p of list) {
+    if (!best) { best = p; continue; }
+    const a = String(p.created_at || ""), b = String(best.created_at || "");
+    if (a > b || (a === b && p.id > best.id)) best = p;
+  }
+  return best;
+}
+
 async function navFillFromProfile(p) {
   if (!p) { navMessage("nav-form-status", "No saved profile was found.", true); return; }
   const d = p.data || {};
@@ -617,7 +653,9 @@ async function navFillFromProfile(p) {
   set("nav-bd-tz-mins", d.tz_mins);
   set("nav-bd-tz", "");
   if (d.lat) navSetDms("nav-bd-lat", d.lat);
+  else navClearDms("nav-bd-lat");
   if (d.lon) navSetDms("nav-bd-lon", d.lon);
+  else navClearDms("nav-bd-lon");
   navMessage("nav-form-status", "Profile loaded. Check the time zone name, then create the chart.");
   await navTzFromCoords(navCoord("nav-bd-lat"), navCoord("nav-bd-lon"));
 }
@@ -647,7 +685,7 @@ function navInitBirthForm() {
   });
   navId("nav-bd-load-latest").addEventListener("click", async () => {
     await navLoadBirthProfiles();
-    navFillFromProfile(NAV_BIRTH.profiles[0]);
+    navFillFromProfile(navNewestProfile(NAV_BIRTH.profiles));
   });
 }
 

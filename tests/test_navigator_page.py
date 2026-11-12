@@ -181,10 +181,17 @@ def test_dms_to_decimal_keeps_the_sign_and_the_hemisphere_of_negative_zero():
         ["0", "30", "0", False],
         ["", "", "", False],           # missing -> null, the server rejects it
         ["12", "", "", False],
+        ["12", "60", "0", False],      # minutes out of range
+        ["12", "0", "60", False],      # seconds out of range
+        ["12", "-5", "0", False],      # negative minutes
+        ["12", "0", "-1", False],      # negative seconds
+        ["12", "59", "59", False],
     ])
     assert got[0] == pytest.approx(28.61) and got[1] == pytest.approx(-77.21)
     assert got[2] == pytest.approx(-0.5) and got[3] == pytest.approx(-0.5) and got[4] == pytest.approx(0.5)
     assert got[5] is None and got[6] == pytest.approx(12.0)
+    assert got[7:11] == [None, None, None, None]
+    assert got[11] == pytest.approx(12 + 59 / 60 + 59 / 3600)
 
 
 def test_birth_form_wording(html, form):
@@ -295,3 +302,34 @@ def test_similar_dates_is_lazy_and_does_not_block_the_score(code):
 
 def test_navigator_script_version_bumped(html):
     assert re.search(r'navigator\.js\?v=([3-9]|\d\d+)"', html)
+
+
+def _fn(code, start):
+    body = code[code.index(start):]
+    return body[:body.index("\n}\n")]
+
+
+def test_latest_run_null_means_no_saved_backtest(code):
+    load = _fn(code, "async function navLoadLatest")
+    assert "run.run === null" in load or "!run.run" in load.replace(" ", "")
+
+
+def test_analogs_retry_on_429_with_backoff_and_cancellation(code):
+    assert "err.status = res.status" in code
+    body = _fn(code, "async function navLoadAnalogs")
+    assert "429" in body and "being computed for another chart; retrying" in body
+    assert "5000" in code and "10000" in code and "NAV_ANALOG_TRIES = 3" in code
+    assert body.count("seq !== NAV.analogSeq") >= 3
+
+
+def test_fill_from_profile_clears_missing_coordinates(code):
+    fill = _fn(code, "async function navFillFromProfile")
+    assert "navClearDms" in fill and 'set("nav-bd-tz", "")' in fill
+    assert "function navClearDms" in code
+
+
+def test_load_latest_picks_newest_explicitly(code):
+    newest = _fn(code, "function navNewestProfile")
+    assert "created_at" in newest or ".id" in newest
+    click = code[code.index('"nav-bd-load-latest"'):]
+    assert "navNewestProfile(" in click[:click.index("\n  });")]
