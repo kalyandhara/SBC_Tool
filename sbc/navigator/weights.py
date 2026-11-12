@@ -1,6 +1,6 @@
 """Hand-set research tables. Written before any return was examined; never fitted.
 Change any value: bump WEIGHTS_VERSION and disclose the new table as in-sample."""
-WEIGHTS_VERSION = "nav-1"
+WEIGHTS_VERSION = "nav-2"
 TERM_WEIGHTS = {"transit": .25, "moon": .20, "dasha": .20, "strength": .15, "histval": .10, "vol": .10}
 ASPECTS = {"CONJ": 0.0, "SXT": 60.0, "SQ": 90.0, "TRI": 120.0, "OPP": 180.0}
 ORB = 3.0
@@ -43,3 +43,13 @@ DASHA_LORD = {"Jupiter": 40, "Venus": 30, "Mercury": 20, "Moon": 15, "Sun": 5, "
 DASHA_LEVELS = {"maha": .5, "antar": .3, "pratyantar": .2}
 STRENGTH_EXALTED, STRENGTH_DEBILITATED, STRENGTH_COMBUST, STRENGTH_RETRO = 20.0, -20.0, -15.0, 5.0
 HIST_MIN_YEARS, HIST_HORIZON = 3, 5
+
+# nav-2: Planet Strength from Shadbala and Baladi Avastha (sbc.navigator.shadbala), hand-set.
+# A planet scores SHADBALA_SCALE x (its Shadbala / classical minimum), capped to 0-100, so meeting
+# the minimum gives 50 and twice the minimum gives 100. Avastha then scales it:
+# 50 + (score - 50) x (1 - AVASTHA_BLEND + AVASTHA_BLEND x avastha_factor): a dead (Mrita) planet
+# moves the score only half as far from neutral as an adult (Yuva) one.
+SHADBALA_SCALE = 50.0
+AVASTHA_BLEND = 0.5
+# Transits are cast for Mumbai (NSE) at 09:15 IST, as the rest of the engine.
+MARKET_LAT, MARKET_LON, MARKET_TZ = 19.076, 72.878, 5.5

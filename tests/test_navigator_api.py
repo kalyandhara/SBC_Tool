@@ -17,6 +17,7 @@ from sbc.navigator import analogs as A
 from sbc.navigator import backtest as B
 from sbc.navigator import store
 from sbc.navigator.profile import SAMPLE_PROFILE, chart_hash
+from sbc.navigator.weights import WEIGHTS_VERSION
 
 pg = pytest.mark.skipif(not os.environ.get("NAV_TEST_DATABASE_URL"), reason="needs Postgres")
 
@@ -523,7 +524,7 @@ def test_backtest_runs_to_done_and_hides_hash(client, db, market, monkeypatch):
     assert "chart_hash" not in json.dumps(body)
     assert chart_hash(SAMPLE_PROFILE) not in json.dumps(body)
     meta = _rows("select data_asof::text, weights_version, chart_hash from backtest_run")[0]
-    assert meta == (market[-1]["date"], "nav-1", chart_hash(SAMPLE_PROFILE))
+    assert meta == (market[-1]["date"], WEIGHTS_VERSION, chart_hash(SAMPLE_PROFILE))
 
 
 @pg

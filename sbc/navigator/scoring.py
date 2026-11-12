@@ -189,7 +189,7 @@ def score_series(sky: Any, profile: Profile, opens: Any, closes: Any, vix: Mappi
     transit = T.transit_term(sky, natal)
     moon = T.moon_term(sky)
     dasha = T.dasha_term(sky, natal["Moon"], profile.birth_date)
-    strength = T.strength_term(sky)
+    strength = T.shadbala_term(list(days))
     vol, lead = _vol_with_lead_in(days, vix)
     five = {"transit": transit.values, "moon": moon.values, "dasha": dasha.values,
             "strength": strength.values, "vol": vol.values[lead:]}

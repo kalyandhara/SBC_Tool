@@ -22,7 +22,6 @@ from sbc.navigator import weights as W
 from sbc.navigator.analogs import Market, next_sessions
 from sbc.navigator.ephemeris import build_sky
 from sbc.navigator.profile import Profile, natal_points
-from sbc.planets import COMBUST_ORB, DEBIL, EXALT, positions
 
 STRENGTH_PLANETS = ["Sun", "Moon", "Mars", "Mercury", "Jupiter", "Venus", "Saturn"]
 MODEL_DAYS = 30
@@ -35,8 +34,8 @@ SCATTER_NOTES = [
 MODEL_NOTES = [
     "Natal planets sit on the inner ring at their sidereal longitudes; transiting planets "
     "move on the outer ring.",
-    "Node size is a partial strength index at birth (exaltation, debilitation, combustion, "
-    "retrograde), not Shadbala.",
+    "Node size is each planet's strength at birth: Shadbala against its classical minimum, "
+    "scaled by Baladi Avastha.",
     "Lines are transit contacts within the Phase 1 orb: green adds to the score, red subtracts.",
 ]
 
@@ -63,27 +62,22 @@ def scatter(profile: Profile, market: Market) -> dict[str, Any]:
 
 
 def natal_strength(profile: Profile) -> dict[str, dict[str, Any]]:
-    """Partial strength 0-100 per planet at birth, with the reasons."""
+    """Shadbala-and-Avastha strength 0-100 per planet at birth, with the details."""
+    import datetime as _dt
+    from zoneinfo import ZoneInfo
+
+    from sbc.navigator import shadbala as SB
+    from sbc.navigator.terms import planet_strength_score
     jd = _julday(_utc_from_local(profile.birth_date, profile.birth_time, profile.tz))
-    planets = {p["name"]: p for p in positions(jd)[0]}
-    sun = planets["Sun"]["longitude"]
+    local = _dt.datetime.fromisoformat(f"{profile.birth_date}T{profile.birth_time}").replace(tzinfo=ZoneInfo(profile.tz))
+    offset = local.utcoffset()
+    tz_hours = offset.total_seconds() / 3600 if offset is not None else 0.0
+    sb = SB.shadbala(jd, profile.lat, profile.lon, tz_hours)
     out = {}
     for name in STRENGTH_PLANETS:
-        p = planets[name]
-        raw, why = 0.0, []
-        if p["sign_index"] == EXALT[name]:
-            raw += W.STRENGTH_EXALTED
-            why.append("exalted")
-        if p["sign_index"] == DEBIL[name]:
-            raw += W.STRENGTH_DEBILITATED
-            why.append("debilitated")
-        if name in COMBUST_ORB and abs((p["longitude"] - sun + 180) % 360 - 180) < COMBUST_ORB[name]:
-            raw += W.STRENGTH_COMBUST
-            why.append("combust")
-        if p["retrograde"]:
-            raw += W.STRENGTH_RETRO
-            why.append("retrograde")
-        out[name] = {"strength": float(np.clip(50 + raw, 0, 100)), "reasons": why}
+        row = sb[name]
+        out[name] = {"strength": round(planet_strength_score(row["ratio"], row["avastha_factor"]), 1),
+                     "reasons": [f"Shadbala {row['ratio']:.2f}x minimum", row["avastha"]]}
     return out
 
 

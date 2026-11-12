@@ -10,10 +10,10 @@ def test_colour_group_boundaries(score, group):
     assert V.colour_group(score) == group
 
 
-def test_natal_strength_sample_moon_debilitated():
+def test_natal_strength_is_shadbala_based():
     s = V.natal_strength(P.SAMPLE_PROFILE)
     assert set(s) == set(V.STRENGTH_PLANETS)
-    assert s["Moon"] == {"strength": 30.0, "reasons": ["debilitated"]}
+    assert s["Moon"]["reasons"][0].startswith("Shadbala 0.84x") and s["Moon"]["reasons"][1] == "Bala"
     assert all(0 <= v["strength"] <= 100 for v in s.values())
 
 
