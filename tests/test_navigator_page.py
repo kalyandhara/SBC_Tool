@@ -314,10 +314,10 @@ def test_latest_run_null_means_no_saved_backtest(code):
     assert "run.run === null" in load or "!run.run" in load.replace(" ", "")
 
 
-def test_analogs_retry_on_429_with_backoff_and_cancellation(code):
+def test_analogs_retry_on_202_busy_with_backoff_and_cancellation(code):
     assert "err.status = res.status" in code
     body = _fn(code, "async function navLoadAnalogs")
-    assert "429" in body and "being computed for another chart; retrying" in body
+    assert "data.busy" in body and "429" not in body and "being computed for another chart; retrying" in body
     assert "5000" in code and "10000" in code and "NAV_ANALOG_TRIES = 3" in code
     assert body.count("seq !== NAV.analogSeq") >= 3
 

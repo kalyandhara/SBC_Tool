@@ -5,7 +5,7 @@
 
 const NAV_POLL_MS = 3000;
 const NAV_TIMEOUT_MS = 20000;
-// A cold similar-dates run takes several seconds; the server's own lock answers 429 if busy.
+// A cold similar-dates run takes several seconds; the server's own lock answers 202 {busy: true} if busy.
 const NAV_ANALOG_TIMEOUT_MS = 120000;
 const NAV_NEXT5 = "open to open, 5 sessions, as in the backtest";
 // Mirrors sbc.navigator.scoring.ACTIONS, highest band first; a test pins the two together.
@@ -377,7 +377,7 @@ function navStopAnalogs() {
 const NAV_ANALOG_TRIES = 3;
 const NAV_ANALOG_WAITS_MS = [5000, 10000];
 
-// A busy server answers 429 while another chart's computation runs: retry after 5, then 10
+// A busy server answers 202 with busy: true while another chart's computation runs: retry after 5, then 10
 // seconds (3 tries in all). The sequence check after every await drops a cancelled chain.
 async function navLoadAnalogs(id) {
   navStopAnalogs();
@@ -391,6 +391,17 @@ async function navLoadAnalogs(id) {
     try {
       const data = await navFetch(`/api/navigator/analogs?profile_id=${id}&days=30`, {}, ctl, NAV_ANALOG_TIMEOUT_MS);
       if (seq !== NAV.analogSeq) return;
+      if (data.busy) {
+        if (attempt < NAV_ANALOG_TRIES) {
+          navMessage("nav-analogs-status", "Similar past dates are being computed for another chart; retrying…");
+          await new Promise((resolve) => setTimeout(resolve, NAV_ANALOG_WAITS_MS[attempt - 1]));
+          if (seq !== NAV.analogSeq) return;
+          continue;
+        }
+        NAV.analogCtl = null;
+        navMessage("nav-analogs-status", data.error || "Similar past dates are still being computed. Try again shortly.", true);
+        return;
+      }
       NAV.analogCtl = null;
       navMessage("nav-analogs-status", "");
       try {
@@ -402,12 +413,6 @@ async function navLoadAnalogs(id) {
       return;
     } catch (err) {
       if (seq !== NAV.analogSeq) return;
-      if (err.status === 429 && attempt < NAV_ANALOG_TRIES) {
-        navMessage("nav-analogs-status", "Similar past dates are being computed for another chart; retrying…");
-        await new Promise((resolve) => setTimeout(resolve, NAV_ANALOG_WAITS_MS[attempt - 1]));
-        if (seq !== NAV.analogSeq) return;
-        continue;
-      }
       NAV.analogCtl = null;
       navMessage("nav-analogs-status", err.message, true);
       return;

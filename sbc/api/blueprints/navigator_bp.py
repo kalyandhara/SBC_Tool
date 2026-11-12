@@ -459,7 +459,8 @@ def analogs() -> Any:
     cached = result is not None
     if not cached:
         if not _analog_lock.acquire(blocking=False):
-            return jsonify({"error": ANALOGS_BUSY}), 429
+            # 202, not 429: the browser logs every 4xx as a console error and the page retries.
+            return jsonify({"busy": True, "error": ANALOGS_BUSY}), 202
         try:
             t0 = time.perf_counter()
             result = cast(dict[str, Any], B.clean_json(A.build(profile, market, days)))

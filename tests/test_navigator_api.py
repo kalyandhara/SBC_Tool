@@ -803,14 +803,14 @@ def test_analogs_unknown_profile_404(client, db, analog_state):
 
 
 @pg
-def test_analogs_busy_429_without_blocking(client, db, analog_state):
+def test_analogs_busy_202_without_blocking(client, db, analog_state):
     pid = _profile(client)
     assert bp._analog_lock.acquire()
     try:
         t0 = time.time()
         r = client.get(f"/api/navigator/analogs?profile_id={pid}")
         assert time.time() - t0 < 5
-        assert r.status_code == 429 and r.get_json() == {"error": bp.ANALOGS_BUSY}
+        assert r.status_code == 202 and r.get_json() == {"busy": True, "error": bp.ANALOGS_BUSY}
     finally:
         bp._analog_lock.release()
     assert client.get(f"/api/navigator/analogs?profile_id={pid}").status_code == 200
@@ -825,7 +825,7 @@ def test_analogs_cached_result_served_while_another_build_runs(client, db, analo
     try:
         r = client.get(url)
         assert r.status_code == 200 and r.get_json()["cached"] is True
-        assert client.get(f"/api/navigator/analogs?profile_id={pid}&days=11").status_code == 429
+        assert client.get(f"/api/navigator/analogs?profile_id={pid}&days=11").status_code == 202
     finally:
         bp._analog_lock.release()
 
