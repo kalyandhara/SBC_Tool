@@ -6,6 +6,7 @@ import json
 import math
 import os
 from pathlib import Path
+from typing import Any, Callable, TypeVar, cast
 
 import psycopg
 from psycopg.types.json import Jsonb
@@ -47,7 +48,10 @@ _ACTIVE = "('queued','running')"
 _KEY = ("profile_id", "day", "weights_version", "data_asof", "engine_version", "chart_hash")
 
 
-def _tx(work):
+T = TypeVar("T")
+
+
+def _tx(work: Callable[[Any], T]) -> T:
     """Run work(conn) in one transaction. Any driver error becomes a generic
     StoreUnavailable raised outside the except block, so no driver text (which
     can echo connection details or row values) is kept on the exception chain."""
@@ -70,10 +74,10 @@ def _iso(v):
 
 
 def create_profile(p: Profile) -> int:
-    return _tx(lambda c: c.execute(
+    return cast(int, _tx(lambda c: c.execute(
         "insert into natal_profile (label,is_sample,birth_date,birth_time,tz,lat,lon) "
         "values (%s,%s,%s,%s,%s,%s,%s) returning id",
-        (p.label, p.is_sample, p.birth_date, p.birth_time, p.tz, p.lat, p.lon)).fetchone()[0])
+        (p.label, p.is_sample, p.birth_date, p.birth_time, p.tz, p.lat, p.lon)).fetchone()[0]))
 
 
 def get_profile(profile_id: int) -> Profile | None:
@@ -106,7 +110,7 @@ def ensure_sample() -> int:
             "values (%s,%s,%s,%s,%s,%s,%s) returning id",
             (p.label, True, p.birth_date, p.birth_time, p.tz, p.lat, p.lon)).fetchone()[0]
 
-    return _tx(work)
+    return cast(int, _tx(work))
 
 
 def cached_score(key: dict) -> dict | None:
@@ -154,23 +158,23 @@ def start_run(profile_id: int, meta: dict) -> tuple[int, bool]:
                 return got[0], False
         raise psycopg.Error  # surfaces as StoreUnavailable
 
-    return _tx(work)
+    return cast(tuple[int, bool], _tx(work))
 
 
 def heartbeat(run_id: int) -> bool:
     """True if an active run was updated; False if none matched (e.g. expired)."""
-    return _tx(lambda c: c.execute(
+    return bool(_tx(lambda c: c.execute(
         f"update backtest_run set heartbeat_at=now(), status='running' "
-        f"where id=%s and status in {_ACTIVE}", (run_id,)).rowcount > 0)
+        f"where id=%s and status in {_ACTIVE}", (run_id,)).rowcount > 0))
 
 
-def finish_run(run_id: int, results, folds) -> bool:
+def finish_run(run_id: int, results: object, folds: object) -> bool:
     """Only an active run can finish; a run already expired to failed stays failed.
     Returns True if a row matched."""
     r, f = _json(results), _json(folds)  # Jsonb wrapping is lazy; NaN is rejected at execute
-    return _tx(lambda c: c.execute(
+    return bool(_tx(lambda c: c.execute(
         f"update backtest_run set status='done', results=%s, folds=%s, heartbeat_at=now() "
-        f"where id=%s and status in {_ACTIVE}", (r, f, run_id)).rowcount > 0)
+        f"where id=%s and status in {_ACTIVE}", (r, f, run_id)).rowcount > 0))
 
 
 def fail_run(run_id: int, error: str) -> None:
@@ -203,8 +207,8 @@ def latest_run(profile_id: int) -> dict | None:
 
 
 def expire_stale(seconds: int = 120) -> int:
-    return _tx(lambda c: c.execute(
+    return int(_tx(lambda c: c.execute(
         f"update backtest_run set status='failed', error='run stopped reporting' "
         f"where status in {_ACTIVE} "
         f"and coalesce(heartbeat_at, created_at) < now() - make_interval(secs => %s)",
-        (seconds,)).rowcount)
+        (seconds,)).rowcount))

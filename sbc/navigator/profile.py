@@ -9,6 +9,7 @@ import re
 import unicodedata
 from dataclasses import asdict, dataclass, field
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
+from typing import Any
 
 import swisseph as swe
 
@@ -35,13 +36,13 @@ _DATE_RE = re.compile(r"[0-9]{4}-[0-9]{2}-[0-9]{2}")
 _MIN_DATE, _MAX_DATE = dt.date(1800, 1, 1), dt.date(2100, 12, 31)
 
 
-def _num(v) -> float:
+def _num(v: Any) -> float:
     if isinstance(v, bool) or not isinstance(v, (int, float)):
         raise ValueError
     return float(v)
 
 
-def _parse(d: dict):
+def _parse(d: dict[str, Any]) -> tuple[str, str, str, str, float, float, bool]:
     """Raises ValueError (or KeyError) on any problem; caller discards details."""
     bd, bt, tz = d["birth_date"], d["birth_time"], d["tz"]
     if not all(isinstance(x, str) for x in (bd, bt, tz)) or not tz:
@@ -73,7 +74,7 @@ def _parse(d: dict):
     return label, date.isoformat(), time.strftime("%H:%M:%S"), tz, lat, lon, sample
 
 
-def validate(d: dict) -> Profile:
+def validate(d: dict[str, Any]) -> Profile:
     """Return a Profile or raise ValueError("invalid birth data").
 
     The raise happens outside the except block so no exception context
@@ -90,7 +91,7 @@ def validate(d: dict) -> Profile:
     return Profile(label, sample, date, time, tz, lat, lon)
 
 
-def _require_zone(tz) -> None:
+def _require_zone(tz: Any) -> None:
     """_utc_from_local silently falls back to Kolkata; refuse unknown tz first."""
     ok = False
     if isinstance(tz, str) and tz:
@@ -103,7 +104,7 @@ def _require_zone(tz) -> None:
         raise ValueError("invalid birth data")
 
 
-def lagna_at(date, time, tz, lat, lon) -> float:
+def lagna_at(date: str, time: str, tz: str, lat: float, lon: float) -> float:
     _require_zone(tz)
     jd = _julday(_utc_from_local(date, time, tz))
     swe.set_sid_mode(swe.SIDM_LAHIRI)

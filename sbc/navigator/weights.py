@@ -13,7 +13,7 @@ _EXPLICIT = {("Jupiter", "Jupiter", "TRI"): 40.0, ("Mars", "Mercury", "SQ"): -20
              ("Saturn", "Moon", "OPP"): -35.0}
 
 
-def ASPECT_WEIGHT(planet, point, aspect) -> float:
+def ASPECT_WEIGHT(planet: str, point: str, aspect: str) -> float:
     if (planet, point, aspect) in _EXPLICIT:
         return _EXPLICIT[(planet, point, aspect)]
     b = BENEFIC[planet]

@@ -7,6 +7,7 @@ sessions later, so a session t' has closed by T-1 exactly when t'+horizon <= T.
 from __future__ import annotations
 
 from collections.abc import Callable, Mapping
+from typing import Any
 from dataclasses import dataclass
 
 import numpy as np
@@ -46,10 +47,10 @@ def combine(terms: Mapping[str, np.ndarray]) -> np.ndarray:
         raise ValueError(f"unknown terms: {sorted(unknown)}")
     used = [k for k in W.TERM_WEIGHTS if k in terms]
     total = sum(W.TERM_WEIGHTS[k] for k in used)
-    return sum(W.TERM_WEIGHTS[k] * np.asarray(terms[k], float) for k in used) / total
+    return np.asarray(sum(W.TERM_WEIGHTS[k] * np.asarray(terms[k], float) for k in used) / total)
 
 
-def forward_returns(opens, closes, horizon: int) -> np.ndarray:
+def forward_returns(opens: Any, closes: Any, horizon: int) -> np.ndarray:
     """returns[t] = closes[t+horizon-1] / opens[t] - 1; NaN if not yet closed."""
     opens, closes = np.asarray(opens, float), np.asarray(closes, float)
     out = np.full(len(opens), np.nan)
@@ -60,7 +61,7 @@ def forward_returns(opens, closes, horizon: int) -> np.ndarray:
     return out
 
 
-def _hist_val(base, returns, horizon, min_sessions):
+def _hist_val(base: Any, returns: Any, horizon: int, min_sessions: int) -> tuple[np.ndarray, np.ndarray]:
     """(values, known): `known` marks days with a real rank, not the neutral 50."""
     base, returns = np.asarray(base, float), np.asarray(returns, float)
     if len(base) != len(returns):
@@ -87,12 +88,12 @@ def _hist_val(base, returns, horizon, min_sessions):
     return out, known
 
 
-def hist_val(base_scores, returns, horizon: int, min_sessions: int) -> np.ndarray:
+def hist_val(base_scores: np.ndarray, returns: np.ndarray, horizon: int, min_sessions: int) -> np.ndarray:
     """Rank of the current band's past mean return among all past returns, 0-100.
     Day t uses t' only if t'+horizon <= t, and `returns` must be fully known by
     the close of t'+horizon-1 (see forward_returns). Neutral 50 in the warm-up or
     with under 30 past sessions in the band."""
-    return _hist_val(base_scores, returns, horizon, min_sessions)[0]
+    return np.asarray(_hist_val(base_scores, returns, horizon, min_sessions)[0])
 
 
 def _cents(x: float) -> int:
@@ -144,7 +145,8 @@ def lineage(terms_at_day: Mapping[str, float], factors: list[dict]) -> dict:
     for line, c in zip(lines, cents):
         line["contribution"] = c / 100
         if not line.get("adjustment"):
-            line["factors"] = _factor_lines(line["term"], grouped[line["term"]], line["weight"], c)
+            term = str(line["term"])
+            line["factors"] = _factor_lines(term, grouped[term], float(line["weight"]), c)
     # From the displayed points, adjustment lines included, so a move always equals
     # the table's points minus the neutral baseline, rounding residual and all.
     shown = dict.fromkeys(W.TERM_WEIGHTS, 0)
@@ -175,7 +177,7 @@ def _vol_with_lead_in(days, vix):
     return vol, len(lead)
 
 
-def score_series(sky, profile: Profile, opens, closes, vix: Mapping[str, float],
+def score_series(sky: Any, profile: Profile, opens: Any, closes: Any, vix: Mapping[str, float],
                  min_sessions: int = W.HIST_MIN_YEARS * 252,
                  horizon: int = W.HIST_HORIZON) -> ScoreSeries:
     """opens and closes align with sky.days, which must be sorted sessions; NaN

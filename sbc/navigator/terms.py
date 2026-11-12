@@ -6,7 +6,8 @@ are vectorised over the shared SkyTable and factor lists are built on demand.
 """
 from __future__ import annotations
 
-from collections.abc import Callable
+from collections.abc import Callable, Mapping
+from typing import Any
 from dataclasses import dataclass
 
 import numpy as np
@@ -37,40 +38,40 @@ class Term:
     factors: Callable[[int], list[dict]]
 
 
-def _scale(raw):
-    return (np.clip(raw, -100, 100) + 100) / 2
+def _scale(raw: np.ndarray) -> np.ndarray:
+    return np.asarray((np.clip(raw, -100, 100) + 100) / 2)
 
 
-def _lon(x):
+def _lon(x: np.ndarray) -> np.ndarray:
     """Longitude in [0, 360); a tiny negative would otherwise % to exactly 360."""
     x = np.mod(x, 360.0)
     return np.where(x >= 360.0, 0.0, x)
 
 
-def _sep(a, b):
-    return np.abs((a - b + 180.0) % 360.0 - 180.0)
+def _sep(a: np.ndarray, b: np.ndarray) -> np.ndarray:
+    return np.asarray(np.abs((a - b + 180.0) % 360.0 - 180.0))
 
 
-def _sign_index(lon):
+def _sign_index(lon: np.ndarray) -> np.ndarray:
     return (np.floor(lon).astype(int) // 30) % 12
 
 
-def _nakshatra_index(lon):
+def _nakshatra_index(lon: np.ndarray) -> np.ndarray:
     """Vector form of sbc.nakshatra.nakshatra_of; 27 is Abhijit."""
     idx = np.minimum(np.floor_divide(lon, N.NAKSHATRA_SPAN).astype(int), 26)
     return np.where((lon >= N.ABHIJIT_START) & (lon < N.ABHIJIT_END), 27, idx)
 
 
-def _transit_contrib(sky_lon, points, weights):
+def _transit_contrib(sky_lon: np.ndarray, points: np.ndarray, weights: np.ndarray) -> np.ndarray:
     """sky_lon (bodies, days), points (points,), weights (bodies, points, aspects).
     Returns contributions shaped (bodies, points, aspects, days)."""
     sep = _sep(sky_lon[:, None, :], points[None, :, None])
     angles = np.array(list(W.ASPECTS.values()))[None, None, :, None]
     orb = np.clip(1 - np.abs(sep[:, :, None, :] - angles) / W.ORB, 0, 1)
-    return weights[..., None] * orb
+    return np.asarray(weights[..., None] * orb)
 
 
-def transit_term(sky, natal) -> Term:
+def transit_term(sky: Any, natal: Mapping[str, float]) -> Term:
     bodies, names, codes = W.TRANSIT_BODIES, list(natal), list(W.ASPECTS)
     lon = np.array([sky.lon[b] for b in bodies], float)
     points = np.array([natal[p] for p in names], float)
@@ -87,7 +88,7 @@ def transit_term(sky, natal) -> Term:
     return Term(_scale(raw), raw, factors)
 
 
-def moon_term(sky) -> Term:
+def moon_term(sky: Any) -> Term:
     moon, sun = _lon(sky.lon["Moon"]), _lon(sky.lon["Sun"])
     elong = _lon(moon - sun)
     phase = W.MOON_PHASE * np.cos(np.radians(elong - 90.0))
@@ -115,7 +116,7 @@ def moon_term(sky) -> Term:
 
 def _flatten_periods(timeline):
     """{level: (start times, lord names)}, each sorted, from one vimshottari call."""
-    rows = {level: [] for level, _ in _LEVELS}
+    rows: dict[str, list[tuple[Any, Any]]] = {level: [] for level, _ in _LEVELS}
     def walk(periods, depth):
         level, child = _LEVELS[depth]
         for p in periods:
@@ -127,7 +128,7 @@ def _flatten_periods(timeline):
             for k, v in rows.items()}
 
 
-def dasha_term(sky, moon_natal_lon, birth_date) -> Term:
+def dasha_term(sky: Any, moon_natal_lon: float, birth_date: str) -> Term:
     timeline = vimshottari(moon_natal_lon, birth_date, sky.days[0])
     days = np.array(sky.days, "datetime64[D]").astype("datetime64[us]")
     periods = _flatten_periods(timeline)
@@ -140,7 +141,7 @@ def dasha_term(sky, moon_natal_lon, birth_date) -> Term:
         lords[level] = names[at]
         pts = np.array([W.DASHA_LORD[n] * W.DASHA_LEVELS[level] for n in names])
         parts[level] = np.where(covered, pts[at], 0.0)
-    raw = sum(parts.values())
+    raw = np.sum(list(parts.values()), axis=0)
     period_name = {"maha": "main period", "antar": "sub-period", "pratyantar": "minor period"}
 
     def factors(i):
@@ -152,7 +153,7 @@ def dasha_term(sky, moon_natal_lon, birth_date) -> Term:
     return Term(_scale(raw), raw, factors)
 
 
-def strength_term(sky) -> Term:
+def strength_term(sky: Any) -> Term:
     sun = sky.lon["Sun"]
     parts = []
     for planet in STRENGTH_PLANETS:
@@ -172,7 +173,7 @@ def strength_term(sky) -> Term:
     return Term(_scale(raw), raw, factors)
 
 
-def vol_term(days, vix_by_day, window=252, min_history=_MIN_VOL_HISTORY) -> Term:
+def vol_term(days: list[str], vix_by_day: Mapping[str, float], window: int = 252, min_history: int = _MIN_VOL_HISTORY) -> Term:
     """Percentile of the T-1 close among the `window` closes before it, so the
     entry day's own value can never reach day T's score. Neutral until
     `min_history` closes exist before T-1; gaps in the series do not restart it."""
