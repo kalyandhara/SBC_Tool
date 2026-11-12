@@ -22,6 +22,8 @@ synthetic charts; the wrapper assembles the chart from sbc.natal.
 from __future__ import annotations
 
 import datetime as dt
+from collections.abc import Callable
+from typing import Any
 
 from .nakshatra import RASHIS
 from .planets import COMBUST_ORB
@@ -70,21 +72,21 @@ def vimshottari(moon_longitude: float, birth_date: str,
     maha_start = birth_dt - dt.timedelta(days=start_years * elapsed_frac
                                          * YEAR_DAYS)
 
-    mahadashas = []
+    mahadashas: list[dict[str, Any]] = []
     idx = start_lord_idx
     cursor = maha_start
     for _ in range(9):  # one full 120-year cycle is more than any scan
         lord, years = VIMSHOTTARI[idx]
         end = cursor + dt.timedelta(days=years * YEAR_DAYS)
         # Antardashas: begin with the Mahadasha lord, proportional.
-        antars = []
+        antars: list[dict[str, Any]] = []
         acursor = cursor
         ant_idx = idx
         for _a in range(9):
             alord, ayears = VIMSHOTTARI[ant_idx]
             alen = dt.timedelta(days=years * ayears / 120.0 * YEAR_DAYS)
             # Pratyantars: begin with the Antardasha lord, proportional.
-            pratyantars = []
+            pratyantars: list[dict[str, Any]] = []
             pcursor = acursor
             p_idx = ant_idx
             antar_days = alen.total_seconds() / 86400.0
@@ -715,7 +717,7 @@ def evaluate_chandra_aditya(longitudes: dict[str, float],
     return out
 
 
-YOGAS = {
+YOGAS: dict[str, Callable[..., dict]] = {
     "gaja_kesari": gaja_kesari,
     "budha_aditya": evaluate_budha_aditya,
     "guru_chandal": evaluate_guru_chandal,

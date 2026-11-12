@@ -8,8 +8,8 @@ import json
 import re
 import unicodedata
 from dataclasses import asdict, dataclass, field
-from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 from typing import Any
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 import swisseph as swe
 

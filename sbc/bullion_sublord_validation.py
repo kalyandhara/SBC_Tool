@@ -102,7 +102,8 @@ def build_sessions(bars: dict[dt.datetime, float], lord_cache: dict) -> list[dic
     return sessions
 
 
-def _segments(labels: np.ndarray, values: np.ndarray, sess_id: np.ndarray):
+def _segments(labels: np.ndarray, values: np.ndarray,
+              sess_id: np.ndarray) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
     """Runs of equal label within a session -> (label, sum of values, bar count)."""
     brk = np.r_[True, (labels[1:] != labels[:-1]) | (sess_id[1:] != sess_id[:-1])]
     starts = np.flatnonzero(brk)
@@ -111,7 +112,8 @@ def _segments(labels: np.ndarray, values: np.ndarray, sess_id: np.ndarray):
     return labels[starts], sums, counts, sess_id[starts]
 
 
-def group_stats(labels, values, sess_id, codes) -> dict[str, float]:
+def group_stats(labels: np.ndarray, values: np.ndarray, sess_id: np.ndarray,
+                codes: dict[str, int]) -> dict[str, float]:
     lab, sums, cnt, _ = _segments(labels, values, sess_id)
     per_hour = sums / cnt
     out = {}
@@ -143,7 +145,7 @@ def controlled(values: np.ndarray, hours: np.ndarray) -> tuple[np.ndarray, np.nd
     return dm, z
 
 
-def permutation_test(sessions, n_perm=N_PERM, seed=0) -> dict:
+def permutation_test(sessions: list[dict], n_perm: int = N_PERM, seed: int = 0) -> dict:
     labels, raw, hours, sess, codes = _flatten(sessions)
     dm, z = controlled(raw, hours)
     variants = {"raw": (raw, raw), "controlled": (dm, z)}  # (values for up/down, values for vol)

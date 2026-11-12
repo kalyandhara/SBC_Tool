@@ -21,7 +21,9 @@ Meanings are traditional readings in plain words, not tested market signals.
 from __future__ import annotations
 
 import datetime as dt
+from collections.abc import Callable
 from functools import lru_cache
+from typing import Any
 
 import swisseph as swe
 
@@ -40,8 +42,8 @@ MIN_YEAR, MAX_YEAR = 1990, 2050
 def _flags(sidereal: bool) -> int:
     if sidereal:
         swe.set_sid_mode(swe.SIDM_LAHIRI)
-        return swe.FLG_MOSEPH | swe.FLG_SPEED | swe.FLG_SIDEREAL
-    return swe.FLG_MOSEPH | swe.FLG_SPEED
+        return int(swe.FLG_MOSEPH | swe.FLG_SPEED | swe.FLG_SIDEREAL)
+    return int(swe.FLG_MOSEPH | swe.FLG_SPEED)
 
 
 def _lon(jd: float, body: int, sid: bool) -> tuple[float, float]:
@@ -53,7 +55,7 @@ def _wrap(x: float) -> float:
     return (x + 180.0) % 360.0 - 180.0
 
 
-def _bisect(f, a: float, b: float, n: int = 40) -> float:
+def _bisect(f: Callable[..., float], a: float, b: float, n: int = 40) -> float:
     fa = f(a)
     for _ in range(n):
         m = (a + b) / 2
@@ -89,7 +91,7 @@ def build(year: int, zodiac: str = "sidereal") -> dict:
     j1 = swe.julday(year + 1, 1, 1, 0) - IST_DAYS
     grid = [j0 + i * STEP for i in range(int((j1 - j0) / STEP) + 1)]
     samples = {name: [_lon(j, body, sid) for j in grid] for name, body in BODIES}
-    rows = []
+    rows: list[dict[str, Any]] = []
 
     for name, body in BODIES:
         s = samples[name]

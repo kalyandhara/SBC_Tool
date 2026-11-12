@@ -14,6 +14,7 @@ from __future__ import annotations
 
 import datetime as dt
 import re
+from typing import Any
 from zoneinfo import ZoneInfo
 
 ET = ZoneInfo("America/New_York")
@@ -95,7 +96,8 @@ def _when(prop: str, value: str) -> dt.datetime | None:
 
 
 def parse_ics(text: str, source: str) -> list[dict]:
-    out, ev = [], None
+    out: list[dict] = []
+    ev: dict[str, Any] | None = None
     for line in _unfold(text):
         if line == "BEGIN:VEVENT":
             ev = {}

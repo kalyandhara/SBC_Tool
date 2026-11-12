@@ -20,6 +20,7 @@ adjustment).
 """
 
 import datetime
+from typing import Any
 from zoneinfo import ZoneInfo
 
 import swisseph as swe
@@ -176,7 +177,7 @@ def sign_ingresses(planet, start_date, end_date, node_mode="mean",
         return int(_planet_lon(jd, planet, node_mode, ayanamsa) // 30)
 
     events = []
-    recent_exits = []  # [(jd, from_label)] for re-entry detection
+    recent_exits: list[tuple[float, Any]] = []  # [(jd, from_label)] for re-entry detection
     prev_jd, (prev_lon,) = scan[0]
     prev_state = int(prev_lon // 30)
     for jd, (lon,) in scan[1:]:
@@ -219,7 +220,7 @@ def nakshatra_ingresses(planet, start_date, end_date, node_mode="mean",
         return nak_index(_planet_lon(jd, planet, node_mode, ayanamsa))
 
     events = []
-    recent_exits = []
+    recent_exits: list[tuple[float, Any]] = []
     prev_jd, (prev_lon,) = scan[0]
     prev_nak = nak_index(prev_lon)
     for jd, (lon,) in scan[1:]:
@@ -267,7 +268,7 @@ def pada_ingresses(planet, start_date, end_date, node_mode="mean",
         return f"{nak} P{pada}", pada
 
     events = []
-    recent_exits = []
+    recent_exits: list[tuple[float, Any]] = []
     prev_jd, (prev_lon,) = scan[0]
     prev_state = int(prev_lon // pada_span)
     for jd, (lon,) in scan[1:]:

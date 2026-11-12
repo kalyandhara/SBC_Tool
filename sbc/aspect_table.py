@@ -105,7 +105,8 @@ def _positions_at(when: datetime) -> dict[str, dict[str, Any]]:
     jd = _julday_ist(when)
     swe.set_sid_mode(swe.SIDM_LAHIRI)
     out: dict[str, dict[str, Any]] = {}
-    rahu_lon = rahu_speed = None
+    rahu_lon: float | None = None
+    rahu_speed: float = 0.0
     for name, body in PLANET_SWE:
         xx, _ = swe.calc_ut(jd, body, FLAGS)
         lon = xx[0] % 360.0
@@ -186,7 +187,7 @@ def _pair_offset(when: datetime, name_a: str, name_b: str, target: int) -> float
     def lon(name: str) -> float:
         base = SWE_BODY["Rahu" if name == "Ketu" else name]
         value = swe.calc_ut(jd, base, FLAGS)[0][0]
-        return value + 180.0 if name == "Ketu" else value
+        return float(value + 180.0 if name == "Ketu" else value)
 
     return (lon(name_a) - lon(name_b) - target + 180.0) % 360.0 - 180.0
 

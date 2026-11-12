@@ -5,8 +5,9 @@ import datetime as dt
 import json
 import math
 import os
+from collections.abc import Callable
 from pathlib import Path
-from typing import Any, Callable, TypeVar, cast
+from typing import Any, TypeVar, cast
 
 import psycopg
 from psycopg.types.json import Jsonb

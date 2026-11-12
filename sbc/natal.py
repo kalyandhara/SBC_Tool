@@ -62,6 +62,9 @@ def _lagna_longitude(date: str, time: str, tz: str, city: str) -> float:
     utc = _utc_from_local(date, time, tz)
     jd = _julday(utc)
     place = cities.resolve(city) or cities.resolve(DEFAULT_CITY)
+    if place is None:
+        raise ValueError(f"unknown city {city!r} and no {DEFAULT_CITY} entry in the cities DB "
+                         "(run scripts/seed_cities.py)")
     swe.set_sid_mode(swe.SIDM_LAHIRI)
     _cusps, ascmc = swe.houses_ex(jd, place["lat"], place["lon"], b"W",
                                   swe.FLG_SIDEREAL)

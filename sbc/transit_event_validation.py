@@ -15,6 +15,7 @@ from __future__ import annotations
 
 import bisect
 import datetime as dt
+from typing import Any
 
 import numpy as np
 import swisseph as swe
@@ -68,8 +69,10 @@ def mercury_retrograde(dates: list[str]) -> np.ndarray:
     return out
 
 
-def signals(dates: list[str], closes: np.ndarray, events: list[dict]) -> tuple[list[dict], np.ndarray]:
-    """The five registered entries, and per-session 'inside any window' for the window share."""
+def signals(dates: list[str], closes: np.ndarray, events: list[dict]
+            ) -> tuple[list[dict[str, Any]], np.ndarray, dict[str, int], dict[str, float]]:
+    """The five registered entries, per-session 'inside any window' flags, event counts and
+    each entry's window share."""
     merc_stations = [e["date"] for e in events if e["type"] == "station" and e["body"] == "Mercury"]
     tense = [e["date"] for e in events if e["type"] == "aspect" and e["aspect"] in ("square", "opposition")
              and (e["body"] in MALEFICS or e["other"] in MALEFICS)]
@@ -82,7 +85,7 @@ def signals(dates: list[str], closes: np.ndarray, events: list[dict]) -> tuple[l
     h4 = window_flags(dates, eclipses, WINDOWS["h4"])
     h5 = window_flags(dates, ingress, WINDOWS["h5"])
     rev = sv.reversal(closes)
-    entries = [
+    entries: list[dict[str, Any]] = [
         {"name": "h1_mercury_station_volatility", "kind": "event", "source": SOURCE,
          "description": "within 3 sessions of a Mercury station -> bigger moves", "signal": h1},
         {"name": "h2_mercury_retrograde_down", "kind": "directional", "source": SOURCE,

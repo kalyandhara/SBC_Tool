@@ -7,8 +7,8 @@ sessions later, so a session t' has closed by T-1 exactly when t'+horizon <= T.
 from __future__ import annotations
 
 from collections.abc import Callable, Mapping
-from typing import Any
 from dataclasses import dataclass
+from typing import Any
 
 import numpy as np
 

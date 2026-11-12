@@ -54,9 +54,9 @@ def create_trade(symbol: str, entry_date: str, entry_price: float, qty: float,
             "INSERT INTO trades(symbol,entry_date,entry_price,qty,direction,stop_price,risk_per_share,notes,created_at) VALUES (?,?,?,?,?,?,?,?,?)",
             (symbol, entry_date, entry_price, qty, direction, stop_price, risk_per_share, notes, dt.datetime.utcnow().isoformat())
         )
-        return c.lastrowid
+        return int(c.lastrowid or 0)
 
-def add_exit(trade_id: int, exit_date: str, exit_price: float, qty: float, type_: str = "partial"):
+def add_exit(trade_id: int, exit_date: str, exit_price: float, qty: float, type_: str = "partial") -> None:
     with _conn() as c:
         c.execute("INSERT INTO exits(trade_id,exit_date,exit_price,qty,type) VALUES (?,?,?,?,?)",
                   (trade_id, exit_date, exit_price, qty, type_))

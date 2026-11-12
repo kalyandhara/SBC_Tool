@@ -33,8 +33,10 @@ import csv
 import datetime as dt
 import json
 import math
+from collections.abc import Callable
 from functools import lru_cache
 from pathlib import Path
+from typing import Any
 
 import swisseph as swe
 
@@ -84,12 +86,12 @@ CAVEAT = ("Sub-lord readings follow a published bullion sheet and have not been 
 
 def _flags() -> int:
     swe.set_sid_mode(swe.SIDM_LAHIRI)
-    return swe.FLG_MOSEPH | swe.FLG_SIDEREAL | swe.FLG_SPEED
+    return int(swe.FLG_MOSEPH | swe.FLG_SIDEREAL | swe.FLG_SPEED)
 
 
 def _jd(t: dt.datetime) -> float:
     u = t - dt.timedelta(hours=5, minutes=30)
-    return swe.julday(u.year, u.month, u.day, u.hour + u.minute / 60 + u.second / 3600)
+    return float(swe.julday(u.year, u.month, u.day, u.hour + u.minute / 60 + u.second / 3600))
 
 
 def _ist(jd: float) -> dt.datetime:
@@ -107,7 +109,7 @@ def _wrap(x: float) -> float:
     return (x + 180.0) % 360.0 - 180.0
 
 
-def _bisect(f, a: float, b: float, n: int = 36) -> float:
+def _bisect(f: Callable[..., float], a: float, b: float, n: int = 36) -> float:
     fa = f(a)
     for _ in range(n):
         m = (a + b) / 2
@@ -188,7 +190,7 @@ def moon_day(day: dt.date) -> tuple[list[dict], list[dict]]:
         if l0 < e < l1:
             jd = _bisect(lambda j, e=e: _wrap(_lon(j, swe.MOON)[0] - e % 360), j0, j1)
             crossings.append((jd, e % 360))
-    padas = []
+    padas: list[Any] = []
     for jd, e in crossings:
         q = e / (360 / 108)
         if abs(q - round(q)) < 1e-6:
@@ -259,13 +261,13 @@ def week_events(monday: dt.date) -> list[dict]:
                 out.append((jd, "station", f"{name} turns {'retrograde' if cur[1] < 0 else 'direct'}"))
             prev = cur
     for name, body in PLANETS[:6]:
-        prev = _wrap(_lon(grid[0], swe.MOON)[0] - _lon(grid[0], body)[0])
+        prev_gap = _wrap(_lon(grid[0], swe.MOON)[0] - _lon(grid[0], body)[0])
         for g in grid[1:]:
-            cur = _wrap(_lon(g, swe.MOON)[0] - _lon(g, body)[0])
-            if prev < 0 <= cur and cur - prev < 90:
+            gap = _wrap(_lon(g, swe.MOON)[0] - _lon(g, body)[0])
+            if prev_gap < 0 <= gap and gap - prev_gap < 90:
                 jd = _bisect(lambda j, b=body: _wrap(_lon(j, swe.MOON)[0] - _lon(j, b)[0]), g - step, g)
                 out.append((jd, "conjunction", f"Moon conjunct {name}"))
-            prev = cur
+            prev_gap = gap
     out.sort()
     return [{"date": _ist(jd).date().isoformat(), "time": _hm(_ist(jd)), "kind": k, "text": text}
             for jd, k, text in out]

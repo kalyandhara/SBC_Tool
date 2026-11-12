@@ -22,6 +22,7 @@ from __future__ import annotations
 
 import datetime as dt
 import math
+from collections.abc import Callable
 from zoneinfo import ZoneInfo
 
 from sbc.config import RASHI_TREND
@@ -48,9 +49,10 @@ def _direction(a: float, b: float) -> str | None:
 
 
 def check(bars: list[dict], multi_tf: bool = True, regime: bool = False, gap_filter: bool = False,
-          rashi_at=moon_rashi) -> dict:
+          rashi_at: Callable[[dt.datetime], str] = moon_rashi) -> dict:
     """bars: oldest-first dicts with date (YYYY-MM-DD), open, high, low, close."""
-    rows, sign_cache = [], {}
+    rows: list[dict] = []
+    sign_cache: dict[dt.date, str] = {}
 
     def sign_on(day: dt.date) -> str:
         if day not in sign_cache:

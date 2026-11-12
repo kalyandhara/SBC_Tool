@@ -92,7 +92,7 @@ def normalize_config(cfg: dict) -> dict:
 def _fmt_local(utc_iso: str, tz_name: str) -> str:
     utc = dt.datetime.fromisoformat(utc_iso)
     local = cities.local_time(utc, tz_name)
-    return local.strftime("%Y-%m-%d %H:%M:%S")
+    return str(local.strftime("%Y-%m-%d %H:%M:%S"))
 
 
 def _ayanamsa_value(jd: float, ayanamsa: str) -> float:
@@ -197,7 +197,7 @@ def _sheet_report_info(wb: Workbook, cfg: dict, events: dict) -> None:
                  ["Item", "Value"], rows, first=True)
 
 
-def _start_positions(jd_start: float, cfg: dict):
+def _start_positions(jd_start: float, cfg: dict) -> tuple[list[dict], float]:
     from .planets import positions
     planets, _ayan = positions(jd_start)
     wanted = set(cfg["planets"])

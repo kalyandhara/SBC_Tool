@@ -134,7 +134,7 @@ def percentile(real: float, placebos: Any) -> float | None:
 
 
 def _band_index(scores: Any) -> np.ndarray:
-    return np.digitize(np.rint(np.asarray(scores, float)), _EDGES, right=True)
+    return np.asarray(np.digitize(np.rint(np.asarray(scores, float)), _EDGES, right=True))
 
 
 def _net_excess(mask: Any, values: Any, cost_bps: float) -> float:

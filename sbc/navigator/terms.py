@@ -7,8 +7,8 @@ are vectorised over the shared SkyTable and factor lists are built on demand.
 from __future__ import annotations
 
 from collections.abc import Callable, Mapping
-from typing import Any
 from dataclasses import dataclass
+from typing import Any
 
 import numpy as np
 
@@ -53,7 +53,7 @@ def _sep(a: np.ndarray, b: np.ndarray) -> np.ndarray:
 
 
 def _sign_index(lon: np.ndarray) -> np.ndarray:
-    return (np.floor(lon).astype(int) // 30) % 12
+    return np.asarray((np.floor(lon).astype(int) // 30) % 12)
 
 
 def _nakshatra_index(lon: np.ndarray) -> np.ndarray:

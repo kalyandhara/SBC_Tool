@@ -217,7 +217,7 @@ def refresh_fred_data(years: int = 10) -> dict[str, Any]:
     end_date = datetime.now().strftime("%Y-%m-%d")
     start_date = (datetime.now() - timedelta(days=365 * years)).strftime("%Y-%m-%d")
 
-    results = {
+    results: dict[str, Any] = {
         "start_date": start_date,
         "end_date": end_date,
         "series_fetched": [],
@@ -303,7 +303,8 @@ def get_rate_at_date(date: str, series: str) -> float | None:
         return None
 
     # Return the first (closest) observation
-    return series_data[0]["value"]
+    value = series_data[0]["value"]
+    return None if value is None else float(value)
 
 
 __all__ = [

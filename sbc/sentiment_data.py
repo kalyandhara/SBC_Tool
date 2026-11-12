@@ -329,7 +329,7 @@ def refresh_sentiment_data(days: int = 90, ticker: str = "NIFTY 50") -> dict[str
     end_date = datetime.now().strftime("%Y-%m-%d")
     start_date = (datetime.now() - timedelta(days=days)).strftime("%Y-%m-%d")
 
-    results = {
+    results: dict[str, Any] = {
         "start_date": start_date,
         "end_date": end_date,
         "sources_fetched": [],
@@ -386,7 +386,8 @@ def get_sentiment_at_date(date: str, source: str = "vix") -> float | None:
     # Get first ticker's data
     for ticker_data in data["by_source"][source].values():
         if ticker_data:
-            return ticker_data[0]["sentiment_score"]
+            score = ticker_data[0]["sentiment_score"]
+            return None if score is None else float(score)
 
     return None
 

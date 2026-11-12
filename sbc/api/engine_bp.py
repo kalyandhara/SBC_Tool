@@ -868,10 +868,10 @@ def trade_journal():
     """
     from sbc import trade_journal as tj
     if request.method == "GET":
-        tid = request.args.get("id")
-        if tid:
+        tid_arg = request.args.get("id")
+        if tid_arg:
             try:
-                trade = tj.get_trade(int(tid))
+                trade = tj.get_trade(int(tid_arg))
                 return jsonify(trade), 200 if trade else 404
             except Exception as e:
                 return jsonify({"error": str(e)}), 400

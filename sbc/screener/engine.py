@@ -22,6 +22,7 @@ the trend flip.  P&L % is entry -> last close (or exit price).
 from __future__ import annotations
 
 import datetime as dt
+from typing import Any
 
 import pandas as pd
 
@@ -29,7 +30,7 @@ from .indicators import bollinger, ema, pivots, rsi, supertrend
 
 MODES = ("full", "rsi", "ema")
 
-DEFAULT_PARAMS = {
+DEFAULT_PARAMS: dict[str, dict[str, Any]] = {
     "full": {"st_period": 10, "st_mult": 3.0, "rsi_period": 14,
              "rsi_long": 55.0, "rsi_short": 45.0, "bb_period": 20,
              "bb_std": 2.0},
@@ -75,21 +76,24 @@ def _signals_and_trades(symbol: str, ind: pd.DataFrame, mode: str,
     long_raw, short_raw = _raw_conditions(ind, mode, params)
     rows = []
     open_side = None
-    open_entry = open_stop = None
+    open_entry: float | None = None
+    open_stop: float | None = None
     open_ts = None
     stop_series = _stop_line(ind, mode)
 
     def close_trade(ts, price, exit_reason):
         nonlocal open_side
-        pnl = ((price - open_entry) / open_entry * 100.0
+        entry, stop = open_entry, open_stop
+        assert entry is not None and stop is not None, "close_trade needs an open trade"
+        pnl = ((price - entry) / entry * 100.0
                if open_side == "long" else
-               (open_entry - price) / open_entry * 100.0)
+               (entry - price) / entry * 100.0)
         rows.append({
             "symbol": symbol, "side": open_side,
-            "entry_ts": open_ts, "entry": round(open_entry, 2),
+            "entry_ts": open_ts, "entry": round(entry, 2),
             "exit_ts": ts, "exit_price": round(price, 2),
             "status": "exited", "pnl_pct": round(pnl, 2),
-            "stop_initial": round(open_stop, 2),
+            "stop_initial": round(stop, 2),
             "exit_reason": exit_reason,
         })
         open_side = None
@@ -149,6 +153,7 @@ def _signals_and_trades(symbol: str, ind: pd.DataFrame, mode: str,
     if open_side is not None:
         last = ind.index[-1]
         last_close = ind["close"].iloc[-1]
+        assert open_entry is not None and open_stop is not None
         running = ((last_close - open_entry) / open_entry * 100.0
                    if open_side == "long" else
                    (open_entry - last_close) / open_entry * 100.0)
@@ -219,7 +224,7 @@ def _stop_line(ind: pd.DataFrame, mode: str) -> pd.Series:
     return ind["st"]
 
 
-def _indicator_row(ind: pd.DataFrame, mode: str, ts) -> dict:
+def _indicator_row(ind: pd.DataFrame, mode: str, ts: Any) -> dict:
     row = ind.loc[ts]
     out = {}
     if mode == "full":

@@ -230,7 +230,7 @@ def _build_radial(planets_raw: list[dict], sector_scores: list) -> dict[str, Any
             for name in m.planets:
                 if name in known:
                     weight[name] = weight.get(name, 0.0) + abs(m.score)
-        parent = f"planet_{max(sorted(weight), key=weight.get)}" if weight else "root"
+        parent = f"planet_{max(sorted(weight), key=lambda n: weight[n])}" if weight else "root"
         link(parent, gid, sent)
 
         for j, sym in enumerate(stocks):

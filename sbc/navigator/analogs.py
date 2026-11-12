@@ -16,8 +16,9 @@ from __future__ import annotations
 
 import bisect
 import datetime as dt
+from collections.abc import Mapping
 from dataclasses import dataclass
-from typing import Any, Mapping, cast
+from typing import Any, cast
 
 import numpy as np
 

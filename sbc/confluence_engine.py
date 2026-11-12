@@ -29,12 +29,13 @@ def confluence_signal(
 ) -> Literal["BUY", "SELL", "HOLD"]:
     """Generate trade signal when technical cross aligns with astrological bias."""
     numeric_bias = isinstance(astro_bias, Real) and not isinstance(astro_bias, bool)
+    value = float(astro_bias) if numeric_bias else 0.0  # type: ignore[arg-type]  # numeric_bias narrows to a real
     if technical_cross == 1 and (
-        astro_bias == "bullish" or (numeric_bias and astro_bias > astro_threshold)
+        astro_bias == "bullish" or (numeric_bias and value > astro_threshold)
     ):
         return "BUY"
     if technical_cross == -1 and (
-        astro_bias == "bearish" or (numeric_bias and astro_bias < -astro_threshold)
+        astro_bias == "bearish" or (numeric_bias and value < -astro_threshold)
     ):
         return "SELL"
     return "HOLD"
