@@ -111,7 +111,8 @@ def test_remote_read_refused(client):
     ("get", "/api/navigator/chart?profile_id=1"), ("get", "/api/navigator/score?profile_id=1"),
     ("post", "/api/navigator/backtest"), ("get", "/api/navigator/backtest/1"),
     ("get", "/api/navigator/backtest/latest?profile_id=1"), ("get", "/api/navigator/analogs?profile_id=1"),
-    ("get", "/api/navigator/forecast?profile_id=1")])
+    ("get", "/api/navigator/forecast?profile_id=1"), ("get", "/api/navigator/visuals/scatter?profile_id=1"),
+    ("get", "/api/navigator/visuals/model?profile_id=1")])
 def test_guard_covers_every_route_before_postgres(client, monkeypatch, method, path):
     _down(monkeypatch)    # a route that reached the store would be a 503
     r = getattr(client, method)(path, headers={"X-Forwarded-For": "8.8.8.8"},
@@ -963,3 +964,15 @@ def test_forecast_shape_and_redaction(client, db, monkeypatch):
     assert body["status"] == "unvalidated research output" and body["profile_id"] == pid
     assert "chart_hash" not in r.get_data(as_text=True)
     assert client.get("/api/navigator/forecast?profile_id=999").status_code == 404
+
+
+@pytest.mark.parametrize("path", ["/api/navigator/visuals/scatter?profile_id=1", "/api/navigator/visuals/model?profile_id=1"])
+def test_visuals_guarded(client, monkeypatch, path):
+    _down(monkeypatch)
+    assert client.get(path, headers={"X-Forwarded-For": "8.8.8.8"}).status_code == 403
+
+
+@pg
+def test_visuals_unknown_profile_404(client, db):
+    assert client.get("/api/navigator/visuals/scatter?profile_id=999").status_code == 404
+    assert client.get("/api/navigator/visuals/model?profile_id=999").status_code == 404

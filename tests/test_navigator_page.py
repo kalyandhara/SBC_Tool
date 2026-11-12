@@ -348,3 +348,15 @@ def test_forecast_section_markup_and_wiring():
     assert "navLoadForecast(id);" in js.split("async function navLoadProfile")[1].split("\n}\n")[0]
     forecast_js = js.split("// ---- Phase 3: forecast calendar ----")[1]
     assert "innerHTML" not in forecast_js
+
+
+def test_3d_section_markup_and_wiring():
+    from pathlib import Path
+    html = Path("templates/index.html").read_text(encoding="utf8")
+    js = Path("static/js/navigator.js").read_text(encoding="utf8")
+    assert 'id="nav-scatter"' in html and 'id="nav-model"' in html
+    assert "unvalidated research output, not personal financial advice" in html.split('id="nav-3d"')[1][:500]
+    part = js.split("// ---- 3D views")[1]
+    assert "/static/vendor/plotly-gl3d-3.0.1.min.js" in part and "window.Plotly = prior" in part
+    assert "/api/navigator/visuals/scatter" in part and "/api/navigator/visuals/model" in part
+    assert "innerHTML" not in part

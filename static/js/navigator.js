@@ -509,6 +509,7 @@ async function navLoadProfile() {
   NAV.analogFor = null;
   if (NAV.open) navLoadAnalogs(id);
   navLoadForecast(id);
+  if (NAV.open) navLoad3d(id);
   const load = async (url, render, target, title) => {
     try {
       const data = await navFetch(url);
@@ -762,6 +763,7 @@ function navSync() {
   if (!NAV.booted) { NAV.booted = true; navBoot(); return; }
   if (NAV.profileId !== null && NAV.analogFor !== NAV.profileId && !NAV.analogCtl) navLoadAnalogs(NAV.profileId);
   if (NAV.runId !== null) navPoll();
+  if (NAV.profileId !== null) navLoad3d(NAV.profileId);
 }
 
 (function navInit() {
@@ -880,3 +882,156 @@ async function navLoadForecast(id) {
     });
   });
 })();
+
+
+// ---- 3D views (scatter and natal planet model) ----
+// plotly-basic has no scatter3d, so these views lazy-load the gl3d bundle and keep it off window.Plotly.
+const NAV_3D_SRC = "/static/vendor/plotly-gl3d-3.0.1.min.js";
+const NAV_3D = { plotly: null, promise: null, seq: 0, loadedFor: null };
+const NAV_GROUP_COLOURS = { green: "#1b8a3a", yellow: "#e0b829", red: "#d23c3c" };
+
+function navLoadPlotly3d() {
+  if (NAV_3D.plotly) return Promise.resolve(NAV_3D.plotly);
+  if (!NAV_3D.promise) {
+    NAV_3D.promise = new Promise((resolve, reject) => {
+      const prior = window.Plotly;
+      const restore = () => { if (prior) window.Plotly = prior; else delete window.Plotly; };
+      const s = document.createElement("script");
+      s.src = NAV_3D_SRC;
+      s.onload = () => { NAV_3D.plotly = window.Plotly; restore(); resolve(NAV_3D.plotly); };
+      s.onerror = () => { NAV_3D.promise = null; restore(); reject(new Error("Could not load the 3D chart library.")); };
+      document.head.appendChild(s);
+    });
+  }
+  return NAV_3D.promise;
+}
+
+function navThemeColours() {
+  const cs = getComputedStyle(document.body);
+  return { text: cs.color || "#888", bg: "rgba(0,0,0,0)" };
+}
+
+function navNotes(id, notes) {
+  const box = navId(id);
+  if (!box) return;
+  navClear(box);
+  for (const n of notes || []) box.appendChild(navNote(n));
+}
+
+function navDrawScatter(P, data) {
+  const theme = navThemeColours();
+  const traces = ["green", "yellow", "red"].map((g) => {
+    const pts = data.points.filter((p) => p.group === g);
+    return {
+      type: "scatter3d", mode: "markers", name: { green: "61 and up", yellow: "41 to 60", red: "40 and below" }[g],
+      x: pts.map((p) => p.date), y: pts.map((p) => p.score), z: pts.map((p) => p.ret * 100),
+      text: pts.map((p) => `${p.date}: score ${p.score}, next-session return ${(p.ret * 100).toFixed(2)}%`),
+      hoverinfo: "text", marker: { size: 2.5, color: NAV_GROUP_COLOURS[g], opacity: 0.75 },
+    };
+  });
+  const layout = {
+    paper_bgcolor: theme.bg, font: { color: theme.text }, margin: { l: 0, r: 0, t: 0, b: 0 },
+    legend: { orientation: "h" },
+    scene: { xaxis: { title: { text: "Date" }, type: "date" }, yaxis: { title: { text: "Score" } },
+             zaxis: { title: { text: "Next-session return %" } } },
+  };
+  P.react(navId("nav-scatter"), traces, layout, { responsive: true, displaylogo: false });
+}
+
+function navRingXY(lon, r) {
+  const a = (lon * Math.PI) / 180;
+  return [r * Math.cos(a), r * Math.sin(a)];
+}
+
+function navModelTraces(data, frame) {
+  const natalPos = new Map();
+  const nx = [], ny = [], nz = [], ns = [], nt = [];
+  for (const n of data.nodes) {
+    const [x, y] = navRingXY(n.lon, 1);
+    natalPos.set(n.name, [x, y, 0]);
+    nx.push(x); ny.push(y); nz.push(0);
+    ns.push(n.strength === null || n.strength === undefined ? 10 : 6 + n.strength / 6);
+    nt.push(`Natal ${n.name} ${n.lon.toFixed(1)}°` + (n.strength === null || n.strength === undefined ? "" : `, strength ${n.strength.toFixed(0)}${n.reasons.length ? " (" + n.reasons.join(", ") + ")" : ""}`));
+  }
+  const tPos = new Map();
+  const tx = [], ty = [], tz = [], tt = [];
+  for (const t of frame.transits) {
+    const [x, y] = navRingXY(t.lon, 1.6);
+    tPos.set(t.name, [x, y, 0.4]);
+    tx.push(x); ty.push(y); tz.push(0.4); tt.push(`Transit ${t.name} ${t.lon.toFixed(1)}°`);
+  }
+  const line = (sign) => {
+    const xs = [], ys = [], zs = [];
+    for (const e of frame.edges) {
+      if ((e.effect > 0) !== sign) continue;
+      const a = tPos.get(e.planet), b = natalPos.get(e.point);
+      if (!a || !b) continue;
+      xs.push(a[0], b[0], null); ys.push(a[1], b[1], null); zs.push(a[2], b[2], null);
+    }
+    return { type: "scatter3d", mode: "lines", name: sign ? "Adds to score" : "Subtracts from score",
+             x: xs, y: ys, z: zs, hoverinfo: "skip", line: { color: sign ? "#1b8a3a" : "#d23c3c", width: 4 } };
+  };
+  return [
+    { type: "scatter3d", mode: "markers+text", name: "Natal", x: nx, y: ny, z: nz, text: data.nodes.map((n) => n.name),
+      hovertext: nt, hoverinfo: "text", textposition: "bottom center", marker: { size: ns, color: "#d4a017" } },
+    { type: "scatter3d", mode: "markers+text", name: "Transit", x: tx, y: ty, z: tz, text: frame.transits.map((t) => t.name),
+      hovertext: tt, hoverinfo: "text", textposition: "top center", marker: { size: 6, color: "#5b8def" } },
+    line(true), line(false),
+  ];
+}
+
+function navDrawModel(P, data) {
+  const theme = navThemeColours();
+  const frames = data.frames.map((f) => ({ name: f.date, data: navModelTraces(data, f) }));
+  const steps = data.frames.map((f) => ({ label: f.date.slice(5), method: "animate",
+    args: [[f.date], { mode: "immediate", frame: { duration: 0, redraw: true }, transition: { duration: 0 } }] }));
+  const axis = { visible: false, range: [-2, 2] };
+  const layout = {
+    paper_bgcolor: theme.bg, font: { color: theme.text }, margin: { l: 0, r: 0, t: 0, b: 0 },
+    legend: { orientation: "h" },
+    scene: { xaxis: axis, yaxis: axis, zaxis: { visible: false, range: [-0.5, 1] }, aspectmode: "manual", aspectratio: { x: 1, y: 1, z: 0.4 } },
+    sliders: [{ steps, currentvalue: { prefix: "Day: " }, pad: { t: 30 } }],
+    updatemenus: [{ type: "buttons", showactive: false, x: 0, y: 0, buttons: [
+      { label: "Play", method: "animate", args: [null, { frame: { duration: 700, redraw: true }, fromcurrent: true }] },
+      { label: "Pause", method: "animate", args: [[null], { mode: "immediate", frame: { duration: 0, redraw: false } }] },
+    ] }],
+  };
+  P.newPlot(navId("nav-model"), frames[0].data, layout, { responsive: true, displaylogo: false })
+    .then((gd) => P.addFrames(gd, frames));
+}
+
+async function navLoad3d(id) {
+  if (NAV_3D.loadedFor === id) return;
+  const seq = ++NAV_3D.seq;
+  NAV_3D.loadedFor = id;
+  navMessage("nav-scatter-status", "Loading 3D scatter.");
+  navMessage("nav-model-status", "Loading planet model.");
+  let P;
+  try {
+    P = await navLoadPlotly3d();
+  } catch (err) {
+    if (seq !== NAV_3D.seq) return;
+    NAV_3D.loadedFor = null;
+    navMessage("nav-scatter-status", err.message, true);
+    navMessage("nav-model-status", err.message, true);
+    return;
+  }
+  const run = async (url, draw, status, notes) => {
+    try {
+      const data = await navFetch(url);
+      if (seq !== NAV_3D.seq) return;
+      navMessage(status, "");
+      draw(P, data);
+      navNotes(notes, data.notes);
+    } catch (err) {
+      if (seq !== NAV_3D.seq) return;
+      NAV_3D.loadedFor = null;
+      navMessage(status, (err && err.message) || "Could not load this view.", true);
+    }
+  };
+  const q = `profile_id=${encodeURIComponent(id)}`;
+  await Promise.all([
+    run(`/api/navigator/visuals/scatter?${q}`, navDrawScatter, "nav-scatter-status", "nav-scatter-notes"),
+    run(`/api/navigator/visuals/model?${q}`, navDrawModel, "nav-model-status", "nav-model-notes"),
+  ]);
+}

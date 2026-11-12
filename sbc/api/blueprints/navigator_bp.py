@@ -33,6 +33,7 @@ from sbc.navigator import forecast as F
 from sbc.navigator import scoring as S
 from sbc.navigator import signature as G
 from sbc.navigator import store
+from sbc.navigator import visuals as V
 from sbc.navigator.ephemeris import build_sky
 from sbc.navigator.profile import Profile, chart_hash, natal_points, validate
 from sbc.navigator.weights import WEIGHTS_VERSION
@@ -499,3 +500,27 @@ def forecast() -> Any:
     result = cast(dict[str, Any], B.clean_json(F.build(profile, market, int(raw))))
     return jsonify({**result, "profile_id": profile_id, "is_sample": profile.is_sample,
                     "status": STATUS})
+
+
+def _market_or_503() -> Any:
+    try:
+        return A.load_market()
+    except market_store.MarketDataMissing:
+        raise _NoMarketData from None
+
+
+@navigator_bp.route("/visuals/scatter", methods=["GET"])
+def visuals_scatter() -> Any:
+    profile_id = _arg_id()
+    profile = _require_profile(profile_id)
+    result = cast(dict[str, Any], B.clean_json(V.scatter(profile, _market_or_503())))
+    return jsonify({**result, "profile_id": profile_id, "is_sample": profile.is_sample, "status": STATUS})
+
+
+@navigator_bp.route("/visuals/model", methods=["GET"])
+def visuals_model() -> Any:
+    profile_id = _arg_id()
+    profile = _require_profile(profile_id)
+    market = _market_or_503()
+    result = cast(dict[str, Any], B.clean_json(V.model(profile, market.dates[-1])))
+    return jsonify({**result, "profile_id": profile_id, "is_sample": profile.is_sample, "status": STATUS})
