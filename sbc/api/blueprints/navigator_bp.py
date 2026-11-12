@@ -29,6 +29,7 @@ from sbc import nakshatra as N
 from sbc.engine_version import module_version
 from sbc.navigator import analogs as A
 from sbc.navigator import backtest as B
+from sbc.navigator import forecast as F
 from sbc.navigator import scoring as S
 from sbc.navigator import signature as G
 from sbc.navigator import store
@@ -479,3 +480,22 @@ def analogs() -> Any:
         f"Computed in {result['_timing']:.1f} seconds" + (" (cached result)." if cached else ".")]
     return jsonify({**body, "profile_id": profile_id, "is_sample": profile.is_sample,
                     "status": STATUS, "cached": cached})
+
+
+_BAD_WINDOW = "window must be 30, 90 or 365."
+
+
+@navigator_bp.route("/forecast", methods=["GET"])
+def forecast() -> Any:
+    raw = request.args.get("window", "30")
+    if raw not in ("30", "90", "365"):
+        raise _BadRequest(_BAD_WINDOW)
+    profile_id = _arg_id()
+    profile = _require_profile(profile_id)
+    try:
+        market = A.load_market()
+    except market_store.MarketDataMissing:
+        raise _NoMarketData from None
+    result = cast(dict[str, Any], B.clean_json(F.build(profile, market, int(raw))))
+    return jsonify({**result, "profile_id": profile_id, "is_sample": profile.is_sample,
+                    "status": STATUS})

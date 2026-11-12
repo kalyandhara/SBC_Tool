@@ -110,7 +110,8 @@ def test_remote_read_refused(client):
     ("get", "/api/navigator/profile"), ("post", "/api/navigator/profile"),
     ("get", "/api/navigator/chart?profile_id=1"), ("get", "/api/navigator/score?profile_id=1"),
     ("post", "/api/navigator/backtest"), ("get", "/api/navigator/backtest/1"),
-    ("get", "/api/navigator/backtest/latest?profile_id=1"), ("get", "/api/navigator/analogs?profile_id=1")])
+    ("get", "/api/navigator/backtest/latest?profile_id=1"), ("get", "/api/navigator/analogs?profile_id=1"),
+    ("get", "/api/navigator/forecast?profile_id=1")])
 def test_guard_covers_every_route_before_postgres(client, monkeypatch, method, path):
     _down(monkeypatch)    # a route that reached the store would be a 503
     r = getattr(client, method)(path, headers={"X-Forwarded-For": "8.8.8.8"},
@@ -925,3 +926,40 @@ def test_analogs_real_run_redacted(client, db, synthetic, monkeypatch):
     assert any("seconds" in n for n in body["notes"])
     ends = A.data_coverage_note(A.load_market())      # derived from the loaded data, not hard-coded
     assert ends in body["notes"] and any("VIX starts 2008-03" in n for n in body["notes"])
+
+
+# ---- Phase 3: forward ranking (/forecast) ----
+def test_forecast_guarded(client, monkeypatch):
+    _down(monkeypatch)
+    r = client.get("/api/navigator/forecast?profile_id=1", headers={"X-Forwarded-For": "8.8.8.8"})
+    assert r.status_code == 403
+
+
+@pytest.mark.parametrize("window", ["29", "60", "x", "", "365.0", "-30"])
+def test_forecast_bad_window_400(client, monkeypatch, window):
+    monkeypatch.setattr(store, "migrate", lambda: None)
+    _down(monkeypatch)    # rejected before any store read
+    r = client.get(f"/api/navigator/forecast?profile_id=1&window={window}")
+    assert r.status_code == 400
+    assert r.get_json() == {"error": "window must be 30, 90 or 365."}
+
+
+@pg
+def test_forecast_shape_and_redaction(client, db, monkeypatch):
+    pid = _profile(client)
+    market = A.Market(["2026-11-05", "2026-11-06"], {}, {})
+    monkeypatch.setattr(A, "load_market", lambda: market)
+    from sbc.navigator import forecast as F
+    seen = {}
+
+    def fake_build(profile, mkt, window):
+        seen["window"] = window
+        return {"window_days": window, "data_asof": "2026-11-06", "sessions": [], "top": [],
+                "stay_away": [], "band_counts": {}, "notes": ["n"]}
+    monkeypatch.setattr(F, "build", fake_build)
+    r = client.get(f"/api/navigator/forecast?profile_id={pid}&window=90")
+    body = r.get_json()
+    assert r.status_code == 200 and seen["window"] == 90
+    assert body["status"] == "unvalidated research output" and body["profile_id"] == pid
+    assert "chart_hash" not in r.get_data(as_text=True)
+    assert client.get("/api/navigator/forecast?profile_id=999").status_code == 404

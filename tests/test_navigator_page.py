@@ -333,3 +333,18 @@ def test_load_latest_picks_newest_explicitly(code):
     assert "created_at" in newest or ".id" in newest
     click = code[code.index('"nav-bd-load-latest"'):]
     assert "navNewestProfile(" in click[:click.index("\n  });")]
+
+
+def test_forecast_section_markup_and_wiring():
+    from pathlib import Path
+    html = Path("templates/index.html").read_text(encoding="utf8")
+    js = Path("static/js/navigator.js").read_text(encoding="utf8")
+    assert 'id="nav-forecast"' in html and 'id="nav-forecast-out"' in html
+    for w in ("30", "90", "365"):
+        assert f'data-window="{w}"' in html
+    assert "unvalidated research output, not personal financial advice" in html.split('id="nav-forecast"')[1][:600]
+    assert "/api/navigator/forecast?profile_id=" in js
+    assert "Top 20 trading dates" in js and "Top 20 stay-away dates" in js
+    assert "navLoadForecast(id);" in js.split("async function navLoadProfile")[1].split("\n}\n")[0]
+    forecast_js = js.split("// ---- Phase 3: forecast calendar ----")[1]
+    assert "innerHTML" not in forecast_js

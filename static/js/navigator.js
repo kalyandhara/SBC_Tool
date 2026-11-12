@@ -508,6 +508,7 @@ async function navLoadProfile() {
   navStopAnalogs();
   NAV.analogFor = null;
   if (NAV.open) navLoadAnalogs(id);
+  navLoadForecast(id);
   const load = async (url, render, target, title) => {
     try {
       const data = await navFetch(url);
@@ -775,4 +776,107 @@ function navSync() {
     navLoadProfile();
   });
   navSync();
+})();
+
+
+// ---- Phase 3: forecast calendar ----
+const NAV_FC = { window: 30, data: null, seq: 0, show: new Set(NAV_BANDS.map((b) => b[0])), zoom: null };
+const NAV_MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+
+function navBandIndex(band) { return NAV_BANDS.findIndex((b) => b[0] === band); }
+
+function navForecastRows(list) {
+  return (list || []).map((r) => [r.date, r.score, r.band, r.action]);
+}
+
+function navMonthBlock(year, month, byDate, zoomed) {
+  const grid = navEl("div", { class: "nav-month-grid" });
+  const first = new Date(Date.UTC(year, month, 1));
+  const lead = (first.getUTCDay() + 6) % 7;            // Monday first
+  for (let i = 0; i < lead; i += 1) grid.appendChild(navEl("span", { class: "nav-day dim", "aria-hidden": "true" }));
+  const days = new Date(Date.UTC(year, month + 1, 0)).getUTCDate();
+  for (let d = 1; d <= days; d += 1) {
+    const iso = `${year}-${String(month + 1).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
+    const row = byDate.get(iso);
+    let cls = "nav-day";
+    let label = `${iso}: no session`;
+    if (row) {
+      const k = navBandIndex(row.band);
+      cls += NAV_FC.show.has(row.band) ? ` nav-b${k}` : " dim";
+      label = `${iso}: score ${row.score}, ${row.band}, ${row.action}`;
+    } else {
+      cls += " dim";
+    }
+    grid.appendChild(navEl("span", { class: cls, title: label, "aria-label": label, text: zoomed && row ? `${d} · ${row.score}` : String(d) }));
+  }
+  const name = `${NAV_MONTHS[month]} ${year}`;
+  const head = navEl("button", { type: "button", class: "btn btn-secondary nav-month-btn", text: zoomed ? `${name} (back to all months)` : name, "aria-label": zoomed ? "Show all months" : `Zoom into ${name}` });
+  head.addEventListener("click", () => { NAV_FC.zoom = zoomed ? null : `${year}-${month}`; navRenderForecast(); });
+  return navEl("div", { class: "nav-month" }, [head, grid]);
+}
+
+function navRenderForecast() {
+  const out = navId("nav-forecast-out");
+  if (!out) return;
+  navClear(out);
+  const data = NAV_FC.data;
+  if (!data) return;
+  const byDate = new Map((data.sessions || []).map((r) => [r.date, r]));
+  const counts = data.band_counts || {};
+  out.appendChild(navNote(`${(data.sessions || []).length} sessions in the next ${data.window_days} days. Market data through ${data.data_asof}. `
+    + NAV_BANDS.map((b) => `${b[0]} ${counts[b[0]] || 0}`).join(", ") + "."));
+  const months = [];
+  for (const r of data.sessions || []) {
+    const key = r.date.slice(0, 7);
+    if (!months.includes(key)) months.push(key);
+  }
+  const cal = navEl("div", { class: NAV_FC.zoom ? "nav-cal zoomed" : "nav-cal" });
+  for (const key of months) {
+    const [y, m] = key.split("-").map(Number);
+    if (NAV_FC.zoom && NAV_FC.zoom !== `${y}-${m - 1}`) continue;
+    cal.appendChild(navMonthBlock(y, m - 1, byDate, Boolean(NAV_FC.zoom)));
+  }
+  out.appendChild(cal);
+  const keep = (rows) => (rows || []).filter((r) => NAV_FC.show.has(r.band));
+  out.appendChild(navTable("Top 20 trading dates (highest scores)", ["Date", "Score", "Band", "Action label"], navForecastRows(keep(data.top))));
+  out.appendChild(navTable("Top 20 stay-away dates (lowest scores)", ["Date", "Score", "Band", "Action label"], navForecastRows(keep(data.stay_away))));
+  for (const n of data.notes || []) out.appendChild(navNote(n));
+}
+
+async function navLoadForecast(id) {
+  const seq = ++NAV_FC.seq;
+  NAV_FC.data = null;
+  NAV_FC.zoom = null;
+  navRenderForecast();
+  navMessage("nav-forecast-status", "Loading forecast.");
+  try {
+    const data = await navFetch(`/api/navigator/forecast?profile_id=${encodeURIComponent(id)}&window=${NAV_FC.window}`);
+    if (seq !== NAV_FC.seq) return;
+    NAV_FC.data = data;
+    navMessage("nav-forecast-status", "");
+    navRenderForecast();
+  } catch (err) {
+    if (seq === NAV_FC.seq) navMessage("nav-forecast-status", (err && err.message) || "Forecast could not be loaded.", true);
+  }
+}
+
+(function navForecastInit() {
+  const filter = document.querySelector("#nav-forecast .nav-band-filter");
+  if (filter) {
+    NAV_BANDS.forEach(([band], k) => {
+      const box = navEl("input", { type: "checkbox", checked: "checked", "aria-label": `Show ${band}` });
+      box.addEventListener("change", () => {
+        if (box.checked) NAV_FC.show.add(band); else NAV_FC.show.delete(band);
+        navRenderForecast();
+      });
+      filter.appendChild(navEl("label", {}, [box, navEl("span", { class: `nav-swatch nav-b${k}` }), navEl("span", { text: band })]));
+    });
+  }
+  document.querySelectorAll("#nav-forecast .nav-window").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      NAV_FC.window = Number(btn.dataset.window);
+      document.querySelectorAll("#nav-forecast .nav-window").forEach((b) => b.setAttribute("aria-pressed", String(b === btn)));
+      if (NAV.profileId) navLoadForecast(NAV.profileId);
+    });
+  });
 })();
