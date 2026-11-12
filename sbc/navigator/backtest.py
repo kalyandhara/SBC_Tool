@@ -14,7 +14,7 @@ import datetime as dt
 import math
 import time
 from collections.abc import Callable, Mapping
-from typing import NamedTuple
+from typing import Any, NamedTuple, cast
 
 import numpy as np
 import pandas as pd
@@ -66,17 +66,17 @@ class Inputs(NamedTuple):
     sky: SkyTable
 
 
-def count_events(mask) -> int:
+def count_events(mask: Any) -> int:
     """Consecutive days are one event."""
     mask = np.asarray(mask, bool)
     return int(mask[0]) + int((mask[1:] & ~mask[:-1]).sum()) if mask.size else 0
 
 
-def net(r, cost_bps):
+def net(r: Any, cost_bps: float) -> Any:
     return r - cost_bps / 10000.0
 
 
-def open_returns(opens, horizon: int) -> np.ndarray:
+def open_returns(opens: Any, horizon: int) -> np.ndarray:
     """r[t] = open[t+horizon] / open[t] - 1. Outcomes only: never for hist_val."""
     opens = np.asarray(opens, float)
     out = np.full(len(opens), np.nan)
@@ -86,7 +86,7 @@ def open_returns(opens, horizon: int) -> np.ndarray:
     return out
 
 
-def prior_returns(closes) -> np.ndarray:
+def prior_returns(closes: Any) -> np.ndarray:
     """prior[t] is the T-1 session's own return: close[t-1] / close[t-2] - 1."""
     closes = np.asarray(closes, float)
     out = np.full(len(closes), np.nan)
@@ -94,7 +94,7 @@ def prior_returns(closes) -> np.ndarray:
     return out
 
 
-def matched_control_mean(mask, prior, fwd) -> float:
+def matched_control_mean(mask: Any, prior: Any, fwd: Any) -> float:
     """Non-band sessions in the same decile of the T-1 session's return, weighted
     by the band's sessions in each decile."""
     mask, prior, fwd = np.asarray(mask, bool), np.asarray(prior, float), np.asarray(fwd, float)
@@ -112,7 +112,7 @@ def matched_control_mean(mask, prior, fwd) -> float:
     return float(np.average(means, weights=weights)) if means else float("nan")
 
 
-def verdict(b: Mapping, is_sample: bool) -> str:
+def verdict(b: Mapping[str, Any], is_sample: bool) -> str:
     """Spec rule. Missing or NaN evidence fails. A sample chart never qualifies."""
     q, pct, folds = b.get("q"), b.get("natal_pct"), b.get("fold_pos")
     natal_days = b.get("natal_band_days")
@@ -123,7 +123,7 @@ def verdict(b: Mapping, is_sample: bool) -> str:
     return EDGE if ok and not is_sample else NO_EDGE
 
 
-def percentile(real: float, placebos) -> float | None:
+def percentile(real: float, placebos: Any) -> float | None:
     """Share of placebos strictly below the real chart, 0-100. Placebos with no
     sessions in the band are dropped; None if too few remain."""
     placebos = np.asarray(placebos, float)
@@ -133,16 +133,16 @@ def percentile(real: float, placebos) -> float | None:
     return float(100.0 * np.mean(placebos < real))
 
 
-def _band_index(scores) -> np.ndarray:
+def _band_index(scores: Any) -> np.ndarray:
     return np.digitize(np.rint(np.asarray(scores, float)), _EDGES, right=True)
 
 
-def _net_excess(mask, values, cost_bps) -> float:
+def _net_excess(mask: Any, values: Any, cost_bps: float) -> float:
     """In-band mean minus the mean of all sessions, then the cost of the band's trades."""
     return stats.excess_stat(np.asarray(mask, float), values) - cost_bps / 10000.0
 
 
-def _p_value(mask, values, cost_bps, n_perm, seed) -> float:
+def _p_value(mask: Any, values: Any, cost_bps: float, n_perm: int, seed: int) -> float:
     """One-sided: can this band's net excess be told from chance on the upside?
     Rotations of the gross statistic are the null, centred on zero, so an edge the
     size of the cost scores as none. Two-sided would make every idle band
@@ -157,19 +157,19 @@ def _p_value(mask, values, cost_bps, n_perm, seed) -> float:
                               observed, n_perm, seed)
 
 
-def _max_drawdown(r) -> float:
+def _max_drawdown(r: Any) -> float:
     curve = np.concatenate(([1.0], np.cumprod(1 + r)))
     return float((curve / np.maximum.accumulate(curve) - 1).min())
 
 
-def _run_totals(mask, netted) -> np.ndarray:
+def _run_totals(mask: Any, netted: Any) -> np.ndarray:
     """Summed net return of each run of consecutive in-band sessions."""
     runs = np.cumsum(np.concatenate(([mask[0]], mask[1:] & ~mask[:-1])))
     usable = mask & np.isfinite(netted)
     return np.bincount(runs[usable] - 1, weights=netted[usable])
 
 
-def _band_row(mask, returns, prior, cost_bps, n_perm, seed, min_events) -> dict:
+def _band_row(mask: Any, returns: Any, prior: Any, cost_bps: float, n_perm: int, seed: int, min_events: int) -> dict[str, Any]:
     netted = net(returns, cost_bps)
     picked = netted[mask & np.isfinite(netted)]
     usable = mask & np.isfinite(returns)       # tail sessions have no forward return
@@ -191,8 +191,8 @@ def _band_row(mask, returns, prior, cost_bps, n_perm, seed, min_events) -> dict:
     return row
 
 
-def band_stats(scores, returns, prior=None, cost_bps=10, n_perm=stats.N_PERMUTATIONS,
-               seed=0, min_events=30) -> dict:
+def band_stats(scores: Any, returns: Any, prior: Any = None, cost_bps: float = 10, n_perm: int = stats.N_PERMUTATIONS,
+               seed: int = 0, min_events: int = 30) -> dict[str, dict[str, Any]]:
     """Per-band metrics net of cost. `excess` is net of the all-session mean; `p`
     is circular-shift on that. `hit` is the share of positive sessions, `win` the
     share of positive events. Drawdown is meaningful for one-session returns only."""
@@ -202,12 +202,12 @@ def band_stats(scores, returns, prior=None, cost_bps=10, n_perm=stats.N_PERMUTAT
             for k, name in enumerate(BAND_NAMES)}
 
 
-def _prices(ohlc: pd.DataFrame):
+def _prices(ohlc: pd.DataFrame) -> tuple[list[str], np.ndarray, np.ndarray]:
     days = ohlc["date"] if "date" in ohlc.columns else ohlc.index
     return [str(d)[:10] for d in days], ohlc["open"].to_numpy(float), ohlc["close"].to_numpy(float)
 
 
-def _vix_map(vix) -> dict:
+def _vix_map(vix: Any) -> dict[str, float]:
     return vix.to_dict() if isinstance(vix, pd.Series) else dict(vix)
 
 
@@ -221,7 +221,7 @@ def score_for(inputs: Inputs, min_sessions: int = 756) -> S.ScoreSeries:
                           min_sessions=min_sessions)
 
 
-def natal_subscore(series: S.ScoreSeries) -> np.ndarray:
+def natal_subscore(series: S.ScoreSeries) -> Any:
     """Mean of Transit, Dasha and Strength; Moon and Vol are common to all charts."""
     return (series.terms["transit"] + series.terms["dasha"] + series.terms["strength"]) / 3.0
 
@@ -237,14 +237,14 @@ def draw_placebos(n: int, seed: int) -> list[Profile]:
     return out
 
 
-def _excess_table(scores, outcomes, start, cost_bps) -> np.ndarray:
+def _excess_table(scores: Any, outcomes: Any, start: int, cost_bps: float) -> np.ndarray:
     """Net excess by band and horizon on the scored sessions."""
     index = _band_index(scores)[start:]
     return np.array([[_net_excess(index == k, r[start:], cost_bps) for r in outcomes]
                      for k in range(len(BAND_NAMES))])
 
 
-def _run_placebos(inputs, p, start, outcomes, on_progress):
+def _run_placebos(inputs: Inputs, p: Mapping[str, Any], start: int, outcomes: Any, on_progress: Callable[[int, int], None] | None) -> tuple[Any, Any, dict[str, Any]]:
     """Same score_series and same statistic as the real chart. Returns the full and
     natal excess tables (chart, band, horizon) and the disclosure fields."""
     charts = draw_placebos(p["n_placebo"], p["seed"])
@@ -269,7 +269,7 @@ def _run_placebos(inputs, p, start, outcomes, on_progress):
     return np.array(full).reshape(shape), np.array(natal).reshape(shape), info
 
 
-def _folds(index, years, outcomes, horizons, cost_bps):
+def _folds(index: Any, years: Any, outcomes: Any, horizons: Any, cost_bps: float) -> tuple[Any, Any, Any]:
     """One test year per fold, from the first scored year. fold_pos[k, h] is the
     share of active folds (at least MIN_FOLD_DAYS band sessions with a forward return)
     that had positive net excess, NaN under MIN_FOLDS. Returns (folds, fold_pos, active)."""
@@ -281,7 +281,7 @@ def _folds(index, years, outcomes, horizons, cost_bps):
         bands = {}
         for k, name in enumerate(BAND_NAMES):
             mask = index[fold] == k
-            row = {"days": int(mask.sum())}
+            row: dict[str, Any] = {"days": int(mask.sum())}
             for h, r in enumerate(outcomes):
                 value = _net_excess(mask, r[fold], cost_bps)
                 row[f"excess_{horizons[h]}"] = value
@@ -296,7 +296,7 @@ def _folds(index, years, outcomes, horizons, cost_bps):
     return folds, share, active
 
 
-def clean_json(x):
+def clean_json(x: Any) -> Any:
     """JSON-safe copy: numpy scalars become Python ones, NaN and inf become None."""
     if isinstance(x, dict):
         return {k: clean_json(v) for k, v in x.items()}
@@ -309,7 +309,7 @@ def clean_json(x):
     return int(x) if isinstance(x, np.integer) else x
 
 
-def _top_band(bands, min_events) -> int:
+def _top_band(bands: Mapping[str, Any], min_events: int) -> int:
     """Highest band with enough events, else the highest with any days. `bands` is
     one fixed horizon's rows: a best-horizon row would let returns pick the band."""
     order = range(len(BAND_NAMES) - 1, -1, -1)
@@ -321,7 +321,7 @@ def _top_band(bands, min_events) -> int:
 
 
 def run_inputs(inputs: Inputs, params: Mapping | None = None,
-               on_progress: Callable[[int, int], None] | None = None) -> dict:
+               on_progress: Callable[[int, int], None] | None = None) -> Any:
     p = {**DEFAULT_PARAMS, **(params or {})}
     cost, horizons = p["cost_bps"], list(p["horizons"])
     is_sample = bool(inputs.profile.is_sample)
@@ -348,7 +348,7 @@ def run_inputs(inputs: Inputs, params: Mapping | None = None,
                   for r in scored]
     full, natal, placebo = _run_placebos(inputs, p, start, outcomes, on_progress)
 
-    bands, candidates, by_band = {}, [], {}
+    bands: dict[str, Any] = {}; candidates: list[dict[str, Any]] = []; by_band: dict[str, Any] = {}
     first_horizon = str(horizons[0])
     for k, name in enumerate(BAND_NAMES):
         by_horizon, by_band[name] = {}, {}
@@ -374,7 +374,7 @@ def run_inputs(inputs: Inputs, params: Mapping | None = None,
         first = per_horizon[0][name]
         mask = index == k
         # One-session figures: at longer horizons overlapping returns make these meaningless.
-        band = {"session_stats": {"horizon": first_horizon,
+        band: dict[str, Any] = {"session_stats": {"horizon": first_horizon,
                                   **{key: first[key] for key in SESSION_STATS}}}
         band["mean_oc"] = float(np.nanmean(oc[mask])) if np.isfinite(oc[mask]).any() else None
         for h, horizon in enumerate(horizons):
@@ -408,8 +408,8 @@ def run_inputs(inputs: Inputs, params: Mapping | None = None,
     })
 
 
-def run(profile: Profile, ohlc: pd.DataFrame, vix, sky: SkyTable | None = None,
+def run(profile: Profile, ohlc: pd.DataFrame, vix: Any, sky: SkyTable | None = None,
         params: Mapping | None = None,
-        on_progress: Callable[[int, int], None] | None = None) -> dict:
+        on_progress: Callable[[int, int], None] | None = None) -> Any:
     sky = sky if sky is not None else build_sky(_prices(ohlc)[0])
-    return run_inputs(Inputs(profile, ohlc, vix, sky), params, on_progress)
+    return cast(dict[str, Any], run_inputs(Inputs(profile, ohlc, vix, sky), params, on_progress))

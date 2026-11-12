@@ -17,6 +17,7 @@ from __future__ import annotations
 import bisect
 import datetime as dt
 from dataclasses import dataclass
+from typing import Any, Mapping, cast
 
 import numpy as np
 
@@ -64,20 +65,21 @@ def _ord(day: str) -> int:
     return dt.date.fromisoformat(day).toordinal()
 
 
-def _f(x) -> float | None:
+def _f(x: Any) -> float | None:
     x = float(x)
     return x if np.isfinite(x) else None
 
 
 def next_sessions(last: str, n: int) -> list[str]:
-    out, d = [], dt.date.fromisoformat(last)
+    out: list[str] = []
+    d = dt.date.fromisoformat(last)
     while len(out) < n:
         d = MH.next_trading_day(d, inclusive=False)
         out.append(d.isoformat())
     return out
 
 
-def pick_targets(days, scores) -> tuple[str, list[int]]:
+def pick_targets(days: Any, scores: Any) -> tuple[str, list[int]]:
     scores = [int(s) for s in scores]
     high = [i for i, s in enumerate(scores) if s >= HIGH_SCORE]
     if high:
@@ -86,12 +88,12 @@ def pick_targets(days, scores) -> tuple[str, list[int]]:
     return "top_scores", sorted(best)
 
 
-def eligible_mask(dates, target_date: str, horizon: int = HORIZON) -> np.ndarray:
+def eligible_mask(dates: Any, target_date: str, horizon: int = HORIZON) -> np.ndarray:
     last = bisect.bisect_left(list(dates), target_date) - 1
     return np.arange(len(dates)) + horizon <= last
 
 
-def select_analogs(sim, dates, target_date: str, k: int = TOP_N) -> tuple[list[int], str | None]:
+def select_analogs(sim: Any, dates: Any, target_date: str, k: int = TOP_N) -> tuple[list[int], str | None]:
     """Best-first, eligible, outside the exclusion window, thinned to SPACING sessions.
     Reuses sbc.analogs._thin; sbc.analogs.select is not used because its threshold
     mode and TOP_K of 30 do not match this spec."""
@@ -99,7 +101,7 @@ def select_analogs(sim, dates, target_date: str, k: int = TOP_N) -> tuple[list[i
     return kept, note
 
 
-def _select(sim, dates, target_date: str, k: int = TOP_N):
+def _select(sim: Any, dates: Any, target_date: str, k: int = TOP_N) -> tuple[list[int], str | None, Any]:
     """select_analogs plus the eligible, outside-exclusion pool indices it computed."""
     t = _ord(target_date)
     far = np.array([abs(t - _ord(d)) > EXCLUDE_DAYS for d in dates])
@@ -114,11 +116,11 @@ def _select(sim, dates, target_date: str, k: int = TOP_N):
     return kept, None, cand
 
 
-def era_window(analog_dates, first=None, last=None) -> tuple[str, str]:
+def era_window(analog_dates: Any, first: Any = None, last: Any = None) -> tuple[str, str]:
     return era_window_info(analog_dates, first, last)[:2]
 
 
-def era_window_info(analog_dates, first=None, last=None) -> tuple[str, str, bool, bool]:
+def era_window_info(analog_dates: Any, first: Any = None, last: Any = None) -> tuple[str, str, bool, bool]:
     """(start, end, widened, clipped): 25th..75th percentile of analog dates, widened
     symmetrically to at least ERA_MIN_DAYS, then clipped to [first, last] (the pool's date range)."""
     ords = [_ord(d) for d in analog_dates]
@@ -136,7 +138,7 @@ def era_window_info(analog_dates, first=None, last=None) -> tuple[str, str, bool
             widened, (lo, hi) != (lo0, hi0))
 
 
-def data_coverage_note(market) -> str:
+def data_coverage_note(market: Any) -> str:
     """Last-data dates for Bank Nifty and the sectors, read from the loaded market data."""
     def last(arr):
         ok = np.flatnonzero(np.isfinite(np.asarray(arr, float)))
@@ -150,16 +152,16 @@ def data_coverage_note(market) -> str:
     return f"{' and '.join(parts)}."
 
 
-def era_pool(dates, pool, window) -> np.ndarray:
+def era_pool(dates: Any, pool: Any, window: Any) -> np.ndarray:
     pool = np.asarray(pool, int)
     return np.array([i for i in pool if window[0] <= dates[i] <= window[1]], dtype=int)
 
 
-def _ret(o, c) -> float | None:
+def _ret(o: Any, c: Any) -> float | None:
     return _f(c / o - 1) if np.isfinite(o) and np.isfinite(c) and o else None
 
 
-def outcomes(i: int, prices: dict) -> dict:
+def outcomes(i: int, prices: dict[str, Any]) -> dict:
     o, c, lo = prices["open"], prices["close"], prices["low"]
     n = len(o)
     vix = prices["vix_close"]
@@ -186,7 +188,7 @@ def outcomes(i: int, prices: dict) -> dict:
             "next5": next5, "drawdown": drawdown}
 
 
-def random_draws(pool_next5, n, spacing, observed_win, seed=SEED, draws=DRAWS, positions=None):
+def random_draws(pool_next5: Any, n: int, spacing: Any, observed_win: Any, seed: int = SEED, draws: int = DRAWS, positions: Any = None) -> Any:
     """(share, short): share of draws with win ratio >= observed_win; `short` counts
     draws where spacing left fewer than n sessions."""
     vals = np.asarray(pool_next5, float)
@@ -205,11 +207,11 @@ def random_draws(pool_next5, n, spacing, observed_win, seed=SEED, draws=DRAWS, p
     return hits / draws, short
 
 
-def random_share(pool_next5, n, spacing, observed_win, seed=SEED, draws=DRAWS, positions=None):
+def random_share(pool_next5: Any, n: int, spacing: Any, observed_win: Any, seed: int = SEED, draws: int = DRAWS, positions: Any = None) -> Any:
     return random_draws(pool_next5, n, spacing, observed_win, seed, draws, positions)[0]
 
 
-def _share_note(label, share, short, n):
+def _share_note(label: Any, share: Any, short: Any, n: int) -> tuple[Any, str | None]:
     """(share, note): a share is blank, with the reason, when any draw could not meet the spacing."""
     if share is None:
         return None, f"{label} random share unavailable: no outcomes to draw from."
@@ -219,7 +221,7 @@ def _share_note(label, share, short, n):
     return share, None
 
 
-def _era_text(era) -> str:
+def _era_text(era: Any) -> str:
     start, end = era["window"]
     years = (_ord(end) - _ord(start)) / 365.25
     return (f"Era window {start} to {end}: middle half of the analog dates, widened to 2 years where "
@@ -227,7 +229,7 @@ def _era_text(era) -> str:
             f"{' (widened)' if era.get('widened') else ''}{' (clipped to data)' if era.get('clipped') else ''}.")
 
 
-def summarize(rows, pool_next5, share, short, era=None) -> dict:
+def summarize(rows: Any, pool_next5: Any, share: Any, short: Any, era: Any = None) -> dict:
     nx = np.array([r["outcomes"]["next5"] for r in rows if r["outcomes"]["next5"] is not None], float)
     dd = np.array([r["outcomes"]["drawdown"] for r in rows if r["outcomes"]["drawdown"] is not None], float)
     pool = np.asarray(pool_next5, float)
@@ -295,15 +297,15 @@ def load_market() -> Market:
     return Market(dates, prices, vix)
 
 
-def _history_sky(dates):
+def _history_sky(dates: Any) -> Any:
     hist = SA.load_nifty_history()
     if hist.sky.dates[:len(dates)] != list(dates):
         raise ValueError("fingerprint history does not align with market sessions")
     return SA._slice(hist.sky, len(dates))
 
 
-def build(profile: Profile, market: Market, days: int = 30, sky_history=None,
-          fingerprint_fn=None) -> dict:
+def build(profile: Profile, market: Market, days: int = 30, sky_history: Any = None,
+          fingerprint_fn: Any = None) -> dict[str, Any]:
     from sbc.fingerprint import fingerprint
     fingerprint_fn = fingerprint_fn or fingerprint
     dates, n = list(market.dates), len(market.dates)
@@ -344,7 +346,8 @@ def build(profile: Profile, market: Market, days: int = 30, sky_history=None,
                  "outcomes": outcomes(i, market.prices)} for i in idx]
         summary = None
         if rows:
-            vals = [r["outcomes"]["next5"] for r in rows if r["outcomes"]["next5"] is not None]
+            vals = [cast(Mapping[str, Any], r["outcomes"])["next5"] for r in rows
+                    if cast(Mapping[str, Any], r["outcomes"])["next5"] is not None]
             win = float(np.mean([v > 0 for v in vals])) if vals else 0.0
             share, short = random_draws(next5[pool], len(vals), SPACING, win, positions=pool)
             e_lo, e_hi, widened, clipped = era_window_info(
