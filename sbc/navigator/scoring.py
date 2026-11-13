@@ -22,7 +22,7 @@ ACTIONS = {"Exceptional Setup": "Trade Aggressively", "High Probability": "Trade
            "Normal": "Reduce Position Size", "Very Defensive": "Stay Cash",
            "No Trading": "Avoid Market Entirely"}
 TERM_LABELS = {"transit": "Transit", "moon": "Moon", "dasha": "Dasha",
-               "strength": "Planet Strength (partial)", "histval": "Historical band rank",
+               "strength": "Planet Strength (Shadbala)", "histval": "Historical band rank",
                "vol": "Volatility"}
 VOL_WINDOW = 252
 VOL_LEAD_IN = VOL_WINDOW + 1    # the T-1 close plus the full window before it
@@ -189,7 +189,7 @@ def score_series(sky: Any, profile: Profile, opens: Any, closes: Any, vix: Mappi
     transit = T.transit_term(sky, natal)
     moon = T.moon_term(sky)
     dasha = T.dasha_term(sky, natal["Moon"], profile.birth_date)
-    strength = T.strength_term(sky)
+    strength = T.shadbala_term(list(days))
     vol, lead = _vol_with_lead_in(days, vix)
     five = {"transit": transit.values, "moon": moon.values, "dasha": dasha.values,
             "strength": strength.values, "vol": vol.values[lead:]}

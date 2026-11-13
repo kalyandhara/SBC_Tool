@@ -3771,3 +3771,27 @@ button.og-card:hover, button.og-card:focus-visible { border-color: var(--og-acce
 #nav-profile-form .profile-controls { flex-wrap: wrap; }
 #nav-profile-form .profile-controls select { min-width: 0; flex-basis: 180px; }
 #nav-profile-form .form-actions { justify-content: flex-start; }
+
+/* Navigator forecast calendar (Phase 3) */
+.nav-forecast-controls { display: flex; flex-wrap: wrap; gap: 8px; margin: 8px 0; }
+.nav-window[aria-pressed="true"] { outline: 2px solid var(--accent, #d4a017); }
+.nav-band-filter { display: flex; flex-wrap: wrap; gap: 6px 14px; border: 0; padding: 0; margin: 6px 0; }
+.nav-band-filter legend { font-size: 13px; margin-bottom: 4px; }
+.nav-band-filter label { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; }
+.nav-swatch { display: inline-block; width: 12px; height: 12px; border-radius: 3px; }
+.nav-cal { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 12px; margin: 10px 0; }
+.nav-month h4 { margin: 0 0 4px; font-size: 13px; }
+.nav-month-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; }
+.nav-day { aspect-ratio: 1; border-radius: 3px; font-size: 10px; display: flex; align-items: center; justify-content: center; background: var(--surface-2, rgba(127,127,127,.12)); color: var(--text, inherit); min-width: 0; }
+.nav-day.dim { opacity: .25; }
+.nav-cal.zoomed { grid-template-columns: 1fr; }
+.nav-cal.zoomed .nav-day { font-size: 13px; }
+.nav-b0 { background: #1b8a3a; color: #fff; }
+.nav-b1 { background: #6cc04a; color: #102010; }
+.nav-b2 { background: #e8c547; color: #2a2205; }
+.nav-b3 { background: #ef8a3c; color: #2a1405; }
+.nav-b4 { background: #d23c3c; color: #fff; }
+
+/* Navigator 3D views */
+.nav-plot3d { width: 100%; height: 460px; min-width: 0; }
+@media (max-width: 600px) { .nav-plot3d { height: 360px; } }

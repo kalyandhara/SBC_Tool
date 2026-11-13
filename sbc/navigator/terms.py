@@ -6,6 +6,7 @@ are vectorised over the shared SkyTable and factor lists are built on demand.
 """
 from __future__ import annotations
 
+import threading
 from collections.abc import Callable, Mapping
 from dataclasses import dataclass
 from typing import Any
@@ -17,7 +18,8 @@ from sbc.navigator import weights as W
 from sbc.planets import COMBUST_ORB, DEBIL, EXALT
 from sbc.yogas import vimshottari
 
-STRENGTH_NOTE = "partial: no Shadbala/Avastha yet"
+PARTIAL_STRENGTH_NOTE = "partial: no Shadbala/Avastha yet"
+STRENGTH_NOTE = "Shadbala (BPHS six-fold strength) with Baladi Avastha, cast for Mumbai at 09:15 IST"
 STRENGTH_PLANETS = ["Sun", "Moon", "Mars", "Mercury", "Jupiter", "Venus", "Saturn"]
 ASPECT_NAMES = {"CONJ": "conjunct", "SXT": "sextile", "SQ": "square",
                 "TRI": "trine", "OPP": "opposite"}
@@ -168,7 +170,7 @@ def strength_term(sky: Any) -> Term:
     raw = np.sum([c for _, c in parts], axis=0)
 
     def factors(i):
-        return [{"term": "strength", "label": lbl, "raw": float(c[i]), "note": STRENGTH_NOTE}
+        return [{"term": "strength", "label": lbl, "raw": float(c[i]), "note": PARTIAL_STRENGTH_NOTE}
                 for lbl, c in parts if c[i]]
     return Term(_scale(raw), raw, factors)
 
@@ -201,3 +203,57 @@ def vol_term(days: list[str], vix_by_day: Mapping[str, float], window: int = 252
         return [{"term": "vol", "raw": float(raw[i]),
                  "label": f"India VIX prior close at percentile {pcts[i]:.0f}"}]
     return Term(values, raw, factors)
+
+
+_SB_DAY: dict[str, tuple[tuple[str, float, float, str, float], ...]] = {}
+_SB_LOCK = threading.Lock()
+
+
+def _shadbala_day(day: str) -> tuple[tuple[str, float, float, str, float], ...]:
+    """Shadbala rows for one session (Mumbai, 09:15 IST). Call with _SB_LOCK held."""
+    import swisseph as swe
+
+    from sbc.navigator import shadbala as SB
+    y, m, d = (int(x) for x in day.split("-"))
+    jd = swe.julday(y, m, d, 9.25 - W.MARKET_TZ)
+    sb = SB.shadbala(jd, W.MARKET_LAT, W.MARKET_LON, W.MARKET_TZ)
+    return tuple((p, sb[p]["total"], sb[p]["ratio"], sb[p]["avastha"], sb[p]["avastha_factor"])
+                 for p in STRENGTH_PLANETS)
+
+
+def _shadbala_rows(days: tuple[str, ...]) -> tuple[tuple[tuple[str, float, float, str, float], ...], ...]:
+    """Rows for every day, memoised per date and shared by every caller.
+
+    One lock covers the whole batch: swisseph keeps global state, and a second request
+    arriving mid-batch waits and then reuses the days the first one computed."""
+    missing = [d for d in days if d not in _SB_DAY]
+    if missing:
+        with _SB_LOCK:
+            for day in missing:
+                if day not in _SB_DAY:
+                    _SB_DAY[day] = _shadbala_day(day)
+    return tuple(_SB_DAY[d] for d in days)
+
+
+def planet_strength_score(ratio: float, avastha_factor: float) -> float:
+    base = min(max(W.SHADBALA_SCALE * ratio, 0.0), 100.0)
+    # Avastha scales how far the planet moves the score from neutral, not the score itself.
+    return 50.0 + (base - 50.0) * (1 - W.AVASTHA_BLEND + W.AVASTHA_BLEND * avastha_factor)
+
+
+def shadbala_term(days: list[str]) -> Term:
+    """Planet Strength (nav-2): mean over the seven planets of their Shadbala-and-Avastha score."""
+    rows = _shadbala_rows(tuple(days))
+    n, k = len(days), len(STRENGTH_PLANETS)
+    contrib = np.zeros((k, n))
+    for i, row in enumerate(rows):
+        for j, (_, _, ratio, _, fac) in enumerate(row):
+            contrib[j, i] = 2 * (planet_strength_score(ratio, fac) - 50) / k   # sums to 2 x (mean - 50)
+    raw = contrib.sum(axis=0)
+
+    def factors(i):
+        i = range(n)[i]
+        return [{"term": "strength", "raw": float(contrib[j, i]), "note": STRENGTH_NOTE,
+                 "label": f"{p} Shadbala {ratio:.2f}x its minimum ({total:.0f} virupas), {av}"}
+                for j, (p, total, ratio, av, _) in enumerate(rows[i])]
+    return Term(_scale(raw), raw, factors)
