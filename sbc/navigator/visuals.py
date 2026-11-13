@@ -2,7 +2,7 @@
 
 scatter(): every past session's weighted score against what Nifty did next
 (open to the next open, the backtest's 1-session horizon, raw, no costs).
-model(): the natal chart as a planet model, with each planet's partial
+model(): the natal chart as a planet model, with each planet's Shadbala-based
 strength at birth and the transit contacts active on each of the next days.
 
 Both are descriptive research views, not signals.

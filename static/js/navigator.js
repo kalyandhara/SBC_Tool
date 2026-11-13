@@ -5,6 +5,7 @@
 
 const NAV_POLL_MS = 3000;
 const NAV_TIMEOUT_MS = 20000;
+const NAV_SCORE_TIMEOUT_MS = 60000;   // the first score after a restart computes Shadbala for every session
 // A cold similar-dates run takes several seconds; the server's own lock answers 202 {busy: true} if busy.
 const NAV_ANALOG_TIMEOUT_MS = 120000;
 const NAV_NEXT5 = "open to open, 5 sessions, as in the backtest";
@@ -17,7 +18,7 @@ const NAV_BANDS = [
   ["No Trading", "Avoid Market Entirely"],
 ];
 const NAV_NO_EDGE = "no demonstrated edge";
-const NAV_STRENGTH_NOTE = "Planet Strength is a partial index: no Shadbala/Avastha yet.";
+const NAV_STRENGTH_NOTE = "Planet Strength is Shadbala (six-fold strength, BPHS) scaled by Baladi Avastha, for Mumbai at 09:15 IST (weights nav-2).";
 const NAV_ACTIVE = ["queued", "running"];
 
 const NAV = {
@@ -507,22 +508,24 @@ async function navLoadProfile() {
   navId("nav-score").textContent = "Loading score.";
   navStopAnalogs();
   NAV.analogFor = null;
-  if (NAV.open) navLoadAnalogs(id);
-  navLoadForecast(id);
-  if (NAV.open) navLoad3d(id);
-  const load = async (url, render, target, title) => {
+  const load = async (url, render, target, title, timeoutMs) => {
     try {
-      const data = await navFetch(url);
+      const data = await navFetch(url, {}, new AbortController(), timeoutMs);
       if (seq === NAV.loadSeq) render(data);
     } catch (err) {
       if (seq === NAV.loadSeq) navSectionError(target, title, err);
     }
   };
+  // Chart and score first: the heavier sections share the server and would delay them.
   await Promise.all([
     load(`/api/navigator/chart?profile_id=${id}`, navRenderChart, "nav-chart", "Chart"),
-    load(`/api/navigator/score?profile_id=${id}`, navRenderScore, "nav-score", "Weighted score"),
+    load(`/api/navigator/score?profile_id=${id}`, navRenderScore, "nav-score", "Weighted score", NAV_SCORE_TIMEOUT_MS),
     navLoadLatest(seq, id),
   ]);
+  if (seq !== NAV.loadSeq) return;
+  if (NAV.open) navLoadAnalogs(id);
+  navLoadForecast(id);
+  if (NAV.open) navLoad3d(id);
 }
 
 // A null run means no saved backtest yet, so any failure just leaves the section empty.

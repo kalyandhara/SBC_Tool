@@ -122,6 +122,20 @@ def _ensure_migrated():
         if not _migrated:
             store.migrate()
             _migrated = True
+            try:
+                threading.Thread(target=_warm_strength, name="navigator-shadbala-warm", daemon=True).start()
+            except Exception as exc:   # best effort: requests compute on demand anyway
+                log.warning("navigator strength warm-up not started: %s", type(exc).__name__)
+
+
+def _warm_strength() -> None:
+    """Fill the shared Shadbala cache for every market session (about 5 seconds) in the
+    background, so the first score request doesn't pay for it."""
+    try:
+        from sbc.navigator import terms as T
+        T._shadbala_rows(tuple(A.load_market().dates))
+    except Exception as exc:   # warming is best effort; requests compute on demand anyway
+        log.warning("navigator strength warm-up skipped: %s", type(exc).__name__)
 
 
 @navigator_bp.errorhandler(store.StoreUnavailable)

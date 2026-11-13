@@ -22,7 +22,7 @@ ACTIONS = {"Exceptional Setup": "Trade Aggressively", "High Probability": "Trade
            "Normal": "Reduce Position Size", "Very Defensive": "Stay Cash",
            "No Trading": "Avoid Market Entirely"}
 TERM_LABELS = {"transit": "Transit", "moon": "Moon", "dasha": "Dasha",
-               "strength": "Planet Strength (partial)", "histval": "Historical band rank",
+               "strength": "Planet Strength (Shadbala)", "histval": "Historical band rank",
                "vol": "Volatility"}
 VOL_WINDOW = 252
 VOL_LEAD_IN = VOL_WINDOW + 1    # the T-1 close plus the full window before it

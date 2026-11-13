@@ -6,9 +6,9 @@ are vectorised over the shared SkyTable and factor lists are built on demand.
 """
 from __future__ import annotations
 
+import threading
 from collections.abc import Callable, Mapping
 from dataclasses import dataclass
-from functools import lru_cache
 from typing import Any
 
 import numpy as np
@@ -205,19 +205,34 @@ def vol_term(days: list[str], vix_by_day: Mapping[str, float], window: int = 252
     return Term(values, raw, factors)
 
 
-@lru_cache(maxsize=4)
-def _shadbala_rows(days: tuple[str, ...]) -> tuple[tuple[tuple[str, float, float, str, float], ...], ...]:
+_SB_DAY: dict[str, tuple[tuple[str, float, float, str, float], ...]] = {}
+_SB_LOCK = threading.Lock()
+
+
+def _shadbala_day(day: str) -> tuple[tuple[str, float, float, str, float], ...]:
+    """Shadbala rows for one session (Mumbai, 09:15 IST). Call with _SB_LOCK held."""
     import swisseph as swe
 
     from sbc.navigator import shadbala as SB
-    rows = []
-    for day in days:
-        y, m, d = (int(x) for x in day.split("-"))
-        jd = swe.julday(y, m, d, 9.25 - W.MARKET_TZ)
-        sb = SB.shadbala(jd, W.MARKET_LAT, W.MARKET_LON, W.MARKET_TZ)
-        rows.append(tuple((p, sb[p]["total"], sb[p]["ratio"], sb[p]["avastha"], sb[p]["avastha_factor"])
-                          for p in STRENGTH_PLANETS))
-    return tuple(rows)
+    y, m, d = (int(x) for x in day.split("-"))
+    jd = swe.julday(y, m, d, 9.25 - W.MARKET_TZ)
+    sb = SB.shadbala(jd, W.MARKET_LAT, W.MARKET_LON, W.MARKET_TZ)
+    return tuple((p, sb[p]["total"], sb[p]["ratio"], sb[p]["avastha"], sb[p]["avastha_factor"])
+                 for p in STRENGTH_PLANETS)
+
+
+def _shadbala_rows(days: tuple[str, ...]) -> tuple[tuple[tuple[str, float, float, str, float], ...], ...]:
+    """Rows for every day, memoised per date and shared by every caller.
+
+    One lock covers the whole batch: swisseph keeps global state, and a second request
+    arriving mid-batch waits and then reuses the days the first one computed."""
+    missing = [d for d in days if d not in _SB_DAY]
+    if missing:
+        with _SB_LOCK:
+            for day in missing:
+                if day not in _SB_DAY:
+                    _SB_DAY[day] = _shadbala_day(day)
+    return tuple(_SB_DAY[d] for d in days)
 
 
 def planet_strength_score(ratio: float, avastha_factor: float) -> float:

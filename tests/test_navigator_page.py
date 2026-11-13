@@ -98,7 +98,7 @@ def test_bands_and_actions_match_the_engine(code):
 
 
 def test_required_honest_wording(code):
-    for phrase in ("insufficient events", "pipeline check only", NO_EDGE, "no Shadbala/Avastha",
+    for phrase in ("insufficient events", "pipeline check only", NO_EDGE, "Shadbala (six-fold strength, BPHS)",
                    "session_stats", "neutral"):
         assert phrase in code, phrase
 
@@ -295,7 +295,10 @@ def test_similar_dates_is_lazy_and_does_not_block_the_score(code):
     # Fired without await, outside the Promise.all that renders the score.
     assert "navLoadAnalogs(" in load
     assert "await navLoadAnalogs" not in load
-    assert "navLoadAnalogs" not in load[load.index("Promise.all"):]
+    # It starts only after the score's Promise.all settles, so it never competes with it.
+    assert "navLoadAnalogs" not in load[:load.index("Promise.all")]
+    after = load[load.index("Promise.all"):]
+    assert after.index("]);") < after.index("navLoadAnalogs")
     sync = code[code.index("function navSync"):]
     assert "navStopAnalogs" in sync[:sync.index("\n}\n")]
 
