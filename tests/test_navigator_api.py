@@ -1008,3 +1008,26 @@ def test_forecast_csv_export(client, db, monkeypatch):
     assert r.status_code == 200 and r.mimetype == "text/csv"
     assert "attachment" in r.headers["Content-Disposition"]
     assert "date,score,band,action_label" in text and "2026-11-09,55,Normal,'=cmd" in text
+
+
+def test_active_run_for_another_market_is_a_409_not_its_run(client, monkeypatch):
+    monkeypatch.setattr(store, "migrate", lambda: None)
+    monkeypatch.setattr(store, "get_profile", lambda i: SAMPLE_PROFILE)
+    monkeypatch.setattr(store, "expire_stale", lambda: None)
+    monkeypatch.setattr(store, "start_run", lambda *a: (7, False))
+    monkeypatch.setattr(store, "get_run", lambda i: {"id": 7, "instrument": "NIFTY", "status": "running"})
+    monkeypatch.setattr(bp, "_market", lambda *a: (bp.pd.DataFrame({"date": ["2026-01-01"]}), {}))
+    r = client.post("/api/navigator/backtest", json={"profile_id": 1, "instrument": "^GSPC"})
+    assert r.status_code == 409 and "Nifty 50 backtest is still running" in r.get_json()["error"]
+    r = client.post("/api/navigator/backtest", json={"profile_id": 1, "instrument": "NIFTY"})
+    assert r.status_code == 202 and r.get_json() == {"run_id": 7, "is_new": False}
+
+
+def test_score_verdict_is_looked_up_for_nifty_only(monkeypatch):
+    seen = {}
+    def fake(pid, inst=None):
+        seen["inst"] = inst
+        return None
+    monkeypatch.setattr(store, "latest_run", fake)
+    bp._latest_verdict(1)
+    assert seen["inst"] == "NIFTY"

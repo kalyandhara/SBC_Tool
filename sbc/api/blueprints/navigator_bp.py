@@ -266,7 +266,7 @@ def _latest_verdict(profile_id: int) -> dict[str, Any]:
     """The verdict shown beside the action label. A store failure here must not
     fail the score, so it degrades to "verdict unavailable". chart_hash stays out."""
     try:
-        run = store.latest_run(profile_id)
+        run = store.latest_run(profile_id, INSTRUMENT)   # the score is computed on Nifty
     except Exception as exc:  # type only: a message can quote row values
         log.warning("navigator latest verdict unavailable: %s", type(exc).__name__)
         return {"available": False, "run_id": None, "verdict": None, "status": None,
@@ -416,6 +416,12 @@ def backtest_start() -> Any:
             log.error("navigator run %s did not start: %s", run_id, type(exc).__name__)
             _record_failure(run_id)
             return jsonify({"error": RUN_NOT_STARTED}), 500
+    if not is_new:
+        active = store.get_run(run_id)
+        if active is not None and active.get("instrument") != instrument:
+            label = INSTRUMENTS.get(str(active.get("instrument")), (str(active.get("instrument")), None))[0]
+            return jsonify({"error": f"A {label} backtest is still running for this chart. "
+                                     "Wait for it to finish, then start this one."}), 409
     return jsonify({"run_id": run_id, "is_new": is_new}), 202
 
 
