@@ -188,9 +188,9 @@ _RUN_SELECT = ("select id,profile_id,instrument,weights_version,data_asof,engine
                "status,heartbeat_at,error,params,folds,results,created_at from backtest_run ")
 
 
-def _one_run(where: str, arg: int) -> dict | None:
+def _one_run(where: str, *args: Any) -> dict | None:
     def work(c):
-        cur = c.execute(_RUN_SELECT + where, (arg,))
+        cur = c.execute(_RUN_SELECT + where, args)
         row = cur.fetchone()
         return None if row is None else dict(zip([d.name for d in cur.description], row))
 
@@ -202,9 +202,11 @@ def get_run(run_id: int) -> dict | None:
     return _one_run("where id=%s", run_id)
 
 
-def latest_run(profile_id: int) -> dict | None:
-    """The profile's newest run, active or finished."""
-    return _one_run("where profile_id=%s order by id desc limit 1", profile_id)
+def latest_run(profile_id: int, instrument: str | None = None) -> dict | None:
+    """The profile's newest run, active or finished, optionally for one instrument."""
+    if instrument is None:
+        return _one_run("where profile_id=%s order by id desc limit 1", profile_id)
+    return _one_run("where profile_id=%s and instrument=%s order by id desc limit 1", profile_id, instrument)
 
 
 def expire_stale(seconds: int = 120) -> int:

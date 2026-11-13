@@ -363,3 +363,16 @@ def test_3d_section_markup_and_wiring():
     assert "/static/vendor/plotly-gl3d-3.0.1.min.js" in part and "window.Plotly = prior" in part
     assert "/api/navigator/visuals/scatter" in part and "/api/navigator/visuals/model" in part
     assert "innerHTML" not in part
+
+
+def test_markets_exports_and_report_wiring():
+    from pathlib import Path
+    html = Path("templates/index.html").read_text(encoding="utf8")
+    js = Path("static/js/navigator.js").read_text(encoding="utf8")
+    for sym in ("NIFTY", "CNXBANK", "^GSPC", "^IXIC", "BTC-USD"):
+        assert f'value="{sym}"' in html
+    assert 'id="nav-export-backtest"' in html and 'id="nav-export-forecast"' in html and 'id="nav-report"' in html
+    part = js.split("// ---- Markets, CSV exports and the printable report ----")[1]
+    assert "instrument: navInstrument()" in js and "&instrument=${encodeURIComponent(navInstrument())}" in js
+    assert "/api/navigator/export/forecast.csv" in part and "/api/navigator/backtest/${NAV.exportRunId}.csv" in part
+    assert "X-API-Token" in part and "innerHTML" not in part and "document.write" not in part

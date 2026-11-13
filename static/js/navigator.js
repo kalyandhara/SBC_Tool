@@ -432,6 +432,7 @@ function navStopPolling() {
 function navEndRun(message, isError) {
   navStopPolling();
   NAV.runId = null;
+  navSetExportRun(null);
   navId("nav-run").disabled = false;
   navMessage("nav-backtest-status", message, isError);
 }
@@ -442,6 +443,7 @@ function navHandleRun(run) {
     NAV.timer = setTimeout(navPoll, NAV_POLL_MS);
   } else if (run.status === "done" && run.results) {
     navEndRun(`Backtest ${run.id} finished.`, false);
+    navSetExportRun(run.id);
     try {
       navRenderRun(run);
     } catch (err) {
@@ -477,7 +479,7 @@ async function navStartRun() {
     const started = await navFetch("/api/navigator/backtest", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ profile_id: NAV.profileId }),
+      body: JSON.stringify({ profile_id: NAV.profileId, instrument: navInstrument() }),
     });
     if (seq !== NAV.loadSeq) return;
     NAV.runId = started.run_id;
@@ -532,7 +534,7 @@ async function navLoadProfile() {
 async function navLoadLatest(seq, id) {
   let run;
   try {
-    run = await navFetch(`/api/navigator/backtest/latest?profile_id=${id}`);
+    run = await navFetch(`/api/navigator/backtest/latest?profile_id=${id}&instrument=${encodeURIComponent(navInstrument())}`);
   } catch (err) {
     return;
   }
@@ -543,6 +545,7 @@ async function navLoadLatest(seq, id) {
     navId("nav-run").disabled = true;
     if (NAV.open) navHandleRun(run);
   } else if (run.status === "done" && run.results) {
+    navSetExportRun(run.id);
     navMessage("nav-backtest-status", `Latest saved backtest: run ${run.id}, market data through ${navShown(run.data_asof)}. Run again to refresh it.`);
     try {
       navRenderRun(run);
@@ -1038,3 +1041,92 @@ async function navLoad3d(id) {
     run(`/api/navigator/visuals/model?${q}`, navDrawModel, "nav-model-status", "nav-model-notes"),
   ]);
 }
+
+
+// ---- Markets, CSV exports and the printable report ----
+function navInstrument() {
+  const sel = navId("nav-instrument");
+  return sel ? sel.value : "NIFTY";
+}
+
+function navSetExportRun(id) {
+  NAV.exportRunId = id;
+  const btn = navId("nav-export-backtest");
+  if (btn) btn.disabled = id === null || id === undefined;
+}
+
+async function navDownload(url, filename, statusId) {
+  const headers = {};
+  const token = navToken();
+  if (token) headers["X-API-Token"] = token;
+  try {
+    const res = await fetch(url, { headers });
+    if (!res.ok) {
+      let msg = `The server returned HTTP ${res.status}.`;
+      try { msg = (await res.json()).error || msg; } catch (e) { /* not JSON */ }
+      throw new Error(msg);
+    }
+    const blob = await res.blob();
+    const link = navEl("a", { href: URL.createObjectURL(blob), download: filename });
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    setTimeout(() => URL.revokeObjectURL(link.href), 1000);
+  } catch (err) {
+    navMessage(statusId, (err && err.message) || "The download failed.", true);
+  }
+}
+
+function navOpenReport() {
+  const win = window.open("", "_blank");
+  if (!win) {
+    navMessage("nav-forecast-status", "The report window was blocked. Allow pop-ups for this page and try again.", true);
+    return;
+  }
+  const doc = win.document;
+  doc.title = "AstroTrade Navigator report";
+  const style = doc.createElement("style");
+  style.textContent = "body{font:13px/1.4 system-ui,sans-serif;color:#111;margin:24px}table{border-collapse:collapse;margin:8px 0}"
+    + "td,th{border:1px solid #bbb;padding:3px 6px;text-align:left}h1{font-size:20px}h3,h4{margin:14px 0 4px}"
+    + ".nav-cal,.nav-month-grid{display:grid}.nav-cal{grid-template-columns:repeat(4,1fr);gap:8px}"
+    + ".nav-month-grid{grid-template-columns:repeat(7,1fr);gap:1px}.nav-day{font-size:9px;text-align:center;padding:2px}"
+    + ".nav-b0{background:#1b8a3a;color:#fff}.nav-b1{background:#6cc04a}.nav-b2{background:#e8c547}.nav-b3{background:#ef8a3c}.nav-b4{background:#d23c3c;color:#fff}"
+    + ".dim{opacity:.3}button{display:none}@media print{a{color:inherit}}";
+  doc.head.appendChild(style);
+  const h = doc.createElement("h1");
+  const profile = NAV.profiles.find((p) => p.id === NAV.profileId);
+  h.textContent = `AstroTrade Navigator: ${profile ? profile.label : "chart"}`;
+  doc.body.appendChild(h);
+  const note = doc.createElement("p");
+  note.textContent = `Generated ${new Date().toISOString().slice(0, 10)}. Unvalidated research output from hand-set weights, not personal financial advice.`;
+  doc.body.appendChild(note);
+  for (const id of ["nav-score", "nav-lineage", "nav-forecast-out", "nav-backtest-out"]) {
+    const node = navId(id);
+    if (node && node.childNodes.length) doc.body.appendChild(doc.importNode(node, true));
+  }
+  setTimeout(() => win.print(), 300);
+}
+
+(function navExportsInit() {
+  const inst = navId("nav-instrument");
+  if (inst) inst.addEventListener("change", () => {
+    navStopPolling();
+    NAV.runId = null;
+    navSetExportRun(null);
+    navId("nav-run").disabled = false;
+    navClear(navId("nav-backtest-out"));
+    navMessage("nav-backtest-status", "");
+    if (NAV.profileId !== null) navLoadLatest(NAV.loadSeq, NAV.profileId);
+  });
+  const bt = navId("nav-export-backtest");
+  if (bt) bt.addEventListener("click", () => {
+    if (NAV.exportRunId) navDownload(`/api/navigator/backtest/${NAV.exportRunId}.csv`, `navigator_backtest_${NAV.exportRunId}.csv`, "nav-backtest-status");
+  });
+  const fc = navId("nav-export-forecast");
+  if (fc) fc.addEventListener("click", () => {
+    if (NAV.profileId !== null) navDownload(`/api/navigator/export/forecast.csv?profile_id=${encodeURIComponent(NAV.profileId)}&window=${NAV_FC.window}`,
+      `navigator_forecast_${NAV.profileId}_${NAV_FC.window}d.csv`, "nav-forecast-status");
+  });
+  const rep = navId("nav-report");
+  if (rep) rep.addEventListener("click", navOpenReport);
+})();

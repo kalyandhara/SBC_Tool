@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <link rel="icon" type="image/svg+xml" href="/static/favicon.svg">
   <title>Sarvatobhadra Chakra - Market Prediction</title>
-  <link rel="stylesheet" href="/static/style.css?v=45">
+  <link rel="stylesheet" href="/static/style.css?v=46">
   <script src="/static/chart.umd.min.js"></script>
   <script src="/static/js/api-token.js"></script>
 </head>
@@ -1723,6 +1723,10 @@
           </div>
           <fieldset class="nav-band-filter"><legend>Show bands</legend></fieldset>
           <p id="nav-forecast-status" class="nav-note" role="status"></p>
+          <div class="nav-forecast-controls">
+            <button id="nav-export-forecast" class="btn btn-secondary" type="button">Download forecast CSV</button>
+            <button id="nav-report" class="btn btn-secondary" type="button">Printable report (save as PDF)</button>
+          </div>
           <div id="nav-forecast-out"></div>
         </section>
         <section id="nav-3d" class="nav-3d">
@@ -1745,7 +1749,20 @@
         </section>
         <section id="nav-backtest">
           <h3 class="nav-heading">Backtest</h3>
-          <button id="nav-run" class="nav-run" type="button">Run backtest</button>
+          <div class="nav-backtest-controls">
+            <label>Market
+              <select id="nav-instrument" aria-label="Backtest market">
+                <option value="NIFTY">Nifty 50</option>
+                <option value="CNXBANK">Bank Nifty</option>
+                <option value="^GSPC">S&amp;P 500</option>
+                <option value="^IXIC">NASDAQ Composite</option>
+                <option value="BTC-USD">Bitcoin (USD)</option>
+              </select>
+            </label>
+            <button id="nav-run" class="nav-run" type="button">Run backtest</button>
+            <button id="nav-export-backtest" class="btn btn-secondary" type="button" disabled>Download backtest CSV</button>
+          </div>
+          <p class="nav-note">Every market starts at 2007-09-17. Planets are cast for Mumbai at 09:15 IST, before each market opens. Only Nifty and Bank Nifty have a volatility series (India VIX); for the others Volatility is neutral.</p>
           <p id="nav-backtest-status" class="nav-note" role="status"></p>
           <div id="nav-backtest-out"></div>
         </section>
@@ -1805,7 +1822,7 @@
   <script src="/static/js/rahu-ketu-trap.js?v=3"></script>
   <script src="/static/js/transit-almanac.js?v=3"></script>
   <script src="/static/js/sector-rotation.js?v=1"></script>
-  <script src="/static/js/navigator.js?v=11"></script>
+  <script src="/static/js/navigator.js?v=12"></script>
   <script src="/static/js/ashtakavarga.js?v=1"></script>
   <script src="/static/js/bullion-week.js?v=4"></script>
   <script src="/static/js/ontology_graph.js?v=5"></script>

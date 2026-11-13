@@ -74,6 +74,8 @@ SECTOR_SYMBOLS = {
     "CNXMEDIA": "^CNXMEDIA", "CNXHEALTH": "^CNXHEALTH", "CNXOILGAS": "^CNXOILGAS",
 }
 RESEARCH_SYMBOLS.update({k: (t, "2005-01-01") for k, t in SECTOR_SYMBOLS.items()})
+# NASDAQ Composite for the Navigator's multi-market backtest.
+RESEARCH_SYMBOLS["^IXIC"] = ("^IXIC", "2005-01-01")
 
 NSE_FIIDII_URL = "https://www.nseindia.com/api/fiidiiTradeReact"
 _NSE_HEADERS = {

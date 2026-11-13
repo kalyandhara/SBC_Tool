@@ -113,7 +113,8 @@ def test_remote_read_refused(client):
     ("post", "/api/navigator/backtest"), ("get", "/api/navigator/backtest/1"),
     ("get", "/api/navigator/backtest/latest?profile_id=1"), ("get", "/api/navigator/analogs?profile_id=1"),
     ("get", "/api/navigator/forecast?profile_id=1"), ("get", "/api/navigator/visuals/scatter?profile_id=1"),
-    ("get", "/api/navigator/visuals/model?profile_id=1")])
+    ("get", "/api/navigator/visuals/model?profile_id=1"), ("get", "/api/navigator/export/forecast.csv?profile_id=1"),
+    ("get", "/api/navigator/backtest/1.csv")])
 def test_guard_covers_every_route_before_postgres(client, monkeypatch, method, path):
     _down(monkeypatch)    # a route that reached the store would be a 503
     r = getattr(client, method)(path, headers={"X-Forwarded-For": "8.8.8.8"},
@@ -596,7 +597,7 @@ def test_thread_start_failure_is_a_fixed_500_even_if_the_store_then_fails(client
     monkeypatch.setattr(store, "start_run", lambda *a: (5, True))
     monkeypatch.setattr(store, "fail_run", fail)
     monkeypatch.setattr(bp, "_start_job", boom)
-    monkeypatch.setattr(bp, "_market", lambda: (bp.pd.DataFrame({"date": ["2026-01-01"]}), {}))
+    monkeypatch.setattr(bp, "_market", lambda *a: (bp.pd.DataFrame({"date": ["2026-01-01"]}), {}))
     r = client.post("/api/navigator/backtest", json={"profile_id": 1})
     assert r.status_code == 500 and r.get_json() == {"error": bp.RUN_NOT_STARTED}
 
@@ -977,3 +978,33 @@ def test_visuals_guarded(client, monkeypatch, path):
 def test_visuals_unknown_profile_404(client, db):
     assert client.get("/api/navigator/visuals/scatter?profile_id=999").status_code == 404
     assert client.get("/api/navigator/visuals/model?profile_id=999").status_code == 404
+
+
+@pytest.mark.parametrize("path", ["/api/navigator/export/forecast.csv?profile_id=1", "/api/navigator/backtest/1.csv"])
+def test_exports_guarded(client, monkeypatch, path):
+    _down(monkeypatch)
+    assert client.get(path, headers={"X-Forwarded-For": "8.8.8.8"}).status_code == 403
+
+
+def test_backtest_rejects_unknown_instrument(client, monkeypatch):
+    monkeypatch.setattr(store, "migrate", lambda: None)
+    _down(monkeypatch)
+    r = client.post("/api/navigator/backtest", json={"profile_id": 1, "instrument": "DOGE"})
+    assert r.status_code == 400 and "instrument must be one of" in r.get_json()["error"]
+    r = client.get("/api/navigator/backtest/latest?profile_id=1&instrument=DOGE")
+    assert r.status_code == 400
+
+
+@pg
+def test_forecast_csv_export(client, db, monkeypatch):
+    pid = _profile(client)
+    market = A.Market(["2026-11-05", "2026-11-06"], {}, {})
+    monkeypatch.setattr(A, "load_market", lambda: market)
+    from sbc.navigator import forecast as F
+    monkeypatch.setattr(F, "build", lambda p, m, w: {"sessions": [
+        {"date": "2026-11-09", "score": 55, "band": "Normal", "action": "=cmd"}]})
+    r = client.get(f"/api/navigator/export/forecast.csv?profile_id={pid}&window=30")
+    text = r.get_data(as_text=True)
+    assert r.status_code == 200 and r.mimetype == "text/csv"
+    assert "attachment" in r.headers["Content-Disposition"]
+    assert "date,score,band,action_label" in text and "2026-11-09,55,Normal,'=cmd" in text
