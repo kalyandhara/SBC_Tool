@@ -20,7 +20,7 @@ def test_term_weights_sum():
 
 
 def test_weights_version_pinned():
-    assert W.WEIGHTS_VERSION == "nav-1"
+    assert W.WEIGHTS_VERSION == "nav-2"
 
 
 @pytest.mark.parametrize("args,expected", [

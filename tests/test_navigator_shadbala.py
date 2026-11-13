@@ -89,3 +89,10 @@ def test_shadbala_term_factors_sum_to_raw():
         assert sum(f["raw"] for f in t.factors(i)) == pytest.approx(t.raw[i])
         assert 0 <= t.values[i] <= 100
         assert len(t.factors(i)) == 7
+
+
+def test_nav2_strength_settings_pinned():
+    """Signed off with nav-2; changing any of these needs a new WEIGHTS_VERSION."""
+    assert SB.AVASTHA == [("Bala", 0.25), ("Kumara", 0.5), ("Yuva", 1.0), ("Vriddha", 0.125), ("Mrita", 0.0)]
+    assert SB.REQUIRED == {"Sun": 390, "Moon": 360, "Mars": 300, "Mercury": 420, "Jupiter": 390,
+                           "Venus": 330, "Saturn": 300}
