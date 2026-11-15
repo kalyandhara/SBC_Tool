@@ -17,6 +17,7 @@ from sbc.navigator import analogs as A
 from sbc.navigator import backtest as B
 from sbc.navigator import store
 from sbc.navigator.profile import SAMPLE_PROFILE, chart_hash
+from sbc.navigator.weights import WEIGHTS_VERSION
 
 pg = pytest.mark.skipif(not os.environ.get("NAV_TEST_DATABASE_URL"), reason="needs Postgres")
 
@@ -110,7 +111,10 @@ def test_remote_read_refused(client):
     ("get", "/api/navigator/profile"), ("post", "/api/navigator/profile"),
     ("get", "/api/navigator/chart?profile_id=1"), ("get", "/api/navigator/score?profile_id=1"),
     ("post", "/api/navigator/backtest"), ("get", "/api/navigator/backtest/1"),
-    ("get", "/api/navigator/backtest/latest?profile_id=1"), ("get", "/api/navigator/analogs?profile_id=1")])
+    ("get", "/api/navigator/backtest/latest?profile_id=1"), ("get", "/api/navigator/analogs?profile_id=1"),
+    ("get", "/api/navigator/forecast?profile_id=1"), ("get", "/api/navigator/visuals/scatter?profile_id=1"),
+    ("get", "/api/navigator/visuals/model?profile_id=1"), ("get", "/api/navigator/export/forecast.csv?profile_id=1"),
+    ("get", "/api/navigator/backtest/1.csv")])
 def test_guard_covers_every_route_before_postgres(client, monkeypatch, method, path):
     _down(monkeypatch)    # a route that reached the store would be a 503
     r = getattr(client, method)(path, headers={"X-Forwarded-For": "8.8.8.8"},
@@ -521,7 +525,7 @@ def test_backtest_runs_to_done_and_hides_hash(client, db, market, monkeypatch):
     assert "chart_hash" not in json.dumps(body)
     assert chart_hash(SAMPLE_PROFILE) not in json.dumps(body)
     meta = _rows("select data_asof::text, weights_version, chart_hash from backtest_run")[0]
-    assert meta == (market[-1]["date"], "nav-1", chart_hash(SAMPLE_PROFILE))
+    assert meta == (market[-1]["date"], WEIGHTS_VERSION, chart_hash(SAMPLE_PROFILE))
 
 
 @pg
@@ -593,7 +597,7 @@ def test_thread_start_failure_is_a_fixed_500_even_if_the_store_then_fails(client
     monkeypatch.setattr(store, "start_run", lambda *a: (5, True))
     monkeypatch.setattr(store, "fail_run", fail)
     monkeypatch.setattr(bp, "_start_job", boom)
-    monkeypatch.setattr(bp, "_market", lambda: (bp.pd.DataFrame({"date": ["2026-01-01"]}), {}))
+    monkeypatch.setattr(bp, "_market", lambda *a: (bp.pd.DataFrame({"date": ["2026-01-01"]}), {}))
     r = client.post("/api/navigator/backtest", json={"profile_id": 1})
     assert r.status_code == 500 and r.get_json() == {"error": bp.RUN_NOT_STARTED}
 
@@ -724,7 +728,7 @@ def test_score_carries_the_latest_run_verdict_without_chart_hash(client, db, mar
     run = {"id": 7, "profile_id": pid, "status": "done", "data_asof": "2023-05-01",
            "weights_version": bp.WEIGHTS_VERSION, "engine_version": bp._version(),
            "chart_hash": "secret-hash", "results": {"verdict": "no demonstrated edge"}}
-    monkeypatch.setattr(store, "latest_run", lambda i: run if i == pid else None)
+    monkeypatch.setattr(store, "latest_run", lambda i, inst=None: run if i == pid else None)
     body = _score_body(client, pid, market)
     v = body["latest_verdict"]
     assert v["available"] and v["run_id"] == 7 and v["verdict"] == "no demonstrated edge"
@@ -739,7 +743,7 @@ def test_score_flags_a_stale_latest_run(client, db, market, monkeypatch, field):
     run = {"id": 3, "status": "done", "data_asof": "2023-05-01", "chart_hash": "h",
            "weights_version": bp.WEIGHTS_VERSION, "engine_version": bp._version(),
            "results": {"verdict": "no demonstrated edge"}, field: "old"}
-    monkeypatch.setattr(store, "latest_run", lambda i: run)
+    monkeypatch.setattr(store, "latest_run", lambda i, inst=None: run)
     v = _score_body(client, pid, market)["latest_verdict"]
     assert v["stale"] is True and "stale" in v["text"]
 
@@ -925,3 +929,105 @@ def test_analogs_real_run_redacted(client, db, synthetic, monkeypatch):
     assert any("seconds" in n for n in body["notes"])
     ends = A.data_coverage_note(A.load_market())      # derived from the loaded data, not hard-coded
     assert ends in body["notes"] and any("VIX starts 2008-03" in n for n in body["notes"])
+
+
+# ---- Phase 3: forward ranking (/forecast) ----
+def test_forecast_guarded(client, monkeypatch):
+    _down(monkeypatch)
+    r = client.get("/api/navigator/forecast?profile_id=1", headers={"X-Forwarded-For": "8.8.8.8"})
+    assert r.status_code == 403
+
+
+@pytest.mark.parametrize("window", ["29", "60", "x", "", "365.0", "-30"])
+def test_forecast_bad_window_400(client, monkeypatch, window):
+    monkeypatch.setattr(store, "migrate", lambda: None)
+    _down(monkeypatch)    # rejected before any store read
+    r = client.get(f"/api/navigator/forecast?profile_id=1&window={window}")
+    assert r.status_code == 400
+    assert r.get_json() == {"error": "window must be 30, 90 or 365."}
+
+
+@pg
+def test_forecast_shape_and_redaction(client, db, monkeypatch):
+    pid = _profile(client)
+    market = A.Market(["2026-11-05", "2026-11-06"], {}, {})
+    monkeypatch.setattr(A, "load_market", lambda: market)
+    from sbc.navigator import forecast as F
+    seen = {}
+
+    def fake_build(profile, mkt, window):
+        seen["window"] = window
+        return {"window_days": window, "data_asof": "2026-11-06", "sessions": [], "top": [],
+                "stay_away": [], "band_counts": {}, "notes": ["n"]}
+    monkeypatch.setattr(F, "build", fake_build)
+    r = client.get(f"/api/navigator/forecast?profile_id={pid}&window=90")
+    body = r.get_json()
+    assert r.status_code == 200 and seen["window"] == 90
+    assert body["status"] == "unvalidated research output" and body["profile_id"] == pid
+    assert "chart_hash" not in r.get_data(as_text=True)
+    assert client.get("/api/navigator/forecast?profile_id=999").status_code == 404
+
+
+@pytest.mark.parametrize("path", ["/api/navigator/visuals/scatter?profile_id=1", "/api/navigator/visuals/model?profile_id=1"])
+def test_visuals_guarded(client, monkeypatch, path):
+    _down(monkeypatch)
+    assert client.get(path, headers={"X-Forwarded-For": "8.8.8.8"}).status_code == 403
+
+
+@pg
+def test_visuals_unknown_profile_404(client, db):
+    assert client.get("/api/navigator/visuals/scatter?profile_id=999").status_code == 404
+    assert client.get("/api/navigator/visuals/model?profile_id=999").status_code == 404
+
+
+@pytest.mark.parametrize("path", ["/api/navigator/export/forecast.csv?profile_id=1", "/api/navigator/backtest/1.csv"])
+def test_exports_guarded(client, monkeypatch, path):
+    _down(monkeypatch)
+    assert client.get(path, headers={"X-Forwarded-For": "8.8.8.8"}).status_code == 403
+
+
+def test_backtest_rejects_unknown_instrument(client, monkeypatch):
+    monkeypatch.setattr(store, "migrate", lambda: None)
+    _down(monkeypatch)
+    r = client.post("/api/navigator/backtest", json={"profile_id": 1, "instrument": "DOGE"})
+    assert r.status_code == 400 and "instrument must be one of" in r.get_json()["error"]
+    r = client.get("/api/navigator/backtest/latest?profile_id=1&instrument=DOGE")
+    assert r.status_code == 400
+
+
+@pg
+def test_forecast_csv_export(client, db, monkeypatch):
+    pid = _profile(client)
+    market = A.Market(["2026-11-05", "2026-11-06"], {}, {})
+    monkeypatch.setattr(A, "load_market", lambda: market)
+    from sbc.navigator import forecast as F
+    monkeypatch.setattr(F, "build", lambda p, m, w: {"sessions": [
+        {"date": "2026-11-09", "score": 55, "band": "Normal", "action": "=cmd"}]})
+    r = client.get(f"/api/navigator/export/forecast.csv?profile_id={pid}&window=30")
+    text = r.get_data(as_text=True)
+    assert r.status_code == 200 and r.mimetype == "text/csv"
+    assert "attachment" in r.headers["Content-Disposition"]
+    assert "date,score,band,action_label" in text and "2026-11-09,55,Normal,'=cmd" in text
+
+
+def test_active_run_for_another_market_is_a_409_not_its_run(client, monkeypatch):
+    monkeypatch.setattr(store, "migrate", lambda: None)
+    monkeypatch.setattr(store, "get_profile", lambda i: SAMPLE_PROFILE)
+    monkeypatch.setattr(store, "expire_stale", lambda: None)
+    monkeypatch.setattr(store, "start_run", lambda *a: (7, False))
+    monkeypatch.setattr(store, "get_run", lambda i: {"id": 7, "instrument": "NIFTY", "status": "running"})
+    monkeypatch.setattr(bp, "_market", lambda *a: (bp.pd.DataFrame({"date": ["2026-01-01"]}), {}))
+    r = client.post("/api/navigator/backtest", json={"profile_id": 1, "instrument": "^GSPC"})
+    assert r.status_code == 409 and "Nifty 50 backtest is still running" in r.get_json()["error"]
+    r = client.post("/api/navigator/backtest", json={"profile_id": 1, "instrument": "NIFTY"})
+    assert r.status_code == 202 and r.get_json() == {"run_id": 7, "is_new": False}
+
+
+def test_score_verdict_is_looked_up_for_nifty_only(monkeypatch):
+    seen = {}
+    def fake(pid, inst=None):
+        seen["inst"] = inst
+        return None
+    monkeypatch.setattr(store, "latest_run", fake)
+    bp._latest_verdict(1)
+    assert seen["inst"] == "NIFTY"

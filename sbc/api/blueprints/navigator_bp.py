@@ -29,9 +29,11 @@ from sbc import nakshatra as N
 from sbc.engine_version import module_version
 from sbc.navigator import analogs as A
 from sbc.navigator import backtest as B
+from sbc.navigator import forecast as F
 from sbc.navigator import scoring as S
 from sbc.navigator import signature as G
 from sbc.navigator import store
+from sbc.navigator import visuals as V
 from sbc.navigator.ephemeris import build_sky
 from sbc.navigator.profile import Profile, chart_hash, natal_points, validate
 from sbc.navigator.weights import WEIGHTS_VERSION
@@ -40,6 +42,14 @@ log = logging.getLogger(__name__)
 navigator_bp = Blueprint("navigator", __name__, url_prefix="/api/navigator")
 
 INSTRUMENT, VIX_SYMBOL = "NIFTY", "INDIAVIX"
+# Backtest markets: symbol -> (label, volatility series or None). Without an India VIX equivalent
+# in the store, Volatility is neutral for that market. Every market starts at Nifty's first session
+# (2007-09-17) so results cover comparable years.
+INSTRUMENTS = {"NIFTY": ("Nifty 50", "INDIAVIX"), "CNXBANK": ("Bank Nifty", "INDIAVIX"),
+               "^GSPC": ("S&P 500", None), "^IXIC": ("NASDAQ Composite", None),
+               "BTC-USD": ("Bitcoin (USD)", None)}
+BACKTEST_START = "2007-09-17"
+_BAD_INSTRUMENT = "instrument must be one of " + ", ".join(INSTRUMENTS) + "."
 STATUS = "unvalidated research output"
 DISCLAIMER = ("Action labels are unvalidated research output, not personal financial advice. "
               "Scores use hand-set weights.")
@@ -120,6 +130,20 @@ def _ensure_migrated():
         if not _migrated:
             store.migrate()
             _migrated = True
+            try:
+                threading.Thread(target=_warm_strength, name="navigator-shadbala-warm", daemon=True).start()
+            except Exception as exc:   # best effort: requests compute on demand anyway
+                log.warning("navigator strength warm-up not started: %s", type(exc).__name__)
+
+
+def _warm_strength() -> None:
+    """Fill the shared Shadbala cache for every market session (about 5 seconds) in the
+    background, so the first score request doesn't pay for it."""
+    try:
+        from sbc.navigator import terms as T
+        T._shadbala_rows(tuple(A.load_market().dates))
+    except Exception as exc:   # warming is best effort; requests compute on demand anyway
+        log.warning("navigator strength warm-up skipped: %s", type(exc).__name__)
 
 
 @navigator_bp.errorhandler(store.StoreUnavailable)
@@ -184,9 +208,9 @@ def _result_label(profile: Profile) -> str:
     return B.label_for(profile.is_sample)
 
 
-def _market() -> tuple[pd.DataFrame, dict[str, Any]]:
-    """(daily bars, VIX closes), each only up to the last NIFTY session with a close."""
-    bars = market_store.get_daily(INSTRUMENT)
+def _market(instrument: str = INSTRUMENT) -> tuple[pd.DataFrame, dict[str, Any]]:
+    """(daily bars, VIX closes), each only up to the market's last session with a close."""
+    bars = market_store.get_daily(instrument, start=BACKTEST_START if instrument != INSTRUMENT else None)
     if not bars:
         raise _NoMarketData
     ohlc = pd.DataFrame(bars)
@@ -197,7 +221,10 @@ def _market() -> tuple[pd.DataFrame, dict[str, Any]]:
     ohlc["date"] = ohlc["date"].str[:10]
     asof = ohlc["date"].iloc[-1]
     # Every close: the first sessions need VIX history from before them.
-    vix = {r["date"][:10]: r["close"] for r in market_store.get_daily(VIX_SYMBOL)
+    vol_symbol = INSTRUMENTS.get(instrument, ("", VIX_SYMBOL))[1]
+    if vol_symbol is None:
+        return ohlc, {}
+    vix = {r["date"][:10]: r["close"] for r in market_store.get_daily(vol_symbol)
            if r["close"] is not None and r["date"][:10] <= asof}
     return ohlc, vix
 
@@ -239,7 +266,7 @@ def _latest_verdict(profile_id: int) -> dict[str, Any]:
     """The verdict shown beside the action label. A store failure here must not
     fail the score, so it degrades to "verdict unavailable". chart_hash stays out."""
     try:
-        run = store.latest_run(profile_id)
+        run = store.latest_run(profile_id, INSTRUMENT)   # the score is computed on Nifty
     except Exception as exc:  # type only: a message can quote row values
         log.warning("navigator latest verdict unavailable: %s", type(exc).__name__)
         return {"available": False, "run_id": None, "verdict": None, "status": None,
@@ -372,11 +399,14 @@ def backtest_start() -> Any:
     profile_id = body.get("profile_id") if body is not None else None
     if isinstance(profile_id, bool) or not isinstance(profile_id, int) or not 0 < profile_id < _MAX_ID:
         raise _BadRequest("profile_id must be a positive integer")
+    instrument = body.get("instrument", INSTRUMENT) if body is not None else INSTRUMENT
+    if not isinstance(instrument, str) or instrument not in INSTRUMENTS:
+        raise _BadRequest(_BAD_INSTRUMENT)
     profile = _require_profile(profile_id)
-    ohlc, vix = _market()
+    ohlc, vix = _market(instrument)
     store.expire_stale()
     run_id, is_new = store.start_run(profile_id, {
-        "instrument": INSTRUMENT, "weights_version": WEIGHTS_VERSION,
+        "instrument": instrument, "weights_version": WEIGHTS_VERSION,
         "data_asof": ohlc["date"].iloc[-1], "engine_version": _version(),
         "chart_hash": chart_hash(profile), "params": B.DEFAULT_PARAMS})
     if is_new:
@@ -386,6 +416,12 @@ def backtest_start() -> Any:
             log.error("navigator run %s did not start: %s", run_id, type(exc).__name__)
             _record_failure(run_id)
             return jsonify({"error": RUN_NOT_STARTED}), 500
+    if not is_new:
+        active = store.get_run(run_id)
+        if active is not None and active.get("instrument") != instrument:
+            label = INSTRUMENTS.get(str(active.get("instrument")), (str(active.get("instrument")), None))[0]
+            return jsonify({"error": f"A {label} backtest is still running for this chart. "
+                                     "Wait for it to finish, then start this one."}), 409
     return jsonify({"run_id": run_id, "is_new": is_new}), 202
 
 
@@ -411,9 +447,12 @@ def backtest_read(run_id: int) -> Any:
 @navigator_bp.route("/backtest/latest", methods=["GET"])
 def backtest_latest() -> Any:
     profile_id = _arg_id()
+    instrument = request.args.get("instrument", INSTRUMENT)
+    if instrument not in INSTRUMENTS:
+        raise _BadRequest(_BAD_INSTRUMENT)
     _require_profile(profile_id)
     store.expire_stale()
-    run = store.latest_run(profile_id)
+    run = store.latest_run(profile_id, instrument)
     if run is None:
         return jsonify({"run": None})   # a known profile with no run yet is not an error
     return _run_body(run)
@@ -479,3 +518,99 @@ def analogs() -> Any:
         f"Computed in {result['_timing']:.1f} seconds" + (" (cached result)." if cached else ".")]
     return jsonify({**body, "profile_id": profile_id, "is_sample": profile.is_sample,
                     "status": STATUS, "cached": cached})
+
+
+_BAD_WINDOW = "window must be 30, 90 or 365."
+
+
+@navigator_bp.route("/forecast", methods=["GET"])
+def forecast() -> Any:
+    raw = request.args.get("window", "30")
+    if raw not in ("30", "90", "365"):
+        raise _BadRequest(_BAD_WINDOW)
+    profile_id = _arg_id()
+    profile = _require_profile(profile_id)
+    try:
+        market = A.load_market()
+    except market_store.MarketDataMissing:
+        raise _NoMarketData from None
+    result = cast(dict[str, Any], B.clean_json(F.build(profile, market, int(raw))))
+    return jsonify({**result, "profile_id": profile_id, "is_sample": profile.is_sample,
+                    "status": STATUS})
+
+
+def _market_or_503() -> Any:
+    try:
+        return A.load_market()
+    except market_store.MarketDataMissing:
+        raise _NoMarketData from None
+
+
+@navigator_bp.route("/visuals/scatter", methods=["GET"])
+def visuals_scatter() -> Any:
+    profile_id = _arg_id()
+    profile = _require_profile(profile_id)
+    result = cast(dict[str, Any], B.clean_json(V.scatter(profile, _market_or_503())))
+    return jsonify({**result, "profile_id": profile_id, "is_sample": profile.is_sample, "status": STATUS})
+
+
+@navigator_bp.route("/visuals/model", methods=["GET"])
+def visuals_model() -> Any:
+    profile_id = _arg_id()
+    profile = _require_profile(profile_id)
+    market = _market_or_503()
+    result = cast(dict[str, Any], B.clean_json(V.model(profile, market.dates[-1])))
+    return jsonify({**result, "profile_id": profile_id, "is_sample": profile.is_sample, "status": STATUS})
+
+
+# ---- CSV exports ----
+_CSV_NOTE = "Research output from hand-set weights, not personal financial advice."
+
+
+def _csv_response(name: str, header: list[str], rows: list[list[Any]]) -> Any:
+    import csv
+    import io
+
+    from flask import Response
+    buf = io.StringIO()
+    w = csv.writer(buf, lineterminator="\n")
+    w.writerow(["# " + _CSV_NOTE])
+    w.writerow(header)
+    for row in rows:
+        # A leading =, +, - or @ would run as a formula in a spreadsheet, so quote it as text.
+        w.writerow(["'" + c if isinstance(c, str) and c[:1] in "=+-@" else c for c in row])
+    return Response(buf.getvalue(), mimetype="text/csv",
+                    headers={"Content-Disposition": f'attachment; filename="{name}"'})
+
+
+@navigator_bp.route("/export/forecast.csv", methods=["GET"])
+def export_forecast() -> Any:
+    raw = request.args.get("window", "30")
+    if raw not in ("30", "90", "365"):
+        raise _BadRequest(_BAD_WINDOW)
+    profile_id = _arg_id()
+    profile = _require_profile(profile_id)
+    result = F.build(profile, _market_or_503(), int(raw))
+    rows = [[r["date"], r["score"], r["band"], r["action"]] for r in result["sessions"]]
+    return _csv_response(f"navigator_forecast_{profile_id}_{raw}d.csv",
+                         ["date", "score", "band", "action_label"], rows)
+
+
+@navigator_bp.route("/backtest/<int:run_id>.csv", methods=["GET"])
+def export_backtest(run_id: int) -> Any:
+    if run_id >= _MAX_ID:
+        raise _NotFound("Run not found")
+    run = store.get_run(run_id)
+    if run is None or run.get("status") != "done" or not run.get("results"):
+        raise _NotFound("Run not found")
+    _require_profile(int(run["profile_id"]))
+    res = run["results"]
+    rows = []
+    for band, b in (res.get("bands") or {}).items():
+        for horizon, h in (b.get("by_horizon") or {}).items():
+            rows.append([run["instrument"], band, horizon, h.get("events"), h.get("excess"),
+                         h.get("excess_vs_control"), h.get("p"), h.get("q"), h.get("full_pct"),
+                         h.get("natal_pct"), h.get("verdict")])
+    return _csv_response(f"navigator_backtest_{run_id}.csv",
+                         ["instrument", "band", "horizon", "events", "net_excess", "excess_vs_control",
+                          "p", "q", "placebo_full_pct", "placebo_natal_pct", "verdict"], rows)

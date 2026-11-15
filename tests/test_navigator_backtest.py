@@ -615,7 +615,7 @@ def test_frozen_fixture_golden_values(sample_inputs):
 
 def test_golden_pins_are_sensitive(sample_inputs, monkeypatch):
     want = json.loads(GOLDEN_FILE.read_text())
-    assert want["weights_version"] == "nav-1" and want["sessions_scored"] == 380
+    assert want["weights_version"] == "nav-2" and want["sessions_scored"] == 380
     monkeypatch.setitem(GOLDEN_PARAMS, "seed", 1730)
     with pytest.raises(AssertionError):
         assert_same(golden_result(sample_inputs), want)

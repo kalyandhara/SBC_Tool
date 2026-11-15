@@ -390,7 +390,7 @@ def test_node_factor_applies_to_transiting_and_natal_nodes():
     assert W.ASPECT_WEIGHT("Rahu", "Mars", "CONJ") == pytest.approx(-7.5)
     both = 30.0 * W.BENEFIC["Rahu"] * .25
     assert W.ASPECT_WEIGHT("Rahu", "Ketu", "CONJ") == pytest.approx(both)
-    assert W.WEIGHTS_VERSION == "nav-1"
+    assert W.WEIGHTS_VERSION == "nav-2"
 
 
 def test_transit_factors_accept_negative_index():

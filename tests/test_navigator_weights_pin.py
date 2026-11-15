@@ -1,4 +1,4 @@
-"""nav-1 is signed off. Any change to a table must come with a WEIGHTS_VERSION bump
+"""nav-1 and nav-2 (Shadbala strength, signed off 2026-11-12) are signed off. Any change to a table must come with a WEIGHTS_VERSION bump
 and a new entry in PINNED, so results are never silently produced by other weights."""
 import hashlib
 import json
@@ -7,7 +7,8 @@ import pytest
 
 from sbc.navigator import weights as W
 
-PINNED = {"nav-1": "d6fe9cd8f98c9b2a269ab7a3ad4efc9ccdfdbbe5a38c2424d1ce587accf20b54"}
+PINNED = {"nav-1": "d6fe9cd8f98c9b2a269ab7a3ad4efc9ccdfdbbe5a38c2424d1ce587accf20b54",
+          "nav-2": "b397e52ddf6ed903bda066debe1b046021ecab2cfa3e035815f304a0b2076d0c"}
 POINTS = W.TRANSIT_BODIES + ["Asc"]
 
 

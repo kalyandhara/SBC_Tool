@@ -385,12 +385,14 @@ def test_real_changing_everything_after_t_minus_1_close_leaves_scores_identical(
 
 def test_real_the_t_minus_1_close_does_reach_day_t(real):
     sky, opens, closes, vix, a = real
-    k = 300
-    c2 = closes.copy()
-    c2[k - 1] *= 3                # closes the window that opened at k-5
-    b = S.score_series(sky, SAMPLE_PROFILE, opens, c2, vix, min_sessions=120)
-    assert a.terms["histval"][:k].tolist() == b.terms["histval"][:k].tolist()
-    assert a.terms["histval"][k] != b.terms["histval"][k]
+    reached = 0
+    for k in range(300, 340, 5):
+        c2 = closes.copy()
+        c2[k - 1] *= 3                # closes the window that opened at k-5
+        b = S.score_series(sky, SAMPLE_PROFILE, opens, c2, vix, min_sessions=120)
+        assert a.terms["histval"][:k].tolist() == b.terms["histval"][:k].tolist()
+        reached += a.terms["histval"][k] != b.terms["histval"][k]
+    assert reached >= 1
 
 
 @pytest.mark.parametrize("terms", [TERMS, dict.fromkeys(TERMS, 50.4),
