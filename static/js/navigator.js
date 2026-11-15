@@ -1077,13 +1077,14 @@ async function navDownload(url, filename, statusId) {
   }
 }
 
+// The report is built in a hidden same-page frame and printed from there, so no pop-up is needed.
 function navOpenReport() {
-  const win = window.open("", "_blank");
-  if (!win) {
-    navMessage("nav-forecast-status", "The report window was blocked. Allow pop-ups for this page and try again.", true);
-    return;
-  }
-  const doc = win.document;
+  const old = navId("nav-report-frame");
+  if (old) old.remove();
+  const frame = navEl("iframe", { id: "nav-report-frame", title: "Printable report", "aria-hidden": "true",
+    style: "position:fixed;width:0;height:0;border:0;visibility:hidden" });
+  document.body.appendChild(frame);
+  const doc = frame.contentDocument;
   doc.title = "AstroTrade Navigator report";
   const style = doc.createElement("style");
   style.textContent = "body{font:13px/1.4 system-ui,sans-serif;color:#111;margin:24px}table{border-collapse:collapse;margin:8px 0}"
@@ -1091,7 +1092,7 @@ function navOpenReport() {
     + ".nav-cal,.nav-month-grid{display:grid}.nav-cal{grid-template-columns:repeat(4,1fr);gap:8px}"
     + ".nav-month-grid{grid-template-columns:repeat(7,1fr);gap:1px}.nav-day{font-size:9px;text-align:center;padding:2px}"
     + ".nav-b0{background:#1b8a3a;color:#fff}.nav-b1{background:#6cc04a}.nav-b2{background:#e8c547}.nav-b3{background:#ef8a3c}.nav-b4{background:#d23c3c;color:#fff}"
-    + ".dim{opacity:.3}button{display:none}@media print{a{color:inherit}}";
+    + ".dim{opacity:.3}button{display:none}*{-webkit-print-color-adjust:exact;print-color-adjust:exact}";
   doc.head.appendChild(style);
   const h = doc.createElement("h1");
   const profile = NAV.profiles.find((p) => p.id === NAV.profileId);
@@ -1104,7 +1105,7 @@ function navOpenReport() {
     const node = navId(id);
     if (node && node.childNodes.length) doc.body.appendChild(doc.importNode(node, true));
   }
-  setTimeout(() => win.print(), 300);
+  setTimeout(() => frame.contentWindow.print(), 200);
 }
 
 (function navExportsInit() {

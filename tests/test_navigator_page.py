@@ -376,3 +376,4 @@ def test_markets_exports_and_report_wiring():
     assert "instrument: navInstrument()" in js and "&instrument=${encodeURIComponent(navInstrument())}" in js
     assert "/api/navigator/export/forecast.csv" in part and "/api/navigator/backtest/${NAV.exportRunId}.csv" in part
     assert "X-API-Token" in part and "innerHTML" not in part and "document.write" not in part
+    assert "nav-report-frame" in part and "window.open" not in part

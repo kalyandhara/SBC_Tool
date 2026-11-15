@@ -608,7 +608,7 @@ def export_backtest(run_id: int) -> Any:
     rows = []
     for band, b in (res.get("bands") or {}).items():
         for horizon, h in (b.get("by_horizon") or {}).items():
-            rows.append([run["instrument"], band, horizon, h.get("events"), h.get("net_excess"),
+            rows.append([run["instrument"], band, horizon, h.get("events"), h.get("excess"),
                          h.get("excess_vs_control"), h.get("p"), h.get("q"), h.get("full_pct"),
                          h.get("natal_pct"), h.get("verdict")])
     return _csv_response(f"navigator_backtest_{run_id}.csv",

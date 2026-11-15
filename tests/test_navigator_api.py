@@ -728,7 +728,7 @@ def test_score_carries_the_latest_run_verdict_without_chart_hash(client, db, mar
     run = {"id": 7, "profile_id": pid, "status": "done", "data_asof": "2023-05-01",
            "weights_version": bp.WEIGHTS_VERSION, "engine_version": bp._version(),
            "chart_hash": "secret-hash", "results": {"verdict": "no demonstrated edge"}}
-    monkeypatch.setattr(store, "latest_run", lambda i: run if i == pid else None)
+    monkeypatch.setattr(store, "latest_run", lambda i, inst=None: run if i == pid else None)
     body = _score_body(client, pid, market)
     v = body["latest_verdict"]
     assert v["available"] and v["run_id"] == 7 and v["verdict"] == "no demonstrated edge"
@@ -743,7 +743,7 @@ def test_score_flags_a_stale_latest_run(client, db, market, monkeypatch, field):
     run = {"id": 3, "status": "done", "data_asof": "2023-05-01", "chart_hash": "h",
            "weights_version": bp.WEIGHTS_VERSION, "engine_version": bp._version(),
            "results": {"verdict": "no demonstrated edge"}, field: "old"}
-    monkeypatch.setattr(store, "latest_run", lambda i: run)
+    monkeypatch.setattr(store, "latest_run", lambda i, inst=None: run)
     v = _score_body(client, pid, market)["latest_verdict"]
     assert v["stale"] is True and "stale" in v["text"]
 
