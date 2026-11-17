@@ -1,4 +1,6 @@
 """Chart view: dignity, combustion, houses. Pure; no Postgres."""
+import datetime as dt
+
 import pytest
 
 from sbc.navigator import chart_view as CV
@@ -78,9 +80,6 @@ def test_sign_block_degree_never_reaches_thirty():
     assert block["sign_number"] == 1
 
 
-import datetime as dt
-
-
 def _now_path(tree):
     path, level = [], tree["periods"]
     while level:
@@ -111,3 +110,28 @@ def test_dasha_clipped_to_birth():
     tree = CV.dasha_tree(SAMPLE_PROFILE, "2026-11-17")
     assert tree["periods"][0]["start"] == SAMPLE_PROFILE.birth_date
     assert all(a["end"] > SAMPLE_PROFILE.birth_date for a in tree["periods"][0]["children"])
+
+
+def test_dasha_tree_invariants_across_dates():
+    birth = dt.date.fromisoformat(SAMPLE_PROFILE.birth_date)
+    day, end = birth + dt.timedelta(days=1), dt.date(2060, 12, 31)
+
+    def check(nodes, start, stop):
+        assert nodes[0]["start"] == start and nodes[-1]["end"] == stop
+        for a, b in zip(nodes, nodes[1:]):
+            assert a["end"] == b["start"]
+        for n in nodes:
+            assert n["start"] >= SAMPLE_PROFILE.birth_date
+            if n["children"]:
+                check(n["children"], n["start"], n["end"])
+
+    while day <= end:
+        tree = CV.dasha_tree(SAMPLE_PROFILE, day.isoformat())
+        assert len(_now_path(tree)) == 3
+        for m in tree["periods"]:
+            assert m["start"] >= SAMPLE_PROFILE.birth_date
+            if m["children"]:
+                check(m["children"], m["start"], m["end"])
+        for a, b in zip(tree["periods"], tree["periods"][1:]):
+            assert a["end"] == b["start"]
+        day += dt.timedelta(days=397)

@@ -29,6 +29,7 @@ from sbc import nakshatra as N
 from sbc.engine_version import module_version
 from sbc.navigator import analogs as A
 from sbc.navigator import backtest as B
+from sbc.navigator import chart_view as CV
 from sbc.navigator import scoring as S
 from sbc.navigator import signature as G
 from sbc.navigator import store
@@ -296,14 +297,24 @@ def profile_create() -> Any:
 def chart() -> Any:
     profile_id = _arg_id()
     profile = _require_profile(profile_id)
+    view = CV.chart_view(profile)
+    extra = {x["name"]: x for x in view["points"]}
+    lagna_extra = {"sanskrit": "Lagna", "code": "La", "sign_sa": view["lagna"]["sign_sa"],
+                   "sign_number": view["lagna"]["sign_number"], "bhava": 1, "dignity": None,
+                   "combust": False, "retro": False}
     points = []
     for name, lon in natal_points(profile).items():
         lon = float(lon) % 360.0
         nakshatra, pada = N.nakshatra_of(lon)
-        points.append({"name": name, "longitude": round(lon, 4), "sign": N.RASHIS[int(lon // 30)],
-                       "degree": round(lon % 30, 4), "nakshatra": nakshatra, "pada": pada})
+        row = {"name": name, "longitude": round(lon, 4), "sign": N.RASHIS[int(lon // 30)],
+               "degree": round(lon % 30, 4), "nakshatra": nakshatra, "pada": pada}
+        more = extra.get(name, lagna_extra if name == "Lagna" else {})
+        row.update({k: more[k] for k in ("sanskrit", "code", "sign_sa", "sign_number", "bhava",
+                                         "dignity", "combust", "retro") if k in more})
+        points.append(row)
     return jsonify({"profile_id": profile_id, "label": profile.label,
-                    "is_sample": profile.is_sample, "points": points})
+                    "is_sample": profile.is_sample, "points": points,
+                    "lagna": view["lagna"], "houses": view["houses"]})
 
 
 @navigator_bp.route("/score", methods=["GET"])
@@ -479,3 +490,7 @@ def analogs() -> Any:
         f"Computed in {result['_timing']:.1f} seconds" + (" (cached result)." if cached else ".")]
     return jsonify({**body, "profile_id": profile_id, "is_sample": profile.is_sample,
                     "status": STATUS, "cached": cached})
+
+
+# Routes in navigator_views register on navigator_bp; imported last so the names above exist.
+from sbc.api.blueprints import navigator_views  # noqa: E402,F401

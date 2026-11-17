@@ -14,6 +14,8 @@ DELETED = [
 # Kept on purpose although no page calls them: infrastructure, the TradingView
 # integration, and the prediction engine's operational endpoints.
 API_ONLY = {
+    # UI caller arrives in Task 10 (navigator-chart.js); remove then.
+    "/api/navigator/dasha",
     "/healthz", "/webhook/sbc",
     # Alias of /healthz kept for external monitors and old probes (sbc/app_factory.py).
     "/health",
