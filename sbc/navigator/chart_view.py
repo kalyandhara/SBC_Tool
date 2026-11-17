@@ -9,6 +9,7 @@ from sbc.engine import _julday, _utc_from_local
 from sbc.nakshatra import RASHIS, nakshatra_of
 from sbc.navigator.profile import Profile, _require_zone, lagna_at
 from sbc.planets import positions
+from sbc.yogas import vimshottari
 
 GRAHAS = ("Sun", "Moon", "Mars", "Mercury", "Jupiter", "Venus", "Saturn", "Rahu", "Ketu")
 SANSKRIT = {"Sun": "Surya", "Moon": "Chandra", "Mars": "Mangal", "Mercury": "Budh",
@@ -62,7 +63,7 @@ def natal_detail(p: Profile) -> dict[str, dict[str, Any]]:
 def _sign_block(lon: float) -> dict[str, Any]:
     sign = int(lon // 30)
     return {"longitude": round(lon, 4), "sign": RASHIS[sign], "sign_sa": RASHI_SA[sign],
-            "sign_number": sign + 1, "degree": round(lon % 30, 4)}
+            "sign_number": sign + 1, "degree": min(round(lon % 30, 4), 29.9999)}
 
 
 def chart_view(p: Profile) -> dict[str, Any]:
@@ -83,3 +84,34 @@ def chart_view(p: Profile) -> dict[str, Any]:
     houses = [{"house": h, "sign_number": (lagna_sign + h - 1) % 12 + 1,
                "points": [x["code"] for x in points if x["bhava"] == h]} for h in range(1, 13)]
     return {"lagna": _sign_block(lagna), "houses": houses, "points": points}
+
+
+_CHILDREN = {"mahadashas": "antardashas", "antardashas": "pratyantars", "pratyantars": None}
+
+
+def _nodes(items: list[dict], key: str, birth: str, today: str) -> list[dict]:
+    out = []
+    for item in items:
+        start, end = max(item["start"][:10], birth), item["end"][:10]
+        if end <= birth:
+            continue
+        child_key = _CHILDREN[key]
+        out.append({"lord": item["lord"], "start": start, "end": end,
+                    "now": start <= today < end,
+                    "children": _nodes(item[child_key], child_key, birth, today) if child_key else []})
+    return out
+
+
+def dasha_tree(p: Profile, today: str) -> dict[str, Any]:
+    moon = natal_detail(p)["Moon"]["longitude"]
+    timeline = vimshottari(moon, p.birth_date, today)
+    periods = _nodes(timeline["mahadashas"], "mahadashas", p.birth_date, today)
+    running: dict[str, str | None] = {"maha": None, "antar": None, "pratyantar": None}
+    level = periods
+    for key in ("maha", "antar", "pratyantar"):
+        hit = next((x for x in level if x["now"]), None)
+        if hit is None:
+            break
+        running[key] = hit["lord"]
+        level = hit["children"]
+    return {"running": running, "periods": periods}

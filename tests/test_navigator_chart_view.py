@@ -64,3 +64,50 @@ def test_nodes_always_retrograde_without_dignity():
     for p in view["points"]:
         if p["name"] in ("Rahu", "Ketu"):
             assert p["retro"] is True and p["dignity"] is None and p["combust"] is False
+
+
+@pytest.mark.parametrize("planet,sep", [("Mercury", 13.0), ("Venus", 9.0)])
+def test_retrograde_orb_is_tighter_than_direct(planet, sep):
+    assert CV.is_combust(planet, 100.0 + sep, 100.0, False)
+    assert not CV.is_combust(planet, 100.0 + sep, 100.0, True)
+
+
+def test_sign_block_degree_never_reaches_thirty():
+    block = CV._sign_block(29.99999)
+    assert block["degree"] < 30
+    assert block["sign_number"] == 1
+
+
+import datetime as dt
+
+
+def _now_path(tree):
+    path, level = [], tree["periods"]
+    while level:
+        hits = [x for x in level if x["now"]]
+        assert len(hits) == 1
+        path.append(hits[0]["lord"])
+        level = hits[0]["children"]
+    return path
+
+
+def test_dasha_tree_has_one_running_path():
+    tree = CV.dasha_tree(SAMPLE_PROFILE, "2026-11-17")
+    path = _now_path(tree)
+    assert len(path) == 3
+    assert [tree["running"][k] for k in ("maha", "antar", "pratyantar")] == path
+
+
+def test_dasha_boundary_start_inclusive_end_exclusive():
+    second = CV.dasha_tree(SAMPLE_PROFILE, "2026-11-17")["periods"][1]
+    start = dt.date.fromisoformat(second["start"])
+    on = CV.dasha_tree(SAMPLE_PROFILE, start.isoformat())
+    before = CV.dasha_tree(SAMPLE_PROFILE, (start - dt.timedelta(days=1)).isoformat())
+    assert on["periods"][1]["now"] and not on["periods"][0]["now"]
+    assert before["periods"][0]["now"] and not before["periods"][1]["now"]
+
+
+def test_dasha_clipped_to_birth():
+    tree = CV.dasha_tree(SAMPLE_PROFILE, "2026-11-17")
+    assert tree["periods"][0]["start"] == SAMPLE_PROFILE.birth_date
+    assert all(a["end"] > SAMPLE_PROFILE.birth_date for a in tree["periods"][0]["children"])
