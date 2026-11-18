@@ -64,13 +64,16 @@ def vix_regime(days_before_t: list[str], t: str, vix: Mapping[str, float]) -> st
 
 
 def inputs_before(days: list[str], closes: Any, vix: Mapping[str, float], t: str) -> dict[str, Any]:
-    """`days` sorted ascending ISO dates; `closes` aligned with `days`."""
+    """`days` sorted ascending ISO dates; `closes` aligned with `days`. When stale (T-1
+    missing) the VIX regime is "Unknown", matching the score's neutral Vol term."""
     k = bisect_left(days, t)
     if k == 0:
         return {"t_minus_1": None, "stale": True, "trend": "Mixed", "vix": "Unknown"}
     t1 = days[k - 1]
-    return {"t_minus_1": t1, "stale": t1 < previous_trading_day(t),
-            "trend": trend_of(np.asarray(closes, float)[:k]), "vix": vix_regime(days[:k], t, vix)}
+    stale = t1 < previous_trading_day(t)
+    # Stale: the score drops the last row's VIX, so its Vol term is neutral; the regime agrees.
+    return {"t_minus_1": t1, "stale": stale, "trend": trend_of(np.asarray(closes, float)[:k]),
+            "vix": "Unknown" if stale else vix_regime(days[:k], t, vix)}
 
 
 def stance(band: str, trend: str, vix: str) -> dict[str, Any]:

@@ -122,3 +122,14 @@ def test_special_session_row_before_t_is_not_stale():
     days = ["2024-10-30", "2024-10-31", "2024-11-01"]
     out = D.inputs_before(days, np.array([1.0, 2.0, 3.0]), {}, "2024-11-04")
     assert out["t_minus_1"] == "2024-11-01" and out["stale"] is False
+
+
+def test_stale_inputs_have_unknown_vix_regime():
+    # T-1 missing: the score's Vol term is neutral, so the regime must agree
+    days, closes, vix = _fixture()
+    k = 500
+
+    cut = days[:k]
+    t = days[k + 3]
+    out = D.inputs_before(cut, closes[:k], vix, t)
+    assert out["stale"] is True and out["vix"] == "Unknown"

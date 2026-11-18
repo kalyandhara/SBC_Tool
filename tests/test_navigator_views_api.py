@@ -263,3 +263,63 @@ def test_score_vol_real_for_session_after_data_neutral_a_day_further(client, mon
     near = client.get(f"/api/navigator/score?profile_id=1&day={t.isoformat()}").get_json()
     far = client.get(f"/api/navigator/score?profile_id=1&day={later.isoformat()}").get_json()
     assert near["vol_neutral"] is False and far["vol_neutral"] is True
+
+
+# ---- fix round 1 (SBC_Tool-ds3) ----
+def _count_builds(monkeypatch):
+    calls = []
+    real = views._decision_body
+    monkeypatch.setattr(views, "_decision_body", lambda *a: calls.append(1) or real(*a))
+    return calls
+
+
+def test_decision_rebuilds_when_vix_row_arrives(client, monkeypatch, market):
+    vix = _bars(1300, "2021-06-01")
+    monkeypatch.setattr(market_store, "get_daily",
+                        lambda s, start=None, end=None: {"NIFTY": market, "INDIAVIX": vix}[s])
+    calls = _count_builds(monkeypatch)
+    url = "/api/navigator/decision?profile_id=1&day=2026-11-18"
+    client.get(url)
+    nxt = str(np.busday_offset(vix[-1]["date"], 1, roll="forward"))
+    assert nxt <= market[-1]["date"]          # still within NIFTY's data, so _market keeps it
+    vix.append({**vix[-1], "date": nxt})
+    client.get(url)
+    assert len(calls) == 2
+
+
+def test_decision_rebuilds_when_profile_relabelled(client, monkeypatch, market):
+    import dataclasses
+    calls = _count_builds(monkeypatch)
+    url = "/api/navigator/decision?profile_id=1&day=2026-11-18"
+    client.get(url)
+    monkeypatch.setattr(views, "_require_profile",
+                        lambda pid: dataclasses.replace(SAMPLE_PROFILE, label="renamed"))
+    client.get(url)
+    assert len(calls) == 2
+
+
+def test_windows_recover_without_clearing_decision_cache(client, monkeypatch, market):
+    state = {"n": 0}
+
+    def flaky(_day):
+        state["n"] += 1
+        if state["n"] == 1:
+            raise RuntimeError("x")
+        return {"buckets": [{"time": "09:15", "score": 1.0}, {"time": "09:30", "score": 2.0}]}
+    monkeypatch.setattr(views, "build_forecast", flaky)
+    views._forecast_ok.cache_clear()
+    url = "/api/navigator/decision?profile_id=1&day=2026-11-18"
+    first = client.get(url).get_json()
+    second = client.get(url).get_json()
+    views._forecast_ok.cache_clear()
+    assert first["windows"]["available"] is False
+    assert second["windows"]["available"] is True
+
+
+@pytest.mark.parametrize("sides", [{"long": {}}, {"long": None}, "oops", None, ["x"]])
+def test_rule_evidence_tolerates_malformed_results(monkeypatch, sides):
+    run = {"id": 7, "status": "done", "data_asof": "x", "engine_version": _current_engine(),
+           "results": {"rule_version": views.RULE_VERSION, "sides": sides}}
+    monkeypatch.setattr(store, "latest_run", lambda pid, kind="score": run)
+    out = views._rule_evidence(1, "long")
+    assert "unvalidated" in out["text"]

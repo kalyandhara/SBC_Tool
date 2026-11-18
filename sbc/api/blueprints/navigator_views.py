@@ -120,7 +120,6 @@ def rule_backtest_latest() -> Any:
     return _run_body(run)
 
 
-
 _CACHE: OrderedDict = OrderedDict()
 _CACHE_LOCK = threading.Lock()
 _CACHE_MAX, _CACHE_TTL = 32, 900.0
@@ -161,6 +160,13 @@ def _windows(day: str) -> dict:
     return out
 
 
+def _view_key(kind: str, profile_id: int, profile, t: str, ohlc, vix) -> tuple:
+    """Cache key for a per-day view. VIX can land after NIFTY (as in /score's key) and
+    chart_hash drops the label, so both date and label are part of it."""
+    return (kind, profile_id, chart_hash(profile), profile.label, t, ohlc["date"].iloc[-1],
+            max(vix, default="none"), WEIGHTS_VERSION, D.RULE_VERSION, _version())
+
+
 def _session_arg() -> str:
     if "day" not in request.args:
         return D.session_for(_now_ist()).isoformat()
@@ -173,7 +179,10 @@ def _session_arg() -> str:
 def _session_series(profile, ohlc, vix, t: str, extra_days: tuple[str, ...] = ()):
     """Rows strictly before t, then t and any later days as unknown sessions. When
     T-1 is the last row, its VIX close is a real input; otherwise Vol is neutral,
-    as for any future day (scoring.vol_term reads the previous day's close)."""
+    as for any future day (scoring.vol_term reads the previous day's close).
+    For a past day already in the data, /score keeps its Phase-1 path (HistVal sees
+    T's close only through forward returns, NaN for T); /decision is defined for
+    session T, and agreement with /score is required only for T."""
     days_all = ohlc["date"].tolist()
     k = int(np.searchsorted(np.array(days_all), t, side="left"))
     days = days_all[:k]
@@ -205,7 +214,6 @@ def _decision_body(profile, ohlc, vix, t: str) -> dict[str, Any]:
             "stale": inputs["stale"], "provisional": inputs["stale"],
             "score": score, "band": band, "stance": stance,
             "side": _SIDE.get(stance["stance"]) if stance else None,
-            "windows": _windows(t),
             "confluence": C.rule_items(band, inputs["trend"], inputs["vix"])
                           + C.context_items(natal, t, running),
             "status": STATUS, "disclaimer": DISCLAIMER, "short_cost_note": D.SHORT_COST_NOTE}
@@ -225,7 +233,10 @@ def _rule_evidence(profile_id: int, side: str | None) -> dict[str, Any]:
     if not isinstance(results, dict):
         return {"run_id": run["id"], "verdicts": {},
                 "text": f"{head}: unvalidated: run {run['id']} {run.get('status')}"}
-    verdicts = {s: v["verdict"] for s, v in results.get("sides", {}).items()}
+    sides = results.get("sides")
+    sides = sides if isinstance(sides, dict) else {}
+    verdicts = {s: (v.get("verdict", "unvalidated") if isinstance(v, dict) else "unvalidated")
+                for s, v in sides.items()}
     shown = [side] if side else list(verdicts)
     parts = "; ".join(f"{s} side: {verdicts.get(s, 'unvalidated')}" for s in shown)
     text = f"{head}, {parts} (run {run['id']}, data through {run.get('data_asof')})"
@@ -242,7 +253,7 @@ def decision() -> Any:
     profile = _require_profile(profile_id)
     t = _session_arg()
     ohlc, vix = _market()
-    key = ("decision", profile_id, chart_hash(profile), t, ohlc["date"].iloc[-1],
-           WEIGHTS_VERSION, D.RULE_VERSION, _version())
+    key = _view_key("decision", profile_id, profile, t, ohlc, vix)
     body = _cached(key, lambda: _decision_body(profile, ohlc, vix, t))
-    return jsonify({**body, "profile_id": profile_id, "evidence": _rule_evidence(profile_id, body["side"])})
+    return jsonify({**body, "profile_id": profile_id, "windows": _windows(t),
+                    "evidence": _rule_evidence(profile_id, body["side"])})
