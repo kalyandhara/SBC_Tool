@@ -230,7 +230,7 @@ def test_tab_bar_wraps_at_desktop_width():
 def test_score_card_shows_the_latest_verdict_beside_the_action_label(code):
     render = code[code.index("function navRenderScore"):]
     render = render[:render.index("\n}\n")]
-    action = render.index("Action label:")
+    action = render.index("Score band reading:")
     assert "latest_verdict" in render[action:action + 400]
 
 
@@ -372,3 +372,33 @@ def test_diamond_layout_keeps_text_inside_each_house():
     out = subprocess.run(["node", str(ROOT / "tests" / "js" / "diamond_layout_check.mjs")],
                          capture_output=True, text=True, timeout=60)
     assert out.returncode == 0, out.stderr + out.stdout
+
+
+DECISION_JS = ROOT / "static" / "js" / "navigator-decision.js"
+
+
+def test_decision_sections_order(html):
+    pane = html[html.index('id="tab-navigator"', html.index('class="tab-pane')):]
+    order = [pane.index(f'id="{x}"') for x in ("nav-status", "nav-today", "nav-timeline", "nav-chart")]
+    assert order == sorted(order) and 'id="nav-rule"' in pane
+    assert html.index("navigator-chart.js") < html.index("navigator-decision.js")
+
+
+def test_decision_js_rules():
+    src = DECISION_JS.read_text(encoding="utf-8")
+    assert "innerHTML" not in src
+    for word in ("in the rule", "context only", "experimental", "windows unavailable",
+                 "Run rule backtest", "provisional", "short_cost_note", "closed_events"):
+        assert word in src, word
+
+
+def test_card_refuses_to_render_without_disclaimer_or_evidence():
+    src = DECISION_JS.read_text(encoding="utf-8")
+    body = src[src.index("function navRenderToday"):]
+    guard = body[:300]
+    assert "throw" in guard and "disclaimer" in guard and "evidence" in guard
+
+
+def test_score_label_renamed(code):
+    assert "Score band reading:" in code and "Action label: ${" not in code
+    assert "The decision card combines this with market trend." in code

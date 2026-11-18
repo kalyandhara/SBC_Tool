@@ -157,12 +157,13 @@ function navRenderScore(data) {
     navEl("div", {}, [
       navEl("div", { class: "nav-band", text: data.band }),
       navEl("div", {}, [
-        navEl("strong", { text: `Action label: ${data.action}` }),
+        navEl("strong", { text: `Score band reading: ${data.action}` }),
         navEl("span", { class: "nav-tag", text: data.status }),
         navEl("span", { class: "nav-tag", text: (data.latest_verdict || {}).text || "verdict unavailable" }),
       ]),
     ]),
   ]));
+  out.appendChild(navNote("The decision card combines this with market trend."));
   out.appendChild(navNote(`${data.label}. Weights ${data.weights_version}. Market data through ${data.data_asof}.`));
   out.appendChild(navNote(data.disclaimer));
   if (data.future) {
@@ -518,6 +519,7 @@ async function navLoadProfile() {
     load(`/api/navigator/dasha?profile_id=${id}`, navRenderDasha, "nav-dasha", "Vimshottari dasha"),
     load(`/api/navigator/score?profile_id=${id}`, navRenderScore, "nav-score", "Weighted score"),
     navLoadLatest(seq, id),
+    navLoadDecision(seq, id),
   ]);
 }
 
