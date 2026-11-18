@@ -57,3 +57,37 @@ def test_guard_covers_new_routes(client, monkeypatch, method, path):
     r = getattr(client, method)(path, headers={"Origin": "http://evil.example"},
                                 json={} if method == "post" else None)
     assert r.status_code == 403
+
+
+import pandas as pd  # noqa: E402
+
+
+@pytest.mark.parametrize("method,path", [
+    ("post", "/api/navigator/rule-backtest"), ("get", "/api/navigator/rule-backtest/1"),
+    ("get", "/api/navigator/rule-backtest/latest?profile_id=1")])
+def test_guard_covers_rule_routes(client, monkeypatch, method, path):
+    _down(monkeypatch)
+    r = getattr(client, method)(path, headers={"X-Forwarded-For": "8.8.8.8"},
+                                json={} if method == "post" else None)
+    assert r.status_code == 403
+
+
+def test_rule_read_404_for_score_run(client, monkeypatch):
+    monkeypatch.setattr(store, "expire_stale", lambda *a: 0)
+    monkeypatch.setattr(store, "get_run", lambda i: {"id": i, "profile_id": 1, "kind": "score"})
+    assert client.get("/api/navigator/rule-backtest/5").status_code == 404
+
+
+def test_score_read_404_for_rule_run(client, monkeypatch):
+    monkeypatch.setattr(store, "expire_stale", lambda *a: 0)
+    monkeypatch.setattr(store, "get_run", lambda i: {"id": i, "profile_id": 1, "kind": "rule"})
+    assert client.get("/api/navigator/backtest/5").status_code == 404
+
+
+def test_rule_post_returns_existing_run(client, monkeypatch):
+    monkeypatch.setattr(views, "_market", lambda: (pd.DataFrame({"date": ["2026-11-16"]}), {}))
+    monkeypatch.setattr(store, "expire_stale", lambda *a: 0)
+    calls = []
+    monkeypatch.setattr(store, "start_run", lambda pid, meta, kind="score": (calls.append(kind) or (7, False)))
+    r = client.post("/api/navigator/rule-backtest", json={"profile_id": 1})
+    assert r.status_code == 202 and r.get_json() == {"run_id": 7, "is_new": False} and calls == ["rule"]

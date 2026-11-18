@@ -111,7 +111,9 @@ def test_remote_read_refused(client):
     ("get", "/api/navigator/chart?profile_id=1"), ("get", "/api/navigator/score?profile_id=1"),
     ("post", "/api/navigator/backtest"), ("get", "/api/navigator/backtest/1"),
     ("get", "/api/navigator/backtest/latest?profile_id=1"), ("get", "/api/navigator/analogs?profile_id=1"),
-    ("get", "/api/navigator/dasha?profile_id=1")])
+    ("get", "/api/navigator/dasha?profile_id=1"),
+    ("post", "/api/navigator/rule-backtest"), ("get", "/api/navigator/rule-backtest/1"),
+    ("get", "/api/navigator/rule-backtest/latest?profile_id=1")])
 def test_guard_covers_every_route_before_postgres(client, monkeypatch, method, path):
     _down(monkeypatch)    # a route that reached the store would be a 503
     r = getattr(client, method)(path, headers={"X-Forwarded-For": "8.8.8.8"},

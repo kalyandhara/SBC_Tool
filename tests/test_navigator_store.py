@@ -328,3 +328,25 @@ def test_latest_run_is_the_newest_for_that_profile_only(db):
     latest = store.latest_run(pid)
     assert latest["id"] == second and latest == store.get_run(second)
     assert store.latest_run(10**9) is None
+
+
+@pg
+def test_score_and_rule_runs_can_be_active_together(db):
+    pid = store.create_profile(SAMPLE_PROFILE)
+    meta = {"instrument": "NIFTY", "weights_version": "nav-1", "data_asof": "2026-11-16",
+            "engine_version": "x", "chart_hash": "h", "params": {}}
+    a, new_a = store.start_run(pid, meta)
+    b, new_b = store.start_run(pid, meta, kind="rule")
+    c, new_c = store.start_run(pid, meta, kind="rule")
+    assert new_a and new_b and not new_c and c == b and a != b
+    assert store.latest_run(pid)["id"] == a and store.latest_run(pid, kind="rule")["id"] == b
+    assert store.get_run(b)["kind"] == "rule"
+
+
+@pg
+def test_migrate_twice_keeps_one_kind_index(db):
+    store.migrate()
+    with store.connect() as c:
+        names = [r[0] for r in c.execute(
+            "select indexname from pg_indexes where tablename='backtest_run' and indexname like 'one_active%'")]
+    assert names == ["one_active_run_kind"]

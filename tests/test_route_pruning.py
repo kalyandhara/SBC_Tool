@@ -16,6 +16,9 @@ DELETED = [
 API_ONLY = {
     # UI caller arrives in Task 10 (navigator-chart.js); remove then.
     "/api/navigator/dasha",
+    # UI caller arrives in Task 11 (navigator-decision.js); remove then.
+    "/api/navigator/rule-backtest", "/api/navigator/rule-backtest/<int:run_id>",
+    "/api/navigator/rule-backtest/latest",
     "/healthz", "/webhook/sbc",
     # Alias of /healthz kept for external monitors and old probes (sbc/app_factory.py).
     "/health",

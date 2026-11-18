@@ -17,5 +17,3 @@ CREATE TABLE IF NOT EXISTS backtest_run (
   status TEXT NOT NULL CHECK (status IN ('queued','running','done','failed')),
   heartbeat_at TIMESTAMPTZ, error TEXT, params JSONB NOT NULL, folds JSONB, results JSONB,
   created_at TIMESTAMPTZ NOT NULL DEFAULT now());
-CREATE UNIQUE INDEX IF NOT EXISTS one_active_run ON backtest_run(profile_id)
-  WHERE status IN ('queued','running');

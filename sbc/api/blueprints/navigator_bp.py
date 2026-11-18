@@ -54,7 +54,7 @@ _PROXY = ("X-Forwarded-For", "X-Forwarded-Proto", "X-Forwarded-Host", "X-Forward
 _LOCAL_AUTHORITY = r"(?:localhost|127\.0\.0\.1|\[::1\])(?::([0-9]{1,5}))?"
 _HOST_RE = re.compile(_LOCAL_AUTHORITY, re.ASCII)
 _ORIGIN_RE = re.compile(r"https?://" + _LOCAL_AUTHORITY, re.ASCII)
-_RUN_FIELDS = ("id", "profile_id", "instrument", "weights_version", "data_asof", "status",
+_RUN_FIELDS = ("id", "profile_id", "kind", "instrument", "weights_version", "data_asof", "status",
                "error", "params", "folds", "results", "created_at")
 _DAY_RE = re.compile(r"[0-9]{4}-[0-9]{2}-[0-9]{2}")
 _ID_RE = re.compile(r"[0-9]{1,18}")     # 18 digits always fit Postgres BIGINT
@@ -413,7 +413,7 @@ def backtest_read(run_id: int) -> Any:
         raise _NotFound("Run not found")
     store.expire_stale()
     run = store.get_run(run_id)
-    if run is None:
+    if run is None or run.get("kind", "score") != "score":
         raise _NotFound("Run not found")
     return _run_body(run)
 
