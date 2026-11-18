@@ -169,6 +169,7 @@ flowchart LR
 | Research | `fingerprint`, `factors`, `stats`, `rule_validation`, `analog_validation`, `factor_validation`, `incremental`, `sector_validation`, `swing_validation`, `research_reports` | Tests against market controls |
 | Forecast | `forecast`, `forecast_ledger`, `daily_ledger`, `forward_calendar`, `swing_model`, `gann`, `gann_zones`, `expiry_range` | Session forecast, freeze and score, calendar |
 | Market data | `market_store`, `market_ohlc`, `market_data`, `market_events`, `market_features`, `market_holidays`, `data_freshness`, `series_cache`, `cities` | Stores, holidays, freshness badges |
+| Navigator | `navigator/chart_view`, `navigator/decision`, `navigator/context`, `navigator/rule_backtest`, `api/blueprints/navigator_views` | Classical chart view and dasha tree, the Today stance rule (rule-1), context items, walk-forward rule backtest, and the routes that serve them (`/dasha`, `/decision`, `/timeline`, `/rule-backtest`) |
 | Web | `app_factory`, `app_boot`, `api/engine_bp`, `api/errors`, `api/blueprints/*` | Routes, write gate, rate limit, error handling |
 
 ---

@@ -41,6 +41,7 @@ This hybrid approach enables validation of financial astrology research examples
 | **Forward Calendar** | Next weeks' planetary events with the frozen forecast for each session (also as weekly HTML/Markdown reports) |
 | **Swing Windows** | Heliocentric Earth–planet aspect windows as entries, Gann + Fibonacci + indicator confluence as exits; TradingView Pine script in `tools/tradingview/` |
 | **Ashtakavarga** (Research · unvalidated) | Classical BAV/SAV bindus on an anchor's natal chart, with the signs the planets transit at 09:15 IST. Descriptive only, labelled *experimental, no validated edge*. The Lagna is used only where the birth time and place are exact (India, New Delhi); otherwise a 7-planet variant, and planets that change sign on the birth day are flagged |
+| **Navigator** (Research · unvalidated) | Birth-chart workspace for one profile: the *Today* card (stance for the next session, with its inputs and context badges), a 10-session timeline with natal transit events, the classical chart view (North-Indian diamond chart, graha table with dignity, combustion and retrograde flags, Vimshottari dasha tree), the score and similar-dates panels, and the rule backtest. Every panel is labelled *unvalidated*; birth data stays in the server-side profile and never appears in a URL or log |
 
 ### API-only
 - Routes with no panel are kept only when something else uses them: `/healthz` (Docker), `/webhook/sbc` and `/api/sbc/latest` (TradingView alerts), `/api/engine/aspect_windows?format=tv` (the Pine script), and the engine's operational endpoints (fingerprint status, forecast ledger, intraday freeze/score, market freshness, version). `tests/test_route_pruning.py` fails if a new route has neither a UI caller nor a place on that list.
@@ -293,6 +294,23 @@ sky events (ingresses, stations, exact aspects, eclipses, new/full Moon) and eac
 rule and analog leans. `run_app.py` writes a copy to `reports/calendar/` every Saturday
 from 08:00 IST; without the server, run `python scripts/forward_calendar.py --weekly`
 from Windows Task Scheduler.
+
+### Navigator
+```
+GET  /api/navigator/chart?profile_id=N          # points (sign, degree, nakshatra, bhava, dignity, combust, retro), lagna, houses
+GET  /api/navigator/dasha?profile_id=N          # Vimshottari tree, with the running periods as of today
+GET  /api/navigator/decision?profile_id=N       # Today card: stance, size multiplier, rule inputs, context items, evidence, disclaimer
+GET  /api/navigator/timeline?profile_id=N[&day=YYYY-MM-DD]   # next 10 sessions with natal transit events
+POST /api/navigator/rule-backtest               {profile_id}  # start a background run of the stance rule
+GET  /api/navigator/rule-backtest/<id>          # status, progress and results of one run
+GET  /api/navigator/rule-backtest/latest?profile_id=N        # newest run for the profile (null if none)
+```
+The score, backtest, analogs and profile routes are unchanged. `/chart` now also returns the Sanskrit name, sign, whole-sign house (`bhava`), dignity, combustion and retrograde flags per point, plus `lagna` and `houses`.
+
+#### How the Today card derives its stance
+The stance is rule-1, fixed in `sbc/navigator/decision.py` before any result was seen. For the session T (chosen from the IST clock: today before the 15:30 close on a trading day, otherwise the next trading day) it combines three inputs, all read as of the T-1 close so a partial bar for T cannot leak in: the score band, the NIFTY 20/50-day trend (Up, Down or Mixed) and the India VIX regime (High at or above the 80th percentile of the last 252 sessions, else Normal). The output is *Long bias*, *Short bias* or *Stand aside*, with a size multiplier (1.0 Exceptional Setup, 0.75 High Probability, 0.5 Normal). Context items (tara, Chandra position, Ashtakavarga, panchang) are shown beside it but never change the stance.
+
+The card shows an *unvalidated* badge because the rule backtest has not passed its test. That run compares the stance rule against the same rule without its astro gate (trend only, size-neutral), and tests the difference against placebo charts. A side qualifies only with at least 30 gate-closed events, and a sample chart never qualifies. Until a run says otherwise the stance is research output, not advice. Shorts are charged the same 10 bps round trip as longs; futures roll, option premium and margin are not modelled.
 
 ### Profile Management
 ```
