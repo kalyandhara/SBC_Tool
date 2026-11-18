@@ -95,11 +95,7 @@ function navSubheading(text) { return navEl("h4", { class: "nav-subheading", tex
 function navNote(text) { return navEl("p", { class: "nav-note", text }); }
 
 function navRenderChart(data) {
-  const out = navId("nav-chart");
-  navClear(out);
-  out.appendChild(navHeading(`Chart: ${data.label}`));
-  out.appendChild(navTable("", ["Point", "Sign", "Degree in sign", "Nakshatra", "Pada"],
-    (data.points || []).map((p) => [p.name, p.sign, navNum(p.degree), p.nakshatra, p.pada])));
+  navRenderChartView(data);
 }
 
 function navMoves(title, moves) {
@@ -504,6 +500,7 @@ async function navLoadProfile() {
   navClear(navId("nav-backtest-out"));
   navMessage("nav-backtest-status", "");
   navId("nav-chart").textContent = "Loading chart.";
+  navId("nav-dasha").textContent = "Loading dasha.";
   navId("nav-score").textContent = "Loading score.";
   navStopAnalogs();
   NAV.analogFor = null;
@@ -518,6 +515,7 @@ async function navLoadProfile() {
   };
   await Promise.all([
     load(`/api/navigator/chart?profile_id=${id}`, navRenderChart, "nav-chart", "Chart"),
+    load(`/api/navigator/dasha?profile_id=${id}`, navRenderDasha, "nav-dasha", "Vimshottari dasha"),
     load(`/api/navigator/score?profile_id=${id}`, navRenderScore, "nav-score", "Weighted score"),
     navLoadLatest(seq, id),
   ]);

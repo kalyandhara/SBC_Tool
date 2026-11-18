@@ -3771,3 +3771,12 @@ button.og-card:hover, button.og-card:focus-visible { border-color: var(--og-acce
 #nav-profile-form .profile-controls { flex-wrap: wrap; }
 #nav-profile-form .profile-controls select { min-width: 0; flex-basis: 180px; }
 #nav-profile-form .form-actions { justify-content: flex-start; }
+.nav-diamond-wrap { max-width: 420px; width: 100%; margin: 8px 0; }
+.nav-diamond { width: 100%; height: auto; display: block; }
+.nav-d-line { fill: none; stroke: var(--line); stroke-width: 1.5; }
+.nav-d-sign { fill: var(--muted); font-size: 12px; text-anchor: middle; }
+.nav-d-graha { fill: var(--text); font-size: 13px; text-anchor: middle; }
+.nav-d-lagna { fill: var(--accent); font-size: 13px; text-anchor: middle; font-weight: 600; }
+.nav-dasha .nav-list { margin: 4px 0 4px 16px; }
+.nav-now { border-style: solid; border-color: var(--accent); color: var(--accent); }
+.nav-strong { font-weight: 600; }

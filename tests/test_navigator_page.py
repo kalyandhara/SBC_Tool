@@ -333,3 +333,32 @@ def test_load_latest_picks_newest_explicitly(code):
     assert "created_at" in newest or ".id" in newest
     click = code[code.index('"nav-bd-load-latest"'):]
     assert "navNewestProfile(" in click[:click.index("\n  });")]
+
+
+CHART_JS = ROOT / "static" / "js" / "navigator-chart.js"
+
+
+def test_chart_view_script_and_sections(html):
+    assert "navigator-chart.js" in html and 'id="nav-dasha"' in html
+    assert html.index("navigator.js") < html.index("navigator-chart.js")
+
+
+def test_chart_view_js_rules():
+    src = CHART_JS.read_text(encoding="utf-8")
+    assert "innerHTML" not in src and "createElementNS" in src
+    for word in ("Own sign", "Exalted", "Debilitated", "Combust", "NOW", "Running now"):
+        assert word in src, word
+    assert "<details" not in src and '"details"' in src
+
+
+def test_house_one_is_top_centre():
+    src = CHART_JS.read_text(encoding="utf-8")
+    first = re.search(r"NAV_HOUSE_XY\s*=\s*\[\s*\[(\d+),\s*(\d+)\]", src)
+    assert first and first.groups() == ("200", "100")
+
+
+def test_nav_dms_clamps_to_below_thirty():
+    src = CHART_JS.read_text(encoding="utf-8")
+    body = src[src.index("function navDms"):]
+    body = body[:body.index("\n}\n")]
+    assert "Math.min" in body and "29.9999" in body

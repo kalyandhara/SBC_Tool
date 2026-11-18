@@ -14,8 +14,6 @@ DELETED = [
 # Kept on purpose although no page calls them: infrastructure, the TradingView
 # integration, and the prediction engine's operational endpoints.
 API_ONLY = {
-    # UI caller arrives in Task 10 (navigator-chart.js); remove then.
-    "/api/navigator/dasha",
     # UI caller arrives in Task 11 (navigator-decision.js); remove then.
     "/api/navigator/decision", "/api/navigator/timeline", "/api/navigator/rule-backtest", "/api/navigator/rule-backtest/<int:run_id>",
     "/api/navigator/rule-backtest/latest",
