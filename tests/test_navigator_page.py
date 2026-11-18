@@ -353,7 +353,7 @@ def test_chart_view_js_rules():
 
 def test_house_one_is_top_centre():
     src = CHART_JS.read_text(encoding="utf-8")
-    first = re.search(r"NAV_HOUSE_XY\s*=\s*\[\s*\[(\d+),\s*(\d+)\]", src)
+    first = re.search(r"NAV_HOUSE_GEOM\s*=\s*\[\s*\{\s*x:\s*(\d+),\s*y:\s*(\d+),\s*kind:\s*\"kite\"", src)
     assert first and first.groups() == ("200", "100")
 
 
@@ -362,3 +362,13 @@ def test_nav_dms_clamps_to_below_thirty():
     body = src[src.index("function navDms"):]
     body = body[:body.index("\n}\n")]
     assert "Math.min" in body and "29.9999" in body
+
+
+def test_diamond_layout_keeps_text_inside_each_house():
+    import shutil
+    import subprocess
+    if shutil.which("node") is None:
+        pytest.skip("node not installed")
+    out = subprocess.run(["node", str(ROOT / "tests" / "js" / "diamond_layout_check.mjs")],
+                         capture_output=True, text=True, timeout=60)
+    assert out.returncode == 0, out.stderr + out.stdout

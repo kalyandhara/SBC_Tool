@@ -3,9 +3,14 @@
 // SVG nodes come from createElementNS. Houses are whole-sign from the Lagna.
 
 const NAV_SVG = "http://www.w3.org/2000/svg";
-// Text anchor per house, 1..12, counter-clockwise from the top centre (400 x 400 box).
-const NAV_HOUSE_XY = [[200, 100], [100, 45], [45, 100], [100, 200], [45, 300], [100, 355],
-  [200, 300], [300, 355], [355, 300], [300, 200], [355, 100], [300, 45]];
+// Per-house centroid and shape class on the 400 x 400 box, house 1..12 counter-clockwise
+// from the top-centre kite. Kinds: kite, top / bottom (base on that edge), side (left or right edge).
+const NAV_LINE = 13;
+const NAV_HOUSE_GEOM = [
+  { x: 200, y: 100, kind: "kite" }, { x: 100, y: 33, kind: "top" }, { x: 36, y: 100, kind: "side" },
+  { x: 100, y: 200, kind: "kite" }, { x: 36, y: 300, kind: "side" }, { x: 100, y: 367, kind: "bottom" },
+  { x: 200, y: 300, kind: "kite" }, { x: 300, y: 367, kind: "bottom" }, { x: 364, y: 300, kind: "side" },
+  { x: 300, y: 200, kind: "kite" }, { x: 364, y: 100, kind: "side" }, { x: 300, y: 33, kind: "top" }];
 const NAV_FLAG_TEXT = { own: "Own sign", exalted: "Exalted", debilitated: "Debilitated" };
 
 function navSvg(tag, attrs = {}, text = null) {
@@ -23,6 +28,28 @@ function navDms(deg) {
   return `${d}°${String(m).padStart(2, "0")}′`;
 }
 
+// Pure layout for one house: returns [{x, y, text, cls}] centred on the house centroid.
+// Kites and top/bottom triangles pack two labels per line when there are more than two;
+// side triangles use one per line. opts: {lagna, sign}.
+function navHouseLines(house, labels, opts = {}) {
+  const g = NAV_HOUSE_GEOM[house - 1];
+  const rows = [];
+  if (opts.lagna) rows.push({ text: opts.lagna, cls: "nav-d-lagna" });
+  const pack = g.kind !== "side" && labels.length > 2;
+  for (let i = 0; i < labels.length; i += pack ? 2 : 1) {
+    rows.push({ text: labels.slice(i, i + (pack ? 2 : 1)).join("  "), cls: "nav-d-graha" });
+  }
+  let first = g.y - (rows.length - 1) * NAV_LINE / 2;
+  if (g.kind === "bottom") first = Math.min(first, 381 - (rows.length - 1) * NAV_LINE);
+  else first = Math.max(first, 22);
+  const out = rows.map((r, i) => ({ x: g.x, y: first + i * NAV_LINE, text: r.text, cls: r.cls }));
+  if (opts.sign !== undefined && opts.sign !== null) {
+    const signY = g.kind === "bottom" ? first + (rows.length - 1) * NAV_LINE + NAV_LINE : first - NAV_LINE;
+    out.unshift({ x: g.x, y: signY, text: String(opts.sign), cls: "nav-d-sign" });
+  }
+  return out;
+}
+
 function navDiamond(data) {
   const svg = navSvg("svg", { viewBox: "0 0 400 400", class: "nav-diamond", role: "img",
     "aria-label": `North Indian chart, Lagna in ${data.lagna.sign}` });
@@ -32,13 +59,17 @@ function navDiamond(data) {
   svg.appendChild(navSvg("polygon", { points: "200,0 400,200 200,400 0,200", class: "nav-d-line" }));
   const byCode = Object.fromEntries((data.points || []).filter((p) => p.code).map((p) => [p.code, p]));
   for (const house of data.houses) {
-    const [x, y] = NAV_HOUSE_XY[house.house - 1];
+    const labels = house.points.map((code) => {
+      const deg = byCode[code] ? byCode[code].degree : null;
+      return typeof deg === "number" && isFinite(deg)
+        ? `${code} ${Math.floor(Math.min(deg, 29.9999))}°` : code;
+    });
+    const opts = { sign: house.sign_number };
+    if (house.house === 1) opts.lagna = `Lagna ${navDms(data.lagna.degree)}`;
     const g = navSvg("g", { class: "nav-d-house" });
-    g.appendChild(navSvg("text", { x, y: y - 14, class: "nav-d-sign" }, String(house.sign_number)));
-    const lines = house.points.map((code) => `${code} ${navDms(byCode[code] ? byCode[code].degree : 0).split("°")[0]}°`);
-    if (house.house === 1) lines.unshift(`Lagna ${navDms(data.lagna.degree)}`);
-    lines.forEach((line, i) => g.appendChild(navSvg("text",
-      { x, y: y + 4 + i * 15, class: house.house === 1 && i === 0 ? "nav-d-lagna" : "nav-d-graha" }, line)));
+    for (const l of navHouseLines(house.house, labels, opts)) {
+      g.appendChild(navSvg("text", { x: l.x, y: l.y, class: l.cls }, l.text));
+    }
     svg.appendChild(g);
   }
   return svg;
@@ -67,7 +98,7 @@ function navNowTag() { return navEl("span", { class: "nav-tag nav-now", text: "N
 
 function navPeriods(list) {
   return list.map((p) => {
-    const text = `${p.lord}  ${p.start} to ${p.end}`;
+    const text = `${p.lord} ${p.start} to ${p.end}`;
     if (!p.children || !p.children.length) {
       const leaf = navEl("li", { text });
       if (p.now) leaf.appendChild(navNowTag());
