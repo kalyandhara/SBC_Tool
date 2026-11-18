@@ -1,7 +1,8 @@
 """Walk-forward test of the Today card's stance rule (rule-1) against the same rule
-without its astro gate (trend-only, fixed half size). Sides are trend-Up days
-(long) and trend-Down days (short); rule excess on a side is rule net P&L minus
-control net P&L over that side's days, so it measures what the gate adds.
+without its astro gate (trend-only). The verdict control trades 1 unit times the VIX
+factor; fixed half size applies only to the descriptive sized_excess. Sides are
+trend-Up days (long) and trend-Down days (short); rule excess on a side is rule net
+P&L minus control net P&L over that side's days, so it measures what the gate adds.
 Verdict fixed in code before results; a sample chart never qualifies.
 Pure: no store, no I/O. Entry at the session open; trend and VIX use the T-1 close."""
 from __future__ import annotations
@@ -80,7 +81,9 @@ def side_stats(gate_arr, trend, vixfac, r, cost_bps, side_mask, n_perm, seed) ->
                                lambda s, v: max(side_excess(s, trend, vixfac, v, cost_bps, side_mask), 0.0),
                                observed, n_perm, seed)
     days = int((side_mask & np.isfinite(r)).sum())
-    return {"excess": observed, "p": p, "days": days, "events": B.count_events(side_mask & np.isfinite(r))}
+    closed = side_mask & (np.asarray(gate_arr, float) == 0) & np.isfinite(r)
+    return {"excess": observed, "p": p, "days": days, "events": B.count_events(side_mask & np.isfinite(r)),
+            "closed_events": B.count_events(closed)}
 
 
 def _folds(years, gate_arr, trend, vixfac, outcomes, cost_bps):
@@ -106,7 +109,8 @@ def _verdict(entry: Mapping[str, Any], is_sample: bool) -> str:
     q, pct, fold_pos = entry.get("q"), entry.get("pct"), entry.get("fold_pos")
     ok = (q is not None and pct is not None and fold_pos is not None and np.isfinite(q)
           and q < .10 and entry["excess"] > 0 and pct >= 95
-          and entry["events"] >= B.MIN_EVENTS and fold_pos >= .60)
+          and entry["events"] >= B.MIN_EVENTS and entry.get("closed_events", 0) >= B.MIN_EVENTS
+          and fold_pos >= .60)
     return B.EDGE if ok and not is_sample else B.NO_EDGE
 
 

@@ -2,6 +2,7 @@
 import numpy as np
 import pandas as pd
 
+from sbc.navigator import backtest as B
 from sbc.navigator import decision as D
 from sbc.navigator import rule_backtest as R
 from sbc.navigator.profile import SAMPLE_PROFILE
@@ -53,13 +54,15 @@ def test_market_codes_agree_with_today_card_inputs():
     days, closes = list(df["date"]), df["close"].to_numpy(float)
     trend, vixfac = R.market_codes(days, closes, vix)
     codes = {"Up": 1.0, "Down": -1.0}
-    seen = set()
+    seen, regimes = set(), set()
     for t in range(1, len(days), 7):
         want = D.inputs_before(days, closes, vix, days[t])
         assert trend[t] == codes.get(want["trend"], 0.0)
         assert vixfac[t] == (0.5 if want["vix"] == "High" else 1.0)
         seen.add(want["trend"])
+        regimes.add(want["vix"])
     assert {"Up", "Down"} <= seen
+    assert "High" in regimes
 
 
 def test_run_is_deterministic_and_sample_never_edge():
@@ -71,3 +74,10 @@ def test_run_is_deterministic_and_sample_never_edge():
     assert set(a["sides"]) == {"long", "short"}
     assert all(a["sides"][s]["verdict"] == "no demonstrated edge" for s in R.SIDES)
     assert a["kind"] == "rule" and a["rule_version"] == "rule-1"
+
+
+def test_verdict_needs_thirty_gate_closed_events():
+    """Plenty of trading events but the gate stood aside in fewer than 30 stretches."""
+    entry = {"q": .01, "pct": 99, "fold_pos": .9, "excess": 5.0, "events": 60, "closed_events": 29}
+    assert R._verdict(entry, False) == B.NO_EDGE
+    assert R._verdict({**entry, "closed_events": 30}, False) == B.EDGE
