@@ -33,6 +33,7 @@ from sbc.navigator.decision import RULE_VERSION
 from sbc.navigator.ephemeris import build_sky
 from sbc.navigator.profile import chart_hash, natal_points
 from sbc.navigator.weights import WEIGHTS_VERSION
+from sbc.transit_natal import scan
 
 log = logging.getLogger(__name__)
 IST = ZoneInfo("Asia/Kolkata")
@@ -257,3 +258,87 @@ def decision() -> Any:
     body = _cached(key, lambda: _decision_body(profile, ohlc, vix, t))
     return jsonify({**body, "profile_id": profile_id, "windows": _windows(t),
                     "evidence": _rule_evidence(profile_id, body["side"])})
+
+
+TIMELINE_SESSIONS = 10
+_SAV_EVENT = {"highest": max, "lowest": min}
+
+
+def _next_sessions(t: str, n: int) -> list[str]:
+    out, d = [], dt.date.fromisoformat(t)
+    while len(out) < n:
+        d += dt.timedelta(days=1)
+        if MH.is_trading_day(d):
+            out.append(d.isoformat())
+    return out
+
+
+def _attach(rows: list[dict], when: str, text: str, t: str) -> None:
+    """Into the first row on or after `when`; events on or before T belong to the card."""
+    if when <= t:
+        return
+    for row in rows:
+        if row["date"] >= when:
+            row["events"].append(text)
+            return
+
+
+def _dasha_starts(profile, t: str, end: str) -> list[tuple[str, str]]:
+    out = []
+    for maha in CV.dasha_tree(profile, t)["periods"]:
+        for antar in maha["children"]:
+            if t < antar["start"] <= end:
+                out.append((antar["start"], f"Antardasha {maha['lord']}/{antar['lord']} begins"))
+            for praty in antar["children"]:
+                if t < praty["start"] <= end:
+                    out.append((praty["start"], f"Pratyantar {antar['lord']}/{praty['lord']} begins"))
+    return out
+
+
+def _timeline_body(profile, ohlc, vix, t: str) -> dict[str, Any]:
+    days = ohlc["date"].tolist()
+    inputs = D.inputs_before(days, ohlc["close"].to_numpy(float), vix, t)
+    sessions = _next_sessions(t, TIMELINE_SESSIONS)
+    series, all_days = _session_series(profile, ohlc, vix, t, tuple(sessions))
+    rows = []
+    for d in sessions:
+        score = int(series.score[all_days.index(d)])
+        band = S.band_of(score)
+        covered = MH.is_covered(dt.date.fromisoformat(d))
+        st = D.stance(band, inputs["trend"], inputs["vix"])
+        rows.append({"date": d, "score": score, "band": band, "stance": st["stance"],
+                     "multiplier": st["multiplier"],
+                     "provisional_note": f"provisional: trend as of {inputs['t_minus_1']}",
+                     "covered": covered,
+                     "coverage_note": None if covered else "holiday calendar not covered: assumed a session",
+                     "events": []})
+    natal = natal_points(profile)
+    for w in scan(natal, sessions[0], sessions[-1]):
+        name = f"{w['planet']} {w['aspect_name']} natal {w['natal']}"
+        _attach(rows, w["entry_date"], f"{name} enters orb", t)
+        _attach(rows, w["exact_date"], f"{name} exact", t)
+        _attach(rows, w["exit_date"], f"{name} leaves orb", t)
+    for when, text in _dasha_starts(profile, t, sessions[-1]):
+        _attach(rows, when, text, t)
+    sav = C.chart_sav(natal)
+    marks = {kind: {s for s in range(12) if sav[s] == pick(sav)} for kind, pick in _SAV_EVENT.items()}
+    previous = None
+    for row in rows:
+        moon = next(p["longitude"] for p in C.sky_at(row["date"]) if p["name"] == "Moon")
+        sign = int(moon % 360 // 30)
+        for kind, signs in marks.items():
+            if sign in signs and sign != previous:
+                row["events"].append(f"Moon in {CV.RASHIS[sign]} (SAV {sav[sign]}, {kind})")
+        previous = sign
+    return {"day": t, "frozen_asof": inputs["t_minus_1"], "rows": rows, "disclaimer": DISCLAIMER}
+
+
+@navigator_bp.route("/timeline", methods=["GET"])
+def timeline() -> Any:
+    _only_args({"profile_id", "day"})
+    profile_id = _arg_id()
+    profile = _require_profile(profile_id)
+    t = _session_arg()
+    ohlc, vix = _market()
+    key = _view_key("timeline", profile_id, profile, t, ohlc, vix)
+    return jsonify({**_cached(key, lambda: _timeline_body(profile, ohlc, vix, t)), "profile_id": profile_id})

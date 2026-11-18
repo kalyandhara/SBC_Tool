@@ -49,7 +49,8 @@ def test_dasha_unknown_profile_404(client):
 
 
 @pytest.mark.parametrize("method,path", [("get", "/api/navigator/dasha?profile_id=1"),
-                                         ("get", "/api/navigator/decision?profile_id=1")])
+                                         ("get", "/api/navigator/decision?profile_id=1"),
+                                         ("get", "/api/navigator/timeline?profile_id=1")])
 def test_guard_covers_new_routes(client, monkeypatch, method, path):
     _down(monkeypatch)
     r = getattr(client, method)(path, headers={"X-Forwarded-For": "8.8.8.8"},
@@ -65,7 +66,8 @@ import pandas as pd  # noqa: E402
 
 @pytest.mark.parametrize("method,path", [
     ("post", "/api/navigator/rule-backtest"), ("get", "/api/navigator/rule-backtest/1"),
-    ("get", "/api/navigator/rule-backtest/latest?profile_id=1")])
+    ("get", "/api/navigator/rule-backtest/latest?profile_id=1"),
+    ("get", "/api/navigator/timeline?profile_id=1")])
 def test_guard_covers_rule_routes(client, monkeypatch, method, path):
     _down(monkeypatch)
     r = getattr(client, method)(path, headers={"X-Forwarded-For": "8.8.8.8"},
@@ -323,3 +325,29 @@ def test_rule_evidence_tolerates_malformed_results(monkeypatch, sides):
     monkeypatch.setattr(store, "latest_run", lambda pid, kind="score": run)
     out = views._rule_evidence(1, "long")
     assert "unvalidated" in out["text"]
+
+
+def test_timeline_ten_sessions(client, market):
+    body = client.get("/api/navigator/timeline?profile_id=1&day=2026-11-18").get_json()
+    rows = body["rows"]
+    assert len(rows) == 10
+    assert all(dt.date.fromisoformat(r["date"]).weekday() < 5 for r in rows)
+    assert "2026-11-24" not in [r["date"] for r in rows]          # Guru Nanak Jayanti
+    assert all(r["provisional_note"].startswith("provisional: trend as of") for r in rows)
+    assert all(isinstance(r["events"], list) for r in rows)
+
+
+def test_timeline_marks_uncovered_dates(client, market):
+    body = client.get("/api/navigator/timeline?profile_id=1&day=2026-12-28").get_json()
+    jan = [r for r in body["rows"] if r["date"].startswith("2027")]
+    assert jan and all(r["covered"] is False and "not covered" in r["coverage_note"] for r in jan)
+
+
+def test_timeline_budget_on_full_history(client, monkeypatch):
+    bars = _real_bars()
+    monkeypatch.setattr(market_store, "get_daily", lambda s, start=None, end=None: {"NIFTY": bars, "INDIAVIX": bars}[s])
+    monkeypatch.setattr(store, "latest_run", lambda pid, kind="score": None)
+    views._CACHE.clear()
+    t0 = time.perf_counter()
+    assert client.get("/api/navigator/timeline?profile_id=1&day=2026-11-18").status_code == 200
+    assert time.perf_counter() - t0 < 8.0
