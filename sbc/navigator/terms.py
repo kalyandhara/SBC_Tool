@@ -173,14 +173,14 @@ def strength_term(sky: Any) -> Term:
     return Term(_scale(raw), raw, factors)
 
 
-def vol_term(days: list[str], vix_by_day: Mapping[str, float], window: int = 252, min_history: int = _MIN_VOL_HISTORY) -> Term:
-    """Percentile of the T-1 close among the `window` closes before it, so the
-    entry day's own value can never reach day T's score. Neutral until
-    `min_history` closes exist before T-1; gaps in the series do not restart it."""
+def vol_percentiles(days: list[str], vix_by_day: Mapping[str, float], window: int = 252,
+                    min_history: int = _MIN_VOL_HISTORY) -> np.ndarray:
+    """pct[i] for session i: the T-1 close's percentile among the `window` closes before it,
+    NaN where unknown. The single definition behind the Vol term and the VIX regime."""
     n = len(days)
     vix = np.array([vix_by_day.get(d, np.nan) for d in days], float)
     vix[~np.isfinite(vix)] = np.nan
-    values, pcts = np.full(n, 50.0), np.full(n, np.nan)
+    pcts = np.full(n, np.nan)
     closes_before = np.concatenate(([0], np.cumsum(~np.isnan(vix))))
     for i in range(1, n):
         last = vix[i - 1]
@@ -191,7 +191,15 @@ def vol_term(days: list[str], vix_by_day: Mapping[str, float], window: int = 252
         if len(past) < _MIN_VOL_HISTORY:
             continue
         pcts[i] = 100.0 * (np.sum(past < last) + .5 * np.sum(past == last)) / len(past)
-        values[i] = 100.0 - pcts[i]
+    return pcts
+
+
+def vol_term(days: list[str], vix_by_day: Mapping[str, float], window: int = 252, min_history: int = _MIN_VOL_HISTORY) -> Term:
+    """Percentile of the T-1 close among the `window` closes before it, so the
+    entry day's own value can never reach day T's score. Neutral until
+    `min_history` closes exist before T-1; gaps in the series do not restart it."""
+    pcts = vol_percentiles(days, vix_by_day, window, min_history)
+    values = np.where(np.isnan(pcts), 50.0, 100.0 - pcts)
     raw = 2.0 * values - 100.0
 
     def factors(i):

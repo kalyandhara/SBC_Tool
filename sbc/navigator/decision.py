@@ -12,6 +12,7 @@ from typing import Any
 
 import numpy as np
 
+from sbc.navigator import scoring as S
 from sbc.market_holidays import is_trading_day, next_trading_day
 
 RULE_VERSION = "rule-1"
@@ -52,37 +53,24 @@ def trend_of(closes: Any) -> str:
     return "Mixed"
 
 
-def vix_pct(values: np.ndarray, j: int) -> float | None:
-    """Percentile of values[j] among the VIX_WINDOW closes before it (as the Vol term)."""
-    if j < VIX_WINDOW or not np.isfinite(values[j]):
-        return None
-    past = values[j - VIX_WINDOW:j]
-    past = past[np.isfinite(past)]
-    if len(past) < VIX_WINDOW:
-        return None
-    last = values[j]
-    return float(100.0 * (np.sum(past < last) + .5 * np.sum(past == last)) / len(past))
+def _regime(pct: float) -> str:
+    return "Unknown" if np.isnan(pct) else ("High" if pct >= VIX_HIGH_PCT else "Normal")
 
 
-def _regime(pct: float | None) -> str:
-    return "Unknown" if pct is None else ("High" if pct >= VIX_HIGH_PCT else "Normal")
-
-
-def vix_regime(vix: Mapping[str, float], t_minus_1: str) -> str:
-    if t_minus_1 not in vix:
-        return "Unknown"
-    dates = sorted(d for d in vix if d <= t_minus_1)
-    values = np.array([vix[d] for d in dates], float)
-    return _regime(vix_pct(values, len(dates) - 1))
+def vix_regime(days_before_t: list[str], t: str, vix: Mapping[str, float]) -> str:
+    """Same percentile the score's Vol term uses for session t (T-1 close, session-day window)."""
+    pcts = S.vol_percentiles_with_lead_in(list(days_before_t) + [t], {d: v for d, v in vix.items() if d < t})
+    return _regime(float(pcts[-1]))
 
 
 def inputs_before(days: list[str], closes: Any, vix: Mapping[str, float], t: str) -> dict[str, Any]:
+    """`days` sorted ascending ISO dates; `closes` aligned with `days`."""
     k = bisect_left(days, t)
     if k == 0:
         return {"t_minus_1": None, "stale": True, "trend": "Mixed", "vix": "Unknown"}
     t1 = days[k - 1]
-    return {"t_minus_1": t1, "stale": t1 != previous_trading_day(t),
-            "trend": trend_of(np.asarray(closes, float)[:k]), "vix": vix_regime(vix, t1)}
+    return {"t_minus_1": t1, "stale": t1 < previous_trading_day(t),
+            "trend": trend_of(np.asarray(closes, float)[:k]), "vix": vix_regime(days[:k], t, vix)}
 
 
 def stance(band: str, trend: str, vix: str) -> dict[str, Any]:

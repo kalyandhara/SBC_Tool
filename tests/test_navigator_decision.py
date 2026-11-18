@@ -5,6 +5,7 @@ import numpy as np
 import pytest
 
 from sbc.navigator import decision as D
+from sbc.navigator import scoring as S
 
 
 @pytest.mark.parametrize("band,trend,vix,stance,mult", [
@@ -71,4 +72,53 @@ def test_missing_t_minus_1_is_stale():
 
 def test_vix_unknown_when_t_minus_1_missing():
     days, _, vix = _fixture()
-    assert D.vix_regime({d: v for d, v in vix.items() if d != days[500]}, days[500]) == "Unknown"
+    assert D.vix_regime(days[:500], days[500], {d: v for d, v in vix.items() if d != days[499]}) == "Unknown"
+
+
+def _gappy_fixture():
+    days, closes, vix = _fixture()
+    vix = dict(vix)
+    missing = {days[i] for i in (300, 333, 410, 411, 520)}
+    for d in missing:
+        del vix[d]
+    only = [d for d in ("2023-03-04", "2023-09-09", "2024-01-06", "2024-05-11") if d not in days]
+    for i, d in enumerate(only):
+        vix[d] = 40.0 + i                      # VIX-only dates (weekends)
+    assert only and missing
+    return days, vix, missing, only
+
+
+def test_vix_regime_matches_vol_term_percentile():
+    days, vix, missing, only = _gappy_fixture()
+    checked_missing = checked_only = 0
+    for k in range(260, 690):
+        t = days[k]
+        vlt = {d: v for d, v in vix.items() if d < t}
+        pct = S.vol_percentiles_with_lead_in(days[:k + 1], vlt)[-1]
+        vol, lead = S._vol_with_lead_in(days[:k + 1], vlt)
+        v = vol.values[lead:][-1]
+        if np.isnan(pct):
+            assert v == 50.0 and D.vix_regime(days[:k], t, vix) == "Unknown"
+        else:
+            assert v == pytest.approx(100.0 - pct)
+            assert D.vix_regime(days[:k], t, vix) == ("High" if pct >= 80 else "Normal")
+        checked_missing += days[k - 1] in missing
+        checked_only += 1
+    assert checked_missing >= 1 and checked_only > 0
+
+
+def test_vix_regime_window_differs_from_own_calendar_when_vix_only_dates():
+    # a VIX-only date inside the window must not enter the percentile (session list rules)
+    days, vix, missing, only = _gappy_fixture()
+    k = days.index("2023-03-06") + 300
+    t = days[k]
+    vlt = {d: v for d, v in vix.items() if d < t}
+    pct = S.vol_percentiles_with_lead_in(days[:k + 1], vlt)[-1]
+    assert D.vix_regime(days[:k], t, vix) == ("Unknown" if np.isnan(pct) else ("High" if pct >= 80 else "Normal"))
+
+
+def test_special_session_row_before_t_is_not_stale():
+    # 2024-11-01 is a Muhurat/special session row; T = 2024-11-04, previous trading day 2024-10-31
+    days = ["2024-10-30", "2024-10-31", "2024-11-01"]
+    out = D.inputs_before(days, np.array([1.0, 2.0, 3.0]), {}, "2024-11-04")
+    assert out["t_minus_1"] == "2024-11-01" and out["stale"] is False
