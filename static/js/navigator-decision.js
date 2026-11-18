@@ -103,11 +103,28 @@ async function navStartRule() {
     const body = await navFetch("/api/navigator/rule-backtest", {
       method: "POST", headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ profile_id: NAV.profileId }) });
+    if (seq !== NAV_RULE.seq) return;
     NAV_RULE.runId = body.run_id;
     navPollRule(seq);
   } catch (err) {
+    if (seq !== NAV_RULE.seq) return;
     navMessage("nav-rule-status", err.message, true);
     navRuleIdle();
+  }
+}
+
+async function navLoadLatestRule(ruleSeq, id) {
+  try {
+    const run = await navFetch(`/api/navigator/rule-backtest/latest?profile_id=${id}`);
+    if (ruleSeq !== NAV_RULE.seq) return;
+    navRenderRule(run);
+    if (run && NAV_ACTIVE.includes(run.status)) {
+      NAV_RULE.runId = run.id;
+      navId("nav-rule-run").disabled = true;
+      navPollRule(ruleSeq);
+    }
+  } catch (err) {
+    if (ruleSeq === NAV_RULE.seq) navMessage("nav-rule-status", err.message, true);
   }
 }
 
@@ -118,6 +135,7 @@ async function navLoadDecision(seq, id) {
   navRuleIdle();
   navId("nav-today").textContent = "Loading today's card.";
   navClear(navId("nav-timeline"));
+  navLoadLatestRule(ruleSeq, id);
   try {
     const today = await navFetch(`/api/navigator/decision?profile_id=${id}`);
     if (seq === NAV.loadSeq) navRenderToday(today);
@@ -132,18 +150,6 @@ async function navLoadDecision(seq, id) {
     } catch (err) {
       if (seq === NAV.loadSeq) navSectionError("nav-timeline", "Next 10 sessions", err);
     }
-  }
-  try {
-    const run = await navFetch(`/api/navigator/rule-backtest/latest?profile_id=${id}`);
-    if (ruleSeq !== NAV_RULE.seq) return;
-    navRenderRule(run);
-    if (run && NAV_ACTIVE.includes(run.status)) {
-      NAV_RULE.runId = run.id;
-      navId("nav-rule-run").disabled = true;
-      navPollRule(ruleSeq);
-    }
-  } catch (err) {
-    if (ruleSeq === NAV_RULE.seq) navMessage("nav-rule-status", err.message, true);
   }
 }
 

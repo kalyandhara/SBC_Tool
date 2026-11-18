@@ -402,3 +402,23 @@ def test_card_refuses_to_render_without_disclaimer_or_evidence():
 def test_score_label_renamed(code):
     assert "Score band reading:" in code and "Action label: ${" not in code
     assert "The decision card combines this with market trend." in code
+
+
+def _fn_body(src, name):
+    body = src[src.index(f"function {name}"):]
+    return body[:body.index("\n}\n")]
+
+
+def test_stale_rule_post_is_guarded_after_the_await():
+    body = _fn_body(DECISION_JS.read_text(encoding="utf-8"), "navStartRule")
+    after_await = body[body.index("await navFetch"):body.index("catch")]
+    assert "seq !== NAV_RULE.seq" in after_await
+    assert after_await.index("seq !== NAV_RULE.seq") < after_await.index("NAV_RULE.runId =")
+    in_catch = body[body.index("catch"):]
+    assert in_catch.index("seq !== NAV_RULE.seq") < in_catch.index("navRuleIdle()")
+
+
+def test_latest_rule_run_loads_in_parallel_with_the_today_card():
+    body = _fn_body(DECISION_JS.read_text(encoding="utf-8"), "navLoadDecision")
+    assert "navLoadLatestRule" in body
+    assert body.index("navLoadLatestRule") < body.index("/api/navigator/decision")
