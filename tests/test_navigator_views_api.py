@@ -345,9 +345,98 @@ def test_timeline_marks_uncovered_dates(client, market):
 
 def test_timeline_budget_on_full_history(client, monkeypatch):
     bars = _real_bars()
-    monkeypatch.setattr(market_store, "get_daily", lambda s, start=None, end=None: {"NIFTY": bars, "INDIAVIX": bars}[s])
+    vix = [{**b, "close": 15.0} for b in bars]
+    monkeypatch.setattr(market_store, "get_daily", lambda s, start=None, end=None: {"NIFTY": bars, "INDIAVIX": vix}[s])
     monkeypatch.setattr(store, "latest_run", lambda pid, kind="score": None)
     views._CACHE.clear()
     t0 = time.perf_counter()
     assert client.get("/api/navigator/timeline?profile_id=1&day=2026-11-18").status_code == 200
     assert time.perf_counter() - t0 < 8.0
+
+
+# ---- timeline event assembly (pure) ----
+
+def _rows(*dates):
+    return [{"date": d, "events": []} for d in dates]
+
+
+def _win(entry, exact, exit_, *, et="10:00", xt="12:00", ot="14:00", clip_start=False, clip_end=False):
+    return {"planet": "Mars", "aspect_name": "conjunction", "natal": "Sun",
+            "entry_date": entry, "entry_time": et, "exact_date": exact, "exact_time": xt,
+            "exit_date": exit_, "exit_time": ot, "starts_before_range": clip_start,
+            "ends_after_range": clip_end}
+
+
+T_FRI, LAST = "2026-11-20", "2026-12-04"
+ROWS = ("2026-11-23", "2026-11-24", "2026-11-25")
+
+
+def _events(windows, dasha=(), rows=None):
+    rows = rows if rows is not None else _rows(*ROWS)
+    views._timeline_events(rows, windows, list(dasha), T_FRI, LAST)
+    return rows
+
+
+def test_events_clipped_start_has_no_enters():
+    rows = _events([_win("2026-10-07", "2026-11-24", "2026-11-25", et="00:00", clip_start=True)])
+    texts = [e for r in rows for e in r["events"]]
+    assert not any("enters orb" in e for e in texts)
+    assert any("exact" in e for e in texts) and any("leaves orb" in e for e in texts)
+
+
+def test_events_clipped_end_has_no_leaves():
+    rows = _events([_win("2026-11-23", "2026-11-24", "2027-01-20", ot="23:59", clip_end=True)])
+    texts = [e for r in rows for e in r["events"]]
+    assert not any("leaves orb" in e for e in texts)
+    assert any("enters orb" in e for e in texts)
+
+
+def test_events_boundary_exact_dropped_interior_kept():
+    # range start is T+1 day minus 45 days = 2026-10-07 00:00; range end = LAST + 45 days = 2027-01-18 23:59
+    start_edge = _win("2026-10-07", "2026-10-07", "2026-11-23", et="00:00", xt="00:00", clip_start=True)
+    end_edge = _win("2026-11-24", "2027-01-18", "2027-01-18", xt="23:59", ot="23:59", clip_end=True)
+    interior = _win("2026-11-23", "2026-11-24", "2026-11-25")
+    assert not any("exact" in e for r in _events([start_edge]) for e in r["events"])
+    assert not any("exact" in e for r in _events([end_edge]) for e in r["events"])
+    assert any("exact" in e for r in _events([interior]) for e in r["events"])
+
+
+def test_events_weekend_attaches_to_next_session_row():
+    rows = _events([_win("2026-11-21", "2026-11-22", "2026-11-25")])
+    assert rows[0]["events"] == ["Mars conjunction natal Sun enters orb", "Mars conjunction natal Sun exact"]
+    assert rows[2]["events"] == ["Mars conjunction natal Sun leaves orb"]
+
+
+def test_events_on_or_before_t_and_after_last_dropped():
+    rows = _events([_win("2026-11-19", "2026-11-20", "2026-12-20")])
+    assert all(r["events"] == [] for r in rows)
+
+
+def test_events_dasha_starts_attached_and_filtered():
+    rows = _events([], dasha=[("2026-11-24", "Antardasha A/B begins"), ("2026-11-20", "old"),
+                              ("2026-12-10", "late")])
+    assert rows[1]["events"] == ["Antardasha A/B begins"]
+    assert rows[0]["events"] == [] and rows[2]["events"] == []
+
+
+def test_timeline_row1_has_no_false_enters_on_real_ephemeris(client, market):
+    from sbc.navigator.profile import natal_points
+    from sbc.transit_natal import scan
+    body = client.get("/api/navigator/timeline?profile_id=1&day=2026-11-18").get_json()
+    first = body["rows"][0]
+    wins = scan(natal_points(SAMPLE_PROFILE), "2026-08-01", "2027-02-01")
+    early = [w for w in wins if w["entry_date"] < first["date"] <= w["exit_date"]
+             and not w["starts_before_range"]]
+    assert early, "fixture should contain windows already open at the first session"
+    for w in early:
+        assert f"{w['planet']} {w['aspect_name']} natal {w['natal']} enters orb" not in first["events"]
+
+
+def test_timeline_moon_event_seeded_from_sign_at_t(client, market, monkeypatch):
+    from sbc.navigator import context as C
+    from sbc.navigator.profile import natal_points
+    sav = C.chart_sav(natal_points(SAMPLE_PROFILE))
+    top = max(range(12), key=lambda s: sav[s])
+    monkeypatch.setattr(views.C, "sky_at", lambda d: [{"name": "Moon", "longitude": top * 30 + 5.0}])
+    body = client.get("/api/navigator/timeline?profile_id=1&day=2026-11-18").get_json()
+    assert not any(e.startswith("Moon in") for r in body["rows"] for e in r["events"])

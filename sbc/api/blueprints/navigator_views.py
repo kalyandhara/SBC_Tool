@@ -283,6 +283,44 @@ def _attach(rows: list[dict], when: str, text: str, t: str) -> None:
             return
 
 
+SCAN_MARGIN_DAYS = 45
+
+
+def _scan_range(t: str, last: str) -> tuple[str, str]:
+    """Wide enough that the edges of most windows fall inside it (see _timeline_events)."""
+    start = dt.date.fromisoformat(t) + dt.timedelta(days=1) - dt.timedelta(days=SCAN_MARGIN_DAYS)
+    end = dt.date.fromisoformat(last) + dt.timedelta(days=SCAN_MARGIN_DAYS)
+    return start.isoformat(), end.isoformat()
+
+
+def _timeline_events(rows: list[dict], windows: list[dict], dasha: list[tuple[str, str]],
+                     t: str, last: str) -> None:
+    """Attach transit and dasha events to `rows` for dates in (t, last].
+
+    A window clipped by the scan range reports the range edge as its entry (00:00) or exit
+    (23:59), so a clipped start never yields "enters orb", a clipped end never yields
+    "leaves orb", and an exact sitting on a clipped edge is not a true closest approach.
+    """
+    r0, r1 = _scan_range(t, last)
+
+    def put(when: str, text: str) -> None:
+        if when <= last:
+            _attach(rows, when, text, t)
+
+    for w in windows:
+        name = f"{w['planet']} {w['aspect_name']} natal {w['natal']}"
+        if not w["starts_before_range"]:
+            put(w["entry_date"], f"{name} enters orb")
+        at_start = w["starts_before_range"] and w["exact_date"] == r0 and w["exact_time"] == "00:00"
+        at_end = w["ends_after_range"] and w["exact_date"] == r1 and w["exact_time"] == "23:59"
+        if not (at_start or at_end):
+            put(w["exact_date"], f"{name} exact")
+        if not w["ends_after_range"]:
+            put(w["exit_date"], f"{name} leaves orb")
+    for when, text in dasha:
+        put(when, text)
+
+
 def _dasha_starts(profile, t: str, end: str) -> list[tuple[str, str]]:
     out = []
     for maha in CV.dasha_tree(profile, t)["periods"]:
@@ -295,6 +333,11 @@ def _dasha_starts(profile, t: str, end: str) -> list[tuple[str, str]]:
     return out
 
 
+def _moon_sign(day: str) -> int:
+    moon = next(p["longitude"] for p in C.sky_at(day) if p["name"] == "Moon")
+    return int(moon % 360 // 30)
+
+
 def _timeline_body(profile, ohlc, vix, t: str) -> dict[str, Any]:
     days = ohlc["date"].tolist()
     inputs = D.inputs_before(days, ohlc["close"].to_numpy(float), vix, t)
@@ -305,6 +348,8 @@ def _timeline_body(profile, ohlc, vix, t: str) -> dict[str, Any]:
         score = int(series.score[all_days.index(d)])
         band = S.band_of(score)
         covered = MH.is_covered(dt.date.fromisoformat(d))
+        # Stance shows on uncovered rows because the timeline is provisional and each row is
+        # labelled; the Today card withholds the stance instead.
         st = D.stance(band, inputs["trend"], inputs["vix"])
         rows.append({"date": d, "score": score, "band": band, "stance": st["stance"],
                      "multiplier": st["multiplier"],
@@ -313,19 +358,13 @@ def _timeline_body(profile, ohlc, vix, t: str) -> dict[str, Any]:
                      "coverage_note": None if covered else "holiday calendar not covered: assumed a session",
                      "events": []})
     natal = natal_points(profile)
-    for w in scan(natal, sessions[0], sessions[-1]):
-        name = f"{w['planet']} {w['aspect_name']} natal {w['natal']}"
-        _attach(rows, w["entry_date"], f"{name} enters orb", t)
-        _attach(rows, w["exact_date"], f"{name} exact", t)
-        _attach(rows, w["exit_date"], f"{name} leaves orb", t)
-    for when, text in _dasha_starts(profile, t, sessions[-1]):
-        _attach(rows, when, text, t)
+    _timeline_events(rows, scan(natal, *_scan_range(t, sessions[-1])),
+                     _dasha_starts(profile, t, sessions[-1]), t, sessions[-1])
     sav = C.chart_sav(natal)
     marks = {kind: {s for s in range(12) if sav[s] == pick(sav)} for kind, pick in _SAV_EVENT.items()}
-    previous = None
+    previous = _moon_sign(t)
     for row in rows:
-        moon = next(p["longitude"] for p in C.sky_at(row["date"]) if p["name"] == "Moon")
-        sign = int(moon % 360 // 30)
+        sign = _moon_sign(row["date"])
         for kind, signs in marks.items():
             if sign in signs and sign != previous:
                 row["events"].append(f"Moon in {CV.RASHIS[sign]} (SAV {sav[sign]}, {kind})")
