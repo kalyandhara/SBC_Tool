@@ -21,6 +21,7 @@ function navRenderToday(data) {
   navClear(out);
   out.appendChild(navHeading(`Today: ${data.day}`));
   const card = navEl("div", { class: "nav-card" });
+  if (data.label) card.appendChild(navNote(data.label));
   const s = data.stance;
   if (!data.covered || !s) {
     card.appendChild(navEl("p", { class: "nav-error", text: data.coverage_note || "No stance for this date." }));
@@ -45,13 +46,15 @@ function navRenderToday(data) {
 }
 
 function navRenderTimeline(data) {
+  if (!data || !data.disclaimer) throw new Error("The timeline is missing its disclaimer.");
   const out = navId("nav-timeline");
   navClear(out);
-  out.appendChild(navHeading("Next 10 sessions"));
+  out.appendChild(navEl("div", {}, [navHeading("Next 10 sessions"), navBadge("unvalidated")]));
   out.appendChild(navNote(`Stances are provisional: trend and VIX frozen at the ${navShown(data.frozen_asof)} close. Volatility is neutral on future days.`));
   out.appendChild(navTable("", ["Date", "Score", "Band", "Stance (provisional)", "Events"],
     (data.rows || []).map((r) => [r.covered ? r.date : `${r.date} (${r.coverage_note})`, r.score, r.band,
       `${r.stance} ${r.multiplier}×`, (r.events || []).join("; ") || "none"])));
+  out.appendChild(navEl("p", { class: "nav-disclaimer", text: data.disclaimer }));
 }
 
 function navRuleRows(results) {

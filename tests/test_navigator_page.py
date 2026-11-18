@@ -422,3 +422,21 @@ def test_latest_rule_run_loads_in_parallel_with_the_today_card():
     body = _fn_body(DECISION_JS.read_text(encoding="utf-8"), "navLoadDecision")
     assert "navLoadLatestRule" in body
     assert body.index("navLoadLatestRule") < body.index("/api/navigator/decision")
+
+
+def test_timeline_refuses_to_render_without_disclaimer():
+    body = _fn_body(DECISION_JS.read_text(encoding="utf-8"), "navRenderTimeline")
+    guard = body[:300]
+    assert "throw" in guard and "disclaimer" in guard
+
+
+def test_timeline_shows_disclaimer_and_unvalidated_badge():
+    body = _fn_body(DECISION_JS.read_text(encoding="utf-8"), "navRenderTimeline")
+    assert 'navBadge("unvalidated")' in body
+    assert 'class: "nav-disclaimer", text: data.disclaimer' in body
+
+
+def test_today_card_shows_the_sample_label():
+    body = _fn_body(DECISION_JS.read_text(encoding="utf-8"), "navRenderToday")
+    assert "data.label" in body
+    assert body.index("data.label") < body.index("data.stance") or body.index("data.label") < body.index("const s = ")

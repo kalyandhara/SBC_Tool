@@ -238,6 +238,9 @@ def _rule_evidence(profile_id: int, side: str | None) -> dict[str, Any]:
     sides = sides if isinstance(sides, dict) else {}
     verdicts = {s: (v.get("verdict", "unvalidated") if isinstance(v, dict) else "unvalidated")
                 for s, v in sides.items()}
+    if not verdicts and not side:
+        return {"run_id": run["id"], "verdicts": {},
+                "text": f"{head}: unvalidated: run {run['id']} has no per-side results"}
     shown = [side] if side else list(verdicts)
     parts = "; ".join(f"{s} side: {verdicts.get(s, 'unvalidated')}" for s in shown)
     text = f"{head}, {parts} (run {run['id']}, data through {run.get('data_asof')})"
@@ -297,9 +300,11 @@ def _timeline_events(rows: list[dict], windows: list[dict], dasha: list[tuple[st
                      t: str, last: str) -> None:
     """Attach transit and dasha events to `rows` for dates in (t, last].
 
-    A window clipped by the scan range reports the range edge as its entry (00:00) or exit
-    (23:59), so a clipped start never yields "enters orb", a clipped end never yields
-    "leaves orb", and an exact sitting on a clipped edge is not a true closest approach.
+    A window clipped by the scan range reports the range edge as its entry ("<start date> 00:00")
+    or exit ("<end date> 23:59"), so a clipped start never yields "enters orb", a clipped end
+    never yields "leaves orb", and an exact sitting on a clipped edge is not a true closest
+    approach. The at_start/at_end edge checks are a belt-and-braces guard: with the
+    +/-45-day margin, events at the range edges fall outside (T, last] and are dropped anyway.
     """
     r0, r1 = _scan_range(t, last)
 

@@ -440,3 +440,12 @@ def test_timeline_moon_event_seeded_from_sign_at_t(client, market, monkeypatch):
     monkeypatch.setattr(views.C, "sky_at", lambda d: [{"name": "Moon", "longitude": top * 30 + 5.0}])
     body = client.get("/api/navigator/timeline?profile_id=1&day=2026-11-18").get_json()
     assert not any(e.startswith("Moon in") for r in body["rows"] for e in r["events"])
+
+
+def test_rule_evidence_empty_sides_and_no_side_reads_cleanly(monkeypatch):
+    run = _rule_run(_current_engine(), views.RULE_VERSION)
+    run["results"]["sides"] = {}
+    monkeypatch.setattr(store, "latest_run", lambda pid, kind="score": run)
+    text = views._rule_evidence(1, None)["text"]
+    assert text.startswith(f"Rule {views.D.RULE_VERSION}: unvalidated: run 7 has no per-side results")
+    assert ",  (" not in text
