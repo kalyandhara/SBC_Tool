@@ -158,6 +158,18 @@ def _version() -> str:
     return module_version("sbc.navigator.backtest")
 
 
+@lru_cache(maxsize=1)
+def _rule_version() -> str:
+    # Closure of rule_backtest.py: rule runs are stale when that code changes.
+    return module_version("sbc.navigator.rule_backtest")
+
+
+def _only_args(allowed: set[str]) -> None:
+    for key in request.args:
+        if key not in allowed or len(request.args.getlist(key)) != 1:
+            raise _BadRequest("unexpected or repeated parameter")
+
+
 def _arg_id() -> int:
     raw = request.args.get("profile_id", "")
     if not _ID_RE.fullmatch(raw) or int(raw) == 0:
@@ -206,7 +218,9 @@ def _market() -> tuple[pd.DataFrame, dict[str, Any]]:
 def _parse_day() -> str:
     raw = request.args.get("day")
     if raw is None:
-        return dt.datetime.now(ZoneInfo("Asia/Kolkata")).date().isoformat()
+        from sbc.api.blueprints import navigator_views as V   # local: navigator_views imports this module
+        from sbc.navigator.decision import session_for
+        return session_for(V._now_ist()).isoformat()
     day = None
     if _DAY_RE.fullmatch(raw):
         try:
@@ -222,12 +236,10 @@ def _compute(profile: Profile, ohlc: pd.DataFrame, vix: dict[str, Any], day: str
     days = ohlc["date"].tolist()
     opens, closes = ohlc["open"].to_numpy(float), ohlc["close"].to_numpy(float)
     if future:
-        # Appended next to the last session, so T-1 would read as data_asof however
-        # far ahead the day is. Dropping that close leaves Vol neutral and flagged.
-        vix = {d: c for d, c in vix.items() if d != days[-1]}
-        days = days + [day]
-        opens, closes = np.append(opens, np.nan), np.append(closes, np.nan)
-    series = S.score_series(build_sky(days), profile, opens, closes, vix)
+        from sbc.api.blueprints.navigator_views import _session_series  # local, as above
+        series, days = _session_series(profile, ohlc, vix, day)
+    else:
+        series = S.score_series(build_sky(days), profile, opens, closes, vix)
     i = days.index(day)
     score = int(series.score[i])
     band = S.band_of(score)
@@ -295,6 +307,7 @@ def profile_create() -> Any:
 
 @navigator_bp.route("/chart", methods=["GET"])
 def chart() -> Any:
+    _only_args({"profile_id"})
     profile_id = _arg_id()
     profile = _require_profile(profile_id)
     view = CV.chart_view(profile)

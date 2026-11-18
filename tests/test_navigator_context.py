@@ -52,3 +52,12 @@ def test_time_windows_blocks_and_ties():
     assert [w["start"] for w in out["best"]] == ["09:45", "10:15"]
     assert out["worst"][0]["start"] == "15:15" and out["worst"][0]["end"] == "15:30"
     assert out["notice"] == "No validated edge." and out["available"] is True
+
+
+def test_sav_item_down_branch():
+    assert C.sav_item([20] * 12, 15.0)["direction"] == "down"
+
+
+def test_time_windows_without_session_buckets_is_unavailable():
+    out = C.time_windows({"buckets": [{"time": "07:00", "score": 1.0}]})
+    assert out["available"] is False and out["best"] == []

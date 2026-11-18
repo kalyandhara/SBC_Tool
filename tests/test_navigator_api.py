@@ -111,7 +111,7 @@ def test_remote_read_refused(client):
     ("get", "/api/navigator/chart?profile_id=1"), ("get", "/api/navigator/score?profile_id=1"),
     ("post", "/api/navigator/backtest"), ("get", "/api/navigator/backtest/1"),
     ("get", "/api/navigator/backtest/latest?profile_id=1"), ("get", "/api/navigator/analogs?profile_id=1"),
-    ("get", "/api/navigator/dasha?profile_id=1"),
+    ("get", "/api/navigator/dasha?profile_id=1"), ("get", "/api/navigator/decision?profile_id=1"),
     ("post", "/api/navigator/rule-backtest"), ("get", "/api/navigator/rule-backtest/1"),
     ("get", "/api/navigator/rule-backtest/latest?profile_id=1")])
 def test_guard_covers_every_route_before_postgres(client, monkeypatch, method, path):
@@ -483,7 +483,9 @@ def test_next_session_after_data_is_also_future(client, db, market):
     pid = store.ensure_sample()
     day = str(np.busday_offset(market[-1]["date"], 1))[:10]
     body = client.get(f"/api/navigator/score?profile_id={pid}&day={day}").get_json()
-    assert body["future"] is True and body["vol_neutral"] is True
+    # T-1 is the last data row, so its VIX close is a real input (Task 8 step 3b); a day
+    # further ahead stays neutral (test_future_day_not_stored_and_vol_neutral_flagged).
+    assert body["future"] is True and body["vol_neutral"] is False
     assert _rows("select 1 from daily_score") == []
 
 

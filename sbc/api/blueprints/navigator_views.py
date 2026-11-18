@@ -6,19 +6,32 @@ from __future__ import annotations
 import datetime as dt
 import logging
 import threading
+import time
+from collections import OrderedDict
+from collections.abc import Callable
+from functools import lru_cache
 from typing import Any
 from zoneinfo import ZoneInfo
 
+import numpy as np
 from flask import jsonify, request
 
-from sbc.api.blueprints.navigator_bp import (INSTRUMENT, _MAX_ID, _BadRequest, _NotFound, _arg_id,
-                                             _json_body, _market, _record_failure, _require_profile,
-                                             _run_body, _version, navigator_bp)
+from sbc import market_holidays as MH
+from sbc.api.blueprints.navigator_bp import (DISCLAIMER, INSTRUMENT, STATUS, _MAX_ID, _BadRequest,
+                                             _NotFound, _arg_id, _json_body, _market, _only_args,
+                                             _parse_day, _record_failure, _require_profile,
+                                             _result_label, _rule_version, _run_body, _version,
+                                             navigator_bp)
+from sbc.intraday_forecast import build_forecast
 from sbc.navigator import chart_view as CV
+from sbc.navigator import context as C
+from sbc.navigator import decision as D
 from sbc.navigator import rule_backtest as R
+from sbc.navigator import scoring as S
 from sbc.navigator import store
 from sbc.navigator.decision import RULE_VERSION
-from sbc.navigator.profile import chart_hash
+from sbc.navigator.ephemeris import build_sky
+from sbc.navigator.profile import chart_hash, natal_points
 from sbc.navigator.weights import WEIGHTS_VERSION
 
 log = logging.getLogger(__name__)
@@ -27,12 +40,6 @@ IST = ZoneInfo("Asia/Kolkata")
 
 def _now_ist() -> dt.datetime:
     return dt.datetime.now(IST).replace(tzinfo=None)
-
-
-def _only_args(allowed: set[str]) -> None:
-    for key in request.args:
-        if key not in allowed or len(request.args.getlist(key)) != 1:
-            raise _BadRequest("unexpected or repeated parameter")
 
 
 @navigator_bp.route("/dasha", methods=["GET"])
@@ -76,7 +83,7 @@ def rule_backtest_start() -> Any:
     store.expire_stale()
     run_id, is_new = store.start_run(profile_id, {
         "instrument": INSTRUMENT, "weights_version": WEIGHTS_VERSION,
-        "data_asof": ohlc["date"].iloc[-1], "engine_version": f"{_version()}+{RULE_VERSION}",
+        "data_asof": ohlc["date"].iloc[-1], "engine_version": f"{_rule_version()}+{RULE_VERSION}",
         "chart_hash": chart_hash(profile), "params": R.DEFAULT_PARAMS}, kind="rule")
     if is_new:
         try:
@@ -111,3 +118,131 @@ def rule_backtest_latest() -> Any:
     if run is None:
         return jsonify({"run": None})
     return _run_body(run)
+
+
+
+_CACHE: OrderedDict = OrderedDict()
+_CACHE_LOCK = threading.Lock()
+_CACHE_MAX, _CACHE_TTL = 32, 900.0
+_SIDE = {D.LONG: "long", D.SHORT: "short"}
+_NO_WINDOWS = "windows unavailable"
+
+
+def _cached(key: tuple, build: Callable[[], dict]) -> dict:
+    """In-process only: future scores never reach the database (Phase 1 rule)."""
+    now = time.monotonic()
+    with _CACHE_LOCK:
+        hit = _CACHE.get(key)
+        if hit and now - hit[0] < _CACHE_TTL:
+            _CACHE.move_to_end(key)
+            return hit[1]
+    value = build()
+    with _CACHE_LOCK:
+        _CACHE[key] = (now, value)
+        _CACHE.move_to_end(key)
+        while len(_CACHE) > _CACHE_MAX:
+            _CACHE.popitem(last=False)
+    return value
+
+
+@lru_cache(maxsize=16)
+def _forecast_ok(day: str) -> dict:
+    return C.time_windows(build_forecast(dt.date.fromisoformat(day)))
+
+
+def _windows(day: str) -> dict:
+    try:
+        out = _forecast_ok(day)          # failures raise, so they are never cached
+    except Exception as exc:
+        log.warning("navigator intraday windows unavailable: %s", type(exc).__name__)
+        return {"available": False, "text": _NO_WINDOWS}
+    if not out.get("available") and not out.get("text"):
+        return {**out, "text": _NO_WINDOWS}
+    return out
+
+
+def _session_arg() -> str:
+    if "day" not in request.args:
+        return D.session_for(_now_ist()).isoformat()
+    day = _parse_day()
+    if not MH.is_trading_day(dt.date.fromisoformat(day)):
+        raise _BadRequest("day is not a trading session")
+    return day
+
+
+def _session_series(profile, ohlc, vix, t: str, extra_days: tuple[str, ...] = ()):
+    """Rows strictly before t, then t and any later days as unknown sessions. When
+    T-1 is the last row, its VIX close is a real input; otherwise Vol is neutral,
+    as for any future day (scoring.vol_term reads the previous day's close)."""
+    days_all = ohlc["date"].tolist()
+    k = int(np.searchsorted(np.array(days_all), t, side="left"))
+    days = days_all[:k]
+    fresh = bool(days) and days[-1] == D.previous_trading_day(t)
+    vix_in = {d: c for d, c in vix.items() if d < t and (fresh or not days or d != days[-1])}
+    tail = [t, *extra_days]
+    opens = np.append(ohlc["open"].to_numpy(float)[:k], np.full(len(tail), np.nan))
+    closes = np.append(ohlc["close"].to_numpy(float)[:k], np.full(len(tail), np.nan))
+    all_days = days + tail
+    return S.score_series(build_sky(all_days), profile, opens, closes, vix_in), all_days
+
+
+def _decision_body(profile, ohlc, vix, t: str) -> dict[str, Any]:
+    days = ohlc["date"].tolist()
+    closes = ohlc["close"].to_numpy(float)
+    inputs = D.inputs_before(days, closes, vix, t)
+    series, all_days = _session_series(profile, ohlc, vix, t)
+    score = int(series.score[all_days.index(t)])
+    band = S.band_of(score)
+    covered = MH.is_covered(dt.date.fromisoformat(t))
+    stance = D.stance(band, inputs["trend"], inputs["vix"]) if covered else None
+    natal = natal_points(profile)
+    running = CV.dasha_tree(profile, t)["running"]
+    asof = [d for d in days if d < t]
+    return {"day": t, "label": _result_label(profile), "is_sample": profile.is_sample,
+            "covered": covered,
+            "coverage_note": None if covered else f"holiday calendar not covered for {t}",
+            "t_minus_1": inputs["t_minus_1"], "data_asof": asof[-1] if asof else None,
+            "stale": inputs["stale"], "provisional": inputs["stale"],
+            "score": score, "band": band, "stance": stance,
+            "side": _SIDE.get(stance["stance"]) if stance else None,
+            "windows": _windows(t),
+            "confluence": C.rule_items(band, inputs["trend"], inputs["vix"])
+                          + C.context_items(natal, t, running),
+            "status": STATUS, "disclaimer": DISCLAIMER, "short_cost_note": D.SHORT_COST_NOTE}
+
+
+def _rule_evidence(profile_id: int, side: str | None) -> dict[str, Any]:
+    """Shown on the card. A store failure degrades to "evidence unavailable"."""
+    head = f"Rule {D.RULE_VERSION}"
+    try:
+        run = store.latest_run(profile_id, kind="rule")
+    except Exception as exc:  # type only: a message can quote row values
+        log.warning("navigator rule evidence unavailable: %s", type(exc).__name__)
+        return {"run_id": None, "verdicts": {}, "text": f"{head}: evidence unavailable"}
+    if run is None:
+        return {"run_id": None, "verdicts": {}, "text": f"{head}: unvalidated: no rule backtest run yet"}
+    results = run.get("results") if run.get("status") == "done" else None
+    if not isinstance(results, dict):
+        return {"run_id": run["id"], "verdicts": {},
+                "text": f"{head}: unvalidated: run {run['id']} {run.get('status')}"}
+    verdicts = {s: v["verdict"] for s, v in results.get("sides", {}).items()}
+    shown = [side] if side else list(verdicts)
+    parts = "; ".join(f"{s} side: {verdicts.get(s, 'unvalidated')}" for s in shown)
+    text = f"{head}, {parts} (run {run['id']}, data through {run.get('data_asof')})"
+    if (run.get("engine_version") != f"{_rule_version()}+{RULE_VERSION}"
+            or results.get("rule_version") != D.RULE_VERSION):
+        text += ". This run is stale: the rule or its backtest code has changed since"
+    return {"run_id": run["id"], "verdicts": verdicts, "text": text}
+
+
+@navigator_bp.route("/decision", methods=["GET"])
+def decision() -> Any:
+    _only_args({"profile_id", "day"})
+    profile_id = _arg_id()
+    profile = _require_profile(profile_id)
+    t = _session_arg()
+    ohlc, vix = _market()
+    key = ("decision", profile_id, chart_hash(profile), t, ohlc["date"].iloc[-1],
+           WEIGHTS_VERSION, D.RULE_VERSION, _version())
+    body = _cached(key, lambda: _decision_body(profile, ohlc, vix, t))
+    return jsonify({**body, "profile_id": profile_id, "evidence": _rule_evidence(profile_id, body["side"])})

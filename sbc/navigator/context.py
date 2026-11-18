@@ -101,5 +101,5 @@ def time_windows(forecast: Mapping[str, Any]) -> dict[str, Any]:
              "score": round(sum(v) / len(v), 3)} for k, v in sorted(blocks.items())]
     best = sorted(rows, key=lambda r: (-r["score"], r["start"]))[:2]
     worst = sorted(rows, key=lambda r: (r["score"], r["start"]))[:1]
-    return {"available": True, "best": best, "worst": worst,
+    return {"available": bool(rows), "best": best, "worst": worst,
             "status": forecast.get("status", "experimental"), "notice": forecast.get("experimental_notice", "")}
