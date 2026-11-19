@@ -3773,7 +3773,7 @@ button.og-card:hover, button.og-card:focus-visible { border-color: var(--og-acce
 #nav-profile-form .form-actions { justify-content: flex-start; }
 .nav-diamond-wrap { max-width: 420px; width: 100%; margin: 8px 0; }
 .nav-diamond { width: 100%; height: auto; display: block; }
-.nav-d-line { fill: none; stroke: var(--line); stroke-width: 1.5; }
+.nav-d-line { fill: none; stroke: var(--muted); stroke-opacity: .75; stroke-width: 1.5; }
 .nav-d-sign { fill: var(--muted); font-size: 11px; text-anchor: middle; }
 .nav-d-graha { fill: var(--text); font-size: 12px; text-anchor: middle; }
 .nav-d-lagna { fill: var(--accent); font-size: 12px; text-anchor: middle; font-weight: 600; }
