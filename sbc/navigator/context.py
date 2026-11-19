@@ -55,7 +55,7 @@ def sav_item(sav_list: list[int], moon: float) -> dict[str, Any]:
 
 def sky_at(day: str) -> list[dict]:
     planets, _ = positions(_julday(_utc_from_local(day, "09:15", "Asia/Kolkata")))
-    return planets
+    return list(planets)
 
 
 def rule_items(band: str, trend: str, vix: str) -> list[dict[str, Any]]:
@@ -96,10 +96,10 @@ def time_windows(forecast: Mapping[str, Any]) -> dict[str, Any]:
         m = _minutes(b["time"])
         if SESSION_START <= m < SESSION_END:
             blocks.setdefault((m - SESSION_START) // 30, []).append(float(b["score"]))
-    rows = [{"start": _clock(SESSION_START + 30 * k),
+    rows: list[dict[str, Any]] = [{"start": _clock(SESSION_START + 30 * k),
              "end": _clock(min(SESSION_START + 30 * (k + 1), SESSION_END)),
              "score": round(sum(v) / len(v), 3)} for k, v in sorted(blocks.items())]
-    best = sorted(rows, key=lambda r: (-r["score"], r["start"]))[:2]
+    best = sorted(rows, key=lambda r: (-float(r["score"]), str(r["start"])))[:2]
     worst = sorted(rows, key=lambda r: (r["score"], r["start"]))[:1]
     return {"available": bool(rows), "best": best, "worst": worst,
             "status": forecast.get("status", "experimental"), "notice": forecast.get("experimental_notice", "")}

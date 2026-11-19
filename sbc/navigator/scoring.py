@@ -181,7 +181,7 @@ def _vol_with_lead_in(days, vix):
     return vol, len(lead)
 
 
-def vol_percentiles_with_lead_in(days, vix) -> np.ndarray:
+def vol_percentiles_with_lead_in(days: list[str], vix: Mapping[str, float]) -> np.ndarray:
     """The Vol term's percentile for each of `days` (NaN where unknown), lead stripped."""
     lead = _vix_lead(days, vix)
     return T.vol_percentiles(lead + list(days), vix, window=VOL_WINDOW, min_history=VOL_WINDOW)[len(lead):]

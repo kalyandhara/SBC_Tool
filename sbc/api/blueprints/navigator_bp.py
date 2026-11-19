@@ -216,7 +216,9 @@ def _market() -> tuple[pd.DataFrame, dict[str, Any]]:
 def _parse_day() -> str:
     raw = request.args.get("day")
     if raw is None:
-        from sbc.api.blueprints import navigator_views as V   # local: navigator_views imports this module
+        from sbc.api.blueprints import (
+            navigator_views as V,  # local: navigator_views imports this module
+        )
         from sbc.navigator.decision import session_for
         return session_for(V._now_ist()).isoformat()
     day = None

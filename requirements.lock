@@ -43,7 +43,7 @@ python-docx==1.2.0        # via -r requirements.txt
 pytz==2026.5              # via yfinance
 requests==2.34.2          # via yfinance, -r requirements.txt
 six==1.17.0               # via python-dateutil
-soupsieve==2.10           # via beautifulsoup4
+soupsieve==4.1.2          # via beautifulsoup4
 timezonefinder==8.3.0     # via -r requirements.txt
 timezonefinder-data==1.2026.3  # via timezonefinder
 typing-extensions==4.16.0  # via beautifulsoup4, psycopg, python-docx

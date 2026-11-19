@@ -64,13 +64,15 @@ def _excess_series(gate_arr, trend, vixfac, r, cost_bps, sized=False):
     return _pnl(rule_mult, trend, r, cost_bps) - _pnl(ctrl_mult, trend, r, cost_bps)
 
 
-def side_excess(gate_arr, trend, vixfac, r, cost_bps, side_mask, sized=False) -> float:
+def side_excess(gate_arr: np.ndarray, trend: np.ndarray, vixfac: np.ndarray, r: np.ndarray,
+                cost_bps: float, side_mask: np.ndarray, sized: bool = False) -> float:
     x = _excess_series(gate_arr, trend, vixfac, r, cost_bps, sized)[side_mask]
     x = x[np.isfinite(x)]
     return float(x.mean()) if x.size else float("nan")
 
 
-def side_stats(gate_arr, trend, vixfac, r, cost_bps, side_mask, n_perm, seed) -> dict[str, Any]:
+def side_stats(gate_arr: np.ndarray, trend: np.ndarray, vixfac: np.ndarray, r: np.ndarray,
+               cost_bps: float, side_mask: np.ndarray, n_perm: int, seed: int) -> dict[str, Any]:
     observed = side_excess(gate_arr, trend, vixfac, r, cost_bps, side_mask)
     if not np.isfinite(observed):
         p = float("nan")
@@ -127,7 +129,7 @@ def run_inputs(inputs: B.Inputs, params: Mapping | None = None,
     trend, vixfac = trend_all[start:], vixfac_all[start:]
     years = np.array([d[:4] for d in days[start:]])
 
-    def excesses(series) -> np.ndarray:
+    def excesses(series: S.ScoreSeries) -> np.ndarray:
         g = gate(series.score[start:])
         return np.array([[side_excess(g, trend, vixfac, r, cost, (trend > 0) if side == "long" else (trend < 0))
                           for r in outcomes] for side in SIDES])
@@ -146,7 +148,8 @@ def run_inputs(inputs: B.Inputs, params: Mapping | None = None,
     folds, fold_pos, active = _folds(years, g, trend, vixfac, outcomes, cost)
 
     charts = B.draw_placebos(p["n_placebo"], p["seed"])
-    target, placebo, began = len(charts), [], B._clock()
+    placebo: list[np.ndarray] = []
+    target, began = len(charts), B._clock()
     while len(placebo) < target:
         placebo.append(excesses(B.score_for(inputs._replace(profile=charts[len(placebo)]), p["min_sessions"])))
         rate = (B._clock() - began) / len(placebo)

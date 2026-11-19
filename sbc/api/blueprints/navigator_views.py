@@ -14,14 +14,30 @@ from typing import Any
 from zoneinfo import ZoneInfo
 
 import numpy as np
+import pandas as pd
 from flask import jsonify, request
 
 from sbc import market_holidays as MH
-from sbc.api.blueprints.navigator_bp import (DISCLAIMER, INSTRUMENT, STATUS, _MAX_ID, _BadRequest,
-                                             _NotFound, _arg_id, _json_body, _market, _only_args,
-                                             _parse_day, _record_failure, _require_profile,
-                                             _result_label, _rule_version, _run_body, _version,
-                                             navigator_bp)
+from sbc.api.blueprints.navigator_bp import (
+    _MAX_ID,
+    DISCLAIMER,
+    INSTRUMENT,
+    STATUS,
+    _arg_id,
+    _BadRequest,
+    _json_body,
+    _market,
+    _NotFound,
+    _only_args,
+    _parse_day,
+    _record_failure,
+    _require_profile,
+    _result_label,
+    _rule_version,
+    _run_body,
+    _version,
+    navigator_bp,
+)
 from sbc.intraday_forecast import build_forecast
 from sbc.navigator import chart_view as CV
 from sbc.navigator import context as C
@@ -31,7 +47,7 @@ from sbc.navigator import scoring as S
 from sbc.navigator import store
 from sbc.navigator.decision import RULE_VERSION
 from sbc.navigator.ephemeris import build_sky
-from sbc.navigator.profile import chart_hash, natal_points
+from sbc.navigator.profile import Profile, chart_hash, natal_points
 from sbc.navigator.weights import WEIGHTS_VERSION
 from sbc.transit_natal import scan
 
@@ -56,7 +72,7 @@ class _Expired(Exception):
     """The run was marked failed while this thread still held it."""
 
 
-def _rule_job(run_id: int, profile, ohlc, vix) -> None:
+def _rule_job(run_id: int, profile: Profile, ohlc: pd.DataFrame, vix: dict[str, Any]) -> None:
     def progress(_done, _total):
         if not store.heartbeat(run_id):
             raise _Expired
@@ -121,7 +137,7 @@ def rule_backtest_latest() -> Any:
     return _run_body(run)
 
 
-_CACHE: OrderedDict = OrderedDict()
+_CACHE: OrderedDict[tuple, tuple[float, dict[str, Any]]] = OrderedDict()
 _CACHE_LOCK = threading.Lock()
 _CACHE_MAX, _CACHE_TTL = 32, 900.0
 _SIDE = {D.LONG: "long", D.SHORT: "short"}
@@ -161,7 +177,8 @@ def _windows(day: str) -> dict:
     return out
 
 
-def _view_key(kind: str, profile_id: int, profile, t: str, ohlc, vix) -> tuple:
+def _view_key(kind: str, profile_id: int, profile: Profile, t: str, ohlc: pd.DataFrame,
+              vix: dict[str, Any]) -> tuple:
     """Cache key for a per-day view. VIX can land after NIFTY (as in /score's key) and
     chart_hash drops the label, so both date and label are part of it."""
     return (kind, profile_id, chart_hash(profile), profile.label, t, ohlc["date"].iloc[-1],
@@ -177,7 +194,8 @@ def _session_arg() -> str:
     return day
 
 
-def _session_series(profile, ohlc, vix, t: str, extra_days: tuple[str, ...] = ()):
+def _session_series(profile: Profile, ohlc: pd.DataFrame, vix: dict[str, Any], t: str,
+                    extra_days: tuple[str, ...] = ()) -> tuple[S.ScoreSeries, list[str]]:
     """Rows strictly before t, then t and any later days as unknown sessions. When
     T-1 is the last row, its VIX close is a real input; otherwise Vol is neutral,
     as for any future day (scoring.vol_term reads the previous day's close).
@@ -196,7 +214,7 @@ def _session_series(profile, ohlc, vix, t: str, extra_days: tuple[str, ...] = ()
     return S.score_series(build_sky(all_days), profile, opens, closes, vix_in), all_days
 
 
-def _decision_body(profile, ohlc, vix, t: str) -> dict[str, Any]:
+def _decision_body(profile: Profile, ohlc: pd.DataFrame, vix: dict[str, Any], t: str) -> dict[str, Any]:
     days = ohlc["date"].tolist()
     closes = ohlc["close"].to_numpy(float)
     inputs = D.inputs_before(days, closes, vix, t)
@@ -268,7 +286,8 @@ _SAV_EVENT = {"highest": max, "lowest": min}
 
 
 def _next_sessions(t: str, n: int) -> list[str]:
-    out, d = [], dt.date.fromisoformat(t)
+    out: list[str] = []
+    d = dt.date.fromisoformat(t)
     while len(out) < n:
         d += dt.timedelta(days=1)
         if MH.is_trading_day(d):
@@ -326,7 +345,7 @@ def _timeline_events(rows: list[dict], windows: list[dict], dasha: list[tuple[st
         put(when, text)
 
 
-def _dasha_starts(profile, t: str, end: str) -> list[tuple[str, str]]:
+def _dasha_starts(profile: Profile, t: str, end: str) -> list[tuple[str, str]]:
     out = []
     for maha in CV.dasha_tree(profile, t)["periods"]:
         for antar in maha["children"]:
@@ -343,7 +362,7 @@ def _moon_sign(day: str) -> int:
     return int(moon % 360 // 30)
 
 
-def _timeline_body(profile, ohlc, vix, t: str) -> dict[str, Any]:
+def _timeline_body(profile: Profile, ohlc: pd.DataFrame, vix: dict[str, Any], t: str) -> dict[str, Any]:
     days = ohlc["date"].tolist()
     inputs = D.inputs_before(days, ohlc["close"].to_numpy(float), vix, t)
     sessions = _next_sessions(t, TIMELINE_SESSIONS)

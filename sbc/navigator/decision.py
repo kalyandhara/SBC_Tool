@@ -12,8 +12,8 @@ from typing import Any
 
 import numpy as np
 
-from sbc.navigator import scoring as S
 from sbc.market_holidays import is_trading_day, next_trading_day
+from sbc.navigator import scoring as S
 
 RULE_VERSION = "rule-1"
 SESSION_CLOSE = dt.time(15, 30)
