@@ -138,23 +138,26 @@ def save_score(key: dict, row: dict) -> None:
          _json(row["lineage"]))))
 
 
-def start_run(profile_id: int, meta: dict) -> tuple[int, bool]:
+def start_run(profile_id: int, meta: dict, kind: str = "score") -> tuple[int, bool]:
+    if kind not in ("score", "rule"):
+        raise ValueError("kind must be score or rule")
+
     def work(c):
         for _ in range(3):  # an active run can finish between the insert and the select
             got = c.execute(
-                "insert into backtest_run (profile_id,instrument,weights_version,data_asof,"
+                "insert into backtest_run (profile_id,kind,instrument,weights_version,data_asof,"
                 "engine_version,chart_hash,status,heartbeat_at,params) "
-                "values (%s,%s,%s,%s,%s,%s,'queued',now(),%s) "
-                "on conflict (profile_id) where status in ('queued','running') do nothing "
+                "values (%s,%s,%s,%s,%s,%s,%s,'queued',now(),%s) "
+                "on conflict (profile_id,kind) where status in ('queued','running') do nothing "
                 "returning id",
-                (profile_id, meta["instrument"], meta["weights_version"], meta["data_asof"],
+                (profile_id, kind, meta["instrument"], meta["weights_version"], meta["data_asof"],
                  meta["engine_version"], meta["chart_hash"], _json(meta.get("params", {})))
             ).fetchone()
             if got:
                 return got[0], True
             got = c.execute(
-                f"select id from backtest_run where profile_id=%s and status in {_ACTIVE}",
-                (profile_id,)).fetchone()
+                f"select id from backtest_run where profile_id=%s and kind=%s and status in {_ACTIVE}",
+                (profile_id, kind)).fetchone()
             if got:
                 return got[0], False
         raise psycopg.Error  # surfaces as StoreUnavailable
@@ -184,13 +187,13 @@ def fail_run(run_id: int, error: str) -> None:
         (str(error)[:500], run_id)))
 
 
-_RUN_SELECT = ("select id,profile_id,instrument,weights_version,data_asof,engine_version,chart_hash,"
+_RUN_SELECT = ("select id,profile_id,kind,instrument,weights_version,data_asof,engine_version,chart_hash,"
                "status,heartbeat_at,error,params,folds,results,created_at from backtest_run ")
 
 
-def _one_run(where: str, arg: int) -> dict | None:
+def _one_run(where: str, args: tuple) -> dict | None:
     def work(c):
-        cur = c.execute(_RUN_SELECT + where, (arg,))
+        cur = c.execute(_RUN_SELECT + where, args)
         row = cur.fetchone()
         return None if row is None else dict(zip([d.name for d in cur.description], row))
 
@@ -199,12 +202,12 @@ def _one_run(where: str, arg: int) -> dict | None:
 
 
 def get_run(run_id: int) -> dict | None:
-    return _one_run("where id=%s", run_id)
+    return _one_run("where id=%s", (run_id,))
 
 
-def latest_run(profile_id: int) -> dict | None:
-    """The profile's newest run, active or finished."""
-    return _one_run("where profile_id=%s order by id desc limit 1", profile_id)
+def latest_run(profile_id: int, kind: str = "score") -> dict | None:
+    """The profile's newest run of this kind, active or finished."""
+    return _one_run("where profile_id=%s and kind=%s order by id desc limit 1", (profile_id, kind))
 
 
 def expire_stale(seconds: int = 120) -> int:

@@ -230,7 +230,7 @@ def test_tab_bar_wraps_at_desktop_width():
 def test_score_card_shows_the_latest_verdict_beside_the_action_label(code):
     render = code[code.index("function navRenderScore"):]
     render = render[:render.index("\n}\n")]
-    action = render.index("Action label:")
+    action = render.index("Score band reading:")
     assert "latest_verdict" in render[action:action + 400]
 
 
@@ -333,3 +333,110 @@ def test_load_latest_picks_newest_explicitly(code):
     assert "created_at" in newest or ".id" in newest
     click = code[code.index('"nav-bd-load-latest"'):]
     assert "navNewestProfile(" in click[:click.index("\n  });")]
+
+
+CHART_JS = ROOT / "static" / "js" / "navigator-chart.js"
+
+
+def test_chart_view_script_and_sections(html):
+    assert "navigator-chart.js" in html and 'id="nav-dasha"' in html
+    assert html.index("navigator.js") < html.index("navigator-chart.js")
+
+
+def test_chart_view_js_rules():
+    src = CHART_JS.read_text(encoding="utf-8")
+    assert "innerHTML" not in src and "createElementNS" in src
+    for word in ("Own sign", "Exalted", "Debilitated", "Combust", "NOW", "Running now"):
+        assert word in src, word
+    assert "<details" not in src and '"details"' in src
+
+
+def test_house_one_is_top_centre():
+    src = CHART_JS.read_text(encoding="utf-8")
+    first = re.search(r"NAV_HOUSE_GEOM\s*=\s*\[\s*\{\s*x:\s*(\d+),\s*y:\s*(\d+),\s*kind:\s*\"kite\"", src)
+    assert first and first.groups() == ("200", "100")
+
+
+def test_nav_dms_clamps_to_below_thirty():
+    src = CHART_JS.read_text(encoding="utf-8")
+    body = src[src.index("function navDms"):]
+    body = body[:body.index("\n}\n")]
+    assert "Math.min" in body and "29.9999" in body
+
+
+def test_diamond_layout_keeps_text_inside_each_house():
+    import shutil
+    import subprocess
+    if shutil.which("node") is None:
+        pytest.skip("node not installed")
+    out = subprocess.run(["node", str(ROOT / "tests" / "js" / "diamond_layout_check.mjs")],
+                         capture_output=True, text=True, timeout=60)
+    assert out.returncode == 0, out.stderr + out.stdout
+
+
+DECISION_JS = ROOT / "static" / "js" / "navigator-decision.js"
+
+
+def test_decision_sections_order(html):
+    pane = html[html.index('id="tab-navigator"', html.index('class="tab-pane')):]
+    order = [pane.index(f'id="{x}"') for x in ("nav-status", "nav-today", "nav-timeline", "nav-chart")]
+    assert order == sorted(order) and 'id="nav-rule"' in pane
+    assert html.index("navigator-chart.js") < html.index("navigator-decision.js")
+
+
+def test_decision_js_rules():
+    src = DECISION_JS.read_text(encoding="utf-8")
+    assert "innerHTML" not in src
+    for word in ("in the rule", "context only", "experimental", "windows unavailable",
+                 "Run rule backtest", "provisional", "short_cost_note", "closed_events"):
+        assert word in src, word
+
+
+def test_card_refuses_to_render_without_disclaimer_or_evidence():
+    src = DECISION_JS.read_text(encoding="utf-8")
+    body = src[src.index("function navRenderToday"):]
+    guard = body[:300]
+    assert "throw" in guard and "disclaimer" in guard and "evidence" in guard
+
+
+def test_score_label_renamed(code):
+    assert "Score band reading:" in code and "Action label: ${" not in code
+    assert "The decision card combines this with market trend." in code
+
+
+def _fn_body(src, name):
+    body = src[src.index(f"function {name}"):]
+    return body[:body.index("\n}\n")]
+
+
+def test_stale_rule_post_is_guarded_after_the_await():
+    body = _fn_body(DECISION_JS.read_text(encoding="utf-8"), "navStartRule")
+    after_await = body[body.index("await navFetch"):body.index("catch")]
+    assert "seq !== NAV_RULE.seq" in after_await
+    assert after_await.index("seq !== NAV_RULE.seq") < after_await.index("NAV_RULE.runId =")
+    in_catch = body[body.index("catch"):]
+    assert in_catch.index("seq !== NAV_RULE.seq") < in_catch.index("navRuleIdle()")
+
+
+def test_latest_rule_run_loads_in_parallel_with_the_today_card():
+    body = _fn_body(DECISION_JS.read_text(encoding="utf-8"), "navLoadDecision")
+    assert "navLoadLatestRule" in body
+    assert body.index("navLoadLatestRule") < body.index("/api/navigator/decision")
+
+
+def test_timeline_refuses_to_render_without_disclaimer():
+    body = _fn_body(DECISION_JS.read_text(encoding="utf-8"), "navRenderTimeline")
+    guard = body[:300]
+    assert "throw" in guard and "disclaimer" in guard
+
+
+def test_timeline_shows_disclaimer_and_unvalidated_badge():
+    body = _fn_body(DECISION_JS.read_text(encoding="utf-8"), "navRenderTimeline")
+    assert 'navBadge("unvalidated")' in body
+    assert 'class: "nav-disclaimer", text: data.disclaimer' in body
+
+
+def test_today_card_shows_the_sample_label():
+    body = _fn_body(DECISION_JS.read_text(encoding="utf-8"), "navRenderToday")
+    assert "data.label" in body
+    assert body.index("data.label") < body.index("data.stance") or body.index("data.label") < body.index("const s = ")

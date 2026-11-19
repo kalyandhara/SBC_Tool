@@ -171,10 +171,20 @@ class ScoreSeries:
     factors: Callable[[int], list[dict]]
 
 
+def _vix_lead(days, vix):
+    return sorted(d for d in vix if d < days[0])[-VOL_LEAD_IN:]
+
+
 def _vol_with_lead_in(days, vix):
-    lead = sorted(d for d in vix if d < days[0])[-VOL_LEAD_IN:]
+    lead = _vix_lead(days, vix)
     vol = T.vol_term(lead + list(days), vix, window=VOL_WINDOW, min_history=VOL_WINDOW)
     return vol, len(lead)
+
+
+def vol_percentiles_with_lead_in(days: list[str], vix: Mapping[str, float]) -> np.ndarray:
+    """The Vol term's percentile for each of `days` (NaN where unknown), lead stripped."""
+    lead = _vix_lead(days, vix)
+    return T.vol_percentiles(lead + list(days), vix, window=VOL_WINDOW, min_history=VOL_WINDOW)[len(lead):]
 
 
 def score_series(sky: Any, profile: Profile, opens: Any, closes: Any, vix: Mapping[str, float],

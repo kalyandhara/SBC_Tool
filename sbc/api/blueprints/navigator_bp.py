@@ -17,9 +17,7 @@ from collections import OrderedDict
 from dataclasses import asdict
 from functools import lru_cache
 from typing import Any, cast
-from zoneinfo import ZoneInfo
 
-import numpy as np
 import pandas as pd
 from flask import Blueprint, jsonify, request
 from werkzeug.exceptions import HTTPException
@@ -29,6 +27,7 @@ from sbc import nakshatra as N
 from sbc.engine_version import module_version
 from sbc.navigator import analogs as A
 from sbc.navigator import backtest as B
+from sbc.navigator import chart_view as CV
 from sbc.navigator import scoring as S
 from sbc.navigator import signature as G
 from sbc.navigator import store
@@ -53,7 +52,7 @@ _PROXY = ("X-Forwarded-For", "X-Forwarded-Proto", "X-Forwarded-Host", "X-Forward
 _LOCAL_AUTHORITY = r"(?:localhost|127\.0\.0\.1|\[::1\])(?::([0-9]{1,5}))?"
 _HOST_RE = re.compile(_LOCAL_AUTHORITY, re.ASCII)
 _ORIGIN_RE = re.compile(r"https?://" + _LOCAL_AUTHORITY, re.ASCII)
-_RUN_FIELDS = ("id", "profile_id", "instrument", "weights_version", "data_asof", "status",
+_RUN_FIELDS = ("id", "profile_id", "kind", "instrument", "weights_version", "data_asof", "status",
                "error", "params", "folds", "results", "created_at")
 _DAY_RE = re.compile(r"[0-9]{4}-[0-9]{2}-[0-9]{2}")
 _ID_RE = re.compile(r"[0-9]{1,18}")     # 18 digits always fit Postgres BIGINT
@@ -157,6 +156,18 @@ def _version() -> str:
     return module_version("sbc.navigator.backtest")
 
 
+@lru_cache(maxsize=1)
+def _rule_version() -> str:
+    # Closure of rule_backtest.py: rule runs are stale when that code changes.
+    return module_version("sbc.navigator.rule_backtest")
+
+
+def _only_args(allowed: set[str]) -> None:
+    for key in request.args:
+        if key not in allowed or len(request.args.getlist(key)) != 1:
+            raise _BadRequest("unexpected or repeated parameter")
+
+
 def _arg_id() -> int:
     raw = request.args.get("profile_id", "")
     if not _ID_RE.fullmatch(raw) or int(raw) == 0:
@@ -205,7 +216,11 @@ def _market() -> tuple[pd.DataFrame, dict[str, Any]]:
 def _parse_day() -> str:
     raw = request.args.get("day")
     if raw is None:
-        return dt.datetime.now(ZoneInfo("Asia/Kolkata")).date().isoformat()
+        from sbc.api.blueprints import (
+            navigator_views as V,  # local: navigator_views imports this module
+        )
+        from sbc.navigator.decision import session_for
+        return session_for(V._now_ist()).isoformat()
     day = None
     if _DAY_RE.fullmatch(raw):
         try:
@@ -221,12 +236,10 @@ def _compute(profile: Profile, ohlc: pd.DataFrame, vix: dict[str, Any], day: str
     days = ohlc["date"].tolist()
     opens, closes = ohlc["open"].to_numpy(float), ohlc["close"].to_numpy(float)
     if future:
-        # Appended next to the last session, so T-1 would read as data_asof however
-        # far ahead the day is. Dropping that close leaves Vol neutral and flagged.
-        vix = {d: c for d, c in vix.items() if d != days[-1]}
-        days = days + [day]
-        opens, closes = np.append(opens, np.nan), np.append(closes, np.nan)
-    series = S.score_series(build_sky(days), profile, opens, closes, vix)
+        from sbc.api.blueprints.navigator_views import _session_series  # local, as above
+        series, days = _session_series(profile, ohlc, vix, day)
+    else:
+        series = S.score_series(build_sky(days), profile, opens, closes, vix)
     i = days.index(day)
     score = int(series.score[i])
     band = S.band_of(score)
@@ -294,16 +307,27 @@ def profile_create() -> Any:
 
 @navigator_bp.route("/chart", methods=["GET"])
 def chart() -> Any:
+    _only_args({"profile_id"})
     profile_id = _arg_id()
     profile = _require_profile(profile_id)
+    view = CV.chart_view(profile)
+    extra = {x["name"]: x for x in view["points"]}
+    lagna_extra = {"sanskrit": "Lagna", "code": "La", "sign_sa": view["lagna"]["sign_sa"],
+                   "sign_number": view["lagna"]["sign_number"], "bhava": 1, "dignity": None,
+                   "combust": False, "retro": False}
     points = []
     for name, lon in natal_points(profile).items():
         lon = float(lon) % 360.0
         nakshatra, pada = N.nakshatra_of(lon)
-        points.append({"name": name, "longitude": round(lon, 4), "sign": N.RASHIS[int(lon // 30)],
-                       "degree": round(lon % 30, 4), "nakshatra": nakshatra, "pada": pada})
+        row = {"name": name, "longitude": round(lon, 4), "sign": N.RASHIS[int(lon // 30)],
+               "degree": round(lon % 30, 4), "nakshatra": nakshatra, "pada": pada}
+        more = extra.get(name, lagna_extra if name == "Lagna" else {})
+        row.update({k: more[k] for k in ("sanskrit", "code", "sign_sa", "sign_number", "bhava",
+                                         "dignity", "combust", "retro") if k in more})
+        points.append(row)
     return jsonify({"profile_id": profile_id, "label": profile.label,
-                    "is_sample": profile.is_sample, "points": points})
+                    "is_sample": profile.is_sample, "points": points,
+                    "lagna": view["lagna"], "houses": view["houses"]})
 
 
 @navigator_bp.route("/score", methods=["GET"])
@@ -402,7 +426,7 @@ def backtest_read(run_id: int) -> Any:
         raise _NotFound("Run not found")
     store.expire_stale()
     run = store.get_run(run_id)
-    if run is None:
+    if run is None or run.get("kind", "score") != "score":
         raise _NotFound("Run not found")
     return _run_body(run)
 
@@ -479,3 +503,7 @@ def analogs() -> Any:
         f"Computed in {result['_timing']:.1f} seconds" + (" (cached result)." if cached else ".")]
     return jsonify({**body, "profile_id": profile_id, "is_sample": profile.is_sample,
                     "status": STATUS, "cached": cached})
+
+
+# Routes in navigator_views register on navigator_bp; imported last so the names above exist.
+from sbc.api.blueprints import navigator_views  # noqa: E402,F401
