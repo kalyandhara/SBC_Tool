@@ -105,23 +105,24 @@ def compute_daily_trap(date_str: str, industries: list[str] | None = None) -> li
         score = 0
         reasons = []
 
-        # Node proximity
+        # Node contact: one family, scored once at its strongest condition (audit B6).
+        # "Rahu opposite" is "conjunct Ketu", and a planet within 5 deg of a node is
+        # usually in its nakshatra too, so these overlapping tests describe one contact.
         if planet_lon is not None:
             d_rahu = _angular_distance(planet_lon, rahu_lon)
             d_ketu = _angular_distance(planet_lon, ketu_lon)
-            if d_rahu <= 5 or d_ketu <= 5:
-                score += WEIGHTS["node_proximity"]
-                reasons.append(f"Rahu/Ketu within 5° of {ruling}")
-
-        # Vedha proxy: same nakshatra or 180°
-        if planet_lon is not None:
             planet_nak = _nakshatra_of_longitude(planet_lon)
+            contact = []
+            if d_rahu <= 5 or d_ketu <= 5:
+                contact.append((WEIGHTS["node_proximity"], f"Rahu/Ketu within 5° of {ruling}"))
             if planet_nak in (rahu_nak, ketu_nak):
-                score += WEIGHTS["vedha"]
-                reasons.append(f"{ruling} in Rahu/Ketu nakshatra")
-            if _angular_distance(planet_lon, rahu_lon) >= 175 and _angular_distance(planet_lon, rahu_lon) <= 185:
-                score += WEIGHTS["vedha"]
-                reasons.append(f"Rahu opposite {ruling}")
+                contact.append((WEIGHTS["vedha"], f"{ruling} in Rahu/Ketu nakshatra"))
+            if 175 <= d_rahu <= 185:
+                contact.append((WEIGHTS["vedha"], f"Rahu opposite {ruling}"))
+            if contact:
+                weight, reason = max(contact, key=lambda c: c[0])
+                score += weight
+                reasons.append(reason)
 
         # Moon conjunction
         if moon_lon is not None and planet_lon is not None and (
@@ -130,8 +131,8 @@ def compute_daily_trap(date_str: str, industries: list[str] | None = None) -> li
             score += WEIGHTS["moon_conjunction"]
             reasons.append("Moon conjunct Rahu/Ketu")
 
-        # Tithi
-        if 8 <= tithi <= 14:
+        # Tithi: Krishna 8-14 is tithi 23-29 (sbc.nakshatra.tithi_of numbers Krishna 16-30; audit B5)
+        if 23 <= tithi <= 29:
             score += WEIGHTS["tithi"]
             reasons.append("Krishna Paksha 8-14")
 

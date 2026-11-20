@@ -104,3 +104,15 @@ class TestForwardReturnValidation:
         result = forward_return_validation(scores, closes, horizon=5)
         assert result["candidates_evaluated"] == 0
         assert result["hit_rate"] is None
+
+
+class TestNodeNotDoubled:
+    """B7: Ketu is always Rahu + 180, so only Rahu carries the node weight."""
+
+    def test_conjunction_to_rahu_is_one_term(self):
+        snap = [_planet("Mars", 0.0), _planet("Rahu", 0.0), _planet("Ketu", 180.0)]
+        # Mars-Rahu conjunction, orb 0: -w_mars * w_rahu. No Mars-Ketu or Rahu-Ketu term.
+        assert bradley_score(snap) == round(-0.8 * 0.6, 4)
+
+    def test_ketu_alone_adds_nothing(self):
+        assert bradley_score([_planet("Mars", 0.0), _planet("Ketu", 0.0)]) == 0.0
