@@ -1,12 +1,14 @@
 """Historical market-event backtest and bullish futurecast for the Jupiter research heuristic."""
 
 import datetime
+import functools
 from zoneinfo import ZoneInfo
 
 import swisseph as swe
 
 from .market_calendar import jupiter_market_analysis
 from .nakshatra import gandanta_of
+from .planets import _flags as _planet_flags
 from .planets import positions
 
 HISTORICAL_CASES = [
@@ -94,10 +96,9 @@ TRIGGER_WEIGHTS = {
     "moon_sentiment_sign": 1,         # Moon in Taurus, Cancer, Pisces
     "nakshatra_bullish": 1,           # Moon in Punarvasu, Pushya, Uttara Phalguni, Revati, Vishakha
 
-    # Outer planet macro-cycle triggers (systemic — 2–4 points)
-    "saturn_pluto_conjunction": 4,    # Saturn-Pluto conjunction (systemic crisis)
-    "neptune_aquarius_ingress": 3,    # Neptune in Aquarius (bubble risk)
-    "uranus_mars_aspect": 3,          # Uranus-Mars aspect (volatility)
+    # The outer-planet triggers (Saturn-Pluto conjunction, Neptune in Aquarius,
+    # Mars-Uranus) are risk signals by their own labels, so they score on the bearish
+    # side (BEARISH_TRIGGER_WEIGHTS), with their weights unchanged (audit B4).
 }
 
 
@@ -275,40 +276,57 @@ def _detect_triggers(jupiter, saturn, sun, mercury, venus, rahu, ketu, moon, mar
     if _nakshatra_bullish(moon):
         triggers.append(("nakshatra_bullish", _trigger_weight("nakshatra_bullish")))
 
-    # --- Outer planet macro-cycle triggers ---
-    if uranus and neptune and pluto:
-        # Saturn-Pluto conjunction (systemic crisis)
-        if _saturn_pluto_conjunction(saturn, pluto):
-            triggers.append(("saturn_pluto_conjunction", _trigger_weight("saturn_pluto_conjunction")))
-
-        # Neptune in Aquarius (bubble risk)
-        if _neptune_aquarius_ingress(neptune):
-            triggers.append(("neptune_aquarius_ingress", _trigger_weight("neptune_aquarius_ingress")))
-
-        # Uranus-Mars aspect (volatility)
-        if mars and _uranus_mars_aspect(uranus, mars):
-            triggers.append(("uranus_mars_aspect", _trigger_weight("uranus_mars_aspect")))
-
+    # uranus/neptune/pluto/mars stay in the signature for callers; their triggers are bearish (B4).
     return triggers
+
+
+# Dedup families (audit B3). One rule for both scorers: a condition on one planet alone
+# (sign, nakshatra, retrograde, combustion, dignity) belongs to that planet's family, so
+# several placements of the same planet count once. A contact between two bodies has its
+# own pair family. Rahu and Ketu signs are one fact (Ketu = Rahu + 180), so they share
+# "node_sign". Saturn retrograde + Mars in Cancer rests on Mars in Cancer, so it sits with
+# Mars's dignity. The outer-planet contacts with Saturn share "saturn_outer" so two slow
+# backdrops can't stack.
+TRIGGER_FAMILY = {
+    # bullish
+    "jupiter_friendly_sign": "jupiter", "jupiter_ending_combustion": "jupiter",
+    "jupiter_growth_nakshatra": "jupiter",
+    "jupiter_saturn_trine": "jupiter_saturn", "saturn_jupiter_trine": "jupiter_saturn",
+    "saturn_stable_sign": "saturn", "saturn_taurus_exit_relief": "saturn",
+    "rahu_growth_sign": "node_sign", "rahu_jupiter_trine": "rahu_jupiter",
+    "venus_liquidity_sign": "venus", "venus_jupiter_trine": "venus_jupiter",
+    "mercury_tech_sign": "mercury", "mercury_jupiter_trine": "mercury_jupiter",
+    "moon_sentiment_sign": "moon", "nakshatra_bullish": "moon",
+    # bearish
+    "saturn_rahu_conjunction": "saturn_node", "jupiter_rahu_conjunction": "jupiter_node",
+    "saturn_uranus_square": "saturn_outer", "saturn_pluto_conjunction": "saturn_outer",
+    "mars_saturn_conjunction": "mars_saturn", "uranus_mars_aspect": "mars_outer",
+    "saturn_retro_mars_debil": "mars", "mars_debilitated": "mars",
+    "saturn_taurus_structural": "saturn", "saturn_pisces": "saturn", "saturn_aries": "saturn",
+    "ketu_financial_signs": "node_sign", "rahu_taurus_scorpio": "node_sign",
+    "venus_combust": "venus", "venus_debilitated": "venus",
+    "mercury_retro_virgo": "mercury", "mercury_retrograde": "mercury", "mercury_debilitated": "mercury",
+    "eclipse_financial_axis": "eclipse", "jupiter_capricorn": "jupiter",
+    "neptune_aquarius_ingress": "neptune",
+    "moon_gandanta": "moon", "moon_rahu_ketu_close": "moon",
+}
 
 
 def _score_normalize(triggers, max_score=16, decay_days=14):
     """
     Normalize the trigger score with:
-    - Deduplication: same trigger type counted only once per week
+    - Deduplication: one trigger per TRIGGER_FAMILY, the strongest (ties by name), so the
+      result doesn't depend on the order of `triggers`. An unmapped name raises KeyError.
     - Max score cap
-    - Decay: triggers older than decay_days contribute half weight
-    - Overlap compression: if multiple Jupiter triggers align, count once
+    - Decay: triggers older than decay_days contribute half weight (not applied here)
     """
-    # Deduplication: keep only unique trigger categories
-    seen_categories = set()
-    unique_triggers = []
+    best = {}
     for name, weight in triggers:
-        # Extract category from trigger name (before underscore)
-        category = name.split("_")[0] if "_" in name else name
-        if category not in seen_categories:
-            seen_categories.add(category)
-            unique_triggers.append((name, weight))
+        family = TRIGGER_FAMILY[name]
+        cur = best.get(family)
+        if cur is None or weight > cur[1] or (weight == cur[1] and name < cur[0]):
+            best[family] = (name, weight)
+    unique_triggers = sorted(best.values(), key=lambda t: (-t[1], t[0]))
 
     # Base score = sum of unique trigger weights
     base_score = sum(weight for _, weight in unique_triggers)
@@ -712,6 +730,11 @@ BEARISH_TRIGGER_WEIGHTS = {
     "mars_debilitated": 1,               # Mars in Cancer
     "moon_gandanta": 1,                  # Moon at Gandanta
     "moon_rahu_ketu_close": 1,           # Moon within 15° of Rahu/Ketu
+
+    # Outer-planet triggers, moved from the bullish table with their weights (audit B4)
+    "saturn_pluto_conjunction": 4,       # Saturn-Pluto conjunction (within 3°) — systemic crisis
+    "neptune_aquarius_ingress": 3,       # Neptune in Aquarius — bubble risk
+    "uranus_mars_aspect": 3,             # Mars-Uranus conjunction/opposition (within 5°) — volatility
 }
 
 
@@ -721,11 +744,19 @@ def _saturn_rahu_conjunction(saturn, rahu):
     return sep <= 8
 
 
+SATURN_URANUS_SQUARE_ORB = 3.0  # deg; the orb this trigger was documented with (weights table)
+
+
 def _saturn_uranus_square(saturn, uranus):
-    """Saturn square Uranus (90° ± 3°) — fatal"""
-    # Note: Uranus position needs to be calculated
-    # Placeholder - will return False until Uranus is added to planets
-    return False
+    """Saturn square Uranus (90° ± SATURN_URANUS_SQUARE_ORB) — fatal.
+
+    Square only (waxing or waning), not the conjunction or opposition. Uses the
+    sidereal longitudes from sbc.planets; the angle is the same in any zodiac.
+    """
+    if uranus is None:
+        return False
+    sep = abs((saturn["longitude"] - uranus["longitude"] + 180) % 360 - 180)
+    return abs(sep - 90) <= SATURN_URANUS_SQUARE_ORB
 
 
 def _jupiter_rahu_conjunction(jupiter, rahu):
@@ -761,12 +792,49 @@ def _mercury_retro_virgo(mercury):
     return mercury["retrograde"] and mercury["sign"] == "Virgo"
 
 
-def _eclipse_financial_axis(sun, moon, rahu, ketu):
-    """Solar eclipse in Taurus or Lunar eclipse in Scorpio"""
-    # Simplified: check if New/Full Moon near Rahu/Ketu in financial signs
-    # New Moon (Sun-Moon conj) near Rahu/Ketu in Taurus/Scorpio
-    # Full Moon (Sun-Moon opp) near Rahu/Ketu in Taurus/Scorpio
-    return False  # Placeholder - needs proper eclipse detection
+ECLIPSE_WINDOW_DAYS = 7  # same +-7 day window as rule_signals.eclipse_window
+_TAURUS, _SCORPIO = 1, 7  # sidereal sign indices
+
+
+@functools.lru_cache(maxsize=64)
+def _eclipses_in_year(year):
+    """Eclipses whose maximum falls in `year` (UT): tuple of (jd_max, kind, sidereal sign index).
+
+    kind is "solar" (sign of the Sun) or "lunar" (sign of the Moon). Every type Swiss
+    Ephemeris returns is kept, penumbral lunar eclipses included, as in
+    sbc.crash_windows._eclipses. Moshier ephemeris, Lahiri, like sbc.planets.
+    """
+    jd0, jd1 = swe.julday(year, 1, 1, 0.0), swe.julday(year + 1, 1, 1, 0.0)
+    out = []
+    for kind, fn, body in (("solar", swe.sol_eclipse_when_glob, swe.SUN),
+                           ("lunar", swe.lun_eclipse_when, swe.MOON)):
+        jd = jd0
+        while True:
+            t = fn(jd, swe.FLG_MOSEPH)[1][0]
+            if t >= jd1:
+                break
+            lon = swe.calc_ut(t, body, _planet_flags())[0][0] % 360.0
+            out.append((t, kind, int(lon // 30)))
+            jd = t + 20
+    return tuple(sorted(out))
+
+
+def _eclipse_financial_axis(julian_day):
+    """Solar eclipse in Taurus or lunar eclipse in Scorpio within ECLIPSE_WINDOW_DAYS.
+
+    The definition is the one written for this trigger (weights table and the
+    original docstring): a solar eclipse with the Sun in sidereal Taurus, or a lunar
+    eclipse with the Moon in sidereal Scorpio, whose maximum is within
+    ECLIPSE_WINDOW_DAYS days (before or after) of `julian_day`. It is taken literally,
+    so a solar eclipse in Scorpio or a lunar eclipse in Taurus does not count.
+    """
+    y = swe.revjul(julian_day)[0]
+    for year in (y - 1, y, y + 1):
+        for t, kind, sign in _eclipses_in_year(year):
+            if abs(t - julian_day) <= ECLIPSE_WINDOW_DAYS and (
+                    (kind == "solar" and sign == _TAURUS) or (kind == "lunar" and sign == _SCORPIO)):
+                return True
+    return False
 
 
 def _saturn_pisces(saturn):
@@ -800,9 +868,18 @@ def _bearish_trigger_weight(trigger_name):
     return BEARISH_TRIGGER_WEIGHTS.get(trigger_name, 0)
 
 
-def _detect_bearish_triggers(jupiter, saturn, uranus, sun, mercury, venus, mars, rahu, ketu, moon):
+def _detect_bearish_triggers(jupiter, saturn, uranus, sun, mercury, venus, mars, rahu, ketu, moon, julian_day,
+                             neptune=None, pluto=None):
     """Detect all active bearish triggers."""
     triggers = []
+
+    # Outer-planet triggers (B4)
+    if pluto is not None and _saturn_pluto_conjunction(saturn, pluto):
+        triggers.append(("saturn_pluto_conjunction", _bearish_trigger_weight("saturn_pluto_conjunction")))
+    if neptune is not None and _neptune_aquarius_ingress(neptune):
+        triggers.append(("neptune_aquarius_ingress", _bearish_trigger_weight("neptune_aquarius_ingress")))
+    if uranus is not None and _uranus_mars_aspect(uranus, mars):
+        triggers.append(("uranus_mars_aspect", _bearish_trigger_weight("uranus_mars_aspect")))
 
     # Fatal tier
     if _saturn_rahu_conjunction(saturn, rahu):
@@ -823,7 +900,7 @@ def _detect_bearish_triggers(jupiter, saturn, uranus, sun, mercury, venus, mars,
         triggers.append(("venus_combust", _bearish_trigger_weight("venus_combust")))
     if _mercury_retro_virgo(mercury):
         triggers.append(("mercury_retro_virgo", _bearish_trigger_weight("mercury_retro_virgo")))
-    if _eclipse_financial_axis(sun, moon, rahu, ketu):
+    if _eclipse_financial_axis(julian_day):
         triggers.append(("eclipse_financial_axis", _bearish_trigger_weight("eclipse_financial_axis")))
     if _saturn_pisces(saturn):
         triggers.append(("saturn_pisces", _bearish_trigger_weight("saturn_pisces")))
@@ -869,9 +946,10 @@ def _bearish_future_score(julian_day):
     rahu = by_name["Rahu"]
     ketu = by_name["Ketu"]
     moon = by_name["Moon"]
-    uranus = None  # Not available in swisseph basic set
+    uranus = by_name.get("Uranus")
 
-    triggers = _detect_bearish_triggers(jupiter, saturn, uranus, sun, mercury, venus, mars, rahu, ketu, moon)
+    triggers = _detect_bearish_triggers(jupiter, saturn, uranus, sun, mercury, venus, mars, rahu, ketu, moon,
+                                        julian_day, neptune=by_name.get("Neptune"), pluto=by_name.get("Pluto"))
 
     # Normalize with same deduplication logic
     score, active_triggers = _score_normalize(triggers, max_score=20)

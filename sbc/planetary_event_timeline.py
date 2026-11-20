@@ -62,6 +62,29 @@ def forward_returns(closes: ArrayLike, horizon: int) -> np.ndarray:
     return fwd
 
 
+def max_drawdown(closes: ArrayLike, horizon: int) -> np.ndarray:
+    """dd[t] = min(close[t+1 .. t+horizon]) / close[t] - 1; NaN where the window runs past the sample.
+
+    Positive when every later close in the window is above close[t].
+    """
+    c = np.asarray(closes, dtype=float)
+    dd = np.full(len(c), np.nan)
+    for t in range(len(c) - horizon):
+        dd[t] = c[t + 1:t + horizon + 1].min() / c[t] - 1.0
+    return dd
+
+
+def realized_volatility(closes: ArrayLike, horizon: int) -> np.ndarray:
+    """vol[t] = sample std (ddof=1) of daily log returns over t+1 .. t+horizon; NaN past the sample."""
+    c = np.asarray(closes, dtype=float)
+    r = np.full(len(c), np.nan)
+    r[1:] = np.log(c[1:] / c[:-1])
+    vol = np.full(len(c), np.nan)
+    for t in range(len(c) - horizon):
+        vol[t] = float(np.std(r[t + 1:t + horizon + 1], ddof=1))
+    return vol
+
+
 def excess_statistic(fwd: np.ndarray, labels: np.ndarray, ev: ArrayLike,
                      ctrl: ArrayLike | None = None) -> float:
     """Mean over events of (fwd - mean fwd of same-decile control sessions).

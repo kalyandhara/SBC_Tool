@@ -16,7 +16,10 @@ from typing import Any
 BRADLEY_WEIGHTS = {
     "Sun": 0.5, "Moon": 0.5, "Mercury": 0.4, "Mars": 0.8,
     "Jupiter": 1.0, "Saturn": 1.2, "Uranus": 1.0,
-    "Neptune": 0.8, "Pluto": 0.6, "Rahu": 0.6, "Ketu": 0.6,
+    "Neptune": 0.8, "Pluto": 0.6, "Rahu": 0.6,
+    # Ketu is always Rahu + 180, so weighting it too would count every node aspect
+    # twice (conjunct Rahu = opposite Ketu). Zero weight: Rahu alone carries the axis (audit B7).
+    "Ketu": 0.0,
 }
 
 ASPECT_TARGETS = (0.0, 60.0, 90.0, 120.0, 180.0)
