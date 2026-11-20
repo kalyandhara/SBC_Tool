@@ -320,7 +320,7 @@ def _score_normalize(triggers, max_score=16, decay_days=14):
     - Max score cap
     - Decay: triggers older than decay_days contribute half weight (not applied here)
     """
-    best = {}
+    best: dict[str, tuple[str, float]] = {}
     for name, weight in triggers:
         family = TRIGGER_FAMILY[name]
         cur = best.get(family)
